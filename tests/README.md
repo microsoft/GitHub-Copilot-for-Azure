@@ -80,6 +80,39 @@ In CI, omitting the tag preserves the default Azure permissions, and a `read`
 run fails if read-only access is not configured. Only `read` and `none` are
 supported; other values are rejected by eval validation.
 
+CI runs `npx tsx discover-azure-permissions.ts` from `tests/` after installing
+dependencies. It scans nested `.yaml` files for each selected skill and builds
+permission-specific matrices. Invalid YAML or stimuli shapes are logged and skipped.
+Unsupported permission strings fail discovery.
+
+The three reusable workflows run only the stimuli in their group:
+
+| Stimulus tag | Workflow | Available Azure identity |
+|---|---|---|
+| `azurePermission: read` | `test-integration-read.yml` | `AZURE_READ_CLIENT_ID`, exposed as `AZURE_CLIENT_ID` |
+| No tag (`""`) | `test-integration-default.yml` | `AZURE_CLIENT_ID` |
+| `azurePermission: none` | `test-integration-none.yml` | No Azure login, no Azure OIDC permission |
+
+Each job installs dependencies and uses its fresh runner's default Azure CLI and azd profiles.
+Authenticated jobs log in to only their selected identity and refresh its CLI
+token in a dedicated background-refresh step. The test command uses native Vally
+filters: `--tag azurePermission=read`, `--tag azurePermission=none`, or both
+`--tag 'azurePermission!=read' --tag 'azurePermission!=none'` for untagged tests.
+The unchanged Vally wrapper discovers suites using `--plugin` and `--skill`.
+`TEST_AZURE_PERMISSION` rejects stimuli assigned to another job
+without switching profiles. Local runs without this variable are unchanged.
+
+Every job uploads its reports tree and execution manifest, even on test
+failure. A per-skill reporting job downloads the artifacts and runs
+`npx tsx aggregate-permission-results.ts`. It merges test results and per-test files
+into `reports/test-run-all-integration/`. The `results.jsonl` and
+`token-summary.jsonl` files from each permission's reports directory are
+concatenated into one file of each name. Nothing from `results/` is uploaded.
+Duplicate test keys fail aggregation. Missing groups produce an explicitly
+incomplete summary and fail the reporting job while preserving available results.
+One skill report is generated from the merged reports before artifact/storage
+publication and usage uploads.
+
 ## Testing This Project
 
 Run the unit tests, type checker, and linter for the runner and support code:

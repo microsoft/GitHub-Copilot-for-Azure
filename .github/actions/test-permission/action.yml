@@ -1,0 +1,154 @@
+name: Run permission-isolated integration tests
+description: Install dependencies, authenticate the selected identity, run matching stimuli, and export artifacts.
+inputs:
+  skill:
+    required: true
+    description: Plugin/skill reference
+  permission:
+    required: true
+    description: Azure permission (read, none, or empty for default)
+  model-override:
+    default: ""
+    description: Model override
+  no-skills:
+    default: "false"
+    description: Disable skill loading
+runs:
+  using: composite
+  steps:
+    - name: Prepare test metadata
+      id: metadata
+      shell: bash
+      env:
+        SKILL: ${{ inputs.skill }}
+      run: |
+        echo "artifact-key=${SKILL%%/*}__${SKILL##*/}" >> "$GITHUB_OUTPUT"
+
+    - name: Setup Node.js
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      with:
+        node-version: "22"
+        cache: npm
+        cache-dependency-path: tests/package-lock.json
+
+    - name: Install dependencies
+      shell: bash
+      working-directory: tests
+      run: npm ci
+
+    - name: Install azd
+      uses: Azure/setup-azd@0b7e3a35ab00f2eee7080c845eb39c3f0ebfa553 # v2
+
+    - name: Log in to the selected managed identity
+      if: inputs.permission != 'none'
+      uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
+      with:
+        client-id: ${{ env.AZURE_CLIENT_ID }}
+        tenant-id: ${{ env.AZURE_TENANT_ID }}
+        subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
+
+    - name: Log in to azd with the selected managed identity
+      if: inputs.permission != 'none'
+      shell: bash
+      run: |
+        azd auth login \
+          --client-id "$AZURE_CLIENT_ID" \
+          --federated-credential-provider github \
+          --tenant-id "$AZURE_TENANT_ID"
+
+    - name: Build plugin output
+      shell: bash
+      run: |
+        npm ci --ignore-scripts
+        npm run build
+
+    - name: Setup Copilot CLI
+      uses: mvkaran/setup-copilot-cli@d05a47209e6b3185c9c55702bef49f28e6eebef7 # v1
+      with:
+        token: ${{ github.token }}
+
+    - name: Refresh the selected identity token every 240 seconds
+      id: refresh
+      if: inputs.permission != 'none'
+      shell: bash
+      run: |
+        status_file="$RUNNER_TEMP/azure-token-refresh-status"
+        echo "AZURE_TOKEN_REFRESH_STATUS=$status_file" >> "$GITHUB_ENV"
+        (
+          set -euo pipefail
+          trap 'echo "$?" > "$status_file"' EXIT
+          while true; do
+            token=$(curl --fail --silent --show-error \
+              -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+              "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange" | jq -er .value)
+            echo "::add-mask::$token"
+            az login --service-principal \
+              -u "$AZURE_CLIENT_ID" -t "$AZURE_TENANT_ID" \
+              --federated-token "$token" --output none
+            az account set --subscription "$AZURE_SUBSCRIPTION_ID"
+            sleep 240
+          done
+        ) &
+        refresh_pid=$!
+        echo "AZURE_TOKEN_REFRESH_PID=$refresh_pid" >> "$GITHUB_ENV"
+        kill -0 "$refresh_pid"
+
+    - name: Run matching integration tests
+      id: tests
+      shell: bash
+      working-directory: tests
+      env:
+        SKILL: ${{ inputs.skill }}
+        TEST_AZURE_PERMISSION: ${{ inputs.permission }}
+        NO_SKILLS: ${{ inputs.no-skills == 'true' && 'true' || '' }}
+        MODEL_OVERRIDE: ${{ inputs.model-override }}
+      run: |
+        case "$TEST_AZURE_PERMISSION" in
+          read) tag_args=(--tag azurePermission=read) ;;
+          none) tag_args=(--tag azurePermission=none) ;;
+          "") tag_args=(--tag 'azurePermission!=read' --tag 'azurePermission!=none') ;;
+          *) echo "::error::Unsupported Azure permission: $TEST_AZURE_PERMISSION"; exit 1 ;;
+        esac
+
+        npm run test:vally -- --plugin "${SKILL%%/*}" --skill "${SKILL##*/}" --workers 2 "${tag_args[@]}"
+
+    - name: Stop token refresh and check its status
+      if: always() && inputs.permission != 'none' && steps.refresh.outcome == 'success'
+      shell: bash
+      run: |
+        if [ -f "$AZURE_TOKEN_REFRESH_STATUS" ]; then
+          echo "::error::Azure token refresh stopped unexpectedly (exit $(cat "$AZURE_TOKEN_REFRESH_STATUS"))"
+          exit 1
+        fi
+        if ! kill -0 "$AZURE_TOKEN_REFRESH_PID" 2>/dev/null; then
+          echo "::error::Azure token refresh process is no longer running"
+          exit 1
+        fi
+        kill "$AZURE_TOKEN_REFRESH_PID"
+
+    - name: Record test execution status
+      if: always()
+      shell: bash
+      working-directory: tests
+      env:
+        TEST_PERMISSION: ${{ inputs.permission }}
+        TEST_OUTCOME: ${{ steps.tests.outcome }}
+      run: |
+        node --input-type=module - <<'JS'
+        import { writeFileSync } from "node:fs";
+        writeFileSync("permission-run.json", JSON.stringify({
+          permission: process.env.TEST_PERMISSION,
+          outcome: process.env.TEST_OUTCOME,
+        }));
+        JS
+
+    - name: Upload reports
+      if: always()
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: integration-${{ steps.metadata.outputs.artifact-key }}-${{ inputs.permission == '' && 'default' || inputs.permission }}-${{ github.run_attempt }}
+        if-no-files-found: error
+        include-hidden-files: true
+        path: |
+          tests/permission-run.json
+          tests/reports/

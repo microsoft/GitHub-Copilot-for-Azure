@@ -107,7 +107,25 @@ jobs:
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
       has_azure_deploy: ${{ steps.set-matrix.outputs.has_azure_deploy }}
+      read-matrix: ${{ steps.azure-permissions.outputs.read-matrix }}
+      none-matrix: ${{ steps.azure-permissions.outputs.none-matrix }}
+      default-matrix: ${{ steps.azure-permissions.outputs.default-matrix }}
+      report-matrix: ${{ steps.azure-permissions.outputs.report-matrix }}
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: tests/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: tests
+
       - name: Parse skills input into matrix
         id: set-matrix
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
@@ -129,6 +147,13 @@ jobs:
             const matrix = skills.filter(s => s !== "azure-skills/azure-deploy");
             core.setOutput("matrix", JSON.stringify(matrix));
 
+      - name: Discover required Azure permissions
+        id: azure-permissions
+        working-directory: tests
+        env:
+          SKILLS_INPUT: ${{ needs.resolve-inputs.outputs.skills }}
+        run: npx tsx discover-azure-permissions.ts
+
   # Call the azure-deploy workflow when azure-deploy is in the skills list
   azure-deploy:
     name: Integration – azure-deploy
@@ -140,22 +165,66 @@ jobs:
       test-pattern: ${{ needs.resolve-inputs.outputs.deploy-test-pattern }}
       no-skills: ${{ inputs.no-skills || false }}
 
-  test:
-    name: Integration – ${{ matrix.skill }}
-    needs: [resolve-inputs, setup]
-    if: needs.setup.outputs.matrix != '[]'
+  test-read:
+    name: Integration read – ${{ matrix.skill }}
+    needs: setup
+    if: needs.setup.outputs.read-matrix != '[]'
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        skill: ${{ fromJson(needs.setup.outputs.read-matrix) }}
+    uses: ./.github/workflows/test-integration-read.yml
+    with:
+      skill: ${{ matrix.skill }}
+      model-override: ${{ inputs.model-override || '' }}
+      no-skills: ${{ inputs.no-skills || false }}
+
+  test-none:
+    name: Integration none – ${{ matrix.skill }}
+    needs: setup
+    if: needs.setup.outputs.none-matrix != '[]'
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        skill: ${{ fromJson(needs.setup.outputs.none-matrix) }}
+    uses: ./.github/workflows/test-integration-none.yml
+    with:
+      skill: ${{ matrix.skill }}
+      model-override: ${{ inputs.model-override || '' }}
+      no-skills: ${{ inputs.no-skills || false }}
+
+  test-default:
+    name: Integration default – ${{ matrix.skill }}
+    needs: setup
+    if: needs.setup.outputs.default-matrix != '[]'
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        skill: ${{ fromJson(needs.setup.outputs.default-matrix) }}
+    uses: ./.github/workflows/test-integration-default.yml
+    with:
+      skill: ${{ matrix.skill }}
+      model-override: ${{ inputs.model-override || '' }}
+      no-skills: ${{ inputs.no-skills || false }}
+
+  report:
+    name: Aggregate and report – ${{ matrix.skill }}
+    needs: [setup, test-read, test-none, test-default]
+    if: always() && !cancelled() && needs.setup.result == 'success' && needs.setup.outputs.report-matrix != '[]'
     environment: cideploytest
     runs-on: ubuntu-latest
     env:
       AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
-      AZURE_READ_CLIENT_ID: ${{ vars.AZURE_READ_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
     strategy:
-      fail-fast: false # don't cancel siblings on failure
-      max-parallel: 5 # limit number of concurrent jobs
+      fail-fast: false
+      max-parallel: 5
       matrix:
-        skill: ${{ fromJson(needs.setup.outputs.matrix) }}
+        include: ${{ fromJson(needs.setup.outputs.report-matrix) }}
 
     defaults:
       run:
@@ -167,92 +236,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install azd
-        uses: Azure/setup-azd@0b7e3a35ab00f2eee7080c845eb39c3f0ebfa553 # v2
-
-      - name: Log in with Azure (Federated Credentials)
-        run: |
-          azd auth login `
-            --client-id "$Env:AZURE_CLIENT_ID" `
-            --federated-credential-provider "github" `
-            --tenant-id "$Env:AZURE_TENANT_ID"
-        shell: pwsh
-
-      - name: Azure login
-        uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
-        with:
-          client-id: ${{ vars.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-
-      - name: Prepare read-only Azure profile
-        id: readonly-azure-profile
-        shell: bash
-        run: |
-          : "${AZURE_READ_CLIENT_ID:?Set AZURE_READ_CLIENT_ID in the cideploytest environment}"
-          profile_dir=$(mktemp -d "${RUNNER_TEMP}/azure-read.XXXXXX")
-          echo "config-dir=$profile_dir" >> "$GITHUB_OUTPUT"
-          echo "AZURE_READ_CONFIG_DIR=$profile_dir" >> "$GITHUB_ENV"
-
-      - name: Azure login (readonly)
-        uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
-        env:
-          AZURE_CONFIG_DIR: ${{ steps.readonly-azure-profile.outputs.config-dir }}
-        with:
-          client-id: ${{ env.AZURE_READ_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-
-      # azure/login only fetches the OIDC access token once.
-      # If a test starts after the token expires, it will fail with authentication errors.
-      # This step runs code to refresh the cached OIDC access token periodically to ensure all tests have a valid access token.
-      # Learn more at https://github.com/Azure/login/issues/372
-      # Refresh interval is sub-5-minutes because the OIDC token's lifetime is
-      # 5 minutes. Using 240s avoids seeing invalid tokens due to clock skew.
-      - name: Fetch OIDC token every 240 seconds
-        shell: bash
-        env:
-          AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
-          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
-        run: |
-          while true; do
-            token=$(curl -s -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange" | jq .value -r)
-            az login --service-principal -u $AZURE_CLIENT_ID -t $AZURE_TENANT_ID --federated-token $token --output none
-            sleep 240
-          done &
-
-      - name: Refresh read-only OIDC token every 240 seconds
-        shell: bash
-        env:
-          AZURE_CONFIG_DIR: ${{ env.AZURE_READ_CONFIG_DIR }}
-        run: |
-          while true; do
-            token=$(curl --fail --silent --show-error -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange" | jq -er .value)
-            echo "::add-mask::$token"
-            az login --service-principal \
-              -u "$AZURE_READ_CLIENT_ID" -t "$AZURE_TENANT_ID" --federated-token "$token" --output none
-            az account set --subscription "$AZURE_SUBSCRIPTION_ID"
-            sleep 240
-          done &
-
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22"
           cache: "npm"
           cache-dependency-path: tests/package-lock.json
-
-      - name: Setup .NET
-        if: contains(needs.resolve-inputs.outputs.skills, 'azure-deploy')
-        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
-        with:
-          dotnet-version: "10.0.x"
-
-      - name: Setup Python
-        if: contains(needs.resolve-inputs.outputs.skills, 'azure-deploy')
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.13"
 
       - name: Install dependencies
         run: npm ci
@@ -270,33 +259,39 @@ jobs:
         with:
           token: ${{ github.token }}
 
-      # Integration tests are broken down per skill for easy tracking of partially complete runs.
-      # Test failures now fail the job (continue-on-error: false), while report steps still run via if: always().
-      # Skill authors should use the reports to identify issues and polish their skills/tests.
-
-      # Override the number of concurrent workers to 2 to prevent a GitHub hosted Actions runner running out of memory.
-      - name: Run integration tests (vally) - ${{ matrix.skill }}
+      - name: Resolve artifact key
+        id: artifact-key
         env:
-          NO_SKILLS: ${{ inputs.no-skills && 'true' || '' }}
-          TEST_RUN_ID: all-integration
-          MODEL_OVERRIDE: ${{ inputs.model-override }}
           SKILL: ${{ matrix.skill }}
         run: |
-          PLUGIN_DIR="${SKILL%%/*}"
-          SKILL_NAME="${SKILL##*/}"
-          npm run test:vally -- --plugin $PLUGIN_DIR --skill $SKILL_NAME --workers 2
+          echo "key=${SKILL%%/*}__${SKILL##*/}" >> "$GITHUB_OUTPUT"
+
+      - name: Download permission results
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: integration-${{ steps.artifact-key.outputs.key }}-*-${{ github.run_attempt }}
+          path: tests/permission-artifacts
+
+      - name: Aggregate reports
+        id: aggregate
+        continue-on-error: true
+        env:
+          SKILL: ${{ matrix.skill }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          EXPECTED_PERMISSIONS: ${{ toJson(matrix.permissions) }}
+        run: npx tsx aggregate-permission-results.ts
 
       - name: Generate skill report
-        if: always()
+        if: always() && steps.aggregate.outputs.has-results == 'true'
         id: generate-skill-report
         env:
           SKILL: ${{ matrix.skill }}
         run: |
           SKILL_NAME="${SKILL##*/}"
-          npm run report -- --skill "$SKILL_NAME" || true
+          npm run report -- --skill "$SKILL_NAME"
 
       - name: Show skill report
-        if: always()
+        if: always() && steps.aggregate.outputs.has-results == 'true'
         id: show-skill-report
         run: |
           SKILL_REPORT=$(find reports -name "*-SKILL-REPORT.md" -type f | head -n 1)
@@ -307,9 +302,38 @@ jobs:
             echo "No skill report found"
           fi
 
+      - name: Show aggregation completeness
+        if: always()
+        run: |
+          if [ -f reports/test-run-all-integration/aggregation.json ]; then
+            echo '### Permission result aggregation' >> "$GITHUB_STEP_SUMMARY"
+            echo '```json' >> "$GITHUB_STEP_SUMMARY"
+            cat reports/test-run-all-integration/aggregation.json >> "$GITHUB_STEP_SUMMARY"
+            echo '' >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload aggregated reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: aggregated-${{ steps.artifact-key.outputs.key }}-${{ github.run_attempt }}
+          if-no-files-found: error
+          include-hidden-files: true
+          path: |
+            tests/reports/test-run-all-integration/
+
+      - name: Azure login for publishing
+        if: always() && steps.aggregate.outputs.has-results == 'true' && vars.REPORT_STORAGE_ACCOUNT != ''
+        uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
       # Note: The managed identity must have write permission to the target storage account
       - name: Publish report to Azure Storage
-        if: always() && github.event_name == 'schedule' && vars.REPORT_STORAGE_ACCOUNT != ''
+        if: always() && steps.aggregate.outputs.has-results == 'true' && github.event_name == 'schedule' && vars.REPORT_STORAGE_ACCOUNT != ''
         id: publish-report
         env:
           RUN_ID: ${{ github.run_id }}
@@ -333,7 +357,7 @@ jobs:
       # Publish reports to the same storage account but a separate container for manual runs.
       # Note: The managed identity must have write permission to the target storage account.
       - name: Publish report to Azure Storage (manual run)
-        if: always() && github.event_name == 'workflow_dispatch' && vars.REPORT_STORAGE_ACCOUNT != ''
+        if: always() && steps.aggregate.outputs.has-results == 'true' && github.event_name == 'workflow_dispatch' && vars.REPORT_STORAGE_ACCOUNT != ''
         id: publish-report-manual
         env:
           RUN_ID: ${{ github.run_id }}
@@ -358,7 +382,7 @@ jobs:
       # "token usage over time" page. Runs for both scheduled and manual runs.
       # Note: The managed identity must have Storage Table Data Contributor on the storage account.
       - name: Upload token usage to table
-        if: always() && vars.REPORT_STORAGE_ACCOUNT != ''
+        if: always() && steps.aggregate.outputs.has-results == 'true' && vars.REPORT_STORAGE_ACCOUNT != ''
         env:
           TOKEN_USAGE_STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
           TOKEN_USAGE_TABLE_NAME: ${{ vars.TOKEN_USAGE_TABLE || 'integrationtokenusage' }}
@@ -373,7 +397,7 @@ jobs:
       # powers the dashboard's per-run tool review. Runs for both scheduled and manual runs.
       # Note: The managed identity must have Storage Table Data Contributor on the storage account.
       - name: Upload tool usage to table
-        if: always() && vars.REPORT_STORAGE_ACCOUNT != ''
+        if: always() && steps.aggregate.outputs.has-results == 'true' && vars.REPORT_STORAGE_ACCOUNT != ''
         env:
           TOOL_USAGE_STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
           TOOL_USAGE_TABLE_NAME: ${{ vars.TOOL_USAGE_TABLE || 'integrationtoolusage' }}
@@ -383,3 +407,13 @@ jobs:
         run: |
           export SKILL="${SKILL_INPUT##*/}"
           npm run upload:tool-usage
+
+      - name: Require complete aggregation
+        if: always()
+        env:
+          AGGREGATE_OUTCOME: ${{ steps.aggregate.outcome }}
+        run: |
+          if [ "$AGGREGATE_OUTCOME" != "success" ]; then
+            echo "::error::Permission results are missing, incomplete, or could not be merged"
+            exit 1
+          fi
