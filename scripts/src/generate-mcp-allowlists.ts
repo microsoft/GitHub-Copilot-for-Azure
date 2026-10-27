@@ -15,33 +15,7 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-
-const EXCLUDED_FILENAMES = new Set([
-  "SKILL.md",
-  "version.json",
-  "LICENSE",
-  "LICENSE.txt",
-  "LICENSE.md",
-]);
-
-function walkDir(dir: string): string[] {
-  const results: string[] = [];
-  const entries = fs.readdirSync(dir, { withFileTypes: true });
-  entries.sort((a, b) => a.name.localeCompare(b.name));
-  for (const entry of entries) {
-    const fullPath = path.join(dir, entry.name);
-    if (entry.isSymbolicLink()) {
-      // Skip symlinks (defense-in-depth against symlink traversal)
-      continue;
-    }
-    if (entry.isDirectory()) {
-      results.push(...walkDir(fullPath));
-    } else if (entry.isFile()) {
-      results.push(fullPath);
-    }
-  }
-  return results;
-}
+import { collectPluginAllowlists } from "./plugin-allowlists.cjs";
 
 /**
  * JSON schema of the allowed-skill-names.json output
@@ -76,12 +50,7 @@ function generateAllowlists(skillsDirs: string[], outputDir: string): void {
     // skillsDir ends with <plugin-dirname>/skills
     const pluginDirname = skillsDir.split(/\/|\\/).at(-2) as string;
 
-    // Get sorted list of skill directory names (exclude hidden directories)
-    const skillNames = fs
-      .readdirSync(skillsDir, { withFileTypes: true })
-      .filter((e) => e.isDirectory() && !e.name.startsWith("."))
-      .map((e) => e.name)
-      .sort();
+    const { skills: skillNames, references: referenceFiles } = collectPluginAllowlists(skillsDir);
 
     if (skillNames.length === 0) {
       console.error(
@@ -92,24 +61,7 @@ function generateAllowlists(skillsDirs: string[], outputDir: string): void {
 
     allSkillNames.skills[pluginDirname] = skillNames;
 
-    const referenceFiles: string[] = [];
-    // Collect all reference file paths (Windows-style backslash separators).
-    // Exclude SKILL.md, version.json, and license files.
-    for (const skill of skillNames) {
-      const skillPath = path.join(skillsDir, skill);
-      for (const filePath of walkDir(skillPath)) {
-        const filename = path.basename(filePath);
-        if (EXCLUDED_FILENAMES.has(filename)) {
-          continue;
-        }
-        const relPath = path
-          .relative(skillsDir, filePath)
-          .replace(/\//g, "\\");
-        referenceFiles.push(relPath);
-      }
-    }
-
-    allReferenceFiles.references[pluginDirname] = referenceFiles.sort();
+    allReferenceFiles.references[pluginDirname] = referenceFiles;
   }
 
   // Write allowed-skill-names.json
