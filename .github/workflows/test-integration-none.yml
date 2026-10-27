@@ -1,0 +1,36 @@
+name: Integration tests - no Azure identity
+on:
+  workflow_call:
+    inputs:
+      skill:
+        required: true
+        type: string
+      model-override:
+        type: string
+        default: ""
+      no-skills:
+        type: boolean
+        default: false
+permissions:
+  contents: read
+  id-token: none
+  copilot-requests: write
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      AZURE_CLIENT_ID: ""
+      AZURE_TENANT_ID: ""
+      AZURE_SUBSCRIPTION_ID: ""
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          fetch-depth: 0
+      - name: Run tests without Azure login
+        uses: ./.github/actions/test-permission
+        with:
+          skill: ${{ inputs.skill }}
+          permission: none
+          model-override: ${{ inputs.model-override }}
+          no-skills: ${{ inputs.no-skills }}

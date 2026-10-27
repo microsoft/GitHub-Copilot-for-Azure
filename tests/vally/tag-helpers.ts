@@ -19,6 +19,20 @@ export function getAzureEnvironment(
     return {};
   }
   const permission = tags?.azurePermission;
+  const jobPermission = env.TEST_AZURE_PERMISSION;
+  if (jobPermission !== undefined) {
+    if (!["", "read", "none"].includes(jobPermission) || (permission ?? "") !== jobPermission) {
+      throw new Error("Stimulus azurePermission does not match the test job's permission");
+    }
+    if (jobPermission === "none") {
+      return { AZURE_CLIENT_ID: "" };
+    }
+    const clientId = env.AZURE_CLIENT_ID?.trim();
+    if (!clientId) {
+      throw new Error("Permission-isolated jobs require AZURE_CLIENT_ID");
+    }
+    return { AZURE_CLIENT_ID: clientId };
+  }
   if (permission === undefined) {
     return {};
   }

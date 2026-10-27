@@ -35,6 +35,35 @@ describe("getAzureEnvironment", () => {
     expect(env.AZURE_CLIENT_ID).toBe("admin-client");
   });
 
+  test.each(["read", ""])("uses only the current job identity for permission %j", (permission) => {
+    expect(getAzureEnvironment(permission ? { azurePermission: permission } : undefined, {
+      CI: "true",
+      TEST_AZURE_PERMISSION: permission,
+      AZURE_CLIENT_ID: "only-client",
+    })).toEqual({
+      AZURE_CLIENT_ID: "only-client",
+    });
+  });
+
+  test.each(["read", "none", ""])("rejects tests belonging to a different permission job: %j", (permission) => {
+    expect(() => getAzureEnvironment({ azurePermission: "read" }, {
+      ...env,
+      TEST_AZURE_PERMISSION: permission === "read" ? "" : permission,
+    })).toThrow("does not match");
+  });
+
+  test("fails closed when the isolated job identity is missing", () => {
+    expect(() => getAzureEnvironment({ azurePermission: "read" }, {
+      CI: "true", TEST_AZURE_PERMISSION: "read",
+    })).toThrow("Permission-isolated jobs require");
+  });
+
+  test("uses the unauthenticated default profile in a none job", () => {
+    expect(getAzureEnvironment({ azurePermission: "none" }, {
+      CI: "true", TEST_AZURE_PERMISSION: "none", AZURE_CLIENT_ID: "",
+    })).toEqual({ AZURE_CLIENT_ID: "" });
+  });
+
   test.each([env, { CI: "true" }])("selects a unique nonexistent Azure config directory for no access: %j", (parentEnv) => {
     const first = getAzureEnvironment({ azurePermission: "none" }, parentEnv);
     const second = getAzureEnvironment({ azurePermission: "none" }, parentEnv);
