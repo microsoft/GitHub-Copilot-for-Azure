@@ -32,6 +32,15 @@ const REQUIRED_PLUGIN_HOOK_FILES = [
   "scripts/pluginPathAllowPattern.ps1",
   "scripts/pluginPathAllowPattern.sh",
 ] as const;
+const GENERATED_PLUGIN_METADATA_PATH = path.join(
+  "generated",
+  "plugin-metadata"
+);
+const PLUGIN_METADATA_CLIENTS = [
+  { name: "copilot", manifestDirectory: ".plugin" },
+  { name: "cursor", manifestDirectory: ".cursor-plugin" },
+  { name: "claude-code", manifestDirectory: ".claude-plugin" },
+] as const;
 
 type HookManifest = {
   hooks: Record<string, unknown[]>;
@@ -260,6 +269,105 @@ function copyHookFile(sourcePath: string, destinationPath: string): void {
   chmodSync(destinationPath, statSync(sourcePath).mode);
 }
 
+function readJsonObject(filePath: string, description: string): Record<string, unknown> {
+  let value: unknown;
+  try {
+    value = JSON.parse(readFileSync(filePath, "utf8"));
+  } catch (error) {
+    throw new Error(
+      `Invalid JSON in ${description}: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error(`${description} must contain a JSON object.`);
+  }
+
+  return value as Record<string, unknown>;
+}
+
+function requireMetadataString(
+  value: unknown,
+  fieldName: string,
+  description: string
+): string {
+  if (
+    typeof value !== "string" ||
+    value.length === 0 ||
+    /[\u0000-\u001f\u007f]/.test(value)
+  ) {
+    throw new Error(
+      `${description} field "${fieldName}" must contain a non-empty string without control characters.`
+    );
+  }
+  return value;
+}
+
+function writePluginHookMetadata(
+  pluginDirname: string,
+  outputRoot: string,
+  destinationRoot: string
+): void {
+  const pluginOutputRoot = path.join(outputRoot, pluginDirname);
+  const metadataRoot = path.join(destinationRoot, GENERATED_PLUGIN_METADATA_PATH);
+
+  for (const client of PLUGIN_METADATA_CLIENTS) {
+    const manifestPath = path.join(
+      pluginOutputRoot,
+      client.manifestDirectory,
+      "plugin.json"
+    );
+    if (!existsSync(manifestPath)) {
+      throw new Error(
+        `Missing built plugin manifest output/${pluginDirname}/${client.manifestDirectory}/plugin.json.`
+      );
+    }
+
+    const description =
+      `built plugin manifest output/${pluginDirname}/${client.manifestDirectory}/plugin.json`;
+    const manifest = readJsonObject(manifestPath, description);
+    const clientMetadataRoot = path.join(metadataRoot, client.name);
+    mkdirSync(clientMetadataRoot, { recursive: true });
+    writeFileSync(
+      path.join(clientMetadataRoot, "name"),
+      `${requireMetadataString(manifest.name, "name", description)}\n`
+    );
+    writeFileSync(
+      path.join(clientMetadataRoot, "version"),
+      `${requireMetadataString(manifest.version, "version", description)}\n`
+    );
+  }
+
+  const mcpConfigPath = path.join(pluginOutputRoot, ".mcp.json");
+  let mcpConfigState = "absent";
+  let mcpServerNames: string[] = [];
+
+  if (existsSync(mcpConfigPath)) {
+    const description = `built MCP configuration output/${pluginDirname}/.mcp.json`;
+    const config = readJsonObject(mcpConfigPath, description);
+    if (
+      typeof config.mcpServers !== "object" ||
+      config.mcpServers === null ||
+      Array.isArray(config.mcpServers)
+    ) {
+      throw new Error(`${description} field "mcpServers" must contain a JSON object.`);
+    }
+
+    mcpConfigState = "present";
+    mcpServerNames = Object.keys(config.mcpServers).sort();
+    for (const serverName of mcpServerNames) {
+      requireMetadataString(serverName, "mcpServers key", description);
+    }
+  }
+
+  mkdirSync(metadataRoot, { recursive: true });
+  writeFileSync(path.join(metadataRoot, "mcp-config-state"), `${mcpConfigState}\n`);
+  writeFileSync(
+    path.join(metadataRoot, "mcp-servers"),
+    mcpServerNames.length > 0 ? `${mcpServerNames.join("\n")}\n` : ""
+  );
+}
+
 export function assemblePluginHooks(
   pluginDirname: string,
   options: HookAssemblyOptions = {},
@@ -339,6 +447,8 @@ export function assemblePluginHooks(
       `${JSON.stringify(compiledManifest, null, 2)}\n`,
     );
   }
+
+  writePluginHookMetadata(pluginDirname, outputRoot, destinationRoot);
 }
 
 function buildPlugin(pluginDirname: string): Promise<void> {

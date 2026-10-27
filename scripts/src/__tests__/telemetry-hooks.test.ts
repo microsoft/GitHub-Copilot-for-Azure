@@ -83,7 +83,6 @@ const INSTALL_CACHE_DIR = join(TEST_DIR, "telemetry-cache");
 const TELEMETRY_ARCHIVE_DIR = join(TEST_DIR, "telemetry-archive");
 const TELEMETRY_ZIP_PATH = join(TEST_DIR, "ghcfa-telem-local.zip");
 const DOWNLOAD_CAPTURE_FILE = join(TEST_DIR, "download-url.txt");
-const NODE_INVOCATION_FILE = join(TEST_DIR, "node-invocation.txt");
 const INVALID_TELEMETRY_ZIP_PATH = join(TEST_DIR, "invalid-telemetry.zip");
 const CHECKSUM_MANIFEST_NAME = "telemetry-reporter-checksums.txt";
 const HOOKS_SOURCE_DIR = join(REPO_ROOT, "hooks");
@@ -108,16 +107,16 @@ const HOOKS_DIR = join(PLUGIN_ROOT, "hooks", "scripts");
 const STUB_HOOKS_DIR = join(PLUGIN_ROOT, "hooks", "stub scripts");
 const SPACED_PLUGIN_ROOT = join(TEST_DIR, "plugin root with spaces");
 const SPACED_HOOKS_DIR = join(SPACED_PLUGIN_ROOT, "hooks", "scripts");
-const BASH_MANIFEST_PLUGIN_ROOT = join(TEST_DIR, "bash-manifest-plugin");
-const BASH_MANIFEST_HOOKS_DIR = join(BASH_MANIFEST_PLUGIN_ROOT, "hooks", "scripts");
-const MALFORMED_MANIFEST_PLUGIN_ROOT = join(TEST_DIR, "malformed-manifest-plugin");
-const MALFORMED_MANIFEST_HOOKS_DIR = join(MALFORMED_MANIFEST_PLUGIN_ROOT, "hooks", "scripts");
+const BASH_METADATA_PLUGIN_ROOT = join(TEST_DIR, "bash-metadata-plugin");
+const BASH_METADATA_HOOKS_DIR = join(BASH_METADATA_PLUGIN_ROOT, "hooks", "scripts");
+const MISSING_METADATA_PLUGIN_ROOT = join(TEST_DIR, "missing-metadata-plugin");
+const MISSING_METADATA_HOOKS_DIR = join(MISSING_METADATA_PLUGIN_ROOT, "hooks", "scripts");
 const OWNED_MCP_PLUGIN_ROOT = join(TEST_DIR, "owned-mcp-plugin");
 const OWNED_MCP_HOOKS_DIR = join(OWNED_MCP_PLUGIN_ROOT, "hooks", "scripts");
 const EMPTY_MCP_PLUGIN_ROOT = join(TEST_DIR, "empty-mcp-plugin");
 const EMPTY_MCP_HOOKS_DIR = join(EMPTY_MCP_PLUGIN_ROOT, "hooks", "scripts");
-const MALFORMED_MCP_PLUGIN_ROOT = join(TEST_DIR, "malformed-mcp-plugin");
-const MALFORMED_MCP_HOOKS_DIR = join(MALFORMED_MCP_PLUGIN_ROOT, "hooks", "scripts");
+const INVALID_MCP_STATE_PLUGIN_ROOT = join(TEST_DIR, "invalid-mcp-state-plugin");
+const INVALID_MCP_STATE_HOOKS_DIR = join(INVALID_MCP_STATE_PLUGIN_ROOT, "hooks", "scripts");
 const DISPATCHER_PATH = join(STUB_HOOKS_DIR, "track-telemetry.js");
 const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), "fixtures");
 const SESSION_ID = "73e52424-a95d-4e21-b70c-2dffe48fdd86";
@@ -689,18 +688,45 @@ function copyTestHookScripts(destination: string): void {
   cpSync(PLUGIN_HOOKS_SOURCE_DIR, destination, { recursive: true });
 }
 
+function writeGeneratedHookMetadata(
+  pluginRoot: string,
+  metadata: Partial<Record<"copilot" | "cursor" | "claude-code", { name: string; version: string }>>,
+  mcpConfigState: string,
+  mcpServers: string[] = [],
+): void {
+  const metadataRoot = join(pluginRoot, "hooks", "generated", "plugin-metadata");
+  for (const [clientName, clientMetadata] of Object.entries(metadata)) {
+    if (!clientMetadata) {
+      continue;
+    }
+    const clientRoot = join(metadataRoot, clientName);
+    mkdirSync(clientRoot, { recursive: true });
+    writeFileSync(join(clientRoot, "name"), `${clientMetadata.name}\n`);
+    writeFileSync(join(clientRoot, "version"), `${clientMetadata.version}\n`);
+  }
+  mkdirSync(metadataRoot, { recursive: true });
+  writeFileSync(join(metadataRoot, "mcp-config-state"), `${mcpConfigState}\n`);
+  writeFileSync(
+    join(metadataRoot, "mcp-servers"),
+    mcpServers.length > 0 ? `${mcpServers.join("\n")}\n` : "",
+  );
+}
+
 function createBashPluginFixture(
   pluginRoot: string,
-  pluginManifest: string,
-  mcpConfig?: string,
+  metadata?: { name: string; version: string },
+  mcpConfigState?: string,
+  mcpServers: string[] = [],
 ): void {
   const hooksDirectory = join(pluginRoot, "hooks", "scripts");
   cpSync(STUB_HOOKS_DIR, hooksDirectory, { recursive: true });
-  const manifestDirectory = join(pluginRoot, PLUGIN_METADATA.cursor.directory);
-  mkdirSync(manifestDirectory, { recursive: true });
-  writeFileSync(join(manifestDirectory, "plugin.json"), pluginManifest);
-  if (mcpConfig !== undefined) {
-    writeFileSync(join(pluginRoot, ".mcp.json"), mcpConfig);
+  if (metadata && mcpConfigState) {
+    writeGeneratedHookMetadata(
+      pluginRoot,
+      { cursor: metadata },
+      mcpConfigState,
+      mcpServers,
+    );
   }
 }
 
@@ -720,28 +746,37 @@ beforeAll(() => {
   createTelemetryArchive();
   writeFileSync(INVALID_TELEMETRY_ZIP_PATH, "not a ZIP archive");
   cpSync(STUB_HOOKS_DIR, SPACED_HOOKS_DIR, { recursive: true });
-  createBashPluginFixture(
-    BASH_MANIFEST_PLUGIN_ROOT,
-    '{"version":"9.8.7","nested":{"name":"wrong-plugin"},"name":"bash-parser-plugin"}',
+  writeGeneratedHookMetadata(
+    PLUGIN_ROOT,
+    {
+      copilot: PLUGIN_METADATA.copilot,
+      cursor: PLUGIN_METADATA.cursor,
+      "claude-code": PLUGIN_METADATA.claude,
+    },
+    "absent",
   );
   createBashPluginFixture(
-    MALFORMED_MANIFEST_PLUGIN_ROOT,
-    '{"name":"malformed-plugin","version":',
+    BASH_METADATA_PLUGIN_ROOT,
+    { name: "bash-sidecar-plugin", version: "9.8.7" },
+    "absent",
   );
+  createBashPluginFixture(MISSING_METADATA_PLUGIN_ROOT);
   createBashPluginFixture(
     OWNED_MCP_PLUGIN_ROOT,
-    '{"name":"owned-mcp-plugin","version":"1.0.0"}',
-    '{"other":{"azure":false},"mcpServers":{"github":{},"azure":{"args":[]}}}',
+    { name: "owned-mcp-plugin", version: "1.0.0" },
+    "present",
+    ["azure", "github"],
   );
   createBashPluginFixture(
     EMPTY_MCP_PLUGIN_ROOT,
-    '{"name":"empty-mcp-plugin","version":"1.0.0"}',
-    '{"azure":{"command":"wrong-scope"},"mcpServers":{}}',
+    { name: "empty-mcp-plugin", version: "1.0.0" },
+    "present",
   );
   createBashPluginFixture(
-    MALFORMED_MCP_PLUGIN_ROOT,
-    '{"name":"malformed-mcp-plugin","version":"1.0.0"}',
-    '{"mcpServers":{"azure":',
+    INVALID_MCP_STATE_PLUGIN_ROOT,
+    { name: "invalid-mcp-state-plugin", version: "1.0.0" },
+    "invalid",
+    ["azure"],
   );
   for (const metadata of Object.values(PLUGIN_METADATA)) {
     const manifestDir = join(PLUGIN_ROOT, metadata.directory);
@@ -762,17 +797,6 @@ beforeAll(() => {
   for (const binaryName of ["ghcfa-telem", "ghcfa-telem.cmd"]) {
     writePublisherStub(join(BIN_DIR, binaryName));
   }
-  const nodeStub = join(BIN_DIR, "node");
-  writeFileSync(
-    nodeStub,
-    [
-      "#!/usr/bin/env bash",
-      "printf '%s\\n' invoked > \"$NODE_INVOCATION_FILE\"",
-      "exit 99",
-      "",
-    ].join("\n"),
-  );
-  chmodSync(nodeStub, 0o755);
 });
 
 afterAll(() => {
@@ -918,30 +942,8 @@ describe("Cursor telemetry dispatcher", () => {
   });
 });
 
-describe.skipIf(!bashShell)("Bash manifest parsing without Node", () => {
-  it("reads compact, reordered plugin metadata without invoking Node", () => {
-    rmSync(NODE_INVOCATION_FILE, { force: true });
-
-    const args = runHook(
-      bashShell!,
-      {
-        hook_event_name: "sessionStart",
-        session_id: SESSION_ID,
-        cursor_version: "1.7.2",
-        is_background_agent: false,
-        composer_mode: "agent",
-      },
-      "",
-      { NODE_INVOCATION_FILE },
-      BASH_MANIFEST_HOOKS_DIR,
-    );
-
-    expectArg(args, "--plugin-name", "bash-parser-plugin");
-    expectArg(args, "--plugin-version", "9.8.7");
-    expect(existsSync(NODE_INVOCATION_FILE)).toBe(false);
-  });
-
-  it("suppresses session telemetry when the plugin manifest is malformed", () => {
+describe.skipIf(!bashShell)("Bash generated plugin metadata", () => {
+  it("reads client-specific plugin name and version from the sidecar", () => {
     const args = runHook(
       bashShell!,
       {
@@ -953,7 +955,26 @@ describe.skipIf(!bashShell)("Bash manifest parsing without Node", () => {
       },
       "",
       {},
-      MALFORMED_MANIFEST_HOOKS_DIR,
+      BASH_METADATA_HOOKS_DIR,
+    );
+
+    expectArg(args, "--plugin-name", "bash-sidecar-plugin");
+    expectArg(args, "--plugin-version", "9.8.7");
+  });
+
+  it("suppresses session telemetry when generated plugin metadata is missing", () => {
+    const args = runHook(
+      bashShell!,
+      {
+        hook_event_name: "sessionStart",
+        session_id: SESSION_ID,
+        cursor_version: "1.7.2",
+        is_background_agent: false,
+        composer_mode: "agent",
+      },
+      "",
+      {},
+      MISSING_METADATA_HOOKS_DIR,
     );
 
     expect(args).toEqual([]);
@@ -972,7 +993,7 @@ describe.skipIf(!bashShell)("Bash manifest parsing without Node", () => {
     expectArg(args, "--tool-name", "get_azure_bestpractices");
   });
 
-  it("does not claim an Azure key outside an empty mcpServers object", () => {
+  it("does not report Azure MCP telemetry when the generated server list is empty", () => {
     const args = runHook(
       bashShell!,
       fixture("cursor-mcp-invocation.json"),
@@ -984,25 +1005,25 @@ describe.skipIf(!bashShell)("Bash manifest parsing without Node", () => {
     expect(args).toEqual([]);
   });
 
-  it("does not report Azure MCP telemetry when .mcp.json is malformed", () => {
+  it("fails closed when the generated MCP config state is invalid", () => {
     const args = runHook(
       bashShell!,
       fixture("cursor-mcp-invocation.json"),
       "",
       {},
-      MALFORMED_MCP_HOOKS_DIR,
+      INVALID_MCP_STATE_HOOKS_DIR,
     );
 
     expect(args).toEqual([]);
   });
 
-  it("keeps the existing permissive behavior when .mcp.json is missing", () => {
+  it("keeps the existing permissive behavior for an explicitly absent .mcp.json", () => {
     const args = runHook(
       bashShell!,
       fixture("cursor-mcp-invocation.json"),
       "",
       {},
-      BASH_MANIFEST_HOOKS_DIR,
+      BASH_METADATA_HOOKS_DIR,
     );
 
     expectArg(args, "--event-type", "tool_invocation");

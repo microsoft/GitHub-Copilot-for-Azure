@@ -71,10 +71,11 @@
 #
 # === Plugin and Skill Versions ===
 #
-# The plugin name and version are read from the active client's plugin.json:
-#   - Copilot CLI / VS Code: .plugin/plugin.json
-#   - Claude Code:           .claude-plugin/plugin.json
-#   - Cursor:                .cursor-plugin/plugin.json
+# The plugin name and version are read from build-generated metadata derived
+# from the active client's stamped plugin.json:
+#   - Copilot CLI / VS Code: generated metadata for .plugin/plugin.json
+#   - Claude Code:           generated metadata for .claude-plugin/plugin.json
+#   - Cursor:                generated metadata for .cursor-plugin/plugin.json
 #
 # The skill version is read from the SKILL.md frontmatter (metadata.version),
 # which the build stamps at package time. It is resolved as follows:
@@ -87,9 +88,9 @@
 #
 # === Plugin Identity ===
 #
-# Every tracked event includes the plugin name and version read from the
-# installed copy's .plugin/plugin.json manifest. This lets the existing
-# telemetry receiver attribute sibling-plugin events without adding fields.
+# Every tracked event includes the plugin name and version from the installed
+# copy's generated metadata. This lets the existing telemetry receiver
+# attribute sibling-plugin events without adding fields.
 #
 # === Reference File Detection ===
 #
@@ -218,320 +219,57 @@ get_skill_version() {
         | sed -E 's/^[[:space:]]*version:[[:space:]]*//; s/^["'"'"']//; s/["'"'"'][[:space:]]*$//; s/[[:space:]]*$//'
 }
 
-# Query the small JSON manifests used by the hook without requiring Node or
-# another optional runtime. Supported queries are a top-level string field and
-# direct key membership in the top-level mcpServers object.
-query_json_file() {
-    local filePath="$1"
-    local queryMode="$2"
-    local queryName="$3"
-
-    LC_ALL=C awk -v queryMode="$queryMode" -v queryName="$queryName" '
-        function fail() {
-            valid = 0
-            tokenType = "invalid"
-            position = inputLength + 1
-        }
-
-        function hex_value(value,    loopIndex, digit, result) {
-            result = 0
-            for (loopIndex = 1; loopIndex <= length(value); loopIndex++) {
-                digit = index("0123456789abcdef", tolower(substr(value, loopIndex, 1))) - 1
-                if (digit < 0) {
-                    return -1
-                }
-                result = (result * 16) + digit
-            }
-            return result
-        }
-
-        function utf8(codePoint) {
-            if (codePoint <= 127) {
-                return sprintf("%c", codePoint)
-            }
-            if (codePoint <= 2047) {
-                return sprintf("%c%c",
-                    192 + int(codePoint / 64),
-                    128 + (codePoint % 64))
-            }
-            if (codePoint <= 65535) {
-                return sprintf("%c%c%c",
-                    224 + int(codePoint / 4096),
-                    128 + (int(codePoint / 64) % 64),
-                    128 + (codePoint % 64))
-            }
-            return sprintf("%c%c%c%c",
-                240 + int(codePoint / 262144),
-                128 + (int(codePoint / 4096) % 64),
-                128 + (int(codePoint / 64) % 64),
-                128 + (codePoint % 64))
-        }
-
-        function parse_string(    character, escape, digits, codePoint, lowDigits, lowCodePoint, result) {
-            result = ""
-            position++
-            while (position <= inputLength) {
-                character = substr(input, position, 1)
-                position++
-                if (character == "\"") {
-                    return result
-                }
-                if (character != "\\") {
-                    if (character ~ /[\001-\037]/) {
-                        fail()
-                        return ""
-                    }
-                    result = result character
-                    continue
-                }
-
-                if (position > inputLength) {
-                    fail()
-                    return ""
-                }
-                escape = substr(input, position, 1)
-                position++
-                if (escape == "\"" || escape == "\\" || escape == "/") {
-                    result = result escape
-                } else if (escape == "b") {
-                    result = result sprintf("%c", 8)
-                } else if (escape == "f") {
-                    result = result sprintf("%c", 12)
-                } else if (escape == "n") {
-                    result = result "\n"
-                } else if (escape == "r") {
-                    result = result "\r"
-                } else if (escape == "t") {
-                    result = result "\t"
-                } else if (escape == "u") {
-                    digits = substr(input, position, 4)
-                    if (length(digits) != 4 || digits !~ /^[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]$/) {
-                        fail()
-                        return ""
-                    }
-                    position += 4
-                    codePoint = hex_value(digits)
-                    if (codePoint >= 55296 && codePoint <= 56319 &&
-                        substr(input, position, 2) == "\\u") {
-                        lowDigits = substr(input, position + 2, 4)
-                        lowCodePoint = hex_value(lowDigits)
-                        if (length(lowDigits) == 4 && lowCodePoint >= 56320 && lowCodePoint <= 57343) {
-                            codePoint = 65536 + ((codePoint - 55296) * 1024) + (lowCodePoint - 56320)
-                            position += 6
-                        }
-                    }
-                    result = result utf8(codePoint)
-                } else {
-                    fail()
-                    return ""
-                }
-            }
-            fail()
-            return ""
-        }
-
-        function next_token(    character, start, value) {
-            while (position <= inputLength &&
-                substr(input, position, 1) ~ /[[:space:]]/) {
-                position++
-            }
-            if (position > inputLength) {
-                tokenType = "eof"
-                tokenValue = ""
-                return
-            }
-
-            character = substr(input, position, 1)
-            if (character == "\"") {
-                tokenValue = parse_string()
-                if (valid) {
-                    tokenType = "string"
-                }
-                return
-            }
-            if (character ~ /[{}\[\],:]/) {
-                tokenType = character
-                tokenValue = character
-                position++
-                return
-            }
-            if (substr(input, position, 4) == "true") {
-                tokenType = "literal"
-                tokenValue = "true"
-                position += 4
-                return
-            }
-            if (substr(input, position, 5) == "false") {
-                tokenType = "literal"
-                tokenValue = "false"
-                position += 5
-                return
-            }
-            if (substr(input, position, 4) == "null") {
-                tokenType = "literal"
-                tokenValue = "null"
-                position += 4
-                return
-            }
-            if (character == "-" || character ~ /[0-9]/) {
-                start = position
-                while (position <= inputLength &&
-                    substr(input, position, 1) ~ /[0-9eE+.-]/) {
-                    position++
-                }
-                value = substr(input, start, position - start)
-                if (value !~ /^-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?$/) {
-                    fail()
-                    return
-                }
-                tokenType = "number"
-                tokenValue = value
-                return
-            }
-            fail()
-        }
-
-        function parse_array(depth) {
-            next_token()
-            if (tokenType == "]") {
-                next_token()
-                return
-            }
-            while (valid) {
-                parse_value(depth + 1)
-                if (tokenType == "]") {
-                    next_token()
-                    return
-                }
-                if (tokenType != ",") {
-                    fail()
-                    return
-                }
-                next_token()
-            }
-        }
-
-        function parse_object(depth, inspectKeys,    key) {
-            next_token()
-            if (tokenType == "}") {
-                next_token()
-                return
-            }
-            while (valid) {
-                if (tokenType != "string") {
-                    fail()
-                    return
-                }
-                key = tokenValue
-                if (inspectKeys && key == queryName) {
-                    objectKeyFound = 1
-                }
-                next_token()
-                if (tokenType != ":") {
-                    fail()
-                    return
-                }
-                next_token()
-
-                if (queryMode == "field" && depth == 0 && key == queryName) {
-                    fieldSeen = 1
-                    fieldIsString = (tokenType == "string")
-                    fieldValue = fieldIsString ? tokenValue : ""
-                }
-
-                if (queryMode == "object-key" && depth == 0 && key == "mcpServers") {
-                    objectKeyFound = 0
-                    if (tokenType == "{") {
-                        parse_object(depth + 1, 1)
-                    } else {
-                        parse_value(depth + 1)
-                    }
-                } else {
-                    parse_value(depth + 1)
-                }
-
-                if (tokenType == "}") {
-                    next_token()
-                    return
-                }
-                if (tokenType != ",") {
-                    fail()
-                    return
-                }
-                next_token()
-            }
-        }
-
-        function parse_value(depth) {
-            if (tokenType == "string" || tokenType == "number" || tokenType == "literal") {
-                next_token()
-            } else if (tokenType == "{") {
-                parse_object(depth, 0)
-            } else if (tokenType == "[") {
-                parse_array(depth)
-            } else {
-                fail()
-            }
-        }
-
-        {
-            input = input $0 "\n"
-        }
-
-        END {
-            valid = 1
-            position = 1
-            inputLength = length(input)
-            next_token()
-            parse_value(0)
-            if (tokenType != "eof") {
-                valid = 0
-            }
-
-            if (queryMode == "field") {
-                if (valid && fieldSeen && fieldIsString && fieldValue != "") {
-                    printf "%s", fieldValue
-                }
-                exit 0
-            }
-            exit(valid && objectKeyFound ? 0 : 1)
-        }
-    ' "$filePath" 2>/dev/null
-}
-
-# Extract one field from the plugin manifest for the active client.
-# Prints nothing if the file or expected JSON value cannot be read.
+# Read one field from the build-generated metadata for the active client.
+# Prints nothing if the metadata file cannot be read.
 get_plugin_field() {
     local clientName="$1"
     local fieldName="$2"
-    local manifestDir=".plugin"
-    local pluginManifestPath
+    local metadataClient="copilot"
+    local metadataPath
 
     case "$clientName" in
         cursor)
-            manifestDir=".cursor-plugin"
+            metadataClient="cursor"
             ;;
         claude-code)
-            manifestDir=".claude-plugin"
+            metadataClient="claude-code"
             ;;
     esac
 
-    pluginManifestPath="$(dirname "$SKILLS_DIR")/$manifestDir/plugin.json"
-    [ -f "$pluginManifestPath" ] || return 0
-    query_json_file "$pluginManifestPath" "field" "$fieldName"
+    case "$fieldName" in
+        name|version)
+            ;;
+        *)
+            return 0
+            ;;
+    esac
+
+    metadataPath="$SCRIPT_DIR/../generated/plugin-metadata/$metadataClient/$fieldName"
+    [ -f "$metadataPath" ] || return 0
+    cat "$metadataPath" 2>/dev/null
 }
 
-# Return true unless this hook's plugin ships a .mcp.json that does not
-# configure the named server. The shared hook is copied into every plugin, so
-# a plugin with an empty .mcp.json (for example aks-skills) must not report MCP
-# calls owned by a co-installed plugin. A plugin with no .mcp.json at all keeps
-# the pre-existing behavior and reports the event.
+# Return true when generated metadata says this plugin owns the named server,
+# or when the build recorded that the plugin intentionally has no .mcp.json.
 owns_mcp_server() {
     local serverName="$1"
-    local mcpConfigPath
-    mcpConfigPath="$(dirname "$SKILLS_DIR")/.mcp.json"
-    [ -f "$mcpConfigPath" ] || return 0
-    query_json_file "$mcpConfigPath" "object-key" "$serverName"
+    local metadataRoot="$SCRIPT_DIR/../generated/plugin-metadata"
+    local mcpConfigState
+
+    [ -f "$metadataRoot/mcp-config-state" ] || return 1
+    mcpConfigState=$(cat "$metadataRoot/mcp-config-state" 2>/dev/null) || return 1
+    case "$mcpConfigState" in
+        absent)
+            return 0
+            ;;
+        present)
+            [ -f "$metadataRoot/mcp-servers" ] || return 1
+            grep -Fqx -- "$serverName" "$metadataRoot/mcp-servers" 2>/dev/null
+            ;;
+        *)
+            return 1
+            ;;
+    esac
 }
 
 # === JSON Parsing Functions (using sed - portable across platforms) ===
