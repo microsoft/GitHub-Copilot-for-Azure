@@ -135,6 +135,7 @@ Every agent source folder can keep Foundry-specific cache and overlay state unde
 
 ## Agent: Setup References
 
+- Ordinary prompt and hosted text-agent deployments, including redeploys: follow [best-effort tracing setup](references/agent-tracing-setup.md), then [verify the requested invocation's stored trace](references/agent-tracing-verification.md). Optional tracing failures warn and continue; deployment success is not tracing verification.
 - [Standard Agent Setup](references/standard-agent-setup.md) — advanced setup for production workloads that need data-residency control (bring-your-own Cosmos DB / Storage / AI Search via a Foundry capability host). The default `azd ai agent` flow uses **Basic Agent Setup** and does **not** provision `capabilityHosts/agents` — do not flag its absence as a bug. For default post-provision state, see the "Expected env-var fingerprint" section in [foundry-agent/create/create-hosted.md](foundry-agent/create/create-hosted.md).
 
 ## Agent: Common Project Context Resolution
@@ -174,7 +175,8 @@ Run `azd env get-values` for the selected environment when project/deployment va
 | `AGENT_<SERVICE>_NAME` | Agent name for the selected azd service |
 | `AGENT_<SERVICE>_VERSION` | Agent version for the selected azd service |
 | `AZURE_CONTAINER_REGISTRY_NAME` or `AZURE_CONTAINER_REGISTRY_ENDPOINT` | ACR registry name / image URL prefix |
-| `APPLICATIONINSIGHTS_CONNECTION_STRING` | App Insights connection string for trace workflows |
+| `AZURE_APPLICATION_INSIGHTS_RESOURCE_ID`, `AZURE_APPLICATION_INSIGHTS_APP_ID`, `AZURE_LOG_ANALYTICS_WORKSPACE_RESOURCE_ID` | Preferred nonsecret tracing destination identifiers |
+| `APPLICATIONINSIGHTS_CONNECTION_STRING` | Legacy read-only fallback; never copy into new metadata or configuration |
 | `AZURE_SUBSCRIPTION_ID`, `AZURE_RESOURCE_GROUP`, `AZURE_AI_ACCOUNT_NAME`, `AZURE_AI_PROJECT_NAME` | Azure resource lookup and Playground links |
 
 When azd supplies these values, use them as the source of truth and do not copy them into `.foundry/agent-metadata*.yaml` on metadata writes.
