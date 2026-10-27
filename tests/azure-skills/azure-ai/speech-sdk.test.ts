@@ -1,7 +1,7 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtemp, readFile, rm, rmdir, symlink, truncate, unlink, writeFile } from "node:fs/promises";
+import { chmod, mkdtemp, readFile, rm, rmdir, symlink, truncate, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { delimiter, dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { expect, it } from "vitest";
 
@@ -375,6 +375,90 @@ it("CLI still executes when the installed skill directory is linked", async () =
     }
   });
 });
+
+const isWindows = process.platform === "win32";
+
+function resolveExecutable(name: string): string | undefined {
+  const lookup = spawnSync(isWindows ? "where" : "which", [name], { encoding: "utf8" });
+  return lookup.status === 0 ? lookup.stdout.split(/\r?\n/)[0] || undefined : undefined;
+}
+
+// The Bash launcher is for macOS and Linux; the PowerShell launcher runs on every platform.
+const launchers = [
+  {
+    name: "Bash",
+    executable: isWindows ? undefined : resolveExecutable("bash"),
+    file: "analyze-speech-sdk-log.sh",
+    args: (file: string, ...rest: string[]) => [file, ...rest],
+  },
+  {
+    name: "PowerShell",
+    executable: resolveExecutable(isWindows ? "powershell" : "pwsh"),
+    file: "analyze-speech-sdk-log.ps1",
+    args: (file: string, ...rest: string[]) => ["-NoProfile", "-File", file, ...rest],
+  },
+];
+
+function envWithPath(path: string): NodeJS.ProcessEnv {
+  const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => key.toLowerCase() !== "path"));
+  return { ...env, PATH: path };
+}
+
+// Runs with a PATH that holds only a stand-in for node (or nothing), so the launcher's preflight is exercised.
+async function withNodeOnPath<T>(version: string | undefined, run: (path: string) => Promise<T>): Promise<T> {
+  const dir = await mkdtemp(join(tmpdir(), "speech-sdk-node-"));
+  try {
+    if (version && isWindows) {
+      await writeFile(join(dir, "node.cmd"), `@echo ${version}\r\n`);
+    } else if (version) {
+      await writeFile(join(dir, "node"), `#!/bin/sh\necho ${version}\n`);
+      await chmod(join(dir, "node"), 0o755);
+    }
+    return await run(isWindows ? [dir, join(process.env.SystemRoot ?? "C:\\Windows", "System32")].join(delimiter) : dir);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+}
+
+for (const launcher of launchers) {
+  const runLauncher = (path: string, ...args: string[]) =>
+    spawnSync(launcher.executable as string, launcher.args(join(dirname(script), launcher.file), ...args), {
+      encoding: "utf8",
+      env: envWithPath(path),
+    });
+
+  it.skipIf(!launcher.executable)(`${launcher.name} launcher says Node.js 22+ is required when node is missing`, async () => {
+    await withNodeOnPath(undefined, async (path) => {
+      const result = runLauncher(path, "--file", "unused.log");
+      expect(result.status).toBe(3);
+      expect(result.stdout).toBe("");
+      const error = JSON.parse(result.stderr) as { error: string; help: string };
+      expect(error.error).toBe("NODE_REQUIRED");
+      expect(error.help).toContain("Node.js 22 or later is required");
+      expect(error.help).toContain("without-node.md");
+      expect(error.help).toContain("Nothing was run, changed or installed");
+    });
+  });
+
+  it.skipIf(!launcher.executable)(`${launcher.name} launcher rejects a Node.js older than 22 and names the version found`, async () => {
+    await withNodeOnPath("v18.19.0", async (path) => {
+      const result = runLauncher(path, "--file", "unused.log");
+      expect(result.status).toBe(3);
+      expect(result.stdout).toBe("");
+      const error = JSON.parse(result.stderr) as { error: string; help: string };
+      expect(error.error).toBe("NODE_VERSION_UNSUPPORTED");
+      expect(error.help).toContain("found v18.19.0");
+    });
+  });
+
+  it.skipIf(!launcher.executable)(`${launcher.name} launcher runs the analyzer with the supported Node.js in use`, async () => {
+    await withLog(config(), async (file) => {
+      const result = runLauncher([dirname(process.execPath), process.env.PATH ?? ""].join(delimiter), "--file", file);
+      expect(result.status).toBe(0);
+      expect((JSON.parse(result.stdout) as Report).coverage.format).toBe("native_text");
+    });
+  });
+}
 
 it("output reference documents exactly what the analyzer emits", async () => {
   const doc = (await readFile(join(dirname(script), "..", "references", "speech", "output.md"), "utf8")).replace(/\r\n/g, "\n");

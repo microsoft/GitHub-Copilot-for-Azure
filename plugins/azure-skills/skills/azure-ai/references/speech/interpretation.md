@@ -49,6 +49,7 @@ time overlap, or similar GUID spelling is insufficient.
 | DNS error code | Resolve the confirmed host from the affected environment |
 | 401/403 | Verify resource/endpoint, auth method and relevant configuration; no single-cause mapping |
 | NoMatch | Read NoMatch details and inspect input/configuration; do not label an outage |
+| TLS certificate verification error (not extracted by the analyzer) | Keep the exact line; compare the trust store and any TLS-inspecting proxy of the affected host; never disable validation |
 | Log ends without a terminal event | Incomplete capture is possible; do not invent a disconnect |
 
 The analyzer does not implement all these diagnoses or echo unknown errors.
