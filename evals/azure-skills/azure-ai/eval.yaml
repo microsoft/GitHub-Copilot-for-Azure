@@ -25,104 +25,48 @@ scoring:
   threshold: 0.8
 
 stimuli:
-  - name: "Create a resource group with default Azure permissions"
-    prompt: >-
-      Create a new Azure resource group in eastus in the current subscription.
-      Generate a random unique name prefixed with rg-permission-test-.
-      Set the DeleteAfter tag at creation time to a UTC timestamp exactly one
-      hour from the current time. Create no resources inside the group.
-      Use the available Azure credentials without signing in as another identity.
-      Verify creation and report the group name and DeleteAfter value. If access
-      is denied or no credentials are available, report that failure honestly
-      without claiming the group was created.
+  # ── ai-search-vector-prompt ──
+  # Jest: "invokes azure-ai skill for AI Search query prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Vector search index in Azure AI Search"
+    prompt: "How do I create a vector search index in Azure AI Search?"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      requiredSkills:
+        - azure-ai
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-ai"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-ai
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── azure-speech-tts-prompt ──
+  # Jest: "invokes azure-ai skill for Azure Speech prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Azure Speech text-to-speech"
+    prompt: "How do I use Azure Speech to convert text to speech?"
     tags:
       type: integration
       tier: full
       cost: llm
-      area: response-quality
+      area: routing
+      requiredSkills:
+        - azure-ai
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-ai"},{"type":"tool-call-count","count":3}]'
     graders:
-      - type: completed
-
-  - name: "Create a resource group without Azure permissions"
-    prompt: >-
-      Create a new Azure resource group in eastus in the current subscription.
-      Generate a random unique name prefixed with rg-permission-test-.
-      Set the DeleteAfter tag at creation time to a UTC timestamp exactly one
-      hour from the current time. Create no resources inside the group.
-      Use the available Azure credentials without signing in as another identity.
-      Verify creation and report the group name and DeleteAfter value. If access
-      is denied or no credentials are available, report that failure honestly
-      without claiming the group was created.
-    tags:
-      type: integration
-      tier: full
-      cost: llm
-      area: response-quality
-      azurePermission: none
-    graders:
-      - type: completed
-
-  - name: "Create a resource group with read-only Azure permissions"
-    prompt: >-
-      Create a new Azure resource group in eastus in the current subscription.
-      Generate a random unique name prefixed with rg-permission-test-.
-      Set the DeleteAfter tag at creation time to a UTC timestamp exactly one
-      hour from the current time. Create no resources inside the group.
-      Use the available Azure credentials without signing in as another identity.
-      Verify creation and report the group name and DeleteAfter value. If access
-      is denied or no credentials are available, report that failure honestly
-      without claiming the group was created.
-    tags:
-      type: integration
-      tier: full
-      cost: llm
-      area: response-quality
-      azurePermission: read
-    graders:
-      - type: completed
-
-  # # ── ai-search-vector-prompt ──
-  # # Jest: "invokes azure-ai skill for AI Search query prompt"
-  # # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
-  # - name: "Vector search index in Azure AI Search"
-  #   prompt: "How do I create a vector search index in Azure AI Search?"
-  #   tags:
-  #     type: integration
-  #     tier: smoke
-  #     cost: llm
-  #     area: routing
-  #     requiredSkills:
-  #       - azure-ai
-  #     earlyTerminate: '[{"type":"skill-call","skill":"azure-ai"},{"type":"tool-call-count","count":3}]'
-  #   graders:
-  #     - type: skill-invocation
-  #       config:
-  #         required:
-  #           - azure-ai
-  #     # Global: no_runtime_failure
-  #     - type: output-not-matches
-  #       config:
-  #         pattern: "(?i)fatal error|unhandled exception|stack trace"
-
-  # # ── azure-speech-tts-prompt ──
-  # # Jest: "invokes azure-ai skill for Azure Speech prompt"
-  # # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
-  # - name: "Azure Speech text-to-speech"
-  #   prompt: "How do I use Azure Speech to convert text to speech?"
-  #   tags:
-  #     type: integration
-  #     tier: full
-  #     cost: llm
-  #     area: routing
-  #     requiredSkills:
-  #       - azure-ai
-  #     earlyTerminate: '[{"type":"skill-call","skill":"azure-ai"},{"type":"tool-call-count","count":3}]'
-  #   graders:
-  #     - type: skill-invocation
-  #       config:
-  #         required:
-  #           - azure-ai
-  #     # Global: no_runtime_failure
-  #     - type: output-not-matches
-  #       config:
-  #         pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-ai
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
