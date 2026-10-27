@@ -495,18 +495,24 @@ function resourceGroupId(context: FixtureRunContext, name: string): string {
   return `/subscriptions/${context.subscriptionId}/resourceGroups/${name}`;
 }
 
+/**
+ * @returns The selected fixture's ISO 8601 UTC reuse deadline (earliest DeleteAfter
+ * minus one hour), or undefined if any component's expiration is invalid or within
+ * the safety margin. Updates context only when selecting a reusable fixture.
+ */
 function verifyAndSelectRecordedFixture(
   context: FixtureRunContext,
   manifest: FixtureManifest,
   record: CoordinationRecord,
   runCommand: ProvisioningDependencies["runAz"] = runAz,
   now: number = Date.now(),
-): boolean {
+): string | undefined {
   if (!record.instanceId) {
     throw new Error(`Ready workflow fixture ${manifest.id} has no instance ID`);
   }
   const resourceGroupNames: Record<string, string> = {};
   let reusable = true;
+  let earliestExpiration = Number.POSITIVE_INFINITY;
   for (const config of manifest.bicepConfigs) {
     const id = record.resourceGroups[config.resourceGroupNameBase];
     if (!id) {
@@ -527,35 +533,15 @@ function verifyAndSelectRecordedFixture(
     }
     const expiration = parseDeleteAfter(tags[DELETE_AFTER_TAG] ?? "");
     reusable &&= Number.isFinite(expiration) && expiration - REUSE_SAFETY_MARGIN_MS > now;
+    earliestExpiration = Math.min(earliestExpiration, expiration);
     resourceGroupNames[config.resourceGroupNameBase] = name;
   }
   if (!reusable) {
-    return false;
+    return undefined;
   }
   context.runId = record.instanceId;
   context.resourceGroupNames = resourceGroupNames;
-  return true;
-}
-
-function refreshExpiration(
-  context: FixtureRunContext,
-  runCommand: ProvisioningDependencies["runAz"] = runAz,
-  now: () => number = Date.now,
-  retentionMs = READY_RETENTION_MS,
-): string {
-  const expiresAt = new Date(Math.floor((now() + retentionMs) / 1000) * 1000);
-  let earliest = Number.POSITIVE_INFINITY;
-  for (const name of Object.values(context.resourceGroupNames)) {
-    const current = runCommand(["group", "show", "--name", name, "--query", `tags.${DELETE_AFTER_TAG}`, "-o", "tsv"]);
-    const currentExpiration = parseDeleteAfter(current);
-    if (!Number.isFinite(currentExpiration) || currentExpiration < expiresAt.getTime()) {
-      runCommand(["group", "update", "--name", name, "--set", shellQuote(`tags.${DELETE_AFTER_TAG}=${formatDeleteAfter(expiresAt)}`), "-o", "none"]);
-      earliest = Math.min(earliest, expiresAt.getTime());
-    } else {
-      earliest = Math.min(earliest, currentExpiration);
-    }
-  }
-  return new Date(earliest - REUSE_SAFETY_MARGIN_MS).toISOString();
+  return new Date(earliestExpiration - REUSE_SAFETY_MARGIN_MS).toISOString();
 }
 
 type DiscoveredInstance = {
@@ -750,18 +736,14 @@ async function provisionTemporaryFixture(
       dependencies.log.log(`Acquired workflow fixture lease for ${manifest.id}@${manifest.version}; owner ${ownerWorkflowRunId}`);
 
       const record = parseCoordinationRecord(await lease.read(), manifest);
-      if (record.state === "Ready"
+      const recordedExpiration = record.state === "Ready"
         && !(record.expiresAt && Date.parse(record.expiresAt) <= dependencies.now())
-        && verifyAndSelectRecordedFixture(context, manifest, record, dependencies.runAz, dependencies.now())) {
+        ? verifyAndSelectRecordedFixture(context, manifest, record, dependencies.runAz, dependencies.now())
+        : undefined;
+      if (recordedExpiration) {
         lease.assertHealthy();
-        const expiresAt = refreshExpiration(
-          context,
-          dependencies.runAz,
-          dependencies.now,
-          dependencies.readyRetentionMs,
-        );
         await lease.renew();
-        await lease.write({ ...record, expiresAt });
+        await lease.write({ ...record, expiresAt: recordedExpiration });
         await releaseAfterPublish();
         return workflowOutput(context, manifest);
       }
@@ -774,12 +756,9 @@ async function provisionTemporaryFixture(
         // Groups are only tagged Completed after post-provision succeeds, so a complete instance needs neither again.
         await lease.renew();
         lease.assertHealthy();
-        const expiresAt = refreshExpiration(
-          context,
-          dependencies.runAz,
-          dependencies.now,
-          dependencies.readyRetentionMs,
-        );
+        const expiresAt = new Date(
+          Math.min(...[...selected.groups.values()].map((group) => group.expiresAt)) - REUSE_SAFETY_MARGIN_MS,
+        ).toISOString();
         const readyRecord: CoordinationRecord = {
           state: "Ready",
           manifestId: manifest.id,
@@ -819,7 +798,8 @@ async function provisionTemporaryFixture(
       await lease.write(preparingRecord);
       dependencies.log.log(`Provisioning workflow fixture ${manifest.id} instance ${context.runId}`);
 
-      const retentionTag = deleteAfterTag(new Date(dependencies.now() + dependencies.readyRetentionMs));
+      const expiration = new Date(Math.floor((dependencies.now() + dependencies.readyRetentionMs) / 1000) * 1000);
+      const retentionTag = deleteAfterTag(expiration);
       for (const config of manifest.bicepConfigs) {
         lease.assertHealthy();
         provisionBicepConfig(context, manifest, config, dirname(manifestPath), [
@@ -834,12 +814,6 @@ async function provisionTemporaryFixture(
       lease.assertHealthy();
       markFixturesCompleted(context, dependencies.runAz);
       lease.assertHealthy();
-      const expiresAt = refreshExpiration(
-        context,
-        dependencies.runAz,
-        dependencies.now,
-        dependencies.readyRetentionMs,
-      );
       const readyRecord: CoordinationRecord = {
         state: "Ready",
         manifestId: manifest.id,
@@ -847,7 +821,7 @@ async function provisionTemporaryFixture(
         instanceId: context.runId,
         ownerWorkflowRunId,
         resourceGroups: recordResourceGroups(context),
-        expiresAt,
+        expiresAt: new Date(expiration.getTime() - REUSE_SAFETY_MARGIN_MS).toISOString(),
       };
       await lease.write(readyRecord);
       await releaseAfterPublish();

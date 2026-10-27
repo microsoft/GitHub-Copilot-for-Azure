@@ -106,7 +106,7 @@ export type FixtureManifest = {
 
   /**
    * Persistence policy: never (default) creates a new fixture with a 3-hour lifetime;
-   * temporary coordinates reuse with a blob lease and refreshes a 24-hour lifetime;
+   * temporary coordinates reuse with a blob lease during a fixed 24-hour lifetime;
    * permanent discovers existing fixtures or provisions them with DoNotDelete=True.
    */
   persistence?: "never" | "temporary" | "permanent";

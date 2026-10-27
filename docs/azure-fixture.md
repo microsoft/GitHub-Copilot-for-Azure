@@ -24,7 +24,7 @@ To meaningfully evaluate their scenarios, we need to prepare Azure resources for
 All Azure fixtures use the same manifest schema and provisioning logic, whether provisioned for an individual stimulus or by a workflow. Their lifecycle is determined by the manifest's `persistence` policy, not by where they are used:
 
 - `never` (default): Always provision a fresh fixture. The Vally executor deletes it after the test; a `DeleteAfter` tag also marks it for external cleanup after 3 hours.
-- `temporary`: Reuse a complete fixture instance across tests and concurrent workflow runs, or provision one if none is eligible. Its `DeleteAfter` tag is refreshed to at least 24 hours, and deletion is left to external cleanup.
+- `temporary`: Reuse a complete fixture instance across tests and concurrent workflow runs, or provision one if none is eligible. Its `DeleteAfter` tag is fixed at 24 hours from the start of provisioning, and deletion is left to external cleanup.
 - `permanent`: Reuse a complete fixture matching the manifest ID and version, or provision one if none exists. Newly provisioned resource groups are tagged with `DoNotDelete=True` to protect them from external cleanup.
 
 The manifest's `type` (`readOnly` or `readWrite`) describes whether the agent task is expected to modify resource data; it does not control persistence or enforce access restrictions. Reusing fixtures can reduce provisioning cost and transient environmental failures, but even a task marked `readOnly` may modify resources. Inspect reused fixtures when investigating unexpected evaluation results.
@@ -83,13 +83,13 @@ A manifest has an optional `persistence` policy, independent of whether a stimul
 | Policy | Discovery | Retention |
 |--------|-----------|-----------|
 | `never` (default) | Skips discovery; always provisions a fresh fixture | `DeleteAfter` in 3 hours |
-| `temporary` | Uses blob-lease coordination to select a complete instance or provision a new one | `DeleteAfter` refreshed to at least 24 hours |
+| `temporary` | Uses blob-lease coordination to select a complete instance or provision a new one | Fixed `DeleteAfter` in 24 hours |
 | `permanent` | Finds completed resource groups by fixture ID and version; rejects partial or duplicate fixtures | New groups have `DoNotDelete=True` |
 
 The Vally executor deletes only `never` fixtures after each test. Temporary fixtures are left for external cleanup; permanent fixtures are protected from it.
 Temporary fixtures run post-provision scripts only when creating a new instance, before marking it complete. The other policies retain stimuli behavior: post-provision scripts run on every invocation, including permanent fixture reuse.
 
-After provisioning or reuse, each temporary resource group's `DeleteAfter` is extended to at least 24 hours from refresh, without shortening a later expiration. The coordination blob's `expiresAt` is a reuse deadline: the earliest component `DeleteAfter` minus one hour. Both recorded reuse and discovery exclude instances with any component at or inside that one-hour safety margin, or with a missing or malformed expiration. If no eligible instance remains, provisioning creates a replacement and leaves old instances for external cleanup. This margin reduces cleanup-boundary races but does not coordinate with cleanup already in progress.
+Each temporary instance receives a fixed `DeleteAfter` deadline 24 hours from the start of provisioning, shared by all its resource groups. Neither provisioning completion nor reuse extends it. The coordination blob's `expiresAt` is the earliest component `DeleteAfter` minus one hour. Both recorded reuse and discovery exclude instances with any component at or inside that one-hour safety margin, or with a missing or malformed expiration. If no eligible instance remains, new callers provision a replacement, leaving old instances for external cleanup. This margin reduces cleanup-boundary races but does not coordinate with cleanup already in progress.
 
 A manifest has a description. It is human-readable text that explains in natural language what the manifest contains.
 
