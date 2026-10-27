@@ -2,6 +2,8 @@
 
 This document defines the core evaluation metrics for skills in the `azure` plugin. Evaluations run Vally suites and use graders to assess the resulting agent trajectories.
 
+> Note: These metrics are also recommended metrics for all plugin authors to evaluate their skills. We recommend plugin authors to contribute integration tests that evaluates their skills using these metrics when contributing skills.
+
 ## Skill invocation success rate
 
 Agents are designed to load skills automatically when relevant. Each skill's description should guide the model to load it in appropriate situations without explicit cues from the user, such as a slash command or a reference to the skill by name.
