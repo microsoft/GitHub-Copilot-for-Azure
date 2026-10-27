@@ -1457,7 +1457,7 @@ stimuli:
           disallowed:
             - name: "(?i)advisor_recommendation_(summary|update)"
 
-  - name: "40315613 Confirm a selected dismissal batch once"
+  - name: "40315613 Preview a selected dismissal batch without duplicate confirmation"
     prompt: &selected-dismissal-proposal |
       From the Advisor list already shown, I selected disk-a, disk-b, and disk-c in
       subscription 00000000-0000-0000-0000-000000000000, all in recommendation type
@@ -1468,25 +1468,29 @@ stimuli:
       Their resource IDs are /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-demo/providers/Microsoft.Compute/disks/disk-a,
       /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-demo/providers/Microsoft.Compute/disks/disk-b,
       /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-demo/providers/Microsoft.Compute/disks/disk-c.
+      The same list returned Retail USD yearlyPotentialSavings/cost values:
+      disk-a 1111.70/6.09, disk-b 63.32/31.42, and disk-c null/0.
       Dismiss those three because the risk is acceptable. Prepare the confirmation,
       but do not perform updates yet or query Azure again.
     rubric:
       - A visible proposal identifies all three selected resources, the subscription scope, total count 3, Dismissed action, and the supplied shared reason.
-      - Exactly one confirmation request covers the entire selected batch, with confirm and cancel choices; there is no separate confirmation per recommendation.
+      - The proposal uses one compact resource/change/Yearly potential savings/Cost table and separately labeled full identifiers in an exact-target disclosure, not a long paragraph per resource.
+      - It shows disk-a savings 1111.70 and Cost 6.09, disk-b savings 63.32 and Cost 31.42, and disk-c savings Unavailable and Cost zero, with Retail USD labels. It does not substitute Cost for savings or calculate new amounts.
+      - Because this is preview-only, it does not ask an extra assistant confirmation question or call update; it explains that execution would use one recommendation-ids call and one server destructive approval.
       - The agent reuses the supplied type, resource selection, and dismissal reason rather than asking the user to select or explain them again.
-      - No update is performed before the shared batch confirmation.
+      - No update or server approval request is initiated during this preview.
     tags:
       type: integration
       tier: smoke
       cost: llm
       area: batch-confirmation-regression
-      questionOnly: "true"
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"(?i)(^|[._])ask_user$","argsPattern":".*"}]'
+      parity: response-shape
       requiredSkills:
         - azure-advisor-cost-optimization
     constraints:
       max_turns: 40
     graders:
+      - type: completed
       - type: skill-invocation
         config:
           required:
@@ -1494,16 +1498,26 @@ stimuli:
       - type: output-matches
         config:
           pattern: "(?is)disk-a.*disk-b.*disk-c"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|\\s*Resource\\s*\\|"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|[^\\r\\n]*disk-a[^\\r\\n]*1,?111\\.70[^\\r\\n]*6\\.09[^\\r\\n]*\\|"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|[^\\r\\n]*disk-b[^\\r\\n]*63\\.32[^\\r\\n]*31\\.42[^\\r\\n]*\\|"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|[^\\r\\n]*disk-c[^\\r\\n]*Unavailable[^\\r\\n]*\\|\\s*\\$?0(?:\\.00)?\\s*\\|"
       - type: prompt
         config:
           scoring: scale_1_5
           threshold: 0.8
       - type: tool-calls
         config:
-          sequence:
-            - name: "(?i)(^|[._])ask_user$"
-              pattern: '(?s)Confirm these changes.*Cancel'
           disallowed:
+            - name: "(?i)(^|[._])ask_user$"
             - name: "(?i)advisor_recommendation_(summary|list|update)"
 
   - name: "Cancel the selected dismissal batch without updates"
@@ -1511,7 +1525,7 @@ stimuli:
       - *selected-dismissal-proposal
       - "Cancel. Do not make any changes or query Azure."
     rubric:
-      - A visible proposal identifies the entire selected batch before one confirmation question.
+      - A visible preview identifies the entire selected batch without initiating an update or extra confirmation question.
       - The Cancel follow-up is honored without any recommendation update, retry or further confirmation.
       - The final response clearly states that no changes were made.
     tags:
@@ -1627,6 +1641,258 @@ stimuli:
       - type: output-matches
         config:
           pattern: "2026-09-20"
+
+  - name: "Ask the postpone date after selecting the review batch"
+    prompt: &selected-review-postpone |
+      Current time for this scenario is 2026-10-27T13:35:00Z.
+      An Advisor Cost/IdleResources prevalidation result was already shown for type
+      11111111-1111-1111-1111-111111111111 in subscription
+      00000000-0000-0000-0000-000000000000. It is complete and untruncated.
+      Its needsReview bucket contains only disk-a and disk-b, both New, with stable
+      recommendation IDs aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      and bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb respectively.
+      Their full resource IDs are
+      /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-demo/providers/Microsoft.Compute/disks/disk-a
+      and /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-demo/providers/Microsoft.Compute/disks/disk-b.
+      Each warned that it was used or changed 2 days ago. Their returned Cost values
+      are 6.09 and 31.42, Retail USD. The same result also contains a passing disk-safe
+      and a confirmed already-deleted disk-deleted with canPostponeDismiss=false.
+      Postpone those requiring more work. No return date has been chosen.
+      Prepare the proposal and confirmation only; do not query or update Azure.
+    rubric:
+      - It reuses only disk-a and disk-b from needsReview without a new list or selection question; disk-safe and disk-deleted are excluded.
+      - The first question asks the return date, offering exactly 30 calendar days after the supplied current time with a timezone and a Cancel choice; it does not assume the proposed date is already chosen.
+      - It does not repeat resource selection or ask Confirm these changes; a date answer is not server destructive consent.
+      - No Azure query, update or server approval request occurs before a return date is chosen; eventual execution uses one selected recommendation-ids batch.
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: batch-postpone-confirmation
+      parity: response-shape
+      questionOnly: "true"
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"(?i)(^|[._])ask_user$","argsPattern":".*"}]'
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 40
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+      - type: tool-calls
+        config:
+          sequence:
+            - name: "(?i)(^|[._])ask_user$"
+              pattern: '(?is)(date|when|return|postpon).*(30|2026-11-26|November|Cancel)'
+          disallowed:
+            - name: "(?i)advisor_recommendation_(summary|list|prevalidate|update)"
+
+  - name: "Cancel the default-date postpone batch without updates"
+    turns:
+      - *selected-review-postpone
+      - "Cancel. Do not query or update Azure."
+    rubric:
+      - The first question selects a return date for the selected two-resource batch rather than authorizing an update.
+      - Cancel causes no updates, retries, replacement date question, or further confirmation.
+      - The final response clearly states that no changes were made.
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: batch-postpone-confirmation
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 40
+    graders:
+      - type: completed
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor_recommendation_(summary|list|prevalidate|update)"
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+
+  - name: "Plan one batch update without per-record tool calls"
+    prompt: |
+      Dry-run planning only: do not call Azure or perform any update.
+      An Advisor Cost/IdleResources postponement batch has already been selected
+      and visibly proposed, and the return date has been chosen.
+      Type is 11111111-1111-1111-1111-111111111111, scope is subscription
+      00000000-0000-0000-0000-000000000000, target status is Postponed, and the shared
+      approved return date is 2026-11-26T13:35:00Z. The exact selected records are
+      disk-a with recommendation ID aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      and disk-b with recommendation ID bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.
+      Neither update has been attempted. Explain the next call without executing it.
+      Any earlier approval for a different invocation does not authorize this new call.
+    rubric:
+      - It describes one existing recommendation-update call with recommendation-ids containing both selected stable IDs and the same scope, status and exact deadline, not two single-ID calls.
+      - It explains that this single destructive call requests server consent once; it does not reuse an old invocation approval or add an assistant confirmation question.
+      - It does not claim that any update has happened and does not invoke Azure during this dry run.
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: batch-approval-reuse
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 12
+    graders:
+      - type: output-matches
+        config:
+          pattern: "recommendation-ids"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)(^|[._])ask_user$"
+            - name: "(?i)advisor_recommendation_(summary|list|prevalidate|update)"
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+
+  - name: "Ask eligible resource selection before asking the postpone date"
+    prompt: |
+      Advisor has already listed active New Cost/IdleResources recommendations of one
+      selected type in subscription 00000000-0000-0000-0000-000000000000.
+      The complete eligible list contains disk-a (stable recommendation ID rec-a)
+      and disk-b (stable recommendation ID rec-b). A separate disk-deleted row is
+      confirmed already deleted and has canPostponeDismiss=false.
+      I want to postpone some of these, but have not selected which resources or a date.
+      Ask the next question without querying or updating Azure.
+    rubric:
+      - It shows or clearly references only disk-a and disk-b as eligible, excluding disk-deleted.
+      - Its first question asks which eligible resources to postpone, offering selection or all eligible shown resources without assuming either.
+      - It does not ask the date or approval first, invent IDs, query Azure or perform an update.
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: batch-resource-selection
+      questionOnly: "true"
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"(?i)(^|[._])ask_user$","argsPattern":".*"}]'
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 40
+    graders:
+      - type: tool-calls
+        config:
+          sequence:
+            - name: "(?i)(^|[._])ask_user$"
+              pattern: "(?is)(which|select|resource)"
+          disallowed:
+            - name: "(?i)advisor_recommendation_(summary|list|prevalidate|update)"
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+
+  - name: "Render partial dismissal results without retry or reconfirmation"
+    prompt: |
+      Render only the final result of this already confirmed and completed Advisor
+      Cost/IdleResources batch. Do not query Azure, retry, or ask any more questions.
+      Scope is subscription 00000000-0000-0000-0000-000000000000.
+      Both selected resources were New and the shared dismissal reason was RiskIsAcceptable.
+      Their previously returned Retail USD yearlyPotentialSavings/cost values were
+      disk-a 1111.70/6.09 and disk-b 63.32/31.42.
+      The update for disk-a succeeded and returned recommendation-status Dismissed.
+      The update for disk-b failed with access denied; its final status is unverified.
+      No Azure resource was deleted or reconfigured.
+    rubric:
+      - One compact final summary says one succeeded and one failed, followed by a Resource, Outcome, Recommendation status, Yearly potential savings, Cost, Details table.
+      - Both measures retain their distinct previously returned values for each resource, including the failed row. It shows Retail USD and qualifies the amounts as previous estimates, not savings achieved by dismissal.
+      - It shows disk-a as successfully Dismissed and disk-b as failed with access denied and an unavailable or unverified final status, not both dismissed.
+      - It preserves the scope and shared reason, explains that charges continue, and does not repeat the proposal or ask for confirmation.
+      - It does not retry the failed update, reapply the successful update, or call any Azure operation.
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: batch-update-result
+      parity: response-shape
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 12
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|\\s*Resource\\s*\\|"
+      - type: output-matches
+        config:
+          pattern: "(?i)access denied"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|[^\\r\\n]*disk-a[^\\r\\n]*1,?111\\.70[^\\r\\n]*6\\.09[^\\r\\n]*\\|"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|[^\\r\\n]*disk-b[^\\r\\n]*63\\.32[^\\r\\n]*31\\.42[^\\r\\n]*\\|"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)(^|[._])ask_user$"
+            - name: "(?i)advisor_recommendation_(summary|list|prevalidate|update)"
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+
+  - name: "Report postponement from the existing update response"
+    prompt: |
+      Render only the final result of an already approved Advisor Cost/IdleResources
+      postponement batch in subscription 00000000-0000-0000-0000-000000000000.
+      The chosen return date is 2099-01-01T12:30:00+05:30.
+      Selected disk-a has recommendation ID rec-a; disk-b has recommendation ID rec-b.
+      Their previously returned Retail USD yearlyPotentialSavings/cost values were
+      disk-a 1111.70/6.09 and disk-b null/0.
+      The existing advisor_recommendation_update returned these results, in this order:
+      [
+        {"recommendationId":"rec-b","outcome":"Succeeded","recommendation":{"name":"rec-b","properties":{"recommendationStatus":"Postponed","postponedUntilDateTime":"2099-01-01T12:30:00+05:30"}}},
+        {"recommendationId":"rec-a","outcome":"Succeeded","recommendation":{"name":"rec-a","properties":{"recommendationStatus":"Postponed","postponedUntilDateTime":"2099-01-01T12:30:00+05:30"}}}
+      ]
+      An earlier list showed New; the update response above is newer.
+      Do not query Azure, repeat an update, or ask any more questions.
+    rubric:
+      - It reports two succeeded and zero failed directly from the existing update response. Both rows show Succeeded and Postponed, never failed or unverified because of the earlier New list or unavailable savings.
+      - It maps the reversed results by recommendationId to the correct resources, preserving the returned date and scope without adding verification calls or inventing a new response contract.
+      - Its result table shows Yearly potential savings before Cost. Disk-a retains 1111.70 and 6.09; disk-b shows savings Unavailable and Cost zero. Both are explicitly previous estimates in Retail USD, not savings achieved by postponement.
+      - It explains that resource charges continue and makes no Azure calls, retries, or confirmation requests.
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: batch-update-result
+      parity: response-shape
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 12
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|[^\\r\\n]*disk-a[^\\r\\n]*Succeeded[^\\r\\n]*Postponed[^\\r\\n]*1,?111\\.70[^\\r\\n]*6\\.09[^\\r\\n]*\\|"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|[^\\r\\n]*disk-b[^\\r\\n]*Succeeded[^\\r\\n]*Postponed[^\\r\\n]*Unavailable[^\\r\\n]*\\|\\s*\\$?0(?:\\.00)?\\s*\\|"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)(^|[._])ask_user$"
+            - name: "(?i)advisor_recommendation_(summary|list|prevalidate|update)"
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
 
   - name: "Keep billing requests outside Advisor idle analysis"
     prompt: "Show my Azure bill and explain why it increased this month."

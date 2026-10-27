@@ -21,7 +21,7 @@ Do not infer deletion from a timestamp in ordinary savings metadata or run a sep
 | `advisor_recommendation_summary` | Selected scope, Cost/IdleResources; grouping/status/priority/filters/dates/top |
 | `advisor_recommendation_list` | Same scope/filters; status/type IDs/resource filters/top; single-type priority |
 | `advisor_recommendation_prevalidate` | One exact recommendation-type-id; same scope/tenant; optional exact resources, resource substring, top (1-25, default 25), minimum-unused-days (1-365, default 30). Cost/IdleResources/New enforced internally; no category, sub-category or status inputs |
-| `advisor_recommendation_update` | Stable recommendation ID, one scope, intended status; confirmation, date/reason, tenant |
+| `advisor_recommendation_update` | Either one stable recommendation-id or selected recommendation-ids batch; one shared scope/status/date/reason/tenant; server destructive approval |
 | `advisor_metadata_list` | Resolve recognizable recommendation names using supported metadata filters |
 | `advisor_remediation_get` | Selected recommendationTypeId; actionability only, not discovery |
 

@@ -152,3 +152,61 @@ payloads, KQL or unrequested scripts. Keep manual confirmations separate from ex
 Do not repeat full ARM/recommendation IDs unless needed for disambiguation or requested.
 Confirmed-deletion presentation and safety rules remain in
 [Prevalidation](selection-and-handoff.md#read-only-prevalidation).
+
+## State update proposal and result
+
+Use one compact proposal for postpone/dismiss. Other state changes retain their
+lifecycle-appropriate savings measure, including Realized savings for Completed.
+
+```text
+**Proposed: <action> <N recommendations> <until date with timezone / shared dismissal reason>.**
+**Scope:** <scope> | **Pricing basis:** <basis> | **Currency:** <currency>
+
+|Resource|Subscription / Resource group|Change|Yearly potential savings|Cost|
+|---|---|---|---:|---:|
+|<exact name>|<ownership>|<source state -> target state>|<yearly savings or Unavailable>|<accumulated cost or Unavailable>|
+
+<expandable exact update targets, or reference to the unchanged identifiers already shown>
+Recommendation status only changes; resource charges continue. No resources will be deleted.
+```
+
+Show the shared date/reason once, not on every row. The exact-target disclosure contains
+`Resource | Affected-resource ID | Recommendation ID`, full unshortened IDs, and the exact
+ISO 8601 return date with timezone or dismissal-reason value. All targets must be available
+before the single server destructive-operation [batch confirmation](state-updates.md).
+The postpone date question comes before this proposal; do not add another assistant
+confirmation question between the proposal and the one batch update call.
+Explicitly identify excluded rows when selecting a prevalidation bucket. Show both measures,
+savings first: use `properties.savings.retail.yearlyPotentialSavings` and `.cost` from the
+selected list rows, or `yearlyPotentialSavings` and `cost` from prevalidation. Cost is
+accumulated Advisor cost, not monthly spend or yearly savings. Never substitute one measure
+for the other or calculate either in the skill. Preserve each missing value independently
+as Unavailable and numeric zero as zero. Reuse previously returned values with that
+qualification; do not query Azure merely to fill the columns. Totals, basis and currency
+follow [money rules](output-and-savings.md).
+
+After updates, use one result summary and table, not a second proposal or a name-only list:
+
+```text
+**<action>: <success count> succeeded; <failure count> failed.**
+**Scope:** <scope> | <shared confirmed return date or dismissal reason>
+**Pricing basis:** <basis> | **Currency:** <currency>
+
+|Resource|Outcome|Recommendation status|Yearly potential savings|Cost|Details|
+|---|---|---|---:|---:|---|
+|<exact name>|Succeeded / Failed / Unverified / Not attempted|<returned status or Unavailable>|<yearly savings or Unavailable>|<accumulated cost or Unavailable>|<failure or relevant returned detail>|
+
+Monetary values are previously returned estimates, not savings achieved by this state change.
+Resource charges continue; no resources were deleted.
+```
+
+Retain ownership for cross-subscription name collisions. Report per-record tool outcomes,
+not intended outcomes; a failed/unknown response must not be called successful. Use the existing
+update response as the source of truth: show Succeeded with its returned recommendation
+status and date/reason. Do not downgrade it because a later list is stale or no longer
+contains the row. Do not issue an extra list query to decide whether that update succeeded.
+Never replace a returned status with the requested status.
+Carry both monetary columns forward by the selected recommendation ID, not response order;
+missing update-response savings do not erase the previously returned estimates. Summarize
+safe failure details, preserve successful updates, and do not silently retry or reconfirm
+the unchanged completed batch.
