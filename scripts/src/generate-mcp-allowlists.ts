@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * Generate MCP Allowlists
+ * Generate Telemetry Reporter Allowlists
  *
  * Generates `allowed-skill-names.json` and `allowed-plugin-file-references.json`
- * for the Azure MCP server allowlists.
+ * for the standalone telemetry reporter.
  *
  * Usage:
  *   npm run generateMcpAllowlists -- <skills_dir> [output_dir]
@@ -124,7 +124,7 @@ function generateAllowlists(skillsDirs: string[], outputDir: string): void {
   fs.writeFileSync(referencesPath, JSON.stringify(allReferenceFiles, null, 2) + "\n");
 
   console.log(
-    `Generated mcp allowlist for ${Object.keys(allSkillNames.skills).length} plugins.`
+    `Generated telemetry reporter allowlists for ${Object.keys(allSkillNames.skills).length} plugins.`
   );
 }
 
