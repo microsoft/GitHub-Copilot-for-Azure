@@ -1,6 +1,6 @@
 ---
 name: azure-advisor
-description: "Use Azure Advisor recommendations. WHEN: \"show Advisor recommendations\", \"service retirements\", \"update recommendation status\". DO NOT USE FOR: fixes or remediation (use azure-advisor-actionability)."
+description: "Use Azure Advisor recommendations. Route only Cost recommendations in the IdleResources subcategory through azure-advisor-cost-optimization, including its scope-resolution phase; keep generic Cost, prioritized Cost, cross-category, and other recommendation requests on the generic Advisor operations. WHEN: \"show Advisor recommendations\", \"service retirements\", \"update recommendation status\". DO NOT USE FOR: fixes or remediation (use azure-advisor-actionability)."
 license: MIT
 metadata:
   author: Microsoft
@@ -9,28 +9,28 @@ metadata:
 
 # Azure Advisor
 
+Prefer Advisor MCP tools over Resource Graph or generic ARM calls.
+Reuse supplied scope and identifiers; ask only for missing input.
+
 ## Quick reference
 
-Prefer Azure Advisor MCP tools over Resource Graph or generic ARM tools.
-
-| Intent | Tool |
+| Intent | Existing tool |
 |---|---|
-| Counts, breakdowns, rankings, or top types | `advisor_recommendation_summary` |
-| Individual recommendations or affected resources | `advisor_recommendation_list` |
-| Complete, dismiss, postpone, or reactivate | `advisor_recommendation_update` |
-| Browse recommendation types | `advisor_metadata_list` |
-| Get one type by ID | `advisor_metadata_get` |
-| Retrieve remediation | `advisor_remediation_get`, then `azure-advisor-actionability` |
+| Counts, breakdowns, rankings | `advisor_recommendation_summary` |
+| Individual findings/resources | `advisor_recommendation_list` |
+| Recommendation-state changes | `advisor_recommendation_update` |
+| Browse/get recommendation types | `advisor_metadata_list` / `advisor_metadata_get` |
+| Remediation guidance | `advisor_remediation_get` via actionability |
 
 ## Workflow
 
-1. Identify subscription or service-group scope. Resource-group scope requires a subscription.
-2. Reuse known scope and identifiers; ask only for missing values.
-3. Use `summary` for aggregates and `list` for records. Never count a capped list.
-4. Present only returned data, including truncation, access limitations, and errors.
+- For combined `category=Cost` and `sub-category=IdleResources`, load
+  `azure-advisor-cost-optimization` first. It owns scope, sequencing and response templates;
+  broad discovery must not skip to resource details.
+- Generic/prioritized Cost outside IdleResources, cross-category and other requests stay here.
+  Preserve requested filters; never silently add IdleResources.
+- Before generic calls or reporting, read [Workflow](references/workflow.md).
+- For remediation, load `azure-advisor-actionability`; it owns execution safeguards.
 
-Route requests to fix one recommendation to the `azure-advisor-actionability` skill. Otherwise choose the tool from the table, including `summary` or `list` for service retirements.
-
-## Safety
-
-Confirm before recommendation-state updates. The actionability skill owns remediation safeguards.
+On every model, visibly present results/proposals before dependent questions.
+Confirm before state updates. Missing data stays `Unavailable`, not zero.

@@ -1,4 +1,4 @@
-import type { SessionEvent, SystemMessageConfig } from "@github/copilot-sdk";
+import type { SessionEvent, SystemMessageConfig, UserInputHandler } from "@github/copilot-sdk";
 import { type SkillRef } from "./skill-loader.ts";
 
 /**
@@ -81,6 +81,12 @@ export type AgentMetadata = {
 }
 
 export type AgentRunConfig = {
+  /** Opt-in SDK user-input handling for question-only evaluations. */
+  onUserInputRequest?: UserInputHandler;
+
+  /** Expose individual MCP tools when an eval asserts their names and arguments. */
+  mcpMode?: "all";
+
   /**
    * An optional function to configure the test workspace.
    * The test runner will create an empty workspace, initialize it following the environment config

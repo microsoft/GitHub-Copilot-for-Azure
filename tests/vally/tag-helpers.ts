@@ -1,13 +1,26 @@
 /**
  * Helper functions for extracting test related metadata from stimuli tags.
  */
-import type { SystemMessageConfig } from "@github/copilot-sdk";
+import type { SystemMessageConfig, UserInputHandler } from "@github/copilot-sdk";
 import * as path from "node:path";
 import type { AgentMetadata } from "../utils/agent-runner.ts";
 import { isSkillInvoked, getToolCalls, getAllAssistantMessages, argsString } from "../utils/evaluate.ts";
 
 const INLINE_PATTERN_FLAGS = /^\(\?([ims]+)\)/;
 const SCOPED_INLINE_PATTERN_FLAGS = /^\(\?([ims]+):([\s\S]*)\)$/;
+
+/** Expose ask_user for evals that stop at the pending question through earlyTerminate. */
+export function getQuestionOnlyInputHandler(
+  tags: Record<string, string | string[]> | undefined,
+): UserInputHandler | undefined {
+  if (tags?.questionOnly === undefined) return undefined;
+  if (tags.questionOnly !== "true") {
+    throw new Error("questionOnly must be 'true' when specified.");
+  }
+  return () => {
+    throw new Error("Question-only evaluation has no user response; stop at ask_user.");
+  };
+}
 
 export function compileEarlyTerminatePattern(pattern: string): RegExp {
   const scopedInlineFlags = SCOPED_INLINE_PATTERN_FLAGS.exec(pattern);
