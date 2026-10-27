@@ -59,7 +59,7 @@ This skill includes specialized sub-skills for specific workflows. **When a sub-
 | **create (quick start)** | Create a new hosted Foundry agent from scratch end-to-end — scaffold, provision or use an existing Foundry project, deploy, and smoke-test. Do not use for any work on existing code. For anything not covered by the quickstart, use **create**. | [create/quick-start-hosted.md](foundry-agent/create/quick-start-hosted.md) |
 | **create** | Use when the standard end-to-end happy path (quick start) doesn't fit. Create a new Foundry agent, update code of an existing agent, continue development of an existing agent, wire connections at scaffold time, use advanced setup or A2A (Agent2Agent), or recover from a failed quickstart run. | [create](foundry-agent/create/create-hosted.md) |
 | **create managed harness** | Create or continue developing a Prompt Agent that explicitly uses the Foundry-managed GitHub Copilot harness. Uses `azd` and `azure.yaml`, not the ordinary Prompt Agent MCP workflow. | [create-managed-harness](foundry-agent/create/create-managed-harness.md) |
-| **create voice** | Create, configure, or extend a Foundry Voice Agent, defaulting generic requests to managed Prompt Voice and supporting self-deployed Prompt Voice or two-agent Hosted Voice. | [create-voice](foundry-agent/create/create-voice.md) |
+| **create voice** | Create, configure, or extend a Foundry Voice Agent, defaulting to a voice-based prompt agent with a managed model and supporting self-deployed models or a hosted conversation engine. | [create-voice](foundry-agent/create/create-voice.md) |
 | **agent-optimizer** | Make existing Python hosted-agent code optimization-ready, configure eval.yaml, run Agent Optimizer jobs, apply candidates locally, and deploy through azd after review. | [agent-optimizer](foundry-agent/agent-optimizer/agent-optimizer.md) |
 | **eval-datasets** | Harvest production traces into evaluation datasets, manage dataset versions and splits, track evaluation metrics over time, detect regressions, and maintain full lineage from trace to deployment. Use for: create dataset from traces, dataset versioning, evaluation trending, regression detection, dataset comparison, eval lineage. | [eval-datasets](foundry-agent/eval-datasets/eval-datasets.md) |
 | **project/create** | Creating a new Microsoft Foundry project for hosting agents and models. Use when onboarding to Foundry or setting up new infrastructure. | [project/create/create-foundry-project.md](project/create/create-foundry-project.md) |
@@ -96,7 +96,7 @@ Match user intent to the correct agent workflow. Read each sub-skill in order be
 
 | User Intent | Workflow (read in order) |
 |-------------|------------------------|
-| Create or develop a Voice Agent (Prompt Voice or Hosted Voice) | [dependency check and setup](#dependency-check-and-setup) → [azd-guidance](foundry-agent/azd-guidance/azd-guidance.md) → [create-voice](foundry-agent/create/create-voice.md) → [deploy](foundry-agent/deploy/deploy.md) → [invoke](foundry-agent/invoke/invoke.md) |
+| Create or develop a voice-based prompt agent or a voice agent with a hosted conversation engine | [dependency check and setup](#dependency-check-and-setup) → [azd-guidance](foundry-agent/azd-guidance/azd-guidance.md) → [create-voice](foundry-agent/create/create-voice.md) → [deploy](foundry-agent/deploy/deploy.md) → [invoke](foundry-agent/invoke/invoke.md) |
 | Create or develop an explicitly requested Managed Harness Agent / GitHub Copilot harness agent | [dependency check and setup](#dependency-check-and-setup) → [azd-guidance](foundry-agent/azd-guidance/azd-guidance.md) → [create-managed-harness](foundry-agent/create/create-managed-harness.md) → [deploy](foundry-agent/deploy/deploy.md) → [invoke](foundry-agent/invoke/invoke.md) |
 | Create a new hosted agent end-to-end (scaffold + deploy + test) | [dependency check and setup](#dependency-check-and-setup) → [azd-guidance](foundry-agent/azd-guidance/azd-guidance.md) → [quick-start-hosted](foundry-agent/create/quick-start-hosted.md) (self-contained end-to-end) |
 | Anything beyond the standard quickstart (existing code, migration, re-hosting, deployment customization, scaffold-time connections, A2A (Agent2Agent), recovery) | [dependency check and setup](#dependency-check-and-setup) → [azd-guidance](foundry-agent/azd-guidance/azd-guidance.md) → [create](foundry-agent/create/create-hosted.md) → [deploy](foundry-agent/deploy/deploy.md) → [invoke](foundry-agent/invoke/invoke.md) |
@@ -146,9 +146,9 @@ Agent skills should run this step **only when they need configuration values the
 First check whether the workspace has `azure.yaml` with services using `host: azure.ai.agent`.
 
 - **One azd agent service** -> classify it from `kind`, `harness`, `modelType`, and `conversationEngine`, then use that service's `project` folder or the `azure.yaml` directory as the agent root.
-- **Multiple azd agent services** -> check whether a Voice wrapper references a `kind: hosted` service via `conversationEngine.name`:
-  - **Selecting the Hosted Voice wrapper** implies its named `kind: hosted` target as an upstream dependency (`uses: [<target>]`, `conversationEngine.name: <target>`); deploy and verification must report both services separately.
-  - **Selecting the `kind: hosted` target alone** scopes changes/debugging to the target container and does not automatically modify the wrapper.
+- **Multiple azd agent services** -> check whether a voice agent references a `kind: hosted` conversation engine via `conversationEngine.name`:
+  - **Selecting the voice agent** implies its named `kind: hosted` engine as an upstream dependency (`uses: [<engine>]`, `conversationEngine.name: <engine>`); deploy and verification must report both services separately.
+  - **Selecting the `kind: hosted` engine alone** scopes changes/debugging to the engine container and does not automatically modify the voice agent.
   - **Otherwise** -> require the user to choose the target service/folder.
 - **No azd agent service** -> search the workspace for `.foundry/` folders that contain `agent-metadata.yaml` or `agent-metadata.<env>.yaml`.
   - **One match** -> use that agent root.
@@ -261,15 +261,15 @@ Agent workflows distinguish four first-class agent types:
 | **Prompt** | `"prompt"` | LLM-based agents backed by a model deployment; managed via Foundry MCP or SDK |
 | **Hosted** | `"hosted"` | Container-based agents running custom code; developed and deployed via `azd` |
 | **Managed Harness Agent** | `"prompt"` with `harness.type: "github_copilot_preview"` | Prompt Agent running on the Foundry-managed GitHub Copilot harness; developed and deployed via `azd` |
-| **Voice** | `"voice"` | Managed real-time Voice Agent — either **Prompt Voice** (1 agent, `modelType: managed` or `self_deployed`) or **Hosted Voice** (2 agents: `kind: voice` wrapper with `conversationEngine.type: hosted_agent` + `kind: hosted` target over `invocations_ws` `1.0.0` and Voice Live Bridge `1.0`); developed and deployed via `azd` and verified over the `voice` WebSocket endpoint |
+| **Voice** | `"voice"` | Managed real-time Voice Agent — either a **voice-based prompt agent** (`modelType: managed` or `self_deployed`) or a **voice agent with a hosted conversation engine** (`conversationEngine.type: hosted_agent` + a distinct `kind: hosted` service); developed and deployed via `azd` and verified over the `voice` WebSocket endpoint. See [conversation-engine compatibility](foundry-agent/create/references/voice-conversation-engine.md) before changing transport identifiers. |
 
 Classify an `azure.yaml` service by its definition in this exact order, not by `host` alone:
 
 1. `kind: voice` -> **Voice**. For compatibility, silently classify an existing `kind: prompt-voice` service as Voice, then normalize it when editing its YAML. Classify the subtype:
-   - `conversationEngine.type: hosted_agent` -> **Hosted Voice wrapper** (paired with a named `kind: hosted` target service).
-   - `modelType: managed` or `modelType: self_deployed` -> **Prompt Voice** (Foundry infers native speech-to-speech vs cascaded STT -> LLM -> TTS from `model.id`).
+   - `conversationEngine.type: hosted_agent` -> **Voice agent with a hosted conversation engine** (paired with a named `kind: hosted` service).
+   - `modelType: managed` or `modelType: self_deployed` -> **Voice-based prompt agent** (Foundry infers native speech-to-speech vs cascaded STT -> LLM -> TTS from `model.id`).
    - Having **both** `modelType`/`model` and `conversationEngine` is invalid (stop and fix `azure.yaml`); having **neither** is incomplete (do not guess). Never use obsolete `modelType: hosted_agent`, `targetAgent`, or a nested `config:` block.
-2. `kind: hosted` -> **Hosted**. When it declares `protocols: [{ protocol: invocations_ws, version: 1.0.0 }]` and `metadata.voiceLiveCompatible: "true"` alongside a `kind: voice` wrapper, it is a **Hosted Voice target**; otherwise treat a standalone `invocations_ws` service as a **custom Hosted real-time/audio agent**.
+2. `kind: hosted` -> **Hosted**. In the published sample, a service declaring `protocols: [{ protocol: invocations_ws, version: 1.0.0 }]` and `metadata.voiceLiveCompatible: "true"` that is referenced by a voice agent's `conversationEngine.name` is its **hosted conversation engine**; otherwise treat a standalone `invocations_ws` service as a **custom Hosted real-time/audio agent**.
 3. `kind: prompt` plus `harness.type: github_copilot_preview` -> **Managed Harness Agent**.
 4. `kind: prompt` without that harness -> ordinary **Prompt Agent**.
 

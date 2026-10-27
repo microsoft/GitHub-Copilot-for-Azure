@@ -142,7 +142,7 @@ A Managed Harness Agent has no source/runtime/container fields and no local `azd
 
 ### Voice Agent service blocks (`kind: voice`)
 
-Use `azd ai agent init --kind prompt-voice` for a new Prompt Voice service. For Hosted Voice, initialize from an `azure.yaml` template that defines both the hosted target and Voice wrapper, or add a Voice wrapper to an existing compatible hosted target.
+Use `azd ai agent init --kind prompt-voice` for a new voice-based prompt agent. For a voice agent with a hosted conversation engine, initialize from an `azure.yaml` template that defines both services, or add a voice agent to an existing compatible hosted conversation engine. Preserve the published sample's protocol identifiers as explained in [conversation-engine compatibility](../../create/references/voice-conversation-engine.md).
 
 ```bash
 azd ai agent init --no-prompt --kind prompt-voice --agent-name <agent-name> \

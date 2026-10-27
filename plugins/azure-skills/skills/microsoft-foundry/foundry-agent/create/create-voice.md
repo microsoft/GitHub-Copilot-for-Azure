@@ -2,20 +2,20 @@
 
 Create, configure, or extend a Microsoft Foundry Voice Agent:
 
-- **Prompt Voice**: one managed Voice Agent using `modelType: managed` or `self_deployed`.
-- **Hosted Voice**: a voice-based agent using a hosted text agent as its conversation engine, with a managed **Voice wrapper** (`kind: voice`) and **hosted target** (`kind: hosted`).
+- **Voice-based prompt agent**: one managed Voice Agent using `modelType: managed` or `self_deployed`.
+- **Voice agent with a hosted conversation engine**: a managed **voice agent** (`kind: voice`) handles audio, while a **hosted conversation engine** (`kind: hosted`) handles conversation logic, model calls, and tools.
 
-For a custom Hosted WebSocket agent with developer-defined frames and no managed Voice wrapper, use [invocations-ws](../invocations-ws/invocations-ws.md), not this workflow.
+For a custom Hosted WebSocket agent with developer-defined frames and no managed voice agent, use [invocations-ws](../invocations-ws/invocations-ws.md), not this workflow.
 
 ## Quick Reference
 
-| Decision | Prompt Voice | Hosted Voice |
+| Decision | Voice-based prompt agent | Voice agent with a hosted conversation engine |
 |---|---|---|
-| Foundry agents | One `kind: voice` service | One hosted target plus one Voice wrapper |
-| Reasoning and tools | Voice service | Hosted target |
-| Audio, VAD, TTS, greeting | Voice service | Voice wrapper |
-| Local runtime | None | Target-only Bridge validation |
-| End-to-end invocation | Managed `voice` WebSocket | Managed `voice` WebSocket on the wrapper |
+| Foundry agents | One `kind: voice` service | One `kind: hosted` engine plus one `kind: voice` agent |
+| Reasoning and tools | Voice agent | Hosted conversation engine |
+| Audio, VAD, TTS, greeting | Voice agent | Voice agent |
+| Local runtime | None | Conversation-engine protocol validation only |
+| End-to-end invocation | Managed `voice` WebSocket | Managed `voice` WebSocket on the voice agent |
 
 ## Step 1: Prerequisite and Context Resolution
 
@@ -53,14 +53,14 @@ Before authoring files or running azd:
 3. Follow [Common Project Context Resolution](../../SKILL.md#agent-common-project-context-resolution):
    - Inspect `azure.yaml` and `azd env get-values` when an azd project exists.
    - Classify existing services before selecting a target. Do not convert an existing Prompt, Hosted, Managed Harness, or Voice Agent into another type.
-   - If multiple services exist, ask which Voice wrapper or Prompt Voice service to modify. Selecting a Voice wrapper also selects its `conversationEngine.name` hosted target as a deployment dependency.
+   - If multiple services exist, ask which voice agent service to modify. Selecting a voice agent with a hosted conversation engine also selects its `conversationEngine.name` hosted service as a deployment dependency.
    - Resolve an existing project endpoint to its ARM ID with `scripts/resolve-project-id.sh` or `scripts/resolve-project-id.ps1`; never construct the ARM ID from the endpoint.
 
 ## Step 2: Model-First Decision and Collected-Values Checkpoint
 
 Before generating `azure.yaml`, scaffolding code, or running init, determine the conversation engine and model strategy from the request and existing project context.
 
-For a generic greenfield request to create a Voice Agent, proceed with **Prompt Voice using the managed real-time model** without requiring a subtype question. State these defaults before authoring:
+For a generic greenfield request to create a Voice Agent, proceed with a **voice-based prompt agent using the managed real-time model** without requiring a subtype question. State these defaults before authoring:
 
 - `modelType: managed`
 - `model.id: gpt-realtime`
@@ -68,19 +68,19 @@ For a generic greenfield request to create a Voice Agent, proceed with **Prompt 
 
 Resolve model strategy from deployment intent, not from the presence of a model name:
 
-- A model name alone, including a model name plus a project endpoint or name, uses managed Prompt Voice (`modelType: managed`) and does not create a project model deployment.
-- Explicit lifecycle wording selects self-deployed Prompt Voice: BYOM, self-deployed, project model deployment, existing deployment, deployment name, create/deploy/provision the model, create if missing/not found, ensure the deployment exists, or inspect/select its version, SKU, capacity, or quota. For example, "Use `gpt-realtime`; create it if it does not exist" is sufficient self-deployed intent.
+- A model name alone, including a model name plus a project endpoint or name, uses a voice-based prompt agent with `modelType: managed` and does not create a project model deployment.
+- Explicit lifecycle wording selects a voice-based prompt agent with a self-deployed model: BYOM, self-deployed, project model deployment, existing deployment, deployment name, create/deploy/provision the model, create if missing/not found, ensure the deployment exists, or inspect/select its version, SKU, capacity, or quota. For example, "Use `gpt-realtime`; create it if it does not exist" is sufficient self-deployed intent.
 - Explicit user choice overrides inference. Ask one focused clarification only when signals conflict, such as requesting both managed/service-hosted behavior and creation or provisioning of a deployment.
 
 Before authoring, state the resolved interpretation. For managed intent, state that no project deployment will be created. For self-deployed provisioning intent, state that the workflow will verify the deployment, add it to `services.<ai-project-service>.deployments[]` if missing, provision it through azd, and use `modelType: self_deployed`.
 
 Ask only when another unresolved requirement materially changes the architecture:
 
-- custom code, an existing hosted text agent, or explicit Hosted Voice intent;
+- custom code, an existing hosted text agent, or an explicit hosted conversation engine request;
 - an existing project or codebase whose services imply a subtype but do not identify the target clearly;
 - a planning, explanation, or comparison request that explicitly asks to evaluate the available approaches.
 
-For planning or comparison, explain Prompt Voice managed, Prompt Voice self-deployed, Hosted Voice, and custom raw `invocations_ws` without creating files or running azd.
+For planning or comparison, explain voice-based prompt agents with managed or self-deployed models, voice agents with hosted conversation engines, and custom raw `invocations_ws` without creating files or running azd.
 
 Detect requested Voice Agent settings or existing settings that must be preserved, including structured inputs, audio, transcription, turn detection, voice, greeting/avatar, tools, handoff, response options, storage, or telephony. Do not ask about settings the user did not request.
 
@@ -92,13 +92,13 @@ Resolve values from the request, workspace, `azure.yaml`, and active azd environ
 
 | Value | Resolution rule |
 |---|---|
-| Voice subtype | Default a generic greenfield request to managed Prompt Voice; ask only for the architecture-changing cases above |
+| Voice subtype | Default a generic greenfield request to a voice-based prompt agent with a managed model; ask only for the architecture-changing cases above |
 | Agent name | Reuse the selected service name; otherwise collect or derive a concise name |
 | Foundry project | Confirm new versus existing; never provision implicitly |
 | Existing project identity | Resolve both endpoint and ARM ID; pass the ARM ID to `--project-id` |
 | azd environment | Reuse the selected environment or collect the intended environment |
 | Model strategy | Use managed for a model name alone; use self-deployed for explicit deployment lifecycle intent; clarify only conflicting signals |
-| Model/deployment name | Default managed Prompt Voice to `gpt-realtime`; for self-deployed Prompt Voice, inspect the selected Foundry account for the exact deployment name before authoring |
+| Model/deployment name | Default managed models to `gpt-realtime`; for self-deployed models, inspect the selected Foundry account for the exact deployment name before authoring |
 | Instructions | Preserve existing instructions or collect the requested behavior |
 | Output voice | Preserve an existing value or use the user's requested voice; otherwise omit it and use the azd default |
 
@@ -108,17 +108,17 @@ State every applied default clearly before authoring.
 
 Always read [Voice Agent common invariants](references/voice-agent-common.md).
 
-- For **Prompt Voice**, read [Prompt Voice YAML](references/voice-agent-prompt-yaml.md).
-- For **Hosted Voice**, read [Hosted Voice YAML](references/hosted-voice-yaml.md) and [Hosted Voice Bridge `1.0`](references/voice-agent-hosted-bridge.md).
+- For a **voice-based prompt agent**, read [Voice-based prompt agent YAML](references/voice-agent-prompt-yaml.md).
+- For a **hosted conversation engine**, read [Voice agent with a hosted conversation engine YAML](references/hosted-voice-yaml.md) and [Voice conversation engine](references/voice-conversation-engine.md), including its published-sample compatibility boundary.
 - When requested settings require YAML edits or existing settings must be preserved, read [Voice Agent YAML settings](references/voice-agent-settings.md).
 
 Do not load the other subtype's YAML reference unless the user asks for a comparison or migration.
 
-Before editing settings, map every requested field to the Prompt Voice service, Voice wrapper, or hosted target using the settings ownership table. Preserve unrelated existing fields and edit only the requested YAML paths.
+Before editing settings, map every requested field to the voice-based prompt agent, engine-backed voice agent, or hosted conversation engine using the settings ownership table. Preserve unrelated existing fields and edit only the requested YAML paths.
 
 ## Step 4: Initialize or Update
 
-### Prompt Voice
+### Voice-Based Prompt Agent
 
 For a new project:
 
@@ -139,7 +139,7 @@ azd ai agent init --no-prompt \
   --model "<model-name>"
 ```
 
-Add `--voice "<voice-name>"` only when the user explicitly requests a voice. Otherwise allow azd to apply its default. `--kind prompt-voice` does not accept Hosted/runtime flags or `--model-deployment`. For a new self-deployed Prompt Voice service, initialize once, then follow the Golden Path below and [Prompt Voice YAML](references/voice-agent-prompt-yaml.md).
+Add `--voice "<voice-name>"` only when the user explicitly requests a voice. Otherwise allow azd to apply its default. `--kind prompt-voice` does not accept Hosted/runtime flags or `--model-deployment`. For a new voice-based prompt agent with a self-deployed model, initialize once, then follow the Golden Path below and [Voice-based prompt agent YAML](references/voice-agent-prompt-yaml.md).
 
 Immediately after init, normalize the generated service to canonical `kind: voice` if azd wrote `kind: prompt-voice`, alongside the other generated-YAML edits.
 
@@ -150,25 +150,25 @@ For `modelType: self_deployed`, follow this Golden Path:
 3. Preserve existing project infrastructure and deployment entries, append the deployment under `services.<ai-project-service>.deployments[]`, and set `model.id` to the exact `deployments[].name`. Use this path for both realtime and cascaded/text-model BYOM; Foundry infers the pipeline from `model.id`.
 4. Run `azd provision --preview --no-prompt`, confirm the preview changes only the intended model infrastructure, then run `azd provision --no-prompt`. Deploy the Voice service only after provisioning succeeds.
 
-For an existing Prompt Voice service or an added model in an existing azd project, edit `azure.yaml` in place. Do not rerun init and create a suffixed duplicate. Do not use `az cognitiveservices account deployment create`; `azure.yaml` is the source of truth for azd-managed model infrastructure.
+For an existing voice-based prompt agent or an added model in an existing azd project, edit `azure.yaml` in place. Do not rerun init and create a suffixed duplicate. Do not use `az cognitiveservices account deployment create`; `azure.yaml` is the source of truth for azd-managed model infrastructure.
 
-### Hosted Voice
+### Voice Agent with a Hosted Conversation Engine
 
-Use the official Hosted Voice manifest when starting from the sample:
+Use the official manifest from the [hosted conversation engine guide](https://learn.microsoft.com/en-us/azure/foundry/how-to/voice-first-with-hosted-agent) when starting from the sample:
 
 ```bash
 azd ai agent init --no-prompt \
   -m "https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/hosted-agents/bring-your-own/voice-agent-target-agent/basic/azure.yaml"
 ```
 
-Add `--project-id "<project-arm-id>"` when using an existing project. For existing target code, preserve the target service and add or update the wrapper using [Hosted Voice YAML](references/hosted-voice-yaml.md); do not replace it with a Prompt Voice definition.
+Add `--project-id "<project-arm-id>"` when using an existing project. For existing engine code, preserve the hosted service and add or update the voice agent using [Voice agent with a hosted conversation engine YAML](references/hosted-voice-yaml.md); do not replace it with a model-backed prompt definition.
 
 After init, enter the generated project directory before setting subscription, region, project name, endpoint, or model values. Do not chain `azd env set` to the init command.
 
 ## Step 5: Local Validation
 
-- **Prompt Voice** has no local container. Continue to deploy.
-- **Hosted Voice** must validate the target's Bridge handler locally before deployment. Follow [local run](references/local-run.md) and [Hosted Voice Bridge `1.0`](references/voice-agent-hosted-bridge.md). Target-only validation does not replace an end-to-end wrapper smoke test.
+- A **voice-based prompt agent** has no local container. Continue to deploy.
+- A **hosted conversation engine** must validate its protocol handler locally before deployment. Follow [local run](references/local-run.md) and [Voice conversation engine](references/voice-conversation-engine.md). Engine-only validation does not replace an end-to-end voice agent smoke test.
 
 ## Step 6: Deploy and Verify
 
@@ -206,6 +206,6 @@ The final handoff must distinguish the results: report whether automated technic
 | Project choice is unresolved | Stop and ask for a new or existing project before init or provision |
 | Existing endpoint has no ARM ID | Resolve it with the paired `resolve-project-id` script |
 | Init would duplicate an existing service | Edit the existing Voice service in place |
-| Prompt Voice model deployment is missing | Do not author `model.id` alone. Reuse a compatible existing deployment, or confirm creation and follow the `deployments[]` preview/provision Golden Path |
-| Hosted target fails locally | Fix the hosted target's Bridge handler before deploying the Voice wrapper |
+| Voice-based prompt agent model deployment is missing | Do not author `model.id` alone. Reuse a compatible existing deployment, or confirm creation and follow the `deployments[]` preview/provision Golden Path |
+| Hosted conversation engine fails locally | Fix its protocol handler before deploying the voice agent |
 | `azd ai agent invoke` rejects Voice | Use the managed `voice` WebSocket helper or Foundry Voice playground |

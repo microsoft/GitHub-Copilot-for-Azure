@@ -1,6 +1,6 @@
-# Prompt Voice YAML
+# Voice-Based Prompt Agent YAML
 
-Author a single managed Voice Agent after applying [common invariants](voice-agent-common.md).
+Author a single managed Voice Agent after applying [common invariants](voice-agent-common.md). See the public [voice-based prompt agent quickstart](https://learn.microsoft.com/en-us/azure/foundry/agents/quickstarts/prompt-voice-agent) for the end-to-end experience; keep the CLI flag `--kind prompt-voice` unchanged.
 
 ## Managed Real-Time Model
 
@@ -21,7 +21,7 @@ services:
 
 ## Self-Deployed Model Deployment
 
-For an azd-managed project, `services.<ai-project-service>.deployments[]` is the source of truth and `azd provision` creates or updates the model infrastructure. Prompt Voice references the exact deployment name through `modelType: self_deployed` and `model.id`.
+For an azd-managed project, `services.<ai-project-service>.deployments[]` is the source of truth and `azd provision` creates or updates the model infrastructure. A voice-based prompt agent references the exact deployment name through `modelType: self_deployed` and `model.id`.
 
 Foundry infers native speech-to-speech versus cascaded STT -> LLM -> TTS from `model.id`; apply the same flow to realtime and text-model BYOM.
 

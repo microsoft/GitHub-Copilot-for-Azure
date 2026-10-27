@@ -4,7 +4,7 @@ Voice Agents are deployed through `azd`. First read [create-voice](../../create/
 
 ## 1. Resolve and Validate
 
-Classify the selected service as Prompt Voice or Hosted Voice. For Hosted Voice, include both the Voice wrapper and its named hosted target in scope.
+Classify the selected service as a voice-based prompt agent or a voice agent with a hosted conversation engine. For an engine-backed voice agent, include both the voice agent and its named hosted conversation engine in scope.
 
 ```bash
 azd env get-values
@@ -18,24 +18,24 @@ Respect the project-selection gate: if no Foundry project endpoint is configured
 
 ## 3. Deploy
 
-Prompt Voice:
+Voice-based prompt agent:
 
 ```bash
 azd deploy <voice-service-name> --no-prompt
 ```
 
-Hosted Voice: deploy the `kind: hosted` target before or together with the `kind: voice` wrapper:
+For a voice agent with a hosted conversation engine, deploy the `kind: hosted` engine before or together with the `kind: voice` agent:
 
 ```bash
-azd deploy <target-service-name> --no-prompt
-azd deploy <wrapper-service-name> --no-prompt
+azd deploy <engine-service-name> --no-prompt
+azd deploy <voice-service-name> --no-prompt
 ```
 
 Alternatively, run `azd deploy --no-prompt` to deploy all services in dependency order.
 
 ## 4. Verify in Two Stages
 
-1. Run `azd ai agent show --output json` and verify status `active` or `deployed`. For Hosted Voice, report the active version of the target and wrapper separately.
+1. Run `azd ai agent show --output json` and verify status `active` or `deployed`. For a voice agent with a hosted conversation engine, report the active version of the engine and voice agent separately.
 2. Do not run `azd ai agent invoke`; it does not support the `voice` protocol. Do not use generic `azd ai agent eval generate` as a Voice smoke test; transcript evaluation has separate limits in [observe](../../observe/observe.md).
 3. **Automated technical gate:** run [smoke-test-voice.sh](../../create/scripts/smoke-test-voice.sh) or [smoke-test-voice.ps1](../../create/scripts/smoke-test-voice.ps1). Deployment is technically verified only when the service version(s) are active and this test succeeds.
 4. **Manual experience acceptance:** provide the Voice Agent Playground URL from `azd ai agent show --output json` and recommend a complete microphone/audio-to-audio test in the Foundry portal.

@@ -39,10 +39,10 @@ Inspect `azure.yaml` (`host: azure.ai.agent`) and classify the service in order:
      2. **Voice WebSocket upgrade & auth**: Confirm the client connects to `wss://<project-host>/api/projects/<project>/agents/<voice-agent>/endpoint/protocols/voice?api-version=v1` with `Foundry-Features: VoiceAgents=V1Preview` and an Entra token for `https://ai.azure.com` (never use `azd ai agent invoke`).
      3. **Audio & session settings**: Compare audio, voice, greeting, model, and storage settings with the selected subtype reference.
      4. **Subtype-specific runtime triage**:
-        - **Prompt Voice (`modelType: managed` or `self_deployed`)**: Has no Hosted container, no `azd ai agent sessions`, no `files`, and no `azd ai agent monitor` log stream. Skip Step 3 and proceed to Step 4 (Application Insights telemetry).
-        - **Hosted Voice (`conversationEngine.type: hosted_agent`)**: Separate wrapper configuration/endpoint failures from target Bridge, startup, model, and RBAC failures. Use [Hosted Voice Bridge troubleshooting](../create/references/voice-agent-hosted-bridge.md), then inspect logs on the `kind: hosted` target service.
+        - **Voice-based prompt agent (`modelType: managed` or `self_deployed`)**: Has no Hosted container, no `azd ai agent sessions`, no `files`, and no `azd ai agent monitor` log stream. Skip Step 3 and proceed to Step 4 (Application Insights telemetry).
+        - **Voice agent with a hosted conversation engine (`conversationEngine.type: hosted_agent`)**: Separate voice agent configuration/endpoint failures from engine protocol, startup, model, and RBAC failures. Use [conversation-engine troubleshooting](../create/references/voice-conversation-engine.md), then inspect logs on the `kind: hosted` engine service.
      5. **Observability**: Proceed to Step 4 and Step 5 for Application Insights conversation telemetry.
-2. **`kind: hosted` (Hosted Agent or Hosted Voice target)**: Run:
+2. **`kind: hosted` (Hosted Agent or hosted conversation engine)**: Run:
 
 ```bash
 azd ai agent show --output json
@@ -121,7 +121,7 @@ Present a summary to the user including:
 | No observability connection | Application Insights not configured for the project | Suggest configuring Application Insights for the Foundry project |
 | Kusto query failed | Invalid cluster/database or insufficient permissions | Verify Application Insights resource details and reader permissions |
 | No telemetry data | Agent not instrumented or too recent | Check if Application Insights SDK is configured; data may take a few minutes to appear |
-| `session.rejected` (`protocol_mismatch`) on Hosted Voice startup | Hosted target does not satisfy the selected Bridge contract | Follow [Hosted Voice Bridge troubleshooting](../create/references/voice-agent-hosted-bridge.md), redeploy the target, and retest |
+| `session.rejected` (`protocol_mismatch`) on hosted conversation engine startup | Engine does not satisfy the selected protocol contract | Follow [conversation-engine troubleshooting](../create/references/voice-conversation-engine.md), redeploy the engine, and retest |
 | `azd ai agent invoke` fails on Voice Agent | `azd ai agent invoke` does not support the Voice protocol | Use the Voice WebSocket smoke-test script ([smoke-test-voice.sh](../create/scripts/smoke-test-voice.sh) / [smoke-test-voice.ps1](../create/scripts/smoke-test-voice.ps1)) or Foundry Voice playground |
 
 ## Additional Resources
