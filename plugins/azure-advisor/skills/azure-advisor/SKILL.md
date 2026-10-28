@@ -1,6 +1,6 @@
 ---
 name: azure-advisor
-description: "Use Azure Advisor recommendations. Route only Cost recommendations in the IdleResources subcategory through azure-advisor-cost-optimization, including its scope-resolution phase; keep generic Cost, prioritized Cost, cross-category, and other recommendation requests on the generic Advisor operations. WHEN: \"show Advisor recommendations\", \"service retirements\", \"update recommendation status\". DO NOT USE FOR: fixes or remediation (use azure-advisor-actionability)."
+description: "Use Azure Advisor recommendations. Route unused-resource discovery and Cost recommendations in the IdleResources subcategory through azure-advisor-cost-optimization, including its scope-resolution phase; keep generic Cost, prioritized Cost, cross-category, and other recommendation requests on the generic Advisor operations. WHEN: \"show Advisor recommendations\", \"service retirements\", \"update recommendation status\". DO NOT USE FOR: fixes or remediation (use azure-advisor-actionability)."
 license: MIT
 metadata:
   author: Microsoft
@@ -24,7 +24,8 @@ Reuse supplied scope and identifiers; ask only for missing input.
 
 ## Workflow
 
-- For combined `category=Cost` and `sub-category=IdleResources`, load
+- For unused-resource discovery, including "what are we paying for that is no longer
+  being used", or combined `category=Cost` and `sub-category=IdleResources`, load
   `azure-advisor-cost-optimization` first. It owns scope, sequencing and response templates;
   broad discovery must not skip to resource details.
 - Generic/prioritized Cost outside IdleResources, cross-category and other requests stay here.

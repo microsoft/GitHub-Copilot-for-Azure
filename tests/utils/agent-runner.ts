@@ -1,4 +1,4 @@
-import type { SessionEvent, SystemMessageConfig, UserInputHandler } from "@github/copilot-sdk";
+import type { SessionConfig, SessionEvent, SystemMessageConfig } from "@github/copilot-sdk";
 import { type SkillRef } from "./skill-loader.ts";
 
 /**
@@ -82,7 +82,7 @@ export type AgentMetadata = {
 
 export type AgentRunConfig = {
   /** Opt-in SDK user-input handling for question-only evaluations. */
-  onUserInputRequest?: UserInputHandler;
+  onUserInputRequest?: SessionConfig["onUserInputRequest"];
 
   /** Expose individual MCP tools when an eval asserts their names and arguments. */
   mcpMode?: "all";

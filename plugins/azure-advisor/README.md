@@ -41,8 +41,8 @@ From `tests`, run the same cases against both model families:
 ```powershell
 $env:VALLY_RUNNER_DISABLE_AZURE_MCP = "true"
 $env:VALLY_RUNNER_EXACT_SKILL = "true"
-npm run test:vally -- --plugin azure-advisor --skill azure-advisor-cost-optimization --tag parity=response-shape --model gpt-5.6-sol --runs 1 --workers 1 --threshold 1 --pass-rate 1
-npm run test:vally -- --plugin azure-advisor --skill azure-advisor-cost-optimization --tag parity=response-shape --model claude-sonnet-5 --runs 1 --workers 1 --threshold 1 --pass-rate 1
+npm run test:vally -- --plugin azure-advisor --skill azure-advisor-cost-optimization --tag parity=response-shape --model gpt-5.6-sol --runs 1 --workers 1 --threshold 1 --pass-rate 1 --require-pass
+npm run test:vally -- --plugin azure-advisor --skill azure-advisor-cost-optimization --tag parity=response-shape --model claude-sonnet-5 --runs 1 --workers 1 --threshold 1 --pass-rate 1 --require-pass
 ```
 
 Require both runs to pass; a shared failure is not parity success. The strict thresholds
@@ -57,7 +57,7 @@ without answering or querying Azure. Proposal-only cases never request an update
 cancellation uses an ordinary follow-up turn:
 
 ```powershell
-npm run test:vally -- --plugin azure-advisor --skill azure-advisor-cost-optimization --tag area=batch-confirmation-regression --runs 1 --workers 1 --threshold 1 --pass-rate 1
+npm run test:vally -- --plugin azure-advisor --skill azure-advisor-cost-optimization --tag area=batch-confirmation-regression --runs 1 --workers 1 --threshold 1 --pass-rate 1 --require-pass
 ```
 
 The `batch-postpone-confirmation` cases additionally cover date selection and cancellation;

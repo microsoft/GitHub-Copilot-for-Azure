@@ -1,6 +1,6 @@
 ---
 name: azure-advisor-cost-optimization
-description: "Analyze Azure Advisor Cost/IdleResources findings and prevalidate deletion safety. WHEN: \"find unused Azure resources\", \"idle-resource savings\", \"historical idle-resource savings\", \"are these idle resources safe to delete\". Generic Cost, other subcategories, and cross-category requests use azure-advisor."
+description: "Analyze Azure Advisor Cost/IdleResources findings and prevalidate deletion safety, including Service Groups. WHEN: \"find unused Azure resources\", \"what resources am I paying for but no longer using\", \"idle-resource savings\", \"historical idle-resource savings\", \"are these idle resources safe to delete\". Generic Cost, other subcategories, and cross-category requests use azure-advisor."
 license: MIT
 metadata:
   author: Microsoft
