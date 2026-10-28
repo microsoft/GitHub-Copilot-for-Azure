@@ -38,10 +38,10 @@ stimuli:
           pattern: "(?i)all.*subscriptions"
       - type: output-matches
         config:
-          pattern: "(?i)one subscription"
+          pattern: "(?i)one\\s+(?:specific\\s+)?subscription"
       - type: output-matches
         config:
-          pattern: "(?i)specific service group"
+          pattern: "(?i)(?:specific|one)\\s+service group"
       - type: tool-calls
         config:
           disallowed:
@@ -493,12 +493,29 @@ stimuli:
           scoring: scale_1_5
           threshold: 0.8
 
-  - name: "Show current Completed savings and resources after All selection"
-    prompt: "We selected recommendation type 11111111-1111-1111-1111-111111111111 in Service Group Demo Group. For completed-cleanup savings, I chose All Completed. Show the totals and resources."
+  - name: "Render supplied current Completed results after All selection"
+    # Offline reporting regression, not a live summary/list workflow test.
+    prompt: |
+      For Azure Advisor Cost/IdleResources, we selected Unattached disks in Service Group
+      Demo Group and chose All Completed. The summary and list have already returned
+      the following synthetic results for that scope and type.
+      Summary: 3 Completed records, realized savings 108.90 USD, Cost 1026.39 USD,
+      pricing basis Retail; 2 records have pricing and 1 is unavailable.
+      The list returned all 3 records without truncation. All are in subscription Demo,
+      resource group rg-demo:
+      disk-deleted-a has realizedSavings=100, cost=1000, completionType=SystemVerified,
+      platformStateUpdatedAt=2026-10-24T12:26:00Z, resourceDeletedOn=2026-10-24T00:00:00Z.
+      disk-deleted-b has realizedSavings=8.90, cost=26.39, completionType=SystemVerified,
+      platformStateUpdatedAt=2026-10-25T12:26:00Z, resourceDeletedOn=2026-10-25T00:00:00Z.
+      disk-verified has no pricing or deletion date, completionType=SystemVerified,
+      platformStateUpdatedAt=2026-10-14T03:00:00Z.
+      Show the totals and resources using these supplied results only.
+      Do not query Azure, ask another question, or change anything.
     rubric:
-      - The agent uses current Completed summary totals and then lists Completed resources for the same selected type and scope.
+      - The agent reports the supplied current Completed totals and resources for the same selected type and scope without querying Azure.
       - It reuses the All Completed selection without another question and does not invent from/to bounds or a prior-day as-of.
-      - It preserves unavailable pricing and undated Completed resources rather than interpreting their absence from a deletion-date window as no Completed findings.
+      - It retains all three resources, including the unpriced, undated Completed resource with Unavailable money and deletion date.
+      - It reports 108.90 USD realized savings and 1026.39 USD Cost separately, with Retail basis and pricing coverage of two out of three.
     tags:
       type: integration
       tier: smoke
@@ -511,25 +528,62 @@ stimuli:
     graders:
       - type: tool-calls
         config:
-          required:
-            - name: "(?i)advisor_recommendation_summary"
-              args:
-                status: "^Completed$"
-                service-group: "^Demo Group$"
-                recommendation-type-id: "^11111111-1111-1111-1111-111111111111$"
-            - name: "(?i)advisor_recommendation_list"
-              args:
-                status: "^Completed$"
-                service-group: "^Demo Group$"
-                recommendation-type-id: "^11111111-1111-1111-1111-111111111111$"
           disallowed:
-            - name: "(?i)advisor_recommendation_update|(^|[._])ask_user$"
+            - name: "(?i)advisor_recommendation_(summary|list|update)|subscription|(^|[._])ask_user$"
+      - type: output-matches
+        config:
+          pattern: "108\\.90"
+      - type: output-matches
+        config:
+          pattern: "1,?026\\.39"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|\\s*disk-deleted-a\\s*\\|"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|\\s*disk-deleted-b\\s*\\|"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|\\s*(?:disk-verified|\\[disk-verified\\]\\([^\\r\\n)]+\\))\\s*\\|[^\\r\\n]*Unavailable"
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+
+  - name: "Report a supplied Service Group scope failure without listing resources"
+    prompt: |
+      For all current Completed Azure Advisor Cost/IdleResources savings and resources
+      in Service Group Missing Group, the summary tool has already returned:
+      "No accessible Service Group matched 'Missing Group' in the selected tenant.
+      Verify the name or ID, tenant, and access."
+      Explain this result and what information is needed next. Do not query Azure again.
+    rubric:
+      - The agent reports that the Service Group could not be resolved and requests a corrected name or ID, tenant or access.
+      - It does not list recommendations, fall back to a subscription, or report zero savings or no Completed findings.
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: current-completed-report
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 40
+    graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor_recommendation_(summary|list|update)|subscription"
+      - type: output-matches
+        config:
+          pattern: "(?i)Missing Group"
       - type: prompt
         config:
           scoring: scale_1_5
           threshold: 0.8
 
   - name: "Keep unpriced Completed resources visible with portal lifecycle labels"
+    # Synthetic already-returned results; fixed amounts are not live Azure savings assertions.
     prompt: |
       Show these already-returned current Completed details for recommendation type
       Unattached disks in subscription Demo, with no reporting window and no truncation.
