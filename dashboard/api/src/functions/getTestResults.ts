@@ -178,7 +178,7 @@ function collectSkillReportPaths(
     }
 }
 
-const AGENT_METADATA_JSON = "agent-metadata.json";
+const AGENT_METADATA_JSON_PATTERN = /^agent-metadata(?:-.+)?\.json$/;
 
 /**
  * Regex matching deploy commands that constitute a deployment attempt:
@@ -187,16 +187,16 @@ const AGENT_METADATA_JSON = "agent-metadata.json";
 const DEPLOY_COMMAND_PATTERN = /\bazd\s+(?:up|deploy)\b|\bterraform\s+apply\b/i;
 
 /**
- * Collect agent-metadata.json blob paths for each scenario test case directory
+ * Collect agent-metadata.json and agent-metadata-*.json blob paths for each scenario test case directory
  * under the given skill node.
  *
- * The agent-metadata.json file is excluded from blob enumeration, so its path
- * is derived from any other file present in the same directory.
+ * The legacy agent-metadata.json file is excluded from blob enumeration, so
+ * its path is derived from a sibling file for backward compatibility.
  *
  * The "skill-invocation" group is excluded.
  *
  * @param skillNode  BlobTreeNode for the skill (e.g. azure-deploy)
- * @param results    Accumulates testCaseDirName → list of agent-metadata.json blob paths
+ * @param results    Accumulates testCaseDirName → list of agent metadata JSON blob paths
  */
 function collectAgentMetadataPaths(
     skillNode: BlobTreeNode,
@@ -207,20 +207,24 @@ function collectAgentMetadataPaths(
 
         // Level 2: test-case directories under a test-group directory
         for (const [testCaseName, testCaseNode] of Object.entries(groupNode.children)) {
-            // Derive the agent-metadata.json path from any sibling file in the directory
             const anchor = testCaseNode.files[0];
             if (!anchor) continue;
-            const jsonPath = anchor.blobName.replace(/\/[^/]+$/, `/${AGENT_METADATA_JSON}`);
+            const paths = new Set(
+                testCaseNode.files
+                    .filter((file) => AGENT_METADATA_JSON_PATTERN.test(file.name))
+                    .map((file) => file.blobName),
+            );
+            paths.add(anchor.blobName.replace(/\/[^/]+$/, "/agent-metadata.json"));
             if (!results.has(testCaseName)) {
                 results.set(testCaseName, []);
             }
-            results.get(testCaseName)!.push(jsonPath);
+            results.get(testCaseName)!.push(...paths);
         }
     }
 }
 
 /**
- * Parse an agent-metadata.json string and count deployment retries.
+ * Parse an agent metadata JSON string and count deployment retries.
  *
  * A retry is any deploy command invocation after the first within the session.
  * Counts tool.execution_start events for powershell/bash tools whose command
@@ -361,7 +365,7 @@ async function getTestResults(request: HttpRequest, context: InvocationContext):
     const pathsBySkill = new Map<string, string[]>();
     const reportPathsBySkill = new Map<string, string[]>();
     const tokenSummaryPathsBySkill = new Map<string, string[]>();
-    // Collect agent-metadata.json paths for deploy scenario retry counting
+    // Collect legacy and dated agent metadata paths for deploy scenario retry counting
     const agentMetadataPathsByTestCase = new Map<string, string[]>();
 
     for (const runNode of Object.values(dateNode.children)) {
@@ -418,7 +422,7 @@ async function getTestResults(request: HttpRequest, context: InvocationContext):
         }
     }
 
-    // Fetch agent-metadata.json files for azure-deploy scenario retry counts
+    // Fetch legacy and dated agent metadata files for azure-deploy scenario retry counts
     const deployRetryTotals = new Map<string, number>();
     const deployRetryRunCounts = new Map<string, number>();
     const retryFetchTasks: Promise<void>[] = [];
