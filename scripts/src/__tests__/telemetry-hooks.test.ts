@@ -747,6 +747,16 @@ beforeAll(() => {
     "absent",
   );
   createPluginMetadataFixture(MISSING_METADATA_PLUGIN_ROOT);
+  const missingMetadataSkillRoot = join(
+    MISSING_METADATA_PLUGIN_ROOT,
+    "skills",
+    "test-skill",
+  );
+  mkdirSync(missingMetadataSkillRoot, { recursive: true });
+  writeFileSync(
+    join(missingMetadataSkillRoot, "SKILL.md"),
+    "---\nmetadata:\n  version: \"1.0.0\"\n---\n# Test Skill\n",
+  );
   createPluginMetadataFixture(
     OWNED_MCP_PLUGIN_ROOT,
     { name: "owned-mcp-plugin", version: "1.0.0" },
@@ -958,6 +968,24 @@ describe.each(shells)("Generated plugin metadata ($name)", shell => {
         cursor_version: "1.7.2",
         is_background_agent: false,
         composer_mode: "agent",
+      },
+      "",
+      {},
+      MISSING_METADATA_HOOKS_DIR,
+    );
+
+    expect(args).toEqual([]);
+  });
+
+  it("suppresses skill telemetry when generated plugin metadata is missing", () => {
+    const args = runHook(
+      shell,
+      {
+        hook_event_name: "PostToolUse",
+        session_id: SESSION_ID,
+        cursor_version: "1.7.2",
+        tool_name: "Skill",
+        tool_input: { skill: "test-skill" },
       },
       "",
       {},

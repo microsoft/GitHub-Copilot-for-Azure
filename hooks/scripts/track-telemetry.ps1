@@ -579,17 +579,17 @@ if ($shouldTrack) {
     $pluginName = $pluginManifest.name
     $pluginVersion = $pluginManifest.version
 
-    # Session telemetry must identify the plugin.
-    if ($eventType -eq "session_start" -and
-        ([string]::IsNullOrWhiteSpace($pluginName) -or [string]::IsNullOrWhiteSpace($pluginVersion))) {
+    # Every telemetry event must identify the plugin.
+    if ([string]::IsNullOrWhiteSpace($pluginName) -or
+        [string]::IsNullOrWhiteSpace($pluginVersion)) {
         Write-Success
     }
 
     # Build reporter arguments
     $reporterArguments = @()
 
-    if ($pluginName) { $reporterArguments += "--plugin-name"; $reporterArguments += $pluginName }
-    if ($pluginVersion) { $reporterArguments += "--plugin-version"; $reporterArguments += $pluginVersion }
+    $reporterArguments += "--plugin-name"; $reporterArguments += $pluginName
+    $reporterArguments += "--plugin-version"; $reporterArguments += $pluginVersion
     $reporterArguments += "--client-name"; $reporterArguments += $clientName
     $reporterArguments += "--timestamp"; $reporterArguments += $timestamp
     if ($eventType) { $reporterArguments += "--event-type"; $reporterArguments += $eventType }

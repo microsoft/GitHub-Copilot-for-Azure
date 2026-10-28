@@ -583,16 +583,15 @@ if [ "$shouldTrack" = true ]; then
     pluginName=$(get_plugin_field "$clientName" "name")
     pluginVersion=$(get_plugin_field "$clientName" "version")
 
-    # Session telemetry must identify the plugin.
-    if [ "$eventType" = "session_start" ] && { [ -z "$pluginName" ] || [ -z "$pluginVersion" ]; }; then
+    # Every telemetry event must identify the plugin.
+    if [ -z "$pluginName" ] || [ -z "$pluginVersion" ]; then
         return_success
     fi
 
     # Build reporter arguments using an array for proper quoting.
     reporterArgs=()
 
-    [ -n "$pluginName" ] && reporterArgs+=("--plugin-name" "$pluginName")
-    [ -n "$pluginVersion" ] && reporterArgs+=("--plugin-version" "$pluginVersion")
+    reporterArgs+=("--plugin-name" "$pluginName" "--plugin-version" "$pluginVersion")
     reporterArgs+=("--client-name" "$clientName" "--timestamp" "$timestamp")
     [ -n "$eventType" ] && reporterArgs+=("--event-type" "$eventType")
     [ -n "$sessionId" ] && reporterArgs+=("--session-id" "$sessionId")
