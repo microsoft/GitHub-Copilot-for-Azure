@@ -6,19 +6,22 @@
 
 ## Allowlist maintenance
 
-The [allowlist synchronization workflow](../.github/workflows/sync-to-azure-mcp.yml)
+The [allowlist synchronization workflow](../.github/workflows/sync-telemetry-reporter-allowlists.yml)
 runs on weekdays or by manual dispatch. It generates `allowed-skill-names.json`
 and `allowed-plugin-file-references.json` once from this repository's plugin
-sources, then proposes separate PRs in `microsoft/mcp` and this repository.
-Here, those PRs update only the two files under `telemetry-reporter/resources/`.
+sources, then proposes a PR in this repository that updates only the two files
+under `telemetry-reporter/resources/`.
 Unchanged lists produce no commit or PR; subsequent changes reuse the open PR
-on the destination's stable bot-owned branch. Either destination can succeed
-independently of the other.
+on the stable bot-owned `sync/telemetry-reporter-allowlists` branch.
+
+The workflow no longer updates Azure MCP's lists. Only older plugin versions
+still use Azure MCP for telemetry, and current plugin sources no longer
+represent those versions.
 
 The workflow uses `GHCP4A_BOT_APP_ID` and `GHCP4A_BOT_PRIVATE_KEY`. The GitHub
-App must be installed on both repositories with Contents and Pull requests
-write access; each job requests a token scoped to its destination. App tokens
-allow the resulting PRs to trigger normal validation workflows.
+App must be installed on this repository with Contents and Pull requests
+write access; the publication job requests a token scoped to this repository.
+App tokens allow the resulting PRs to trigger normal validation workflows.
 
 `allowed-tool-names.json` remains a pinned Azure MCP snapshot, as do the runtime
 compatibility values in `CompatibilityConstants`. Generating the skill and
