@@ -2,7 +2,7 @@ import eslint from "@eslint/js";
 import { defineConfig } from "eslint/config"
 import tseslint from "typescript-eslint";
 
-const tsFiles = ["**/*.ts"];
+const tsFiles = ["**/*.{ts,cts}"];
 
 export default defineConfig(
   // Global ignores
