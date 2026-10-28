@@ -32,14 +32,10 @@ const REQUIRED_PLUGIN_HOOK_FILES = [
   "scripts/pluginPathAllowPattern.ps1",
   "scripts/pluginPathAllowPattern.sh",
 ] as const;
-const GENERATED_PLUGIN_METADATA_PATH = path.join(
-  "generated",
-  "plugin-metadata"
-);
 const PLUGIN_METADATA_CLIENTS = [
-  { name: "copilot", manifestDirectory: ".plugin" },
-  { name: "cursor", manifestDirectory: ".cursor-plugin" },
-  { name: "claude-code", manifestDirectory: ".claude-plugin" },
+  { clientName: "copilot", manifestDirectory: ".plugin" },
+  { clientName: "cursor", manifestDirectory: ".cursor-plugin" },
+  { clientName: "claude-code", manifestDirectory: ".claude-plugin" },
 ] as const;
 
 type HookManifest = {
@@ -309,7 +305,8 @@ function writePluginHookMetadata(
   destinationRoot: string
 ): void {
   const pluginOutputRoot = path.join(outputRoot, pluginDirname);
-  const metadataRoot = path.join(destinationRoot, GENERATED_PLUGIN_METADATA_PATH);
+  let pluginName: string | undefined;
+  let pluginVersion: string | undefined;
 
   for (const client of PLUGIN_METADATA_CLIENTS) {
     const manifestPath = path.join(
@@ -326,16 +323,26 @@ function writePluginHookMetadata(
     const description =
       `built plugin manifest output/${pluginDirname}/${client.manifestDirectory}/plugin.json`;
     const manifest = readJsonObject(manifestPath, description);
-    const clientMetadataRoot = path.join(metadataRoot, client.name);
-    mkdirSync(clientMetadataRoot, { recursive: true });
-    writeFileSync(
-      path.join(clientMetadataRoot, "name"),
-      `${requireMetadataString(manifest.name, "name", description)}\n`
+    const clientPluginName = requireMetadataString(manifest.name, "name", description);
+    const clientPluginVersion = requireMetadataString(
+      manifest.version,
+      "version",
+      description
     );
-    writeFileSync(
-      path.join(clientMetadataRoot, "version"),
-      `${requireMetadataString(manifest.version, "version", description)}\n`
-    );
+
+    pluginName ??= clientPluginName;
+    pluginVersion ??= clientPluginVersion;
+    if (clientPluginName !== pluginName || clientPluginVersion !== pluginVersion) {
+      throw new Error(
+        `Built plugin manifests for ${pluginDirname} must use the same name and version; ` +
+        `${client.clientName} has "${clientPluginName}" version "${clientPluginVersion}", ` +
+        `expected "${pluginName}" version "${pluginVersion}".`
+      );
+    }
+  }
+
+  if (!pluginName || !pluginVersion) {
+    throw new Error(`No built plugin manifests were found for ${pluginDirname}.`);
   }
 
   const mcpConfigPath = path.join(pluginOutputRoot, ".mcp.json");
@@ -360,11 +367,15 @@ function writePluginHookMetadata(
     }
   }
 
-  mkdirSync(metadataRoot, { recursive: true });
-  writeFileSync(path.join(metadataRoot, "mcp-config-state"), `${mcpConfigState}\n`);
+  const metadataLines = [
+    `plugin-name=${pluginName}`,
+    `plugin-version=${pluginVersion}`,
+    `mcp-config-state=${mcpConfigState}`,
+    ...mcpServerNames.map(serverName => `mcp-server=${serverName}`),
+  ];
   writeFileSync(
-    path.join(metadataRoot, "mcp-servers"),
-    mcpServerNames.length > 0 ? `${mcpServerNames.join("\n")}\n` : ""
+    path.join(destinationRoot, "metadata.txt"),
+    `${metadataLines.join("\n")}\n`
   );
 }
 

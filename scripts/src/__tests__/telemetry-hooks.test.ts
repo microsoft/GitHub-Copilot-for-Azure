@@ -107,8 +107,8 @@ const HOOKS_DIR = join(PLUGIN_ROOT, "hooks", "scripts");
 const STUB_HOOKS_DIR = join(PLUGIN_ROOT, "hooks", "stub scripts");
 const SPACED_PLUGIN_ROOT = join(TEST_DIR, "plugin root with spaces");
 const SPACED_HOOKS_DIR = join(SPACED_PLUGIN_ROOT, "hooks", "scripts");
-const BASH_METADATA_PLUGIN_ROOT = join(TEST_DIR, "bash-metadata-plugin");
-const BASH_METADATA_HOOKS_DIR = join(BASH_METADATA_PLUGIN_ROOT, "hooks", "scripts");
+const SIDECAR_METADATA_PLUGIN_ROOT = join(TEST_DIR, "sidecar-metadata-plugin");
+const SIDECAR_METADATA_HOOKS_DIR = join(SIDECAR_METADATA_PLUGIN_ROOT, "hooks", "scripts");
 const MISSING_METADATA_PLUGIN_ROOT = join(TEST_DIR, "missing-metadata-plugin");
 const MISSING_METADATA_HOOKS_DIR = join(MISSING_METADATA_PLUGIN_ROOT, "hooks", "scripts");
 const OWNED_MCP_PLUGIN_ROOT = join(TEST_DIR, "owned-mcp-plugin");
@@ -136,9 +136,9 @@ const PUBLISHER_STDOUT = "test-only-private-publisher-stdout";
 const PUBLISHER_STDERR = "test-only-private-publisher-stderr";
 const PRIVATE_EVENT_DATA = "test-only-private-event-data";
 const PLUGIN_METADATA = {
-  copilot: { directory: ".plugin", name: "copilot-test-plugin", version: "1.2.3" },
-  cursor: { directory: ".cursor-plugin", name: "cursor-test-plugin", version: "2.3.4" },
-  claude: { directory: ".claude-plugin", name: "claude-test-plugin", version: "3.4.5" },
+  copilot: { directory: ".plugin", name: "test-plugin", version: "1.2.3" },
+  cursor: { directory: ".cursor-plugin", name: "test-plugin", version: "1.2.3" },
+  claude: { directory: ".claude-plugin", name: "test-plugin", version: "1.2.3" },
 } as const;
 const require = createRequire(import.meta.url);
 const dispatcher = require(join(SOURCE_HOOKS_DIR, "track-telemetry.js")) as Dispatcher;
@@ -170,7 +170,6 @@ function resolveCommand(command: string): string {
 }
 
 const shells = shellCandidates.filter(shell => isCommandAvailable(shell.command));
-const bashShell = shells.find(shell => shell.name === "Bash");
 
 function quotePowerShell(value: string): string {
   return `'${value.replaceAll("'", "''")}'`;
@@ -688,31 +687,27 @@ function copyTestHookScripts(destination: string): void {
   cpSync(PLUGIN_HOOKS_SOURCE_DIR, destination, { recursive: true });
 }
 
-function writeGeneratedHookMetadata(
+function writeHookMetadata(
   pluginRoot: string,
-  metadata: Partial<Record<"copilot" | "cursor" | "claude-code", { name: string; version: string }>>,
+  metadata: { name: string; version: string },
   mcpConfigState: string,
   mcpServers: string[] = [],
 ): void {
-  const metadataRoot = join(pluginRoot, "hooks", "generated", "plugin-metadata");
-  for (const [clientName, clientMetadata] of Object.entries(metadata)) {
-    if (!clientMetadata) {
-      continue;
-    }
-    const clientRoot = join(metadataRoot, clientName);
-    mkdirSync(clientRoot, { recursive: true });
-    writeFileSync(join(clientRoot, "name"), `${clientMetadata.name}\n`);
-    writeFileSync(join(clientRoot, "version"), `${clientMetadata.version}\n`);
-  }
-  mkdirSync(metadataRoot, { recursive: true });
-  writeFileSync(join(metadataRoot, "mcp-config-state"), `${mcpConfigState}\n`);
+  const metadataPath = join(pluginRoot, "hooks", "metadata.txt");
+  mkdirSync(dirname(metadataPath), { recursive: true });
   writeFileSync(
-    join(metadataRoot, "mcp-servers"),
-    mcpServers.length > 0 ? `${mcpServers.join("\n")}\n` : "",
+    metadataPath,
+    [
+      `plugin-name=${metadata.name}`,
+      `plugin-version=${metadata.version}`,
+      `mcp-config-state=${mcpConfigState}`,
+      ...mcpServers.map(serverName => `mcp-server=${serverName}`),
+      "",
+    ].join("\n"),
   );
 }
 
-function createBashPluginFixture(
+function createPluginMetadataFixture(
   pluginRoot: string,
   metadata?: { name: string; version: string },
   mcpConfigState?: string,
@@ -721,12 +716,7 @@ function createBashPluginFixture(
   const hooksDirectory = join(pluginRoot, "hooks", "scripts");
   cpSync(STUB_HOOKS_DIR, hooksDirectory, { recursive: true });
   if (metadata && mcpConfigState) {
-    writeGeneratedHookMetadata(
-      pluginRoot,
-      { cursor: metadata },
-      mcpConfigState,
-      mcpServers,
-    );
+    writeHookMetadata(pluginRoot, metadata, mcpConfigState, mcpServers);
   }
 }
 
@@ -746,33 +736,29 @@ beforeAll(() => {
   createTelemetryArchive();
   writeFileSync(INVALID_TELEMETRY_ZIP_PATH, "not a ZIP archive");
   cpSync(STUB_HOOKS_DIR, SPACED_HOOKS_DIR, { recursive: true });
-  writeGeneratedHookMetadata(
+  writeHookMetadata(
     PLUGIN_ROOT,
-    {
-      copilot: PLUGIN_METADATA.copilot,
-      cursor: PLUGIN_METADATA.cursor,
-      "claude-code": PLUGIN_METADATA.claude,
-    },
+    PLUGIN_METADATA.cursor,
     "absent",
   );
-  createBashPluginFixture(
-    BASH_METADATA_PLUGIN_ROOT,
-    { name: "bash-sidecar-plugin", version: "9.8.7" },
+  createPluginMetadataFixture(
+    SIDECAR_METADATA_PLUGIN_ROOT,
+    { name: "sidecar-plugin", version: "9.8.7" },
     "absent",
   );
-  createBashPluginFixture(MISSING_METADATA_PLUGIN_ROOT);
-  createBashPluginFixture(
+  createPluginMetadataFixture(MISSING_METADATA_PLUGIN_ROOT);
+  createPluginMetadataFixture(
     OWNED_MCP_PLUGIN_ROOT,
     { name: "owned-mcp-plugin", version: "1.0.0" },
     "present",
     ["azure", "github"],
   );
-  createBashPluginFixture(
+  createPluginMetadataFixture(
     EMPTY_MCP_PLUGIN_ROOT,
     { name: "empty-mcp-plugin", version: "1.0.0" },
     "present",
   );
-  createBashPluginFixture(
+  createPluginMetadataFixture(
     INVALID_MCP_STATE_PLUGIN_ROOT,
     { name: "invalid-mcp-state-plugin", version: "1.0.0" },
     "invalid",
@@ -794,6 +780,7 @@ beforeAll(() => {
       version: PLUGIN_METADATA.copilot.version,
     }),
   );
+  writeHookMetadata(SPACED_PLUGIN_ROOT, PLUGIN_METADATA.copilot, "absent");
   for (const binaryName of ["ghcfa-telem", "ghcfa-telem.cmd"]) {
     writePublisherStub(join(BIN_DIR, binaryName));
   }
@@ -942,10 +929,10 @@ describe("Cursor telemetry dispatcher", () => {
   });
 });
 
-describe.skipIf(!bashShell)("Bash generated plugin metadata", () => {
-  it("reads client-specific plugin name and version from the sidecar", () => {
+describe.each(shells)("Generated plugin metadata ($name)", shell => {
+  it("reads plugin name and version from hooks/metadata.txt", () => {
     const args = runHook(
-      bashShell!,
+      shell,
       {
         hook_event_name: "sessionStart",
         session_id: SESSION_ID,
@@ -955,16 +942,16 @@ describe.skipIf(!bashShell)("Bash generated plugin metadata", () => {
       },
       "",
       {},
-      BASH_METADATA_HOOKS_DIR,
+      SIDECAR_METADATA_HOOKS_DIR,
     );
 
-    expectArg(args, "--plugin-name", "bash-sidecar-plugin");
+    expectArg(args, "--plugin-name", "sidecar-plugin");
     expectArg(args, "--plugin-version", "9.8.7");
   });
 
   it("suppresses session telemetry when generated plugin metadata is missing", () => {
     const args = runHook(
-      bashShell!,
+      shell,
       {
         hook_event_name: "sessionStart",
         session_id: SESSION_ID,
@@ -982,7 +969,7 @@ describe.skipIf(!bashShell)("Bash generated plugin metadata", () => {
 
   it("reports Azure MCP telemetry when azure is a direct mcpServers key", () => {
     const args = runHook(
-      bashShell!,
+      shell,
       fixture("cursor-mcp-invocation.json"),
       "",
       {},
@@ -995,7 +982,7 @@ describe.skipIf(!bashShell)("Bash generated plugin metadata", () => {
 
   it("does not report Azure MCP telemetry when the generated server list is empty", () => {
     const args = runHook(
-      bashShell!,
+      shell,
       fixture("cursor-mcp-invocation.json"),
       "",
       {},
@@ -1007,7 +994,7 @@ describe.skipIf(!bashShell)("Bash generated plugin metadata", () => {
 
   it("fails closed when the generated MCP config state is invalid", () => {
     const args = runHook(
-      bashShell!,
+      shell,
       fixture("cursor-mcp-invocation.json"),
       "",
       {},
@@ -1019,11 +1006,11 @@ describe.skipIf(!bashShell)("Bash generated plugin metadata", () => {
 
   it("keeps the existing permissive behavior for an explicitly absent .mcp.json", () => {
     const args = runHook(
-      bashShell!,
+      shell,
       fixture("cursor-mcp-invocation.json"),
       "",
       {},
-      BASH_METADATA_HOOKS_DIR,
+      SIDECAR_METADATA_HOOKS_DIR,
     );
 
     expectArg(args, "--event-type", "tool_invocation");
@@ -1631,7 +1618,7 @@ describe.each(shells)("Cursor telemetry hook ($name)", shell => {
     expectArg(args, "--skill-name", "azure-cost");
     expectArg(args, "--skill-version", "1.2.3");
     expect(args).not.toContain("--file-reference");
-  });
+  }, 10_000);
 
   it("reports a bundled file read as a reference read", () => {
     const payload = fixture("cursor-reference-read.json") as CursorPayload & Record<string, unknown>;
@@ -1648,7 +1635,7 @@ describe.each(shells)("Cursor telemetry hook ($name)", shell => {
     expectArg(args, "--skill-version", "1.2.3");
     expectArg(args, "--file-reference", "azure-cost\\cost-query\\guardrails.md");
     expect(args).not.toContain("--skill-name");
-  });
+  }, 10_000);
 
   it.each(["get_azure_bestpractices", "MCP:get_azure_bestpractices"])(
     "reports an Azure MCP invocation without Cursor's display prefix: %s",

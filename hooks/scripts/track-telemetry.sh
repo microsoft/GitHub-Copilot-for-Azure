@@ -71,11 +71,9 @@
 #
 # === Plugin and Skill Versions ===
 #
-# The plugin name and version are read from build-generated metadata derived
-# from the active client's stamped plugin.json:
-#   - Copilot CLI / VS Code: generated metadata for .plugin/plugin.json
-#   - Claude Code:           generated metadata for .claude-plugin/plugin.json
-#   - Cursor:                generated metadata for .cursor-plugin/plugin.json
+# The plugin name, version, and MCP ownership are read from hooks/metadata.txt,
+# which the build generates after validating the stamped plugin manifests and
+# .mcp.json configuration.
 #
 # The skill version is read from the SKILL.md frontmatter (metadata.version),
 # which the build stamps at package time. It is resolved as follows:
@@ -189,6 +187,13 @@ write_telemetry_debug_log() {
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
 SKILLS_DIR="$(cd "$SCRIPT_DIR/../.." 2>/dev/null && pwd)/skills"
 PLUGIN_PATH_ALLOW_PATTERN="$SCRIPT_DIR/pluginPathAllowPattern.sh"
+PLUGIN_METADATA_PATH="$SCRIPT_DIR/../metadata.txt"
+PLUGIN_METADATA_LOADED=false
+PLUGIN_METADATA_VALID=false
+PLUGIN_METADATA_NAME=""
+PLUGIN_METADATA_VERSION=""
+PLUGIN_METADATA_MCP_CONFIG_STATE=""
+PLUGIN_METADATA_MCP_SERVERS=""
 
 # Return true only when a target belongs to this hook's plugin. Since this hook
 # is copied into every plugin, comparing through the skills directory prevents
@@ -219,58 +224,97 @@ get_skill_version() {
         | sed -E 's/^[[:space:]]*version:[[:space:]]*//; s/^["'"'"']//; s/["'"'"'][[:space:]]*$//; s/[[:space:]]*$//'
 }
 
-# Read one field from the build-generated metadata for the active client.
-# Prints nothing if the metadata file cannot be read.
+# Load and validate the build-generated plugin metadata once per invocation.
+load_plugin_metadata() {
+    local line
+    local nameCount=0
+    local versionCount=0
+    local stateCount=0
+
+    [ "$PLUGIN_METADATA_LOADED" = false ] || return 0
+    PLUGIN_METADATA_LOADED=true
+    [ -f "$PLUGIN_METADATA_PATH" ] || return 0
+
+    while IFS= read -r line; do
+        case "$line" in
+            plugin-name=*)
+                PLUGIN_METADATA_NAME="${line#*=}"
+                nameCount=$((nameCount + 1))
+                ;;
+            plugin-version=*)
+                PLUGIN_METADATA_VERSION="${line#*=}"
+                versionCount=$((versionCount + 1))
+                ;;
+            mcp-config-state=*)
+                PLUGIN_METADATA_MCP_CONFIG_STATE="${line#*=}"
+                stateCount=$((stateCount + 1))
+                ;;
+            mcp-server=*)
+                if [ -n "$PLUGIN_METADATA_MCP_SERVERS" ]; then
+                    PLUGIN_METADATA_MCP_SERVERS="$PLUGIN_METADATA_MCP_SERVERS
+${line#*=}"
+                else
+                    PLUGIN_METADATA_MCP_SERVERS="${line#*=}"
+                fi
+                ;;
+        esac
+    done < "$PLUGIN_METADATA_PATH"
+
+    [ "$nameCount" -eq 1 ] && [ -n "$PLUGIN_METADATA_NAME" ] || return 0
+    [ "$versionCount" -eq 1 ] && [ -n "$PLUGIN_METADATA_VERSION" ] || return 0
+    [ "$stateCount" -eq 1 ] || return 0
+    case "$PLUGIN_METADATA_MCP_CONFIG_STATE" in
+        absent|present)
+            PLUGIN_METADATA_VALID=true
+            ;;
+    esac
+}
+
+# Read one value from the build-generated plugin metadata.
 get_plugin_field() {
     local clientName="$1"
     local fieldName="$2"
-    local metadataClient="copilot"
-    local metadataPath
 
-    case "$clientName" in
-        cursor)
-            metadataClient="cursor"
-            ;;
-        claude-code)
-            metadataClient="claude-code"
-            ;;
-    esac
-
+    [ -n "$clientName" ] || return 0
+    load_plugin_metadata
+    [ "$PLUGIN_METADATA_VALID" = true ] || return 0
     case "$fieldName" in
-        name|version)
+        name)
+            printf '%s' "$PLUGIN_METADATA_NAME"
             ;;
-        *)
-            return 0
+        version)
+            printf '%s' "$PLUGIN_METADATA_VERSION"
             ;;
     esac
-
-    metadataPath="$SCRIPT_DIR/../generated/plugin-metadata/$metadataClient/$fieldName"
-    [ -f "$metadataPath" ] || return 0
-    cat "$metadataPath" 2>/dev/null
 }
 
 # Return true when generated metadata says this plugin owns the named server,
 # or when the build recorded that the plugin intentionally has no .mcp.json.
 owns_mcp_server() {
     local serverName="$1"
-    local metadataRoot="$SCRIPT_DIR/../generated/plugin-metadata"
-    local mcpConfigState
+    local configuredServer
 
-    [ -f "$metadataRoot/mcp-config-state" ] || return 1
-    mcpConfigState=$(cat "$metadataRoot/mcp-config-state" 2>/dev/null) || return 1
-    case "$mcpConfigState" in
+    load_plugin_metadata
+    [ "$PLUGIN_METADATA_VALID" = true ] || return 1
+    case "$PLUGIN_METADATA_MCP_CONFIG_STATE" in
         absent)
             return 0
             ;;
         present)
-            [ -f "$metadataRoot/mcp-servers" ] || return 1
-            grep -Fqx -- "$serverName" "$metadataRoot/mcp-servers" 2>/dev/null
+            while IFS= read -r configuredServer; do
+                [ "$configuredServer" = "$serverName" ] && return 0
+            done <<EOF
+$PLUGIN_METADATA_MCP_SERVERS
+EOF
+            return 1
             ;;
         *)
             return 1
             ;;
     esac
 }
+
+load_plugin_metadata
 
 # === JSON Parsing Functions (using sed - portable across platforms) ===
 
