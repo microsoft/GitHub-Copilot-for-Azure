@@ -119,7 +119,10 @@ class TestSdkAgentExecutor extends SdkAgentExecutor {
   }
 }
 
-describe("SdkAgentExecutor", () => {
+// Warning: These tests mock environment variables by setting and resetting them.
+// Disable concurrent to avoid race conditions.
+// If parallel is needed, configure vitest to use isolated worker processes.
+describe("SdkAgentExecutor", { concurrent: false }, () => {
   let runner: FakeAgentRunner;
   let executor: TestSdkAgentExecutor;
   let originalExactSkill: string | undefined;
