@@ -299,15 +299,10 @@ function Get-PluginMetadata {
     }
 }
 
-# Return true when generated metadata says this plugin owns the named server,
-# or when the build recorded that the plugin intentionally has no .mcp.json.
+# Return true only when generated metadata says this plugin owns the named server.
 function Test-OwnsMcpServer {
     param([string]$ServerName)
     if ([string]::IsNullOrWhiteSpace($ServerName)) { return $false }
-    $states = @(Get-PluginMetadataValues -Key 'mcp-config-state')
-    if ($states.Count -ne 1) { return $false }
-    if ($states[0] -eq 'absent') { return $true }
-    if ($states[0] -ne 'present') { return $false }
     return @(Get-PluginMetadataValues -Key 'mcp-server') -contains $ServerName
 }
 

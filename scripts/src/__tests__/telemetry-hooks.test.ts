@@ -115,8 +115,6 @@ const OWNED_MCP_PLUGIN_ROOT = join(TEST_DIR, "owned-mcp-plugin");
 const OWNED_MCP_HOOKS_DIR = join(OWNED_MCP_PLUGIN_ROOT, "hooks", "scripts");
 const EMPTY_MCP_PLUGIN_ROOT = join(TEST_DIR, "empty-mcp-plugin");
 const EMPTY_MCP_HOOKS_DIR = join(EMPTY_MCP_PLUGIN_ROOT, "hooks", "scripts");
-const INVALID_MCP_STATE_PLUGIN_ROOT = join(TEST_DIR, "invalid-mcp-state-plugin");
-const INVALID_MCP_STATE_HOOKS_DIR = join(INVALID_MCP_STATE_PLUGIN_ROOT, "hooks", "scripts");
 const DISPATCHER_PATH = join(STUB_HOOKS_DIR, "track-telemetry.js");
 const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), "fixtures");
 const SESSION_ID = "73e52424-a95d-4e21-b70c-2dffe48fdd86";
@@ -690,7 +688,6 @@ function copyTestHookScripts(destination: string): void {
 function writeHookMetadata(
   pluginRoot: string,
   metadata: { name: string; version: string },
-  mcpConfigState: string,
   mcpServers: string[] = [],
 ): void {
   const metadataPath = join(pluginRoot, "hooks", "metadata.txt");
@@ -700,7 +697,6 @@ function writeHookMetadata(
     [
       `plugin-name=${metadata.name}`,
       `plugin-version=${metadata.version}`,
-      `mcp-config-state=${mcpConfigState}`,
       ...mcpServers.map(serverName => `mcp-server=${serverName}`),
       "",
     ].join("\n"),
@@ -710,13 +706,12 @@ function writeHookMetadata(
 function createPluginMetadataFixture(
   pluginRoot: string,
   metadata?: { name: string; version: string },
-  mcpConfigState?: string,
   mcpServers: string[] = [],
 ): void {
   const hooksDirectory = join(pluginRoot, "hooks", "scripts");
   cpSync(STUB_HOOKS_DIR, hooksDirectory, { recursive: true });
-  if (metadata && mcpConfigState) {
-    writeHookMetadata(pluginRoot, metadata, mcpConfigState, mcpServers);
+  if (metadata) {
+    writeHookMetadata(pluginRoot, metadata, mcpServers);
   }
 }
 
@@ -739,12 +734,11 @@ beforeAll(() => {
   writeHookMetadata(
     PLUGIN_ROOT,
     PLUGIN_METADATA.cursor,
-    "absent",
+    ["azure"],
   );
   createPluginMetadataFixture(
     SIDECAR_METADATA_PLUGIN_ROOT,
     { name: "sidecar-plugin", version: "9.8.7" },
-    "absent",
   );
   createPluginMetadataFixture(MISSING_METADATA_PLUGIN_ROOT);
   const missingMetadataSkillRoot = join(
@@ -760,19 +754,11 @@ beforeAll(() => {
   createPluginMetadataFixture(
     OWNED_MCP_PLUGIN_ROOT,
     { name: "owned-mcp-plugin", version: "1.0.0" },
-    "present",
     ["azure", "github"],
   );
   createPluginMetadataFixture(
     EMPTY_MCP_PLUGIN_ROOT,
     { name: "empty-mcp-plugin", version: "1.0.0" },
-    "present",
-  );
-  createPluginMetadataFixture(
-    INVALID_MCP_STATE_PLUGIN_ROOT,
-    { name: "invalid-mcp-state-plugin", version: "1.0.0" },
-    "invalid",
-    ["azure"],
   );
   for (const metadata of Object.values(PLUGIN_METADATA)) {
     const manifestDir = join(PLUGIN_ROOT, metadata.directory);
@@ -790,7 +776,7 @@ beforeAll(() => {
       version: PLUGIN_METADATA.copilot.version,
     }),
   );
-  writeHookMetadata(SPACED_PLUGIN_ROOT, PLUGIN_METADATA.copilot, "absent");
+  writeHookMetadata(SPACED_PLUGIN_ROOT, PLUGIN_METADATA.copilot);
   for (const binaryName of ["ghcfa-telem", "ghcfa-telem.cmd"]) {
     writePublisherStub(join(BIN_DIR, binaryName));
   }
@@ -1020,19 +1006,7 @@ describe.each(shells)("Generated plugin metadata ($name)", shell => {
     expect(args).toEqual([]);
   });
 
-  it("fails closed when the generated MCP config state is invalid", () => {
-    const args = runHook(
-      shell,
-      fixture("cursor-mcp-invocation.json"),
-      "",
-      {},
-      INVALID_MCP_STATE_HOOKS_DIR,
-    );
-
-    expect(args).toEqual([]);
-  });
-
-  it("keeps the existing permissive behavior for an explicitly absent .mcp.json", () => {
+  it("does not report Azure MCP telemetry when no server entries are generated", () => {
     const args = runHook(
       shell,
       fixture("cursor-mcp-invocation.json"),
@@ -1041,8 +1015,7 @@ describe.each(shells)("Generated plugin metadata ($name)", shell => {
       SIDECAR_METADATA_HOOKS_DIR,
     );
 
-    expectArg(args, "--event-type", "tool_invocation");
-    expectArg(args, "--tool-name", "get_azure_bestpractices");
+    expect(args).toEqual([]);
   });
 });
 

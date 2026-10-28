@@ -346,7 +346,6 @@ function writePluginHookMetadata(
   }
 
   const mcpConfigPath = path.join(pluginOutputRoot, ".mcp.json");
-  let mcpConfigState = "absent";
   let mcpServerNames: string[] = [];
 
   if (existsSync(mcpConfigPath)) {
@@ -360,7 +359,6 @@ function writePluginHookMetadata(
       throw new Error(`${description} field "mcpServers" must contain a JSON object.`);
     }
 
-    mcpConfigState = "present";
     mcpServerNames = Object.keys(config.mcpServers).sort();
     for (const serverName of mcpServerNames) {
       requireMetadataString(serverName, "mcpServers key", description);
@@ -370,7 +368,6 @@ function writePluginHookMetadata(
   const metadataLines = [
     `plugin-name=${pluginName}`,
     `plugin-version=${pluginVersion}`,
-    `mcp-config-state=${mcpConfigState}`,
     ...mcpServerNames.map(serverName => `mcp-server=${serverName}`),
   ];
   writeFileSync(

@@ -113,19 +113,17 @@ describe("generated hook metadata", () => {
     expect(metadataLines()).toEqual([
       "plugin-name=shared-plugin-name",
       "plugin-version=4.5.6",
-      "mcp-config-state=present",
       "mcp-server=azure",
       "mcp-server=zeta",
     ]);
   });
 
-  it("distinguishes an empty MCP configuration from an absent one", () => {
+  it("emits no MCP server entries for empty or absent configuration", () => {
     writeJson(join(outputRoot, pluginName, ".mcp.json"), { mcpServers: {} });
     expectAssemblySuccess();
     expect(metadataLines()).toEqual([
       "plugin-name=shared-plugin-name",
       "plugin-version=4.5.6",
-      "mcp-config-state=present",
     ]);
 
     rmSync(join(outputRoot, pluginName, ".mcp.json"));
@@ -133,7 +131,6 @@ describe("generated hook metadata", () => {
     expect(metadataLines()).toEqual([
       "plugin-name=shared-plugin-name",
       "plugin-version=4.5.6",
-      "mcp-config-state=absent",
     ]);
   });
 

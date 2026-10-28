@@ -192,7 +192,6 @@ PLUGIN_METADATA_LOADED=false
 PLUGIN_METADATA_VALID=false
 PLUGIN_METADATA_NAME=""
 PLUGIN_METADATA_VERSION=""
-PLUGIN_METADATA_MCP_CONFIG_STATE=""
 PLUGIN_METADATA_MCP_SERVERS=""
 
 # Return true only when a target belongs to this hook's plugin. Since this hook
@@ -229,7 +228,6 @@ load_plugin_metadata() {
     local line
     local nameCount=0
     local versionCount=0
-    local stateCount=0
 
     [ "$PLUGIN_METADATA_LOADED" = false ] || return 0
     PLUGIN_METADATA_LOADED=true
@@ -245,10 +243,6 @@ load_plugin_metadata() {
                 PLUGIN_METADATA_VERSION="${line#*=}"
                 versionCount=$((versionCount + 1))
                 ;;
-            mcp-config-state=*)
-                PLUGIN_METADATA_MCP_CONFIG_STATE="${line#*=}"
-                stateCount=$((stateCount + 1))
-                ;;
             mcp-server=*)
                 if [ -n "$PLUGIN_METADATA_MCP_SERVERS" ]; then
                     PLUGIN_METADATA_MCP_SERVERS="$PLUGIN_METADATA_MCP_SERVERS
@@ -262,12 +256,7 @@ ${line#*=}"
 
     [ "$nameCount" -eq 1 ] && [ -n "$PLUGIN_METADATA_NAME" ] || return 0
     [ "$versionCount" -eq 1 ] && [ -n "$PLUGIN_METADATA_VERSION" ] || return 0
-    [ "$stateCount" -eq 1 ] || return 0
-    case "$PLUGIN_METADATA_MCP_CONFIG_STATE" in
-        absent|present)
-            PLUGIN_METADATA_VALID=true
-            ;;
-    esac
+    PLUGIN_METADATA_VALID=true
 }
 
 # Read one value from the build-generated plugin metadata.
@@ -288,30 +277,19 @@ get_plugin_field() {
     esac
 }
 
-# Return true when generated metadata says this plugin owns the named server,
-# or when the build recorded that the plugin intentionally has no .mcp.json.
+# Return true only when generated metadata says this plugin owns the named server.
 owns_mcp_server() {
     local serverName="$1"
     local configuredServer
 
     load_plugin_metadata
     [ "$PLUGIN_METADATA_VALID" = true ] || return 1
-    case "$PLUGIN_METADATA_MCP_CONFIG_STATE" in
-        absent)
-            return 0
-            ;;
-        present)
-            while IFS= read -r configuredServer; do
-                [ "$configuredServer" = "$serverName" ] && return 0
-            done <<EOF
+    while IFS= read -r configuredServer; do
+        [ "$configuredServer" = "$serverName" ] && return 0
+    done <<EOF
 $PLUGIN_METADATA_MCP_SERVERS
 EOF
-            return 1
-            ;;
-        *)
-            return 1
-            ;;
-    esac
+    return 1
 }
 
 load_plugin_metadata
