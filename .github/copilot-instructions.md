@@ -265,3 +265,7 @@ The repo includes agent skills under `.github/skills/` that can help with develo
 | `sensei` | Iteratively improving skill frontmatter compliance |
 | `analyze-test-run` | Investigating GitHub Actions test run failures |
 | `file-test-bug` | Filing GitHub issues for test failures |
+
+## GitHub Agent workflow
+
+When compiling agent workflows in .github/workflows/*.md. Make sure to always pass `--gh-aw-ref {hash-of-the-gh-aw-version}`. By default, gh aw doesn't pin the gh aw setup action to its hash, which violates ur branch policy requiring all actions to be pined to their hash.

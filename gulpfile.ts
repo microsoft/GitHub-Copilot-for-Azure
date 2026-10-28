@@ -19,6 +19,9 @@ import {
 import { isDeepStrictEqual } from "util";
 import Vinyl = require("vinyl");
 
+const { writePluginAllowlists }: typeof import("./scripts/src/plugin-allowlists.cjs") =
+  require("./scripts/src/plugin-allowlists.cts");
+
 // Matches top-level skill files like skills/azure-deploy/SKILL.md but not nested ones.
 const TOP_LEVEL_SKILL_RE = /^skills[\\/][^\\/]+[\\/]SKILL\.md$/;
 // Matches plugin.json in the .plugin/, .cursor-plugin/, and .claude-plugin/ directories.
@@ -484,6 +487,7 @@ function buildPlugin(pluginDirname: string): Promise<void> {
     pipeline.on("end", () => {
       try {
         assemblePluginHooks(pluginDirname);
+        writePluginAllowlists(pluginOutputDir);
         generateChangelog(pluginDirname, legacyChangelog);
         resolve();
       } catch (err) {

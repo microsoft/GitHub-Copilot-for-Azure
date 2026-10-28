@@ -28,6 +28,13 @@ A plugin can optionally add `copilot-hooks.json`, `claude-hooks.json`, or
 The build validates all fragments and emits the compiled manifests at the
 existing client paths.
 
+After assembling hooks, the build generates `hooks/allowlists/allowed-skills.txt`
+and `hooks/allowlists/allowed-references.txt` in each plugin package. These
+plugin-specific, newline-separated lists describe the packaged skills and their
+supporting files. Reference paths remain relative to the plugin's `skills/`
+directory, not the allowlist directory. The telemetry hooks do not yet pass these
+files to the reporter.
+
 ## Copilot CLI
 
 Copilot CLI uses the `copilot-hooks.json` hooks manifest, referenced explicitly via the `hooks` property in the Copilot plugin manifest (`.plugin/plugin.json`). Although it shares the manifest with VS Code, it only uses the `bash` and `powershell` properties defined in it. At runtime, Copilot CLI replaces the `PLUGIN_ROOT` variable to construct the path that can resolve the scripts. On macOS and Linux, it executes the `bash` script. On Windows, it executes the PowerShell script referenced by the `powershell` property.
@@ -48,7 +55,7 @@ The `SessionStart` hook reports both startup and resume events. Plugin metadata 
 
 ## Cursor
 
-Cursor uses the `cursor-hooks.json` hooks manifest. At runtime, Cursor replaces the `CURSOR_PLUGIN_ROOT` variable to construct the path that can resolve to the scripts. It invokes the Node.js dispatcher, which selects PowerShell on Windows and Bash on macOS and Linux.
+Cursor uses the `cursor-hooks.json` hooks manifest. At runtime, Cursor replaces the `CURSOR_PLUGIN_ROOT` variable to construct the path that can resolve to the scripts. Like Claude Code, it executes the telemetry script with Bash on every platform.
 
 The `sessionStart` hook reports each new Composer conversation. Plugin metadata is read from `.cursor-plugin/plugin.json`.
 

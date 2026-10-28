@@ -116,6 +116,16 @@ npm run build
 
 The `output/` directory now contains the fully built plugin, ready for use.
 
+Each built plugin also includes `allowed-skills.txt` and
+`allowed-references.txt` under `hooks/allowlists/`. These generated UTF-8 files contain sorted,
+newline-separated entries for telemetry allowlists. Reference paths are relative
+to the plugin's `skills/` directory and use backslashes, such as
+`azure-deploy\references\workflow.md`. They include supporting scripts and assets,
+but exclude `SKILL.md`, `version.json`, and license files named `LICENSE`,
+`LICENSE.txt`, or `LICENSE.md`. The build regenerates these files from packaged
+skills; do not maintain them in plugin source directories. Generating these files
+does not yet change the telemetry hooks to pass them to the reporter.
+
 ### Token Management
 
 AI agents load skill content into their context window, which has finite capacity. Large skills:

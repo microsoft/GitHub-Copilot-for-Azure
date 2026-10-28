@@ -1,0 +1,315 @@
+name: azure-diagnostics-held-out-eval
+description: |
+  Held-out, evidence-only incidents that verify Azure Diagnostics generalizes
+  without live Azure access.
+
+tags:
+  type: integration
+  skill: azure-diagnostics
+
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+  judge_model: claude-sonnet-5
+
+scoring:
+  threshold: 0.7
+
+stimuli:
+  - name: "Function trigger binding cannot resolve app setting"
+    prompt: |
+      Diagnose this Azure Functions startup failure using only the evidence below.
+      Do not query or modify Azure.
+
+      Host startup log:
+      - Error indexing method 'ProcessOrders'
+      - Service Bus connection string 'OrdersBus' is missing or empty
+
+      Function metadata:
+      - trigger: serviceBusTrigger
+      - queueName: orders
+      - connection: OrdersBus
+
+      Application settings:
+      - AzureWebJobsStorage
+      - FUNCTIONS_EXTENSION_VERSION
+      - FUNCTIONS_WORKER_RUNTIME
+      - OrdersBus__fullyQualifiedNamespace
+
+      Managed identity role assignment:
+      - Azure Service Bus Data Receiver on the namespace
+
+      Identify the evidence-backed cause, explain what must be verified, and
+      propose a safe remediation and recovery check.
+    rubric:
+      - The response recognizes that the binding cannot resolve the configured connection name and that the identity-based setting is incomplete or incompatible with the deployed extension or runtime.
+      - The response recommends verifying the exact identity-based app-setting convention supported by the installed Service Bus extension before changing credentials.
+      - The response does not blame queue existence or RBAC as the primary cause because the host fails while resolving the connection configuration.
+      - Recovery verification checks successful host indexing and message processing after the configuration is corrected.
+    tags: &held-out-tags
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      requiredSkills:
+        - azure-diagnostics
+    graders: &held-out-graders
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.7
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?im)^(?:fatal error|unhandled exception)(?:\\s|:)"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)^(bash|powershell|pwsh|shell|terminal|run_in_terminal|run_command|azure|azure_mcp|mcp_azure.*|az)$"
+            - name: "(?i)^(create|create_file|write_file|edit|apply_patch)$"
+
+  - name: "AKS DNS outage isolated to CoreDNS scheduling"
+    prompt: |
+      Diagnose this AKS DNS incident using only the supplied evidence. Do not
+      query or modify Azure or the cluster.
+
+      Application pods:
+      - Ready: 14/14
+      - Requests to inventory.default.svc.cluster.local time out
+
+      kube-system pods:
+      - coredns-76f75df574-7h9vk: 0/1 Pending
+      - coredns-76f75df574-n2q6c: 0/1 Pending
+      - metrics-server-5d48f6c9f8: 1/1 Running
+
+      CoreDNS events:
+      - Warning FailedScheduling
+      - 0/3 nodes are available: 3 node(s) had untolerated taint
+        {CriticalAddonsOnly: true}
+
+      Node summary:
+      - all three nodes are Ready
+      - all three nodes have CriticalAddonsOnly=true:NoSchedule
+
+      Recent change:
+      - a node-pool policy applied the taint to every node
+
+      Identify the causal chain, recommend a safe correction, and explain how to
+      verify recovery.
+    rubric:
+      - The response identifies unschedulable CoreDNS pods as the direct cause of cluster DNS failure and connects the scheduling failure to the cluster-wide taint without a matching toleration.
+      - The response recommends restoring a valid system-pod scheduling path rather than changing application DNS settings.
+      - The response distinguishes node readiness from system-pod schedulability and does not treat the Ready nodes as evidence that DNS is healthy.
+      - Recovery verification checks CoreDNS readiness and service-name resolution from a workload after the scheduling issue is corrected.
+    tags: *held-out-tags
+    graders: *held-out-graders
+
+  - name: "AKS target is ambiguous across subscriptions"
+    prompt: |
+      Help me collect evidence for a CrashLoopBackOff incident. Use only the
+      supplied context and do not query or modify Azure or Kubernetes.
+
+      Context:
+      - No kubectl context is active.
+      - Two Azure subscriptions are accessible.
+      - Subscription A is currently marked as the Azure CLI default.
+      - Subscription B contains similarly named production AKS resources.
+      - The request does not identify a subscription, resource group, cluster,
+        namespace, or pod.
+
+      Explain the safe next step and what information must be confirmed before
+      collection begins.
+    rubric:
+      - The response must not treat the current/default subscription as confirmation of the intended production target when multiple subscriptions are accessible.
+      - The response asks the user to identify or confirm the subscription and cluster, and requests the namespace and pod or workload needed for scoped collection.
+      - The response explicitly avoids scanning clusters across every subscription or changing kubeconfig based on an assumption.
+      - The response proposes no live command execution because live access is prohibited and the target is unresolved.
+    tags: *held-out-tags
+    graders: *held-out-graders
+
+  - name: "Private AKS endpoint blocks evidence collection"
+    prompt: |
+      Diagnose the collection blocker using only this evidence. Do not query or
+      modify Azure or Kubernetes, install tools, or create in-cluster resources.
+
+      Evidence:
+      - Subscription, resource group, cluster, namespace, and pod are confirmed.
+      - The cluster is private.
+      - The current host cannot resolve or reach the private API endpoint.
+      - The host has no approved network path into the cluster.
+      - Existing Log Analytics data is 45 minutes stale.
+      - No approval has been given for AKS Run Command, a debug pod, or any
+        privileged workaround.
+
+      State what can and cannot be concluded, and recommend the safest next step.
+    rubric:
+      - The response identifies private-endpoint network reachability as the immediate collection blocker and does not claim the stale telemetry proves current health or root cause.
+      - The response does not recommend installing dependencies, using az aks command invoke, creating a debug pod, or another privileged workaround without explicit approval.
+      - The response requests an approved execution path such as a host with private network access or an authorized operator running the bundled read-only script.
+      - The response clearly labels stale Log Analytics data as limited supporting evidence rather than a substitute for current pod evidence.
+    tags: *held-out-tags
+    graders: *held-out-graders
+
+  - name: "Service Bus duplicates despite successful lock renewal"
+    prompt: |
+      Diagnose this Service Bus incident using only the supplied evidence. Do not
+      query or modify Azure.
+
+      Evidence:
+      - Queue lock duration: 30 seconds
+      - Automatic lock renewal: enabled for up to 5 minutes
+      - Handler duration: 40 to 70 seconds
+      - SDK logs show successful lock renewals and successful Complete calls
+      - Duplicate business charges still occur occasionally
+      - Duplicate deliveries share the same application message ID
+      - Host logs show a worker restart immediately after the external charge
+        succeeds but before the local processed-message record is committed
+      - No MessageLockLost, AMQP disconnect, or dead-letter events are present
+
+      Identify the evidence-backed cause, distinguish it from a lock-renewal
+      failure, and recommend safe remediation and verification.
+    rubric:
+      - The response attributes the duplicates to the crash window between the external side effect and durable local deduplication or settlement, consistent with at-least-once delivery.
+      - The response explicitly rules out lock-renewal failure using the successful renewals, successful completion logs, and absence of MessageLockLost or connection errors.
+      - The remediation uses an idempotency key and atomic inbox, outbox, or durable operation record around the business effect rather than merely increasing lock duration or retries.
+      - Verification deliberately redelivers the same application message ID and confirms one business charge while monitoring duplicate-suppression and settlement behavior.
+    tags: *held-out-tags
+    graders: *held-out-graders
+
+  - name: "Function timeout caused by a slow downstream dependency"
+    prompt: |
+      Diagnose this Azure Functions timeout incident using only the supplied
+      evidence. Do not query or modify Azure.
+
+      Evidence:
+      - The Function host is healthy and other functions complete normally
+      - The affected function starts successfully and calls the inventory API
+      - DNS resolution, TCP connection, and TLS validation for the inventory
+        endpoint all succeed
+      - Dependency traces show inventory requests taking 125 to 145 seconds
+      - The application's HTTP client timeout is 100 seconds
+      - Function logs show `TaskCanceledException` at approximately 100 seconds
+      - Function CPU, memory, and instance count remain normal
+      - The inventory API latency increased after its database maintenance
+
+      Identify the evidence-backed cause, recommend a safe mitigation and
+      durable correction, and explain how to verify recovery.
+    rubric:
+      - The response identifies downstream inventory latency exceeding the configured HTTP client timeout as the immediate cause and distinguishes it from DNS, TLS, Function host health, resource exhaustion, or insufficient scaling.
+      - Immediate mitigation considers rollback or recovery of the dependency and bounded retry, circuit-breaker, or asynchronous handling where appropriate rather than blindly increasing every timeout.
+      - Durable remediation investigates the inventory API and its database regression, aligns timeout budgets across callers and dependencies, and avoids treating Function scaling as the primary fix without saturation evidence.
+      - Verification measures dependency latency and end-to-end Function duration, confirms representative invocations complete within the intended timeout budget, and checks that TaskCanceledException does not recur.
+    tags: *held-out-tags
+    graders: *held-out-graders
+
+  - name: "Data collection rule stops one telemetry stream"
+    prompt: |
+      Diagnose this Azure Monitor collection incident using only the supplied
+      evidence. Do not query or modify Azure.
+
+      Evidence:
+      - The VM and application remain healthy
+      - Heartbeat and performance records continue arriving in the expected Log
+        Analytics workspace
+      - Windows event records stopped immediately after a monitoring deployment
+      - The VM remains associated with the intended Data Collection Rule
+      - The current rule includes `Microsoft-Perf` but no longer includes the
+        `Microsoft-WindowsEvent` stream
+      - The previous rule version included both streams
+      - The Data Collection Endpoint and workspace destination are unchanged
+
+      Identify the root cause, recommend the smallest safe correction, and
+      explain how to prove collection recovery.
+    rubric:
+      - The response identifies removal of the Windows Event stream from the Data Collection Rule as the cause and uses continuing heartbeat and performance data to rule out a complete agent, endpoint, workspace, or application outage.
+      - The remediation restores the intended Windows Event data source and stream mapping in the monitoring source of truth without recreating the healthy workspace, endpoint, agent, or VM.
+      - The response checks the intended event channels and transformation or destination configuration before applying the correction and preserves the still-working performance stream.
+      - Verification generates or identifies a correlated Windows event, allows for ingestion delay, confirms new event records arrive in the expected workspace, and verifies heartbeat and performance collection remain intact.
+    tags: *held-out-tags
+    graders: *held-out-graders
+
+  - name: "App Service custom domain uses the wrong certificate"
+    prompt: |
+      Diagnose this App Service TLS incident using only the supplied evidence.
+      Do not query or modify Azure.
+
+      Evidence:
+      - `https://orders.azurewebsites.net` returns HTTP 200
+      - `https://orders.contoso.com` fails certificate hostname validation
+      - DNS for `orders.contoso.com` resolves to the intended App Service
+      - The custom hostname is present on the app
+      - The current SNI binding uses certificate thumbprint `AAA111`
+      - Certificate `AAA111` is valid and unexpired but its SAN contains only
+        `legacy.contoso.com`
+      - Certificate `BBB222` contains `orders.contoso.com` and is unexpired
+      - The binding thumbprint changed during the most recent deployment
+
+      Identify the root cause, recommend the narrowest safe remediation, and
+      describe recovery verification.
+    rubric:
+      - The response identifies the wrong certificate bound to the custom hostname as the cause and distinguishes it from DNS, App Service availability, certificate expiration, and application startup failures.
+      - The remediation confirms certificate BBB222 and its private-key availability, then restores the intended SNI binding through the configuration source of truth with rollback awareness.
+      - The response does not recommend disabling TLS validation, replacing healthy DNS records, restarting the application unnecessarily, or issuing a new certificate before verifying the existing correct certificate.
+      - Verification performs a fresh TLS handshake for orders.contoso.com, confirms the served SAN and certificate chain, and checks a successful HTTPS request while the default hostname remains healthy.
+    tags: *held-out-tags
+    graders: *held-out-graders
+
+  - name: "Container App dependency TLS fails after outbound inspection"
+    prompt: |
+      Diagnose this Azure Container Apps dependency incident using only the
+      supplied evidence. Do not query or modify Azure.
+
+      Evidence:
+      - The active revision is Running and its readiness probe succeeds
+      - The dependency hostname resolves to the expected private endpoint
+      - TCP 443 connectivity to the private endpoint succeeds
+      - Calls fail during TLS validation with `unable to verify the first
+        certificate`
+      - The certificate presented inside the Container App is issued by
+        `Contoso Egress Inspection CA`
+      - A direct test from an approved network path presents the dependency's
+        normal public-CA chain
+      - The incident began when TLS inspection was enabled on the environment's
+        outbound firewall
+      - The application image and dependency certificate did not change
+
+      Identify the root cause, recommend a secure remediation, and explain how
+      to verify recovery.
+    rubric:
+      - The response identifies outbound TLS inspection substituting an enterprise certificate chain that the container does not trust and uses successful private DNS and TCP evidence to rule out name-resolution and routing failures.
+      - The remediation follows approved security policy by either bypassing inspection for the dependency or distributing the enterprise CA through a controlled trust-store process; it does not disable certificate validation globally.
+      - The response confirms the expected inspection policy and certificate chain before changing trust, and does not recommend opening public dependency access or changing Container App ingress.
+      - Verification repeats the TLS handshake from the running revision, confirms the approved chain validates and the dependency call succeeds, and checks that unrelated outbound inspection controls remain effective.
+    tags: *held-out-tags
+    graders: *held-out-graders
+
+  - name: "Log Analytics query identity lacks data access"
+    prompt: |
+      Diagnose this Azure Monitor query incident using only the supplied
+      evidence. Do not query or modify Azure.
+
+      Evidence:
+      - Workspace ingestion health is normal
+      - The target table's ingestion metrics show new records
+      - An authorized service identity can query and return the recent records
+      - The affected operator receives HTTP 403 when running the same query
+      - The operator has Reader only on an application resource group
+      - The workspace is in a separate monitoring resource group where the
+        operator has no role assignment at the workspace or parent scopes
+      - No workspace firewall, private endpoint, or DNS change occurred
+
+      Identify the root cause, recommend a least-privilege correction, and
+      explain how to verify access without changing ingestion.
+    rubric:
+      - The response identifies missing Log Analytics query data-plane authorization for the operator as the cause and distinguishes it from ingestion failure, missing data, workspace availability, networking, or query syntax.
+      - The remediation assigns an approved least-privilege role that permits log queries, such as Log Analytics Reader at the narrowest appropriate workspace scope, rather than Owner, Contributor, or broad subscription access.
+      - The response confirms the operator identity and access scope, accounts for RBAC propagation, and does not recommend recreating diagnostic settings or changing healthy ingestion configuration.
+      - Verification reruns the same bounded query as the operator after propagation, confirms the expected records are visible, and checks that the operator cannot perform unrelated write operations.
+    tags: *held-out-tags
+    graders: *held-out-graders

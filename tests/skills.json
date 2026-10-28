@@ -53,6 +53,7 @@
             "name": "aks-skills",
             "dirname": "aks-skills",
             "skills": [
+                "aks-cost-optimization",
                 "aks-gpu-inference",
                 "aks-known-issues",
                 "aks-network-capture",
@@ -60,7 +61,7 @@
                 "azure-search-nav"
             ],
             "integrationTestSchedule": {
-                "0 12 * * 2-6": "aks-gpu-inference,aks-known-issues,aks-network-capture,aks-troubleshooting,azure-search-nav"
+                "0 12 * * 2-6": "aks-cost-optimization,aks-gpu-inference,aks-known-issues,aks-network-capture,aks-troubleshooting,azure-search-nav"
             }
         },
         {

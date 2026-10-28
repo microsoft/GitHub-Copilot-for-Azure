@@ -3,7 +3,7 @@ using Ghcfa.Telemetry.Models;
 namespace Ghcfa.Telemetry.Validation;
 
 /// <summary>
-/// Validates and normalizes telemetry options against the embedded allowlist.
+/// Validates and normalizes telemetry options against the selected allowlists.
 /// </summary>
 public sealed class PluginTelemetryValidator(PluginTelemetryAllowlist allowlist)
 {
@@ -21,15 +21,20 @@ public sealed class PluginTelemetryValidator(PluginTelemetryAllowlist allowlist)
     {
         ArgumentNullException.ThrowIfNull(options);
 
+        var allowlist = _allowlist.WithOverrides(
+            options.AllowedSkills,
+            options.AllowedReferences,
+            options.AllowedTools);
+
         if (!string.IsNullOrWhiteSpace(options.FileReference) &&
-            !_allowlist.IsFileReferenceAllowed(options.FileReference))
+            !allowlist.IsFileReferenceAllowed(options.FileReference))
         {
             return PluginTelemetryValidationResult.Forbidden(
                 $"Plugin file reference '{options.FileReference}' is not in the allowlist and will not be logged.");
         }
 
         if (!string.IsNullOrWhiteSpace(options.SkillName) &&
-            !_allowlist.IsSkillNameAllowed(options.SkillName))
+            !allowlist.IsSkillNameAllowed(options.SkillName))
         {
             return PluginTelemetryValidationResult.Forbidden(
                 $"Skill name '{options.SkillName}' is not in the allowlist and will not be logged.");
@@ -37,7 +42,7 @@ public sealed class PluginTelemetryValidator(PluginTelemetryAllowlist allowlist)
 
         if (!string.IsNullOrWhiteSpace(options.ToolName))
         {
-            var normalizedToolName = ValidateAndNormalizeToolName(options.ToolName);
+            var normalizedToolName = ValidateAndNormalizeToolName(options.ToolName, allowlist);
             if (normalizedToolName is null)
             {
                 return PluginTelemetryValidationResult.Forbidden(
@@ -50,9 +55,12 @@ public sealed class PluginTelemetryValidator(PluginTelemetryAllowlist allowlist)
         return PluginTelemetryValidationResult.Success;
     }
 
-    public string? ValidateAndNormalizeToolName(string toolName)
+    public string? ValidateAndNormalizeToolName(string toolName) =>
+        ValidateAndNormalizeToolName(toolName, _allowlist);
+
+    private static string? ValidateAndNormalizeToolName(string toolName, PluginTelemetryAllowlist allowlist)
     {
-        if (_allowlist.IsExtensionToolAllowed(toolName))
+        if (allowlist.IsExtensionToolAllowed(toolName))
         {
             return toolName;
         }
@@ -63,7 +71,7 @@ public sealed class PluginTelemetryValidator(PluginTelemetryAllowlist allowlist)
             return null;
         }
 
-        return _allowlist.IsCommandAllowed(normalizedName) || _allowlist.IsAreaAllowed(normalizedName)
+        return allowlist.IsCommandAllowed(normalizedName) || allowlist.IsAreaAllowed(normalizedName)
             ? normalizedName
             : null;
     }

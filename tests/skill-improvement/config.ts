@@ -71,7 +71,8 @@ export type SkillImprovementRunSpec = {
     maxAnswerGenerations: number;
     maxJudgeCalls: number;
     maxDurationMinutes: number;
-    maxConcurrentJobs: number;
+    maxConcurrentVallyProcesses: number;
+    generationWorkersPerVallyProcess?: number;
     maxSkillTokenIncreasePercent: number;
   };
   output: {
@@ -158,12 +159,75 @@ function readExpandedYaml<T>(
   );
 }
 
+function evaluationFileSources(document: unknown): string[] {
+  if (!document || typeof document !== "object") {
+    return [];
+  }
+  const stimuli = (document as { stimuli?: unknown }).stimuli;
+  if (!Array.isArray(stimuli)) {
+    return [];
+  }
+  const sources = new Set<string>();
+  for (const stimulus of stimuli) {
+    if (!stimulus || typeof stimulus !== "object") {
+      continue;
+    }
+    for (const environmentField of ["environment", "agent_environment"] as const) {
+      const environment = (stimulus as Record<string, unknown>)[environmentField];
+      if (!environment || typeof environment !== "object") {
+        continue;
+      }
+      const files = (environment as { files?: unknown }).files;
+      if (!Array.isArray(files)) {
+        continue;
+      }
+      for (const file of files) {
+        if (!file || typeof file !== "object") {
+          continue;
+        }
+        const source = (file as { src?: unknown }).src;
+        if (typeof source === "string" && source.length > 0) {
+          sources.add(source);
+        }
+      }
+    }
+  }
+  return Array.from(sources);
+}
+
 export function materializeEvaluationFile(
   sourcePath: string,
   destinationPath: string,
   environment: NodeJS.ProcessEnv = process.env,
 ): string {
   const document = readExpandedYaml<unknown>(sourcePath, environment);
+  const sourceDirectory = path.dirname(sourcePath);
+  const destinationDirectory = path.dirname(destinationPath);
+  fs.mkdirSync(destinationDirectory, { recursive: true });
+  for (const relativeSource of evaluationFileSources(document)) {
+    if (path.isAbsolute(relativeSource)) {
+      throw new Error(
+        `Evaluation fixture source must be relative to ${sourcePath}: ${relativeSource}`
+      );
+    }
+    const resolvedSource = path.resolve(sourceDirectory, relativeSource);
+    const resolvedDestination = path.resolve(destinationDirectory, relativeSource);
+    const sourcePrefix = `${path.resolve(sourceDirectory)}${path.sep}`;
+    const destinationPrefix = `${path.resolve(destinationDirectory)}${path.sep}`;
+    if (
+      !resolvedSource.startsWith(sourcePrefix)
+      || !resolvedDestination.startsWith(destinationPrefix)
+    ) {
+      throw new Error(
+        `Evaluation fixture source must stay within its eval directory: ${relativeSource}`
+      );
+    }
+    if (!fs.existsSync(resolvedSource)) {
+      throw new Error(`Evaluation fixture source does not exist: ${resolvedSource}`);
+    }
+    fs.mkdirSync(path.dirname(resolvedDestination), { recursive: true });
+    fs.cpSync(resolvedSource, resolvedDestination, { recursive: true });
+  }
   fs.writeFileSync(destinationPath, stringify(document), "utf8");
   return destinationPath;
 }
@@ -458,11 +522,27 @@ export function validateRunSpec(value: unknown): SkillImprovementRunSpec {
   requirePositiveInteger(spec.limits?.maxAnswerGenerations, "limits.maxAnswerGenerations");
   requirePositiveInteger(spec.limits?.maxJudgeCalls, "limits.maxJudgeCalls");
   requirePositiveInteger(spec.limits?.maxDurationMinutes, "limits.maxDurationMinutes");
-  requirePositiveInteger(spec.limits?.maxConcurrentJobs, "limits.maxConcurrentJobs");
+  if (spec.limits && "maxConcurrentJobs" in spec.limits) {
+    throw new Error("limits.maxConcurrentJobs has been renamed to limits.maxConcurrentVallyProcesses.");
+  }
+  requirePositiveInteger(
+    spec.limits?.maxConcurrentVallyProcesses, "limits.maxConcurrentVallyProcesses"
+  );
+  if (spec.limits.generationWorkersPerVallyProcess !== undefined) {
+    requirePositiveInteger(
+      spec.limits.generationWorkersPerVallyProcess, "limits.generationWorkersPerVallyProcess"
+    );
+  }
   requireNonNegativeNumber(
     spec.limits?.maxSkillTokenIncreasePercent,
     "limits.maxSkillTokenIncreasePercent"
   );
+  if (spec.improvementAgent.enabled && spec.limits.maxIterations === 0) {
+    throw new Error(
+      "improvementAgent.enabled cannot be true when limits.maxIterations is 0. "
+      + "Set limits.maxIterations to at least 1 or set improvementAgent.enabled to false."
+    );
+  }
   if (
     spec.heldOutAcceptance?.enabled
     && (!spec.improvementAgent.enabled || spec.limits.maxIterations === 0)
@@ -583,7 +663,7 @@ export function resolveEvaluationPath(
   return realEvalPath;
 }
 
-function countStimuli(repoRoot: string, spec: SkillImprovementRunSpec, files: string[]): number {
+export function countStimuli(repoRoot: string, spec: SkillImprovementRunSpec, files: string[]): number {
   return files.reduce((total, file) => {
     const evalPath = resolveEvaluationPath(repoRoot, spec, file);
     const document = readExpandedYaml<{ stimuli?: unknown[] }>(evalPath);

@@ -64,7 +64,7 @@ function spec(): SkillImprovementRunSpec {
       maxAnswerGenerations: 100,
       maxJudgeCalls: 200,
       maxDurationMinutes: 60,
-      maxConcurrentJobs: 2,
+      maxConcurrentVallyProcesses: 2,
       maxSkillTokenIncreasePercent: 15,
     },
     output: {
@@ -75,6 +75,58 @@ function spec(): SkillImprovementRunSpec {
 }
 
 describe("skill improvement configuration", () => {
+  test("requires at least one iteration when the improvement agent is enabled", () => {
+    const invalid = spec();
+    invalid.limits.maxIterations = 0;
+    expect(() => validateRunSpec(invalid)).toThrow(
+      "improvementAgent.enabled cannot be true when limits.maxIterations is 0. "
+      + "Set limits.maxIterations to at least 1 or set improvementAgent.enabled to false."
+    );
+  });
+
+  test("accepts enabled improvement with a candidate iteration", () => {
+    const valid = spec();
+    valid.limits.maxIterations = 1;
+    expect(validateRunSpec(valid).limits.maxIterations).toBe(1);
+  });
+
+  test("accepts baseline-only evaluation when the improvement agent is disabled", () => {
+    const valid = spec();
+    valid.improvementAgent.enabled = false;
+    valid.limits.maxIterations = 0;
+    valid.heldOutAcceptance!.enabled = false;
+    expect(validateRunSpec(valid).limits.maxIterations).toBe(0);
+  });
+
+  test("accepts explicit generation workers or the default of one", () => {
+    const runSpec = spec();
+    expect(validateRunSpec(runSpec).limits.generationWorkersPerVallyProcess).toBeUndefined();
+    runSpec.limits.generationWorkersPerVallyProcess = 3;
+    expect(validateRunSpec(runSpec).limits.generationWorkersPerVallyProcess).toBe(3);
+  });
+
+  test.each([0, -1, 1.5, NaN, Infinity, "2", null])(
+    "rejects invalid concurrency values %s", value => {
+      for (const field of ["maxConcurrentVallyProcesses", "generationWorkersPerVallyProcess"]) {
+        const runSpec = spec();
+        Object.assign(runSpec.limits, { [field]: value });
+        expect(() => validateRunSpec(runSpec)).toThrow(`limits.${field}`);
+      }
+    }
+  );
+
+  test("requires the renamed process limit and rejects the old spelling", () => {
+    const runSpec = spec();
+    Reflect.deleteProperty(runSpec.limits, "maxConcurrentVallyProcesses");
+    expect(() => validateRunSpec(runSpec)).toThrow("limits.maxConcurrentVallyProcesses");
+    Object.assign(runSpec.limits, { maxConcurrentJobs: 2 });
+    expect(() => validateRunSpec(runSpec)).toThrow(
+      "limits.maxConcurrentJobs has been renamed to limits.maxConcurrentVallyProcesses."
+    );
+    runSpec.limits.maxConcurrentVallyProcesses = 2;
+    expect(() => validateRunSpec(runSpec)).toThrow("has been renamed");
+  });
+
   test("configures a valid Azure Kusto improvement run", () => {
     const runSpec = loadRunSpec(fileURLToPath(
       new URL("../specs/azure-kusto.yaml", import.meta.url)
@@ -163,6 +215,74 @@ describe("skill improvement configuration", () => {
         "Use subscription-value in resource-group-value."
       );
       expect(fs.readFileSync(destination, "utf8")).not.toContain("${");
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("copies eval-relative fixture files when materializing stimuli", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "skill-improvement-fixture-"));
+    const sourceDirectory = path.join(root, "source");
+    const destinationDirectory = path.join(root, "destination");
+    const source = path.join(sourceDirectory, "fixture.eval.yaml");
+    const destination = path.join(destinationDirectory, "fixture.eval.yaml");
+    fs.mkdirSync(path.join(sourceDirectory, "fixture"), { recursive: true });
+    fs.writeFileSync(
+      path.join(sourceDirectory, "fixture", "evidence.txt"),
+      "diagnostic evidence",
+      "utf8"
+    );
+    fs.writeFileSync(
+      source,
+      [
+        "stimuli:",
+        "  - prompt: Diagnose the supplied evidence.",
+        "    agent_environment:",
+        "      files:",
+        "        - src: fixture/evidence.txt",
+        "          dest: evidence.txt",
+        "",
+      ].join("\n"),
+      "utf8"
+    );
+
+    try {
+      materializeEvaluationFile(source, destination);
+      expect(fs.readFileSync(
+        path.join(destinationDirectory, "fixture", "evidence.txt"),
+        "utf8"
+      )).toBe("diagnostic evidence");
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("rejects fixture paths outside the eval directory", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "skill-improvement-fixture-"));
+    const sourceDirectory = path.join(root, "source");
+    const source = path.join(sourceDirectory, "fixture.eval.yaml");
+    const destination = path.join(root, "destination", "fixture.eval.yaml");
+    fs.mkdirSync(sourceDirectory, { recursive: true });
+    fs.writeFileSync(path.join(root, "outside.txt"), "outside", "utf8");
+    fs.writeFileSync(
+      source,
+      [
+        "stimuli:",
+        "  - prompt: Diagnose the supplied evidence.",
+        "    environment:",
+        "      files:",
+        "        - src: ../outside.txt",
+        "          dest: evidence.txt",
+        "",
+      ].join("\n"),
+      "utf8"
+    );
+
+    try {
+      expect(() => materializeEvaluationFile(source, destination)).toThrow(
+        "Evaluation fixture source must stay within its eval directory"
+      );
+      expect(fs.existsSync(destination)).toBe(false);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }
@@ -582,6 +702,7 @@ describe("skill improvement configuration", () => {
 
   test("requires a candidate iteration for held-out acceptance", () => {
     const invalid = spec();
+    invalid.improvementAgent.enabled = false;
     invalid.limits.maxIterations = 0;
     expect(() => validateRunSpec(invalid)).toThrow(
       "heldOutAcceptance requires at least one candidate iteration"

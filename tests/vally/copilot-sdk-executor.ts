@@ -1,4 +1,5 @@
 import { computeMetrics } from "@microsoft/vally";
+import { collectEvaluationAnswerBilling, type EvaluationAnswerBilling } from "../skill-improvement/billing.ts";
 import { fileURLToPath } from "url";
 import { getAzureFixtureManifestPath, getEarlyTerminateCondition, getRequiredSkillsCondition, getSkillName, getSystemPrompt, getTakeScreenshotCondition } from "./tag-helpers.ts";
 import { listPlugins, type Plugin, type SkillRef } from "../utils/skill-loader.ts";
@@ -7,7 +8,7 @@ import * as path from "node:path";
 import type { AgentMetadata, AgentRunConfig } from "../utils/agent-runner.ts";
 import type { Executor, ExecutorOptions, ExecutorRegistry, Stimulus, Trajectory, TrajectoryEvent } from "@microsoft/vally";
 import { deleteResourceGroup, type FixtureManifest, type PostTestScriptConfig, readManifest, type ProvisionScriptOutput } from "../azure-fixtures/fixture-common.ts";
-import { provisionManifest, type ProvisionManifestOutput, runPostTestScript } from "../azure-fixtures/provision-fixture.ts";
+import { provision, type ProvisionManifestOutput, runPostTestScript } from "../azure-fixtures/provision-fixture.ts";
 import { dirname } from "node:path";
 import { useAgentRunner, createMarkdownReport } from "../utils/copilot-sdk-runner.ts";
 
@@ -19,12 +20,19 @@ const __dirname = path.dirname(__filename);
  */
 const modelOverride = process.env.MODEL_OVERRIDE?.trim() || undefined;
 
+type BilledTrajectory = Trajectory & {
+  metadata: Trajectory["metadata"] & {
+    evaluationAnswerBilling: EvaluationAnswerBilling;
+    completionStatus: AgentMetadata["completionStatus"];
+  };
+};
+
 export class CopilotSdkAgentRunner implements Executor {
   name = "copilot-sdk-agent-runner";
   supportsMultiTurn = true;
   supportsPreparedWorkspace = true;
 
-  async execute(stimulus: Stimulus, options: ExecutorOptions): Promise<Trajectory> {
+  async execute(stimulus: Stimulus, options: ExecutorOptions): Promise<BilledTrajectory> {
     const startedAt = new Date();
     const tags = stimulus.tags;
     const skillName = getSkillName(tags);
@@ -116,13 +124,13 @@ export class CopilotSdkAgentRunner implements Executor {
         }
         manifest = readManifest(absoluteManifestPath);
 
-        provisionOutput = provisionManifest(absoluteManifestPath, manifest);
+        provisionOutput = await provision(absoluteManifestPath, manifest);
         const parsedProvisionOutput: ProvisionScriptOutput = JSON.parse(provisionOutput.output);
         const azureScopePrompt = getAzureScopePrompt(parsedProvisionOutput);
         runConfig.prompt += `\n${azureScopePrompt}`;
         fixtureResourceGroups = parsedProvisionOutput.resourceGroups;
         postTestScriptConfig = manifest.postTestScript;
-        persistFixture = !!manifest.persist;
+        persistFixture = manifest.persistence === "temporary" || manifest.persistence === "permanent";
       }
 
       const agentMetadata: AgentMetadata = await agentRunner.run(runConfig);
@@ -141,6 +149,9 @@ export class CopilotSdkAgentRunner implements Executor {
 
       await createMarkdownReport(normalizedTestName, runConfig, agentMetadata);
       await agentRunner.cleanup();
+      const evaluationAnswerBilling = collectEvaluationAnswerBilling(
+        agentMetadata.events, agentMetadata.completionStatus === "completed"
+      );
 
       if (postTestScriptConfig) {
         runPostTestScript(provisionOutput!.context, manifest!, dirname(absoluteManifestPath!));
@@ -162,6 +173,8 @@ export class CopilotSdkAgentRunner implements Executor {
           executor: this.name,
           skillsLoaded: agentMetadata.skillsLoaded.map(ref => ref.name),
           sessionID: sessionId ?? "unknown",
+          evaluationAnswerBilling,
+          completionStatus: agentMetadata.completionStatus,
         },
         metrics: {
           ...metrics,
