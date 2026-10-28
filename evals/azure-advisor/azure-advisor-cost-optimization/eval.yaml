@@ -780,6 +780,7 @@ stimuli:
     prompt: >-
       Explain this supplied read-only Advisor Cost IdleResources prevalidation result.
       Do not query Azure, reclassify the resources, generate artifacts, or perform any action.
+      The resolved scope is subscription Demo; all four resources are in resource group rg-demo.
       Pricing is Retail USD and minimumUnusedDays is 30. The safe array contains disk-a
       with yearlyPotentialSavings=120, cost=null, a passed automated detection check, and
       an outstanding manual backup confirmation. The needsReview array contains disk-b
@@ -809,7 +810,10 @@ stimuli:
       - It explains that no action is needed for disk-deleted and Advisor will remove the recommendation automatically within 72 hours once it refreshes, not 48 hours.
       - It shows the deletion-history check and separately reports one already-deleted resource, without requiring attachment/ASR investigation, backups, export, or another pre-deletion task for disk-deleted.
       - It labels known amounts Retail USD and discloses truncation and the unmatched disk-missing selection.
-      - It uses compact resource tables under all three bucket headings, a Checks performed outcome table, and expandable per-resource evidence instead of long resource cards.
+      - It uses compact resource tables under all three bucket headings; the safe table contains only Resource, Resource group and Yearly potential savings.
+      - It shows one shared Checks performed table with exactly Check, Outcome and Minimal detail columns, using short returned facts or reasons.
+      - It groups repeated check outcomes and identifies affected resources and their actual outcomes for mixed results or limited coverage.
+      - It does not add per-resource evidence cards, tables or disclosures unless detailed evidence is explicitly requested.
       - Failed and unverified checks remain visible in the main bucket tables; shared manual guidance is labeled not executed and not repeated for each resource.
     graders:
       - type: skill-invocation
@@ -830,13 +834,65 @@ stimuli:
           pattern: "(?im)^## Checks performed\\s*$"
       - type: output-matches
         config:
-          pattern: "(?im)^\\|\\s*Resource\\s*\\|"
+          pattern: "(?im)^\\|\\s*Resource\\s*\\|\\s*Resource(?:\\s|<br\\s*/?>)+group\\s*\\|\\s*Yearly(?:\\s|<br\\s*/?>)+potential(?:\\s|<br\\s*/?>)+savings\\s*\\|\\s*$"
       - type: output-matches
         config:
-          pattern: "(?i)<details>"
+          pattern: "(?im)^\\|\\s*Check\\s*\\|\\s*Outcome\\s*\\|\\s*Minimal(?:\\s|<br\\s*/?>)+detail\\s*\\|\\s*$"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|[^\\r\\n|]*unused.age[^\\r\\n|]*\\|[^\\r\\n|]*unverified[^\\r\\n|]*\\|[^\\r\\n|]*14[^\\r\\n|]*\\|"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)<details\\b|<summary\\b|Check evidence:|\\|\\s*Check\\s*\\|\\s*Outcome\\s*\\|\\s*Evidence\\s*\\|"
       - type: output-not-matches
         config:
           pattern: "(?im)^####\\s+disk-"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor_recommendation_(list|summary|prevalidate|update)"
+            - name: "(?i)advisor_remediation_get"
+
+  - name: "Show detailed prevalidation evidence only when explicitly requested"
+    prompt: >-
+      Show detailed per-resource check evidence for disk-a using only this already-returned
+      Advisor Cost IdleResources prevalidation result. Do not query Azure, generate artifacts,
+      or change anything. Scope is subscription Demo, resource group rg-demo; minimumUnusedDays
+      is 30 and pricing is Retail USD. The safe array contains only disk-a with
+      yearlyPotentialSavings=120. Its detection check passed with evidence diskState=Unattached.
+      Its management-lock check passed with evidence that no effective management locks were
+      found. Backup confirmation is manual and has not been executed. The needsReview and
+      blocked arrays are empty, and the result is not truncated.
+    constraints:
+      max_turns: 12
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: prevalidation-evidence
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    expected:
+      - It provides detailed check evidence for the explicitly requested disk-a, including Unattached and no effective management locks.
+      - It distinguishes passed automated checks from the unexecuted manual backup confirmation and does not authorize deletion.
+      - It uses only supplied results and does not query Azure or take an action.
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)disk-a"
+      - type: output-matches
+        config:
+          pattern: "(?i)Unattached"
+      - type: output-matches
+        config:
+          pattern: "(?i)\\|\\s*Check\\s*\\|\\s*Outcome\\s*\\|\\s*Evidence\\s*\\|"
+      - type: output-matches
+        config:
+          pattern: "(?i)(not|never)[ -]executed|outstanding"
       - type: tool-calls
         config:
           disallowed:
@@ -1314,19 +1370,35 @@ stimuli:
             - name: "(?i)advisor_recommendation_(summary|list|update)"
 
   - name: "Preserve compact resource formatting across models"
+    agent_environment:
+      commands:
+        - >-
+          node -e "const fs = require('node:fs');
+          const make = (resource, group, subscription, subscriptionName, id) => ({
+          id: '/subscriptions/' + subscription + '/providers/Microsoft.Advisor/recommendations/' + id,
+          name: id, type: 'Microsoft.Advisor/recommendations',
+          properties: { category: 'Cost', impactedValue: resource,
+          resourceMetadata: { resourceId: '/subscriptions/' + subscription + '/resourceGroups/' + group + '/providers/Microsoft.Web/serverfarms/' + resource },
+          savings: { retail: { yearlyPotentialSavings: 1200, cost: 75 } },
+          extendedProperties: { diagnosticContext: 'Synthetic response-size fixture; not evidence or display content. '.repeat(400) } },
+          subscriptionName });
+          fs.writeFileSync('advisor-results.json', JSON.stringify({ results: {
+          areResultsTruncated: false, recommendations: [
+          make('plan-demo', 'rg-demo', '00000000-0000-0000-0000-000000000000', 'Demo A', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'),
+          make('plan-team-east-001', 'rg-team', '11111111-1111-1111-1111-111111111111', 'Demo B', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb')
+          ] } }, null, 2));"
     prompt: |
       My selected type is Unused App Service plans in Service Group Demo Group.
-      Advisor returned two New resources, with no truncation:
-      plan-demo in subscription Demo A and resource group rg-demo, and
-      plan-team-east-001 in subscription Demo B and resource group rg-team.
-      Each has properties.savings.retail.yearlyPotentialSavings=1200 and cost=75 USD.
+      The already-returned Advisor recommendation-list response is in advisor-results.json.
+      It contains two New resources with Retail USD pricing.
       The already-returned selected-type yearly potential savings total is 2400 USD.
-      Show the selected-type resource details using the existing compact table format.
+      Read the saved response and show the selected-type resource details using the
+      existing compact table format.
       Do not query Azure, repeat opening discovery, or ask for resource selection.
     rubric:
       - The response starts with Selected recommendation and the exact type name in bold, followed by a short count/savings introduction and coverage statement.
       - A compact context line shows Demo Group, USD, Retail pricing basis and New status; the table uses Resource, Subscription, Resource group, Yearly potential savings, Cost in that order.
-      - Both exact resource names, subscription names and resource groups are preserved. USD amounts use dollar symbols, thousands separators and two decimal places.
+      - Both exact resource names link to their affected resources in the default public Azure portal even though the response has no cloud field, and subscription names and resource groups are preserved. USD amounts use dollar symbols, thousands separators and two decimal places.
       - The response ends with a brief retention caution, without inventing safety checks, deleting resources or asking for another selection.
     tags:
       type: integration
@@ -1339,12 +1411,22 @@ stimuli:
     constraints:
       max_turns: 40
     graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
       - type: output-matches
         config:
           pattern: "(?i)\\|Resource\\|Subscription\\|Resource<br>group\\|Yearly potential<br>savings\\|Cost\\|"
       - type: output-matches
         config:
-          pattern: "(?i)\\|plan-demo\\|Demo A\\|rg-demo\\|\\$1,200\\.00\\|\\$75\\.00\\|"
+          pattern: "(?i)\\|\\[plan-demo\\]\\(https://portal\\.azure\\.com/#resource/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-demo/providers/Microsoft\\.Web/serverfarms/plan-demo/overview\\)\\|Demo A\\|rg-demo\\|\\$1,200\\.00\\|\\$75\\.00\\|"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|\\[plan-team-east-001\\]\\(https://portal\\.azure\\.com/#resource/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-team/providers/Microsoft\\.Web/serverfarms/plan-team-east-001/overview\\)\\|Demo B\\|rg-team\\|\\$1,200\\.00\\|\\$75\\.00\\|"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)subscription names? (?:were |are )?unavailable|\\|\\s*(?:00000000-0000-0000-0000-000000000000|11111111-1111-1111-1111-111111111111)\\s*\\||\\]\\(https://portal\\.azure\\.(?:us|cn)/"
       - type: output-matches
         config:
           pattern: "(?i)pricing basis[^\\r\\n]*Retail"
@@ -1352,10 +1434,110 @@ stimuli:
         config:
           disallowed:
             - name: "(?i)advisor_recommendation_(summary|list|update)|(^|[._])ask_user$"
+            - name: "(?i)^(powershell|bash|pwsh)$"
+              args:
+                command: "(?i)\\baz\\s+(?:cloud|account)\\b"
       - type: prompt
         config:
           scoring: scale_1_5
           threshold: 0.8
+
+  - name: "Reuse subscription names in prevalidation and preserve unknown-name fallback"
+    prompt: |
+      Show the read-only deletion-safety report for these already-returned Advisor
+      Cost/IdleResources results in Service Group Demo Group, cloud AzureUSGovernment. Do not query Azure,
+      generate artifacts, or change anything.
+      Earlier recommendation-list rows included this metadata:
+      {"subscriptionName":"Demo A","properties":{"resourceMetadata":{"resourceId":"/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-demo/providers/Microsoft.Compute/disks/disk-a"}}}
+      {"subscriptionName":"Demo B","properties":{"resourceMetadata":{"resourceId":"/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-team/providers/Microsoft.Compute/disks/disk-b"}}}
+      {"subscriptionName":null,"properties":{"resourceMetadata":{"resourceId":"/subscriptions/22222222-2222-2222-2222-222222222222/resourceGroups/rg-other/providers/Microsoft.Compute/disks/disk-unknown"}}}
+      The prevalidation result has minimumUnusedDays=30, Retail USD pricing,
+      complete coverage and no unmatched resources:
+      safe: disk-a at the resource ID above, yearlyPotentialSavings=120, passed detection;
+      disk-unknown at the resource ID above, yearlyPotentialSavings=30, passed detection.
+      needsReview: disk-b at the resource ID above, yearlyPotentialSavings=60,
+      unverified unused age because only 14 days of history are available.
+      blocked: disk-c at /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-demo/providers/Microsoft.Compute/disks/disk-c,
+      yearlyPotentialSavings=90, failed management-lock check.
+      The blocked array also contains disk-deleted at /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-demo/providers/Microsoft.Compute/disks/disk-deleted,
+      with resourceDeletedOn=2026-10-26T00:00:00Z, canPostponeDismiss=false,
+      and confirmed deletion from an ARG Delete event; no action is needed.
+      Resources other than disk-deleted still require manual backup confirmation; it has not been executed.
+    constraints:
+      max_turns: 20
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: resource-format-regression
+      parity: response-shape
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|\\s*\\[disk-a\\]\\(https://portal\\.azure\\.us/#resource/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-demo/providers/Microsoft\\.Compute/disks/disk-a/overview\\)\\s*\\|\\s*Demo A\\s*\\|\\s*rg-demo\\s*\\|"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|\\s*\\[disk-b\\]\\(https://portal\\.azure\\.us/#resource/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-team/providers/Microsoft\\.Compute/disks/disk-b/overview\\)\\s*\\|\\s*Demo B\\s*\\|\\s*rg-team\\s*\\|"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|\\s*\\[disk-c\\]\\(https://portal\\.azure\\.us/#resource/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-demo/providers/Microsoft\\.Compute/disks/disk-c/overview\\)\\s*\\|\\s*Demo A\\s*\\|\\s*rg-demo\\s*\\|"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|\\s*\\[disk-unknown\\]\\(https://portal\\.azure\\.us/#resource/subscriptions/22222222-2222-2222-2222-222222222222/resourceGroups/rg-other/providers/Microsoft\\.Compute/disks/disk-unknown/overview\\)\\s*\\|\\s*22222222-2222-2222-2222-222222222222\\s*\\|\\s*rg-other\\s*\\|"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|\\s*disk-deleted\\s*\\|\\s*Demo A\\s*\\|\\s*rg-demo\\s*\\|"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)\\|\\s*(?:00000000-0000-0000-0000-000000000000|11111111-1111-1111-1111-111111111111)\\s*\\||\\[disk-deleted\\]\\(|\\]\\(https://portal\\.azure\\.(?:com|cn)/"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor|subscription|(^|[._])ask_user$"
+
+  - name: "Encode resource links for Azure China and keep missing IDs plain"
+    prompt: |
+      Show the selected-type resource details for Unattached disks in subscription Demo,
+      cloud AzureChinaCloud. Use only these already-returned New recommendations, with
+      complete coverage and Retail USD pricing:
+      {"id":"/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Advisor/recommendations/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","subscriptionName":"Demo","properties":{"impactedValue":"disk(archive)","resourceMetadata":{"resourceId":"/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-demo/providers/Microsoft.Compute/disks/disk(archive)"},"savings":{"retail":{"yearlyPotentialSavings":120,"cost":10}}}}
+      {"id":"/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Advisor/recommendations/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb","subscriptionName":"Demo","properties":{"impactedValue":"disk-without-id","resourceMetadata":null,"savings":{"retail":{"yearlyPotentialSavings":60,"cost":5}}}}
+      Returned type totals are yearlyPotentialSavings=180 and cost=15 USD.
+      Do not query Azure, assess deletion safety, generate artifacts or ask for selection.
+    constraints:
+      max_turns: 20
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: resource-format-regression
+      parity: response-shape
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)\\[disk\\(archive\\)\\]\\(https://portal\\.azure\\.cn/#resource/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-demo/providers/Microsoft\\.Compute/disks/disk%28archive%29/overview\\)"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|\\s*disk-without-id\\s*\\|"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)\\[disk-without-id\\]\\(|\\]\\(https://portal\\.azure\\.(?:com|us)/|\\]\\([^\\r\\n]*Microsoft\\.Advisor/recommendations"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor|subscription|(^|[._])ask_user$"
 
   - name: "Reveal resource rows inline in batches of fifteen"
     prompt: |

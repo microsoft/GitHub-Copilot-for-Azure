@@ -15,7 +15,7 @@ subcategories, cross-category, and non-Cost requests stay on `azure-advisor`.
 | List all active idle findings | List directly with both filters and New; disclose the result cap |
 | Estimate savings if I delete it after several rows | Ask which row; use returned retail savings without treating the estimate as deletion approval |
 | Create a script to remove these | List active candidates, select exact type/resources, then hand off to actionability |
-| Is this safe to delete? | Reuse exact type/resources/scope; call read-only prevalidation; compact bucket tables plus shared checks summary and expandable evidence; never delete or change state |
+| Is this safe to delete? | Reuse exact type/resources/scope; call read-only prevalidation; compact bucket tables plus one shared checks summary; detailed evidence only on request; never delete or change state |
 | Prevalidate these selected disks using a 45-day minimum unused age | Preserve selected IDs and type, pass minimum-unused-days=45 to prevalidation; incomplete history still requires review |
 | Prevalidation says this resource is already deleted | Preserve its blocked bucket; show the confirmed date and no-action/72-hour explanation, with no lifecycle action or further deletion investigation |
 | What did we save last quarter? | Resolve period; Completed summary with from/to; use full realized-savings totals, not a capped list |

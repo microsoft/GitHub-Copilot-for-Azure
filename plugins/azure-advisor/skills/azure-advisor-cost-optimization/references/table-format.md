@@ -50,6 +50,21 @@ Use blank lines around Markdown tables in disclosures:
 </details>
 ```
 
+## Resource links
+
+In resource tables, make the existing resource name a Markdown link; keep its exact
+display name, wrapping and column order. Use the affected-resource ID from
+`properties.resourceMetadata.resourceId`, or prevalidation `resourceId`, never the
+Advisor recommendation `id`. Build `<portal-base>/#resource<resource-id>/overview`,
+URL-encoding path segments (including Markdown delimiters) while preserving `/`.
+Use the current cloud's portal base: `https://portal.azure.com` for AzureCloud,
+`https://portal.azure.us` for AzureUSGovernment, `https://portal.azure.cn` for AzureChinaCloud.
+When no different cloud is specified, use AzureCloud, matching MCP's default; a missing
+cloud field in a response must not suppress links. Reuse any known cloud override.
+If the resource ID is missing, a specified custom cloud has no known portal, or deletion
+is confirmed, keep the name plain text. Do not query or ask for cloud solely to construct
+links, or imply that a link verifies existence/access.
+
 ## Resource detail
 
 For read-only selected-type details, use this literal layout, not opening discovery:
@@ -71,8 +86,9 @@ Figures are Advisor estimates, not invoices.
 
 Keep the intro short; put Cost in the table, not a second accumulated-cost sentence.
 Use the monetary rules in [Output and savings](output-and-savings.md).
-For SG/multiple subscriptions, insert Subscription immediately after Resource, using friendly
-names or IDs when unavailable. SG scope does not replace row ownership.
+For SG/multiple subscriptions, insert Subscription immediately after Resource. Apply the
+[resource ownership](output-and-savings.md#resource-ownership) name-reuse rules;
+SG scope does not replace row ownership.
 For Completed use Realized savings; append [Lifecycle](lifecycle.md) columns.
 One table per selected type. End with a brief ownership/retention caution and no-resources-
 changed statement; no unrequested safety-check/resource-selection flow.
@@ -84,9 +100,10 @@ must recover the exact name; no abbreviations/truncation. Keep currency/basis ab
 USD uses `$`, thousands separators and two decimals; other currencies use unambiguous notation.
 Unavailable stays Unavailable, not money.
 
-Full resource IDs belong below tables only for disambiguation, confirmation, artifacts or
-explicit requests. Never call recommendation IDs resource IDs. Ordinary analysis omits raw
-payloads/links; actionability owns remediation links.
+Display full resource IDs below tables only for disambiguation, confirmation, artifacts or
+explicit requests. Never call recommendation IDs resource IDs. Resource-name portal links
+are allowed; ordinary analysis omits raw payloads and unrequested remediation links.
+Actionability owns remediation links.
 
 Pagination selects nothing or authorizes updates. Batch confirmation follows
 [State updates](state-updates.md).
@@ -104,52 +121,52 @@ Use this layout for returned safety checks, not the discovery layout or per-reso
 
 ## Resources ready to delete now
 <count and returned known yearly potential savings; outstanding manual checks still apply>
-|Resource|Subscription / Resource group|Key evidence|Yearly potential savings|
-|---|---|---|---:|
-|<exact name>|<ownership>|<returned age/other distinguishing evidence>|<amount or Unavailable>|
+|Resource|Resource group|Yearly potential savings|
+|---|---|---:|
+|<exact name>|<group>|<amount or Unavailable>|
 
 ## Resources requiring additional review
 <count and returned known yearly potential savings>
-|Resource|Subscription / Resource group|Review required|Yearly potential savings|
+|Resource|Resource group|Review required|Yearly potential savings|
 |---|---|---|---:|
-|<exact name>|<ownership>|<actual warning/unverified check and reason>|<amount or Unavailable>|
+|<exact name>|<group>|<actual warning/unverified check and reason>|<amount or Unavailable>|
 
 ## Resources blocked for deletion
 <count; separately identify the already-deleted count, not aggregate blocked savings>
-|Resource|Subscription / Resource group|Reason / next step|
+|Resource|Resource group|Reason / next step|
 |---|---|---|
-|<exact name>|<ownership>|<active blocker, or confirmed deletion date and no action needed>|
+|<exact name>|<group>|<active blocker, or confirmed deletion date and no action needed>|
 
 ## Checks performed
-|Check|Outcome|Applies to / limitations|
+|Check|Outcome|Minimal detail|
 |---|---|---|
-|<returned check name>|<actual outcomes>|<named resources or exact returned subset>|
+|<returned check name>|<actual outcome or Mixed>|<short returned fact/reason; affected resources for mixed or limited coverage>|
 
 **Manual checks - not executed:** <shared outstanding confirmations and advisory steps>
-<expandable per-resource check evidence for every resource with returned check outcomes>
 ```
 
 Keep all three bucket headings; write `None.` for an empty bucket instead of an empty table.
-Omit Subscription only for a single-subscription scope. Reuse the wrapping, money and
+For multiple subscriptions, add Subscription immediately after Resource, reusing subscription names
+as above. Reuse the wrapping, money and
 15-row inline-expansion rules above; never truncate identities or hide coverage/totals.
 Put warnings, unreadable evidence and active blocking reasons in the main resource tables,
 not only inside disclosures. Exclude confirmed-deleted resources from outstanding manual tasks.
 Treat returned age as "used or changed", not proven runtime usage or detachment time. Show
 the timestamp and signal only if returned; never invent their attribution.
 
-The checks-performed table covers every returned check. Group identical outcomes/explanations
-once and identify their exact resource coverage; show mixed outcomes distinctly, never claim
-"all passed" from one resource. Keep information-only checks non-gating and label manual steps
+Use one shared checks-performed table. Cover every returned automated check, grouping identical
+check/outcome pairs once. Keep details to one short returned fact or reason. For differing outcomes,
+use `Mixed` and identify each affected resource's actual outcome; identify limited coverage too.
+Never claim "all passed" from one resource. Keep information-only checks non-gating and label manual steps
 `Manual - not executed`, not passed. A check absent from the result is not an executed check.
 Do not invent metrics for a resource type whose returned checks do not include them.
 
-After the summary, include a `<details><summary>Check evidence: <exact resource name></summary>`
-disclosure for every resource with returned check outcomes, even when the main tables summarize
-them. Use blank lines and a `Check | Outcome | Evidence` table inside each disclosure.
-Preserve every returned outcome
-and material evidence/guidance; summarize repeated boilerplate once rather than copying raw
-payloads, KQL or unrequested scripts. Keep manual confirmations separate from executed checks.
-Do not repeat full ARM/recommendation IDs unless needed for disambiguation or requested.
+Do not add per-resource evidence cards, tables or disclosures by default. Only when explicitly
+asked for detailed evidence, show a `Check | Outcome | Evidence` table for the requested
+resources, preserving their returned outcomes and material evidence. Keep the default answer
+to resource tables, one shared checks table and outstanding manual confirmations.
+Do not dump raw payloads, KQL or unrequested scripts.
+Do not repeat full ARM/recommendation IDs as visible text unless needed for disambiguation or requested.
 Confirmed-deletion presentation and safety rules remain in
 [Prevalidation](selection-and-handoff.md#read-only-prevalidation).
 

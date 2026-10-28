@@ -5,6 +5,16 @@ Focused answers start with the requested result, not discovery; selected resourc
 lifecycle reports use their scenario templates. Completed uses Realized savings, never
 current recoverable potential.
 
+## Resource ownership
+
+Recommendation `subscriptionName` is a top-level field, not inside `properties`.
+When reading large responses or projecting compact rows, preserve it alongside the
+resource ID, name, resource group and savings; do not extract only `properties`.
+Reuse the returned subscription ID-to-name mapping in later reports, including
+prevalidation responses that contain only resource IDs. Prefer returned or already
+resolved names; use an ID only when neither provides a name. Do not query Azure again
+just to recover names already returned, or claim those names were unavailable.
+
 ## Count semantics
 
 Normal `groups[].count` and `totalRecommendations` count records: label Recommendations,

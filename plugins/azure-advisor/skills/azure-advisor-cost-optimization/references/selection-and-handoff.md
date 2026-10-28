@@ -22,9 +22,9 @@ For "safe to delete", "validate before removal", or "is this recommendation stil
    `Resources blocked for deletion`, mapped to `safe`, `needsReview`, and `blocked`.
    Explain that "ready" means automated checks passed, with manual checks still outstanding.
    Use the [prevalidation layout](table-format.md#prevalidation-results): compact bucket tables,
-   one checks-performed summary, and expandable per-resource evidence. Do not write a long
-   card or repeat the same checklist/manual guidance for every resource. Preserve each returned
-   check's outcome, material evidence/guidance, and manual confirmations.
+   one shared checks-performed table, and outstanding manual confirmations. Keep per-resource
+   failures and unverified checks visible; show detailed evidence only when explicitly requested.
+   Do not repeat the same checklist/manual guidance for every resource.
 4. Show bucket counts and returned Safe/NeedsReview known savings as Retail USD; omit the
    Blocked aggregate savings line. Preserve unavailable amounts and missing-value counts.
    Disclose truncation and unmatched selections; never call a capped subset the entire scope.

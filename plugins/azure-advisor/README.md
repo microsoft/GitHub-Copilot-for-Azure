@@ -22,8 +22,9 @@ opening discovery, unavailable pricing, selected resources, Completed details, p
 inline pagination, compact prevalidation evidence, postpone-date selection before the batch proposal,
 and partial update results. These cases do not require live Azure recommendation queries.
 
-Prevalidation uses compact tables for all three returned buckets, one checks-performed summary
-and expandable per-resource evidence. State changes use one compact proposal with exact IDs
+Prevalidation uses compact tables for all three returned buckets and one shared
+`Check | Outcome | Minimal detail` table, with failed/unverified checks and outstanding manual confirmations visible. Detailed
+per-resource evidence is shown only on request. State changes use one compact proposal with exact IDs
 separately available, followed by one server destructive approval covering the action and chosen
 date/reason. Postpone asks the date after resource selection; it does not add a separate
 assistant confirmation before the server approval. Batch updates reuse the existing tool's
