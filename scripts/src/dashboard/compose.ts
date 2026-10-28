@@ -18,6 +18,7 @@ import type {
 import { validateDashboardReport } from "./schema.js";
 import { sanitizeDashboardReport } from "./sanitize.js";
 import { collectPluginSkills } from "./plugin-collect.js";
+import { collectFixtureManifests } from "./fixture-manifest-collect.js";
 
 // ---------------------------------------------------------------------------
 // Collector registry — dynamic imports with graceful fallback
@@ -232,6 +233,9 @@ async function main(): Promise<void> {
 
   // Collect plugin/skill inventory
   collectPluginSkills();
+
+  // Collect Azure fixture manifest inventory
+  collectFixtureManifests(cwd);
 
   // Summary
   const statuses = Object.entries(categories).map(
