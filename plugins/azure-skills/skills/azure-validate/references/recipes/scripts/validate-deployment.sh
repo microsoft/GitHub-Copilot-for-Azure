@@ -146,7 +146,7 @@ echo ""
 echo "--- Step 4: Template validation (az deployment $SCOPE validate) ---"
 VALIDATE_OUTPUT=$(az deployment "$SCOPE" validate "${SCOPE_TARGET_ARGS[@]}" \
     --template-file "$TEMPLATE" \
-    "${PARAM_ARGS[@]}" ${SUB_ARGS[@]+"${SUB_ARGS[@]}"} 2>&1)
+    ${PARAM_ARGS[@]+"${PARAM_ARGS[@]}"} ${SUB_ARGS[@]+"${SUB_ARGS[@]}"} 2>&1)
 VALIDATE_RC=$?
 if [ $VALIDATE_RC -eq 0 ]; then
     echo "PASS: Template validated against the target scope."
@@ -161,7 +161,7 @@ echo ""
 echo "--- Step 5: What-if preview (az deployment $SCOPE what-if) ---"
 WHATIF_OUTPUT=$(az deployment "$SCOPE" what-if "${SCOPE_TARGET_ARGS[@]}" \
     --template-file "$TEMPLATE" \
-    "${PARAM_ARGS[@]}" ${SUB_ARGS[@]+"${SUB_ARGS[@]}"} 2>&1)
+    ${PARAM_ARGS[@]+"${PARAM_ARGS[@]}"} ${SUB_ARGS[@]+"${SUB_ARGS[@]}"} 2>&1)
 WHATIF_RC=$?
 if [ $WHATIF_RC -eq 0 ]; then
     CREATE_COUNT=$(echo "$WHATIF_OUTPUT" | grep -c '^[[:space:]]*+ ')
