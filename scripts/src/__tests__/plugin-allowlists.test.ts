@@ -10,16 +10,13 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { createRequire } from "node:module";
 import { dirname, join, resolve } from "node:path";
+import { require as tsxRequire } from "tsx/cjs/api";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 const REPO_ROOT = resolve(import.meta.dirname, "../../..");
-const load = createRequire(import.meta.url);
-const { register }: typeof import("ts-node") = load(join(REPO_ROOT, "node_modules", "ts-node"));
-register({ project: join(REPO_ROOT, "tsconfig.json"), compilerOptions: { types: ["node"] } });
 const { collectPluginAllowlists, writePluginAllowlists }: typeof import("../plugin-allowlists.cjs") =
-  load("../plugin-allowlists.cts");
+  tsxRequire("../plugin-allowlists.cts", import.meta.url);
 let root: string;
 
 function write(relativePath: string, content = "fixture\n"): void {
