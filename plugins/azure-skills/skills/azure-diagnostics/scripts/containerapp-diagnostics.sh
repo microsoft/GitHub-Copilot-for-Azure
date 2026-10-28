@@ -75,24 +75,24 @@ echo ""
 
 echo "--- Revisions ---"
 run_step "(failed to list revisions)" \
-    az containerapp revision list --name "$APP" -g "$RG" "${SUB_ARGS[@]}" -o table
+    az containerapp revision list --name "$APP" -g "$RG" ${SUB_ARGS[@]+"${SUB_ARGS[@]}"} -o table
 echo ""
 
 echo "--- Registry Config ---"
 run_step "(failed to read registry config)" \
-    az containerapp show --name "$APP" -g "$RG" "${SUB_ARGS[@]}" \
+    az containerapp show --name "$APP" -g "$RG" ${SUB_ARGS[@]+"${SUB_ARGS[@]}"} \
     --query "properties.configuration.registries"
 echo ""
 
 echo "--- Ingress Config ---"
 run_step "(failed to read ingress config)" \
-    az containerapp show --name "$APP" -g "$RG" "${SUB_ARGS[@]}" \
+    az containerapp show --name "$APP" -g "$RG" ${SUB_ARGS[@]+"${SUB_ARGS[@]}"} \
     --query "properties.configuration.ingress"
 echo ""
 
 echo "--- Recent Logs (last 20 lines) ---"
 run_step "(failed to read logs)" \
-    az containerapp logs show --name "$APP" -g "$RG" "${SUB_ARGS[@]}" --tail 20
+    az containerapp logs show --name "$APP" -g "$RG" ${SUB_ARGS[@]+"${SUB_ARGS[@]}"} --tail 20
 echo ""
 
 echo "=== Diagnostics collection complete for $APP ==="

@@ -75,26 +75,26 @@ echo ""
 
 echo "--- App Config ---"
 run_step "(failed to read app config)" \
-    az webapp show -n "$APP" -g "$RG" "${SUB_ARGS[@]}" \
+    az webapp show -n "$APP" -g "$RG" ${SUB_ARGS[@]+"${SUB_ARGS[@]}"} \
     --query "{state:state, runtime:siteConfig.linuxFxVersion, healthCheck:siteConfig.healthCheckPath, alwaysOn:siteConfig.alwaysOn}" \
     -o table
 echo ""
 
 echo "--- Recent Deployments (last 3) ---"
 run_step "(failed to list deployments)" \
-    az webapp deployment list -n "$APP" -g "$RG" "${SUB_ARGS[@]}" \
+    az webapp deployment list -n "$APP" -g "$RG" ${SUB_ARGS[@]+"${SUB_ARGS[@]}"} \
     --query "[:3].{id:id, status:status, time:end_time}" -o table
 echo ""
 
 echo "--- App Settings (names only) ---"
 run_step "(failed to list app settings)" \
-    az webapp config appsettings list -n "$APP" -g "$RG" "${SUB_ARGS[@]}" \
+    az webapp config appsettings list -n "$APP" -g "$RG" ${SUB_ARGS[@]+"${SUB_ARGS[@]}"} \
     --query "[].name" -o tsv
 echo ""
 
 echo "--- Custom Domains ---"
 run_step "(failed to list custom domains)" \
-    az webapp config hostname list -g "$RG" --webapp-name "$APP" "${SUB_ARGS[@]}" -o table
+    az webapp config hostname list -g "$RG" --webapp-name "$APP" ${SUB_ARGS[@]+"${SUB_ARGS[@]}"} -o table
 echo ""
 
 echo "=== Diagnostics collection complete for $APP ==="
