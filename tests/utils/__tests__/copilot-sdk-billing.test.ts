@@ -53,7 +53,7 @@ describe("SDK answer billing completion", () => {
   test.each(["completed", "timeout", "max-turns", "early-termination"])(
     "propagates %s without treating earlier requests as complete", async mode => {
       scenario.mode = mode;
-      const runner = useAgentRunner({ isTest: false });
+      const runner = useAgentRunner({ testName: "copilot-sdk-billing" });
       const metadata = await runner.run({
         prompt: "offline billing test",
         timeout: mode === "timeout" ? 10 : undefined,
