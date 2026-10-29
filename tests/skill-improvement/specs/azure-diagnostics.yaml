@@ -20,22 +20,28 @@ evaluations:
 
 models:
   answers:
-    - gpt-5.6-sol
+    - gpt-6.1-sol
   judges:
-    - claude-sonnet-5
+    - claude-opus-4.8
 
 experiment:
-  repetitions: 2
+  repetitions: 1
   conditions:
+    - name: Agent only
+      skill: disabled
+      mcp: disabled
     - name: Skill only
       skill: enabled
       mcp: disabled
     - name: Skill + MCP
       skill: enabled
       mcp: enabled
+    - name: MCP only
+      skill: disabled
+      mcp: enabled
 
 improvementAgent:
-  enabled: true
+  enabled: false
   model: claude-sonnet-5
 
 acceptance:
@@ -45,7 +51,7 @@ acceptance:
   minimumSkillInvocationRate: 0.8
 
 heldOutAcceptance:
-  enabled: true
+  enabled: false
   minimumQualityImprovementPoints: 0
   maximumEvalRegressionPoints: 0
   maximumModelRegressionPoints: 0
@@ -55,9 +61,9 @@ refinement:
   maximumQualityRegressionPoints: 0
 
 limits:
-  maxIterations: 2
-  maxAnswerGenerations: 512
-  maxJudgeCalls: 512
+  maxIterations: 0
+  maxAnswerGenerations: 144
+  maxJudgeCalls: 144
   maxDurationMinutes: 360
   maxConcurrentVallyProcesses: 5
   generationWorkersPerVallyProcess: 1
@@ -65,4 +71,4 @@ limits:
 
 output:
   issue: never
-  draftPullRequest: accepted-candidate-only
+  draftPullRequest: never

@@ -1,5 +1,24 @@
 # Acceptance and refinement configuration
 
+## Current baseline comparison
+
+The Kusto and Diagnostics specs run one baseline repetition with `gpt-6.1-sol`
+answers and a `claude-opus-4.8` judge across Agent only, Skill only, Skill + MCP,
+and MCP only. Improvement is disabled with zero iterations; held-out file lists
+are preserved but not executed. Neither issues nor draft pull requests are
+published.
+
+| Spec | Development prompts | Baseline answers | Judge calls |
+| --- | ---: | ---: | ---: |
+| `azure-kusto.yaml` | 91 | 364 | 364 |
+| `azure-diagnostics.yaml` | 36 | 144 | 144 |
+
+These are planned counts, not executed results. Judge availability in the chosen
+execution environment must be confirmed before a live run. Azure fixture
+settings remain unchanged; validation alone does not start or stop resources.
+
+## Acceptance and refinement decisions
+
 Run specifications use two related decisions:
 
 - **Acceptance** decides whether a candidate is good enough to publish as the

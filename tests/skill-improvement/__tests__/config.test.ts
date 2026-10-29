@@ -12,7 +12,7 @@ import {
   validateRunSpec,
   type SkillImprovementRunSpec,
 } from "../config.ts";
-import { describe, expect, test } from "vitest";
+import { describe, expect, onTestFinished, test, vi } from "vitest";
 
 function spec(): SkillImprovementRunSpec {
   return {
@@ -127,7 +127,62 @@ describe("skill improvement configuration", () => {
     expect(() => validateRunSpec(runSpec)).toThrow("has been renamed");
   });
 
-  test("configures a valid Azure Kusto improvement run", () => {
+  test.each([
+    ["azure-kusto", 91, 364, "held-out-troubleshoot-remediate.eval.yaml"],
+    ["azure-diagnostics", 36, 144, "held-out.eval.yaml"],
+  ] as const)(
+    "configures a four-arm baseline-only %s run",
+    (skill, promptCount, generationCount, heldOutFile) => {
+      vi.stubEnv("AZURE_EVALS_SUBSCRIPTION_ID", "subscription-from-environment");
+      vi.stubEnv("AZURE_EVALS_RESOURCE_GROUP", "resource-group-from-environment");
+      onTestFinished(() => {
+        vi.unstubAllEnvs();
+      });
+      const runSpec = loadRunSpec(fileURLToPath(
+        new URL(`../specs/${skill}.yaml`, import.meta.url)
+      ), {
+        AZURE_EVALS_SUBSCRIPTION_ID: "subscription-from-environment",
+        AZURE_EVALS_RESOURCE_GROUP: "resource-group-from-environment",
+      });
+      const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
+      const plan = createRunPlan(repoRoot, runSpec);
+
+      expect(runSpec.models).toEqual({
+        answers: ["gpt-6.1-sol"],
+        judges: ["claude-opus-4.8"],
+      });
+      expect(runSpec.experiment).toEqual({
+        repetitions: 1,
+        conditions: [
+          { name: "Agent only", skill: "disabled", mcp: "disabled" },
+          { name: "Skill only", skill: "enabled", mcp: "disabled" },
+          { name: "Skill + MCP", skill: "enabled", mcp: "enabled" },
+          { name: "MCP only", skill: "disabled", mcp: "enabled" },
+        ],
+      });
+      expect(runSpec.improvementAgent).toEqual({
+        enabled: false,
+        model: "claude-sonnet-5",
+      });
+      expect(runSpec.target.baselineRef).toBe("main");
+      expect(runSpec.limits.maxIterations).toBe(0);
+      expect(runSpec.heldOutAcceptance?.enabled).toBe(false);
+      expect(runSpec.evaluations.heldOut).toEqual([heldOutFile]);
+      expect(runSpec.output).toEqual({ issue: "never", draftPullRequest: "never" });
+      expect(plan.developmentPromptCount).toBe(promptCount);
+      expect(plan.heldOutPromptCount).toBe(10);
+      expect(plan.baselineAnswerGenerations).toBe(generationCount);
+      expect(plan.candidateAnswerGenerationsPerIteration * runSpec.limits.maxIterations).toBe(0);
+      expect(plan.heldOutAnswerGenerations).toBe(0);
+      expect(plan.maximumAnswerGenerations).toBe(generationCount);
+      expect(plan.maximumJudgeCalls).toBe(generationCount);
+      expect(runSpec.limits.maxAnswerGenerations).toBe(plan.maximumAnswerGenerations);
+      expect(runSpec.limits.maxJudgeCalls).toBe(plan.maximumJudgeCalls);
+      expect(() => enforceRunLimits(runSpec, plan)).not.toThrow();
+    }
+  );
+
+  test("preserves Azure Kusto fixtures and resource settings", () => {
     const runSpec = loadRunSpec(fileURLToPath(
       new URL("../specs/azure-kusto.yaml", import.meta.url)
     ), {
@@ -142,7 +197,7 @@ describe("skill improvement configuration", () => {
     expect(runSpec.output.issue).toBe("never");
     expect(runSpec.refinement.maximumQualityRegressionPoints).toBe(0);
     expect(runSpec.heldOutAcceptance).toEqual({
-      enabled: true,
+      enabled: false,
       minimumQualityImprovementPoints: 0,
       maximumEvalRegressionPoints: 0,
       maximumModelRegressionPoints: 0,
@@ -163,8 +218,6 @@ describe("skill improvement configuration", () => {
     expect(runSpec.resources?.kusto?.resourceGroup).toBe(
       "resource-group-from-environment"
     );
-    expect(runSpec.limits.maxAnswerGenerations).toBeGreaterThanOrEqual(550);
-    expect(runSpec.limits.maxJudgeCalls).toBeGreaterThanOrEqual(550);
   });
 
   test("reports missing run-spec environment variables", () => {
