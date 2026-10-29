@@ -980,7 +980,10 @@ export function convertToTrajectoryEvents(agentMetadata: AgentMetadata): Traject
     }
   }
 
+  let turnNumber = 0;
+  let activeTurnId: string | undefined;
   for (const e of agentMetadata.events) {
+    const firstConvertedEventIndex = result.length;
     const timestamp = e.timestamp ? new Date(e.timestamp) : undefined;
 
     if (e.type === "assistant.message") {
@@ -1101,6 +1104,19 @@ export function convertToTrajectoryEvents(agentMetadata: AgentMetadata): Traject
           code: e.data.statusCode,
         },
       });
+    }
+
+    if (e.type === "assistant.turn_start") {
+      activeTurnId = e.data.turnId;
+    } else if (e.type === "assistant.turn_end") {
+      if (activeTurnId !== undefined && e.data.turnId === activeTurnId) {
+        activeTurnId = undefined;
+        turnNumber += 1;
+      }
+    } else if (activeTurnId !== undefined) {
+      for (let i = firstConvertedEventIndex; i < result.length; i++) {
+        result[i].turn = turnNumber;
+      }
     }
   }
 
