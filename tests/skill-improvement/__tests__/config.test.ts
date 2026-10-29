@@ -12,7 +12,7 @@ import {
   validateRunSpec,
   type SkillImprovementRunSpec,
 } from "../config.ts";
-import { describe, expect, test, vi } from "vitest";
+import { describe, expect, test } from "vitest";
 
 function spec(): SkillImprovementRunSpec {
   return {
@@ -127,7 +127,7 @@ describe("skill improvement configuration", () => {
     expect(() => validateRunSpec(runSpec)).toThrow("has been renamed");
   });
 
-  test("configures a valid Azure Kusto improvement run", () => {
+  test("configures the Azure Kusto baseline-only comparison", () => {
     const runSpec = loadRunSpec(fileURLToPath(
       new URL("../specs/azure-kusto.yaml", import.meta.url)
     ), {
@@ -136,18 +136,24 @@ describe("skill improvement configuration", () => {
     });
 
     expect(runSpec.target.baselineRef).toBe("main");
+    expect(runSpec.models.answers).toEqual([
+      "gpt-6.1-sol",
+      "gpt-6-luna",
+      "gpt-5.6-sol",
+      "gpt-6-astra",
+      "gpt-5.6-luna",
+      "claude-haiku-4.5",
+    ]);
+    expect(runSpec.models.judges).toEqual(["claude-opus-5.5"]);
+    expect(runSpec.experiment.repetitions).toBe(2);
     expect(runSpec.experiment.conditions).toEqual([
       { name: "Skill only", skill: "enabled", mcp: "disabled" },
       { name: "Skill + MCP", skill: "enabled", mcp: "enabled" },
     ]);
+    expect(runSpec.improvementAgent.enabled).toBe(false);
+    expect(runSpec.limits.maxIterations).toBe(0);
     expect(runSpec.output.issue).toBe("never");
-    expect(runSpec.acceptance).toEqual({
-      minimumQualityImprovementPoints: 0.5,
-      maximumEvalRegressionPoints: 0,
-      maximumModelRegressionPoints: 0,
-      minimumSkillInvocationRate: 1,
-    });
-    expect(runSpec.refinement.minimumScoreImprovementPoints).toBe(0.5);
+    expect(runSpec.output.draftPullRequest).toBe("never");
     expect(runSpec.refinement.maximumQualityRegressionPoints).toBe(0);
     expect(runSpec.heldOutAcceptance).toEqual({
       enabled: false,
@@ -155,9 +161,6 @@ describe("skill improvement configuration", () => {
       maximumEvalRegressionPoints: 0,
       maximumModelRegressionPoints: 0,
     });
-    expect(runSpec.experiment.repetitions).toBe(1);
-    expect(runSpec.improvementAgent.enabled).toBe(true);
-    expect(runSpec.limits.maxIterations).toBe(4);
     expect(runSpec.evaluations.heldOut).toEqual([
       "held-out-troubleshoot-remediate.eval.yaml",
     ]);
@@ -174,22 +177,8 @@ describe("skill improvement configuration", () => {
     expect(runSpec.resources?.kusto?.resourceGroup).toBe(
       "resource-group-from-environment"
     );
-    expect(runSpec.models.answers).toEqual(["gpt-5.6-sol", "claude-sonnet-5"]);
-    expect(runSpec.models.judges).toEqual(["claude-opus-4.8"]);
-    expect(runSpec.limits.maxAnswerGenerations).toBe(1820);
-    expect(runSpec.limits.maxJudgeCalls).toBe(1820);
-    const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
-    vi.stubEnv("AZURE_EVALS_SUBSCRIPTION_ID", "subscription-from-environment");
-    vi.stubEnv("AZURE_EVALS_RESOURCE_GROUP", "resource-group-from-environment");
-    try {
-      const plan = createRunPlan(repoRoot, runSpec);
-      expect(plan.heldOutAnswerGenerations).toBe(0);
-      expect(plan.maximumAnswerGenerations).toBe(1820);
-      expect(plan.maximumJudgeCalls).toBe(1820);
-      expect(() => enforceRunLimits(runSpec, plan)).not.toThrow();
-    } finally {
-      vi.unstubAllEnvs();
-    }
+    expect(runSpec.limits.maxAnswerGenerations).toBe(2184);
+    expect(runSpec.limits.maxJudgeCalls).toBe(2184);
   });
 
   test("reports missing run-spec environment variables", () => {

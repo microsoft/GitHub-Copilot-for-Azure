@@ -15,8 +15,9 @@ candidate before it meets the final requirements.
 For the Kusto two-stage policy, observed run history, token-growth accounting,
 and AI-credit limitations, see
 [Incremental acceptance versus completion](../README.md#incremental-acceptance-versus-completion).
-The current Kusto thresholds accept safe incremental progress; they do not
-certify 100% correctness.
+That earlier Kusto improvement policy accepts safe incremental progress; it
+does not certify 100% correctness. The checked-in Kusto spec now disables
+improvement iterations for a baseline-only comparison.
 
 ## What a point means
 

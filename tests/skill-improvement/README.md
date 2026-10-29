@@ -317,6 +317,12 @@ created—not whether it passed the evals.
 
 ### Incremental acceptance versus completion
 
+The policy and run history below describe earlier improvement experiments.
+The checked-in Kusto spec now runs a baseline-only comparison: two repetitions
+across six answer models, both Skill-enabled arms, and `claude-opus-5.5` as
+judge. It permits 2184 answers and judge calls, disables improvement and
+held-out evaluation, and creates no issue or draft PR.
+
 An **ACCEPTED** candidate is a safe improvement, not proof that all tests pass.
 Use two stages for near-ceiling skills such as Kusto:
 
@@ -362,7 +368,7 @@ all Markdown characters. A 15%
 limit is a cumulative size allowance, not a cost budget; shrinking is allowed.
 Reported answer tokens are trajectory usage, not Skill size or dollars.
 
-The current Kusto plan compares `gpt-5.6-sol` and `claude-sonnet-5`: 364 baseline
+The earlier Kusto improvement plan compared `gpt-5.6-sol` and `claude-sonnet-5`: 364 baseline
 generations plus up to four 364-generation candidate batches:
 **1820 generations and 1820 judge calls**.
 Enabling held-out comparison adds 80 of each for one repetition and two models.
