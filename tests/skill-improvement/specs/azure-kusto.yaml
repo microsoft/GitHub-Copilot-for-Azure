@@ -34,16 +34,22 @@ models:
     - gpt-5.6-luna
     - claude-haiku-4.5
   judges:
-    - claude-opus-5.5
+    - claude-opus-4.8
 
 experiment:
-  repetitions: 2
+  repetitions: 1
   conditions:
+    - name: Agent only
+      skill: disabled
+      mcp: disabled
     - name: Skill only
       skill: enabled
       mcp: disabled
     - name: Skill + MCP
       skill: enabled
+      mcp: enabled
+    - name: MCP only
+      skill: disabled
       mcp: enabled
 
 improvementAgent:
