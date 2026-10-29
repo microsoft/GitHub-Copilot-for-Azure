@@ -82,8 +82,6 @@ describe("convertToTrajectoryEvents skill activations", () => {
     expect(converted.filter(event => event.type === "tool_call")).toHaveLength(1);
     expect(converted
       .filter(event => event.type === "skill_activation")
-      .map(event => event.data.path)).toEqual([
-        "/skills/azure-ai/SKILL.md",
-      ]);
+      .map(event => event.data.path)).toEqual(["/skills/azure-ai/SKILL.md"]);
   });
 });
