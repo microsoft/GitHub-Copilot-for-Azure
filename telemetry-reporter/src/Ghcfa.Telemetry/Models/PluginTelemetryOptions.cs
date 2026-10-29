@@ -27,6 +27,12 @@ public sealed class PluginTelemetryOptions
 
     public string? FileReference { get; init; }
 
+    public string? AllowedSkills { get; init; }
+
+    public string? AllowedReferences { get; init; }
+
+    public string? AllowedTools { get; init; }
+
     public bool Debug { get; init; }
 
     public string? DangerouslyWriteSupportLogsToDir { get; init; }

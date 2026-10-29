@@ -24,24 +24,31 @@ interface Step {
 }
 
 interface Workflow {
+  name: string;
   on: { schedule: { cron: string }[]; workflow_dispatch: null };
   permissions: Record<string, string>;
+  concurrency: { group: string; "cancel-in-progress": boolean };
   jobs: Record<string, {
     if: string;
     needs?: string;
     env?: Record<string, string>;
-    strategy?: { "fail-fast": boolean; matrix: { include: Destination[] } };
+    strategy?: unknown;
     steps: Step[];
   }>;
 }
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const workflow = matter(
-  `---\n${readFileSync(join(REPO_ROOT, ".github", "workflows", "sync-to-azure-mcp.yml"), "utf8")}\n---\n`,
+  `---\n${readFileSync(join(REPO_ROOT, ".github", "workflows", "sync-telemetry-reporter-allowlists.yml"), "utf8")}\n---\n`,
 ).data as Workflow;
 const generation = workflow.jobs["generate-allowlists"];
 const publication = workflow.jobs["sync-allowlists"];
-const destinations = publication.strategy!.matrix.include;
+const destination: Destination = {
+  repository: "GitHub-Copilot-for-Azure",
+  "resource-directory": "telemetry-reporter/resources",
+  branch: "sync/telemetry-reporter-allowlists",
+  "pr-title": "chore: sync telemetry reporter allowlists",
+};
 const files = ["allowed-skill-names.json", "allowed-plugin-file-references.json"];
 const temporaryRoots: string[] = [];
 const gitEnvironment = {
@@ -171,36 +178,26 @@ afterEach(() => {
 });
 
 describe("allowlist synchronization workflow", () => {
-  it("shares one generated snapshot between independently failing upstream-only destinations", () => {
+  it("publishes only to the upstream telemetry reporter repository", () => {
+    expect(workflow.name).toBe("Sync telemetry reporter allowlists");
+    expect(existsSync(join(REPO_ROOT, ".github", "workflows", "sync-to-azure-mcp.yml"))).toBe(false);
     expect(workflow.on.schedule).toEqual([{ cron: "0 11 * * 1-5" }]);
     expect(workflow.on).toHaveProperty("workflow_dispatch");
     expect(workflow.permissions).toEqual({ contents: "read" });
+    expect(workflow.concurrency).toEqual({ group: "sync-azure-mcp", "cancel-in-progress": true });
+    expect(Object.keys(workflow.jobs).sort()).toEqual(["generate-allowlists", "sync-allowlists"]);
     expect(generation.if).toBe("github.repository == 'microsoft/GitHub-Copilot-for-Azure'");
     expect(publication.if).toBe(generation.if);
     expect(publication.needs).toBe("generate-allowlists");
-    expect(publication.strategy!["fail-fast"]).toBe(false);
+    expect(publication.strategy).toBeUndefined();
     expect(publication.env).toEqual({
-      TARGET_REPO: "microsoft/${{ matrix.repository }}",
-      RESOURCE_DIR: "${{ matrix.resource-directory }}",
-      BRANCH_NAME: "${{ matrix.branch }}",
-      PR_TITLE: "${{ matrix.pr-title }}",
+      TARGET_REPO: `microsoft/${destination.repository}`,
+      RESOURCE_DIR: destination["resource-directory"],
+      BRANCH_NAME: destination.branch,
+      PR_TITLE: destination["pr-title"],
       SOURCE_URL: "${{ github.server_url }}/${{ github.repository }}",
       SOURCE_COMMIT: "${{ github.sha }}",
     });
-    expect(destinations).toEqual([
-      {
-        repository: "mcp",
-        "resource-directory": "servers/Azure.Mcp.Server/src/Resources",
-        branch: "sync/azure-skills-references",
-        "pr-title": "Sync skill references from GitHub-Copilot-for-Azure",
-      },
-      {
-        repository: "GitHub-Copilot-for-Azure",
-        "resource-directory": "telemetry-reporter/resources",
-        branch: "sync/telemetry-reporter-allowlists",
-        "pr-title": "chore: sync telemetry reporter allowlists",
-      },
-    ]);
     const upload = getStep(generation.steps, "Upload generated allowlists");
     const download = getStep(publication.steps, "Download generated allowlists");
     expect(upload.with?.name).toBe(download.with?.name);
@@ -211,7 +208,7 @@ describe("allowlist synchronization workflow", () => {
       "app-id": "${{ secrets.GHCP4A_BOT_APP_ID }}",
       "private-key": "${{ secrets.GHCP4A_BOT_PRIVATE_KEY }}",
       owner: "microsoft",
-      repositories: "${{ matrix.repository }}",
+      repositories: destination.repository,
     });
     expect(getStep(publication.steps, "Create or update Pull Request").if)
       .toBe("steps.commit.outputs.has_changes == 'true'");
@@ -234,7 +231,7 @@ describe("allowlist synchronization workflow", () => {
     }
   });
 
-  describe.each(destinations)("$repository", destination => {
+  describe("telemetry reporter", () => {
     it("copies, commits, and pushes only the two allowlists, then creates a PR", () => {
       const context = fixture(destination);
       prepare(context);
@@ -273,7 +270,10 @@ describe("allowlist synchronization workflow", () => {
       ]);
       expect(create.at(-1)).toContain("allowlists can drift");
       expect(create.at(-1)).toContain("a".repeat(40));
-      expect(create.at(-1)).toContain("same generated snapshot");
+      expect(create.at(-1)).toContain("standalone telemetry reporter's");
+      expect(create.at(-1)).toContain("Reporter builds and releases remain unchanged");
+      expect(create.at(-1)).not.toContain("Azure MCP");
+      expect(create.at(-1)).not.toContain("same generated snapshot");
       expect(calls.some(call => call[1] === "edit")).toBe(false);
     });
 
@@ -304,7 +304,7 @@ describe("allowlist synchronization workflow", () => {
   });
 
   it.each(["add", "diff", "commit", "push"])("fails explicitly when git %s fails", command => {
-    const context = fixture(destinations[1]);
+    const context = fixture(destination);
     prepare(context);
     const result = runStep(context, "Commit and push changes", { FAIL_GIT_COMMAND: command });
     expect(result.status).toBe(23);
@@ -315,7 +315,7 @@ describe("allowlist synchronization workflow", () => {
   });
 
   it("fails when a generated allowlist is missing", () => {
-    const context = fixture(destinations[1]);
+    const context = fixture(destination);
     succeed(context, "Clone target repo and create feature branch");
     rmSync(join(context.workspace, "generated-allowlists", files[1]));
     expect(runStep(context, "Copy JSON files to target repo").status).not.toBe(0);
@@ -326,7 +326,7 @@ describe("allowlist synchronization workflow", () => {
     { PR_EXIT_CODE: "23" },
     { PR_EXIT_CODE: "23", EXISTING_PR: "42" },
   ])("propagates GitHub PR failures: %j", overrides => {
-    const context = fixture(destinations[1]);
+    const context = fixture(destination);
     prepare(context);
     succeed(context, "Commit and push changes");
     expect(runStep(context, "Create or update Pull Request", overrides).status).toBe(23);

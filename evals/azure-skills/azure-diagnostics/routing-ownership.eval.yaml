@@ -30,7 +30,7 @@ stimuli:
       area: routing
       requiredSkills:
         - azure-diagnostics
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-diagnostics"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-diagnostics"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -49,7 +49,7 @@ stimuli:
       area: routing
       requiredSkills:
         - azure-diagnostics
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-diagnostics"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-diagnostics"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -67,7 +67,7 @@ stimuli:
       area: routing
       requiredSkills:
         - appinsights-instrumentation
-      earlyTerminate: '[{"type":"skill-call","skill":"appinsights-instrumentation"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"appinsights-instrumentation"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -87,7 +87,7 @@ stimuli:
       area: routing
       requiredSkills:
         - azure-reliability
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-reliability"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-reliability"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -107,7 +107,7 @@ stimuli:
       area: routing
       requiredSkills:
         - azure-kubernetes
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-kubernetes"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-kubernetes"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -127,7 +127,7 @@ stimuli:
       area: routing
       requiredSkills:
         - azure-compute
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-compute"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-compute"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -147,7 +147,7 @@ stimuli:
       area: routing
       requiredSkills:
         - azure-messaging
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-messaging"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-messaging"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
