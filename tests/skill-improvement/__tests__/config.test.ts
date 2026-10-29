@@ -144,11 +144,13 @@ describe("skill improvement configuration", () => {
       "gpt-5.6-luna",
       "claude-haiku-4.5",
     ]);
-    expect(runSpec.models.judges).toEqual(["claude-opus-5.5"]);
-    expect(runSpec.experiment.repetitions).toBe(2);
+    expect(runSpec.models.judges).toEqual(["claude-opus-4.8"]);
+    expect(runSpec.experiment.repetitions).toBe(1);
     expect(runSpec.experiment.conditions).toEqual([
+      { name: "Agent only", skill: "disabled", mcp: "disabled" },
       { name: "Skill only", skill: "enabled", mcp: "disabled" },
       { name: "Skill + MCP", skill: "enabled", mcp: "enabled" },
+      { name: "MCP only", skill: "disabled", mcp: "enabled" },
     ]);
     expect(runSpec.improvementAgent.enabled).toBe(false);
     expect(runSpec.limits.maxIterations).toBe(0);
