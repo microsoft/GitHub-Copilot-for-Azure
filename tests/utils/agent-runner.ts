@@ -981,7 +981,7 @@ export function convertToTrajectoryEvents(agentMetadata: AgentMetadata): Traject
   }
 
   // Note: Vally and each agent SDK has different definitions for "turns".
-  // In Vally defines a turn as interactions between when an explicit user prompt is submitted and before the next user prompt is processed.
+  // Vally defines a turn as interactions between when an explicit user prompt is submitted and before the next user prompt is processed.
   // This aligns with the turns input on the stimuli.
   // If a certain outcome is expected from the agent for processing a turn's user prompt, the grader can be
   // scoped to that turn to verify the outcome.
