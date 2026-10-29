@@ -57,7 +57,7 @@ azd up || exit 1
 ```
 ```powershell
 azd up
-if ($LASTEXITCODE -ne 0) { throw "azd provisioning/packaging/deployment failed" }
+if (-not $? -or $LASTEXITCODE -ne 0) { throw "azd provisioning/packaging/deployment failed" }
 ```
 
 ## Deploy code only (subsequent deploys)
@@ -67,7 +67,7 @@ azd deploy || exit 1
 ```
 ```powershell
 azd deploy
-if ($LASTEXITCODE -ne 0) { throw "azd packaging/deployment failed" }
+if (-not $? -or $LASTEXITCODE -ne 0) { throw "azd packaging/deployment failed" }
 ```
 
 After `azd deploy` returns, **stop**. Do not run `azd monitor`, `az webapp log tail`, or any HTTP probe.

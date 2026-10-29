@@ -74,7 +74,7 @@ if [ "$?" -ne 0 ]; then exit 1; fi
 ```
 
 ```powershell
-if ($LASTEXITCODE -ne 0) { throw "LF normalization/validation failed" }
+if (-not $? -or $LASTEXITCODE -ne 0) { throw "LF normalization/validation failed" }
 ```
 
 ### Create a fresh ZIP
