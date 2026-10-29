@@ -27,12 +27,17 @@ evaluations:
 
 models:
   answers:
-    - gpt-5.6-sol
-  judges:
+    - gpt-6.1-sol
     - gpt-6-luna
+    - gpt-5.6-sol
+    - gpt-6-astra
+    - gpt-5.6-luna
+    - claude-haiku-4.5
+  judges:
+    - claude-opus-5.5
 
 experiment:
-  repetitions: 1
+  repetitions: 2
   conditions:
     - name: Skill only
       skill: enabled
@@ -42,7 +47,7 @@ experiment:
       mcp: enabled
 
 improvementAgent:
-  enabled: true
+  enabled: false
   model: claude-sonnet-5
 
 acceptance:
@@ -52,7 +57,7 @@ acceptance:
   minimumSkillInvocationRate: 0.8
 
 heldOutAcceptance:
-  enabled: true
+  enabled: false
   minimumQualityImprovementPoints: 0
   maximumEvalRegressionPoints: 0
   maximumModelRegressionPoints: 0
@@ -72,9 +77,9 @@ resources:
     startupTimeoutMinutes: 20
 
 limits:
-  maxIterations: 1
-  maxAnswerGenerations: 800
-  maxJudgeCalls: 800
+  maxIterations: 0
+  maxAnswerGenerations: 2184
+  maxJudgeCalls: 2184
   maxDurationMinutes: 360
   maxConcurrentVallyProcesses: 5
   generationWorkersPerVallyProcess: 1
@@ -82,4 +87,4 @@ limits:
 
 output:
   issue: never
-  draftPullRequest: accepted-candidate-only
+  draftPullRequest: never

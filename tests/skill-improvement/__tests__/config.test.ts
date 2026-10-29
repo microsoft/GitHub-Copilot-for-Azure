@@ -127,7 +127,7 @@ describe("skill improvement configuration", () => {
     expect(() => validateRunSpec(runSpec)).toThrow("has been renamed");
   });
 
-  test("configures a valid Azure Kusto improvement run", () => {
+  test("configures the Azure Kusto baseline-only comparison", () => {
     const runSpec = loadRunSpec(fileURLToPath(
       new URL("../specs/azure-kusto.yaml", import.meta.url)
     ), {
@@ -136,13 +136,27 @@ describe("skill improvement configuration", () => {
     });
 
     expect(runSpec.target.baselineRef).toBe("main");
-    expect(runSpec.experiment.conditions.some(
-      condition => condition.skill === "enabled"
-    )).toBe(true);
+    expect(runSpec.models.answers).toEqual([
+      "gpt-6.1-sol",
+      "gpt-6-luna",
+      "gpt-5.6-sol",
+      "gpt-6-astra",
+      "gpt-5.6-luna",
+      "claude-haiku-4.5",
+    ]);
+    expect(runSpec.models.judges).toEqual(["claude-opus-5.5"]);
+    expect(runSpec.experiment.repetitions).toBe(2);
+    expect(runSpec.experiment.conditions).toEqual([
+      { name: "Skill only", skill: "enabled", mcp: "disabled" },
+      { name: "Skill + MCP", skill: "enabled", mcp: "enabled" },
+    ]);
+    expect(runSpec.improvementAgent.enabled).toBe(false);
+    expect(runSpec.limits.maxIterations).toBe(0);
     expect(runSpec.output.issue).toBe("never");
+    expect(runSpec.output.draftPullRequest).toBe("never");
     expect(runSpec.refinement.maximumQualityRegressionPoints).toBe(0);
     expect(runSpec.heldOutAcceptance).toEqual({
-      enabled: true,
+      enabled: false,
       minimumQualityImprovementPoints: 0,
       maximumEvalRegressionPoints: 0,
       maximumModelRegressionPoints: 0,
@@ -163,8 +177,8 @@ describe("skill improvement configuration", () => {
     expect(runSpec.resources?.kusto?.resourceGroup).toBe(
       "resource-group-from-environment"
     );
-    expect(runSpec.limits.maxAnswerGenerations).toBeGreaterThanOrEqual(550);
-    expect(runSpec.limits.maxJudgeCalls).toBeGreaterThanOrEqual(550);
+    expect(runSpec.limits.maxAnswerGenerations).toBe(2184);
+    expect(runSpec.limits.maxJudgeCalls).toBe(2184);
   });
 
   test("reports missing run-spec environment variables", () => {
