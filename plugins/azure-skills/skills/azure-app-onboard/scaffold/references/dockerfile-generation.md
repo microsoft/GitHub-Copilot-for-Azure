@@ -29,6 +29,7 @@ COPY . .
 | Slim variants | `-slim` or `-alpine` for smaller images |
 | Multi-stage | Go, .NET, Java, Rust: build in SDK image, copy binary to runtime |
 | Match runtime | Read `engines`, `python_requires`, `go.mod`, `<TargetFramework>` |
+| PHP security | Use a floating minor tag on a supported branch (`php:8.3-apache`), never an old patch tag — a pinned patch bakes known RCE flaws into the image |
 
 ### Port alignment
 

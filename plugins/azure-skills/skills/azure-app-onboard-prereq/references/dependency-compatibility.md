@@ -9,6 +9,8 @@
 
 > **Quick test:** ONE config value change, no import changes? → ❌ FAIL. Otherwise → 🔶.
 
+**PHP:** the runtime version is the PHP version in the base image tag (`FROM php:`, or any image that embeds PHP, e.g. `wordpress:php8.1-apache`); a `composer.json` `require.php` constraint is not the runtime version. Tag that **names** a patch below the patched releases (8.5.12, 8.4.27, 8.3.36, 8.2.35) or on an unsupported branch → **⚠️ WARN `W-PHP-EOL` / `fixPhase: "scaffold"`**, not a verdict from the table above (PHP2Shell, critical RCE — [advisory](https://techcommunity.microsoft.com/blog/azurenetworksecurityblog/addressing-php2shell-cve-2026-109618-and-cve-2026-109619-upgrade-guidance-and-az/4566623)). A tag naming no patch (`php:8.3-apache`), or no Dockerfile, is already the fixed state: no finding. **fix** (prereq only reports it; the scaffold approval gate offers and applies it, so a standalone scan edits nothing): floating minor tag on a supported branch (`php:8.3-apache`), rebuild. Never `blocked`.
+
 **Ecosystem-era check (Python):** ALL pinned deps pre-2018, no Python 3.10+ wheels → ❌ FAIL. Signals: `flask_script`, `werkzeug<1.0`, `itsdangerous<1.0`, imports from `werkzeug.contrib.*` / `flask.ext.*`.
 
 ## EOL / Unmaintained Frameworks
