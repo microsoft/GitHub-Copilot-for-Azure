@@ -42,6 +42,58 @@ describe("convertToTrajectoryEvents skill activations", () => {
     };
   }
 
+  test("assigns turns by user messages rather than assistant turn boundaries", () => {
+    const fields = {
+      id: "event",
+      timestamp: "2026-01-01T00:00:00.000Z",
+      parentId: null,
+    };
+    const events: SessionEvent[] = [
+      { ...fields, type: "assistant.message", data: { messageId: "before", content: "Before prompt" } },
+      { ...fields, type: "user.message", data: { content: "First prompt" } },
+      { ...fields, type: "assistant.turn_start", data: { turnId: "first" } },
+      skillToolEvent("azure-ai"),
+      { ...fields, type: "assistant.turn_end", data: { turnId: "first" } },
+      { ...fields, type: "assistant.turn_start", data: { turnId: "second" } },
+      { ...fields, type: "assistant.message", data: { messageId: "first", content: "First answer" } },
+      { ...fields, type: "assistant.turn_end", data: { turnId: "second" } },
+      { ...fields, type: "assistant.message", data: { messageId: "late", content: "Still first prompt" } },
+      { ...fields, type: "user.message", data: { content: "Second prompt" } },
+      { ...fields, type: "assistant.message", data: { messageId: "second", content: "Second answer" } },
+      { ...fields, type: "user.message", data: { content: "Third prompt" } },
+      { ...fields, type: "assistant.message", data: { messageId: "third", content: "Third answer" } },
+    ];
+
+    const converted = convertToTrajectoryEvents(metadata(events));
+
+    expect(converted.map(event => [event.type, event.turn])).toEqual([
+      ["assistant_message", undefined],
+      ["user_message", 0],
+      ["turn_start", 0],
+      ["skill_activation", 0],
+      ["tool_call", 0],
+      ["turn_end", 0],
+      ["turn_start", 0],
+      ["assistant_message", 0],
+      ["turn_end", 0],
+      ["assistant_message", 0],
+      ["user_message", 1],
+      ["assistant_message", 1],
+      ["user_message", 2],
+      ["assistant_message", 2],
+    ]);
+    expect(converted[0]).not.toHaveProperty("turn");
+    expect(events.every(event => !("turn" in event))).toBe(true);
+  });
+
+  test("leaves events untagged when there are no user messages", () => {
+    const converted = convertToTrajectoryEvents(metadata([skillToolEvent("azure-ai")]));
+
+    for (const event of converted) {
+      expect(event).not.toHaveProperty("turn");
+    }
+  });
+
   test("converts tool-only skill calls into activations and retains tool calls", () => {
     const converted = convertToTrajectoryEvents(metadata([
       skillToolEvent("azure-ai"),

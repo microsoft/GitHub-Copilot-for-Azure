@@ -980,9 +980,22 @@ export function convertToTrajectoryEvents(agentMetadata: AgentMetadata): Traject
     }
   }
 
-  let turnNumber = 0;
-  let activeTurnId: string | undefined;
+  // Note: Vally and each agent SDK has different definitions for "turns".
+  // In Vally defines a turn as interactions between when an explicit user prompt is submitted and before the next user prompt is processed.
+  // This aligns with the turns input on the stimuli.
+  // If a certain outcome is expected from the agent for processing a turn's user prompt, the grader can be
+  // scoped to that turn to verify the outcome.
+  //
+  // Copilot SDK defines a turn as interactions between submitting a prompt to the LLM and before submitting the next.
+  // This includes implicit prompts such as loaded skills or tool call results.
+  // As a result, for a Vally turn, there can be more than one Copilot SDK turns if it had made more than one requests to the LLM.
+  //
+  // We track the turn number using Vally's definition by tracking the user.message events so the graders can work properly.
+  let turnNumber = -1;
   for (const e of agentMetadata.events) {
+    if (e.type === "user.message") {
+      turnNumber += 1;
+    }
     const firstConvertedEventIndex = result.length;
     const timestamp = e.timestamp ? new Date(e.timestamp) : undefined;
 
@@ -1106,14 +1119,7 @@ export function convertToTrajectoryEvents(agentMetadata: AgentMetadata): Traject
       });
     }
 
-    if (e.type === "assistant.turn_start") {
-      activeTurnId = e.data.turnId;
-    } else if (e.type === "assistant.turn_end") {
-      if (activeTurnId !== undefined && e.data.turnId === activeTurnId) {
-        activeTurnId = undefined;
-        turnNumber += 1;
-      }
-    } else if (activeTurnId !== undefined) {
+    if (turnNumber >= 0) {
       for (let i = firstConvertedEventIndex; i < result.length; i++) {
         result[i].turn = turnNumber;
       }
