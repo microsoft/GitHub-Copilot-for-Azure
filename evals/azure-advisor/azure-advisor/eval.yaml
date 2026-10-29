@@ -15,7 +15,33 @@ scoring:
   threshold: 0.8
 
 stimuli:
+  - name: "Keep generic Cost on the existing Advisor workflow"
+    prompt: "Show the highest-priority Azure Advisor Cost recommendations in subscription 00000000-0000-0000-0000-000000000000, including reservations and savings plans."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: cost-routing
+      mcpMode: all
+      requiredSkills:
+        - azure-advisor
+    constraints:
+      max_turns: 4
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor
+          disallowed:
+            - azure-advisor-cost-optimization
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)advisor_recommendation_summary"
+
   - name: "Route Advisor summary request"
+    constraints:
+      max_turns: 4
     prompt: "Summarize my top Azure Advisor recommendation types for subscription 00000000-0000-0000-0000-000000000000."
     tags:
       type: integration

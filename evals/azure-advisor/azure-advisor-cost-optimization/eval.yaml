@@ -1,0 +1,2146 @@
+name: azure-advisor-cost-optimization-eval
+description: "Validates scope resolution, idle-resource analysis, full retail USD reports, lifecycle safety and selected remediation handoffs."
+
+tags:
+  type: integration
+  skill: azure-advisor-cost-optimization
+  mcpMode: all
+
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+  judge_model: claude-sonnet-5
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  - name: "Ask the three supported scope choices"
+    prompt: "Find my unused Azure resources."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: scope-clarification
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 40
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)all.*subscriptions"
+      - type: output-matches
+        config:
+          pattern: "(?i)one\\s+(?:specific\\s+)?subscription"
+      - type: output-matches
+        config:
+          pattern: "(?i)(?:specific|one)\\s+service group"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor_recommendation_(summary|list)"
+
+  - name: "Reuse an explicit subscription"
+    constraints:
+      max_turns: 40
+    prompt: "Find unused Azure resources in subscription 00000000-0000-0000-0000-000000000000."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: subscription-scope
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)advisor_recommendation_summary"
+
+  - name: "Enumerate all accessible subscriptions"
+    constraints:
+      max_turns: 40
+    prompt: "Check all my accessible subscriptions for idle Azure resources and savings."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: all-subscriptions
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)subscription.*list"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)assuming.*default subscription|default subscription only"
+
+  - name: "Use a supplied single SG without discovery"
+    constraints:
+      max_turns: 40
+    prompt: "Show idle-resource Advisor savings in Service Group finance-prod. finance-prod is the identifier in its ARM ID."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: service-group
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)advisor_recommendation_summary"
+          disallowed:
+            - name: "(?i)advisor_recommendation_service_?group_scope"
+            - name: "(?i)subscription.*list"
+
+  - name: "Choose one Service Group instead of discovering every SG"
+    prompt: "Find idle-resource savings across all my accessible Service Groups."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: unsupported-sg-discovery
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 40
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)(one|single|specific).*service group|service group.*(identifier|ID)"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor_recommendation_(service_?group_scope|summary|list)"
+
+  - name: "Reject mixed scope families before querying"
+    prompt: "Find idle-resource Advisor recommendations in subscription 00000000-0000-0000-0000-000000000000 and Service Group finance-prod."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: scope-validation
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 40
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)choose|either|mutually exclusive"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor_recommendation_(summary|list)"
+
+  - name: "Keep tenant scope and coverage separate"
+    constraints:
+      max_turns: 40
+    prompt: "For unused-resource savings, I selected subscriptions in two different tenants. Explain how you will query them without mixing tenant scope or treating partial coverage as complete."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: tenant-coverage
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)per.tenant|by tenant|separate.*tenant|tenant.*separate"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)single.*cross.tenant.*query|omit.*scope.*default"
+
+  - name: "Pass a Service Group display name directly to Advisor"
+    constraints:
+      max_turns: 40
+    prompt: "For Service Group Trey Research Shared Services, what Azure resources am I paying for that are no longer being used?"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: service-group-name
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)advisor_recommendation_summary"
+              args:
+                service-group: "^Trey Research Shared Services$"
+                category: "^Cost$"
+                sub-category: "^IdleResources$"
+              pattern: '"prioritized":true'
+          disallowed:
+            - name: "(?i)subscription.*list|resource.?graph|(^|_)arm($|_)|advisor_recommendation_(service_?group_scope|list)"
+      - type: shell-command-invoked
+        config:
+          disallowed:
+            - command: "(?i)az\\s+graph\\s+query|az\\s+rest"
+
+  - name: "Preserve tenant with a supplied Service Group name"
+    constraints:
+      max_turns: 40
+    prompt: "Show idle-resource savings for Service Group Finance in tenant 11111111-1111-1111-1111-111111111111."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: service-group-tenant
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)advisor_recommendation_summary"
+              args:
+                service-group: "^Finance$"
+                tenant: "^11111111-1111-1111-1111-111111111111$"
+          disallowed:
+            - name: "(?i)subscription.*list|resource.?graph|(^|_)arm($|_)"
+
+  - name: "Pass a full Service Group ARM ID without lookup"
+    constraints:
+      max_turns: 40
+    prompt: "Show unused-resource savings for /providers/Microsoft.Management/serviceGroups/finance-prod."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: service-group-arm-id
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)advisor_recommendation_summary"
+              args:
+                service-group: "^/providers/Microsoft.Management/serviceGroups/finance-prod$"
+          disallowed:
+            - name: "(?i)subscription.*list|resource.?graph|(^|_)arm($|_)"
+
+  - name: "Clarify a tool-reported ambiguous Service Group"
+    prompt: "The Advisor tool reported that Service Group Finance is ambiguous, matching /providers/Microsoft.Management/serviceGroups/finance-a and /providers/Microsoft.Management/serviceGroups/finance-b. Continue my idle-resource review without choosing a group for me."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: service-group-ambiguity
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 40
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)finance-a"
+      - type: output-matches
+        config:
+          pattern: "(?i)finance-b"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor_recommendation_(summary|list|update)|subscription.*list|resource.?graph|(^|_)arm($|_)"
+
+  - name: "Use summary before opening expansion"
+    prompt: "Find unused Azure resources and potential savings in subscription 00000000-0000-0000-0000-000000000000."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: discovery
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 40
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)advisor_recommendation_summary"
+              args:
+                category: "^Cost$"
+                sub-category: "^IdleResources$"
+              pattern: '"prioritized":true'
+          disallowed:
+            - name: "(?i)advisor_recommendation_list"
+            - name: "(?i)advisor_recommendation_prevalidate"
+
+  - name: "Preserve normal summary for record frequency"
+    prompt: "Which active Cost IdleResources recommendation types occur most often in subscription 00000000-0000-0000-0000-000000000000? Count recommendation records, not distinct resources or savings rank."
+    rubric:
+      - The agent calls the existing summary with group-by recommendation-type and without prioritized=true.
+      - The agent preserves normal recommendation-record counts and frequency ordering; it does not use prioritized distinct-resource counts or reorder by Cost totals.
+      - No recommendation list is queried or counted to answer this aggregate question.
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: normal-frequency-preservation
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 40
+    graders:
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)advisor_recommendation_summary"
+              args:
+                category: "^Cost$"
+                sub-category: "^IdleResources$"
+                group-by: "^recommendation-type$"
+          disallowed:
+            - name: "(?i)advisor_recommendation_list"
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+
+  - name: "Keep current summaries New-only"
+    constraints:
+      max_turns: 40
+    prompt: "Summarize active idle-resource Advisor recommendations by recommendation type in subscription 00000000-0000-0000-0000-000000000000."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: current-status
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)advisor_recommendation_summary"
+              args:
+                category: "^Cost$"
+                sub-category: "^IdleResources$"
+                group-by: "^recommendation-type$"
+          disallowed:
+            - name: "(?i)advisor_recommendation_summary"
+              args:
+                status: "(?i)^(?!New$).+$"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)completed.*current opportunities|dismissed.*current opportunities"
+
+  - name: "Use status grouping for lifecycle breakdowns"
+    constraints:
+      max_turns: 40
+    prompt: "Group Advisor idle-resource findings by status, including Completed and Dismissed, in subscription 00000000-0000-0000-0000-000000000000."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: status-grouping
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)advisor_recommendation_summary"
+              args:
+                category: "^Cost$"
+                sub-category: "^IdleResources$"
+                group-by: "^status$"
+          disallowed:
+            - name: "(?i)advisor_recommendation_summary"
+              pattern: '"status":|"prioritized":true'
+
+  - name: "Combine product family and priority filters"
+    prompt: "Show highest-priority idle-resource Advisor recommendations for the Compute product family in subscription 00000000-0000-0000-0000-000000000000."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: filter-compatibility
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 40
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-not-matches
+        config:
+          pattern: "(?i)cannot.*combin|not.*combin|incompatib"
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)advisor_recommendation_summary"
+              args:
+                category: "^Cost$"
+                sub-category: "^IdleResources$"
+                product-family: "^Compute$"
+              pattern: '"prioritized":true'
+          disallowed:
+            - name: "(?i)advisor_recommendation_list"
+
+  - name: "List explicitly requested records directly"
+    constraints:
+      max_turns: 40
+    prompt: "List all active Advisor idle-resource records in subscription 00000000-0000-0000-0000-000000000000."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: direct-list
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)advisor_recommendation_list"
+          disallowed:
+            - name: "(?i)advisor_recommendation_summary"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)cost-findings|cost-list"
+
+  - name: "Offer All Completed before historical periods"
+    prompt: "Today is 2026-10-27 UTC. We selected recommendation type 11111111-1111-1111-1111-111111111111 in Service Group Demo Group. How much have we saved after completed cleanup?"
+    rubric:
+      - The agent asks exactly one report-selection question with All Completed first and recommended, then Last 30 days, Last quarter, and A specific period.
+      - It explains that All Completed retains the current scope/type and uses current realized savings, not all lifecycle states.
+      - It shows concrete UTC bounds of September 27 through October 26 for Last 30 days and July 1 through September 30 for Last quarter before asking.
+      - It does not query recommendations or silently choose a period before the answer.
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: completed-period-selection
+      parity: response-shape
+      questionOnly: "true"
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"(?i)(^|[._])ask_user$","argsPattern":".*"}]'
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 40
+    graders:
+      - type: tool-calls
+        config:
+          # Stop with the question pending; assert invocation, not a fabricated answer.
+          sequence:
+            - name: "(?i)(^|[._])ask_user$"
+          disallowed:
+            - name: "(?i)advisor_recommendation_(summary|list|update)"
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+
+  - name: "Render supplied current Completed results after All selection"
+    # Offline reporting regression, not a live summary/list workflow test.
+    prompt: |
+      For Azure Advisor Cost/IdleResources, we selected Unattached disks in Service Group
+      Demo Group and chose All Completed. The summary and list have already returned
+      the following synthetic results for that scope and type.
+      Summary: 3 Completed records, realized savings 108.90 USD, Cost 1026.39 USD,
+      pricing basis Retail; 2 records have pricing and 1 is unavailable.
+      The list returned all 3 records without truncation. All are in subscription Demo,
+      resource group rg-demo:
+      disk-deleted-a has realizedSavings=100, cost=1000, completionType=SystemVerified,
+      platformStateUpdatedAt=2026-10-24T12:26:00Z, resourceDeletedOn=2026-10-24T00:00:00Z.
+      disk-deleted-b has realizedSavings=8.90, cost=26.39, completionType=SystemVerified,
+      platformStateUpdatedAt=2026-10-25T12:26:00Z, resourceDeletedOn=2026-10-25T00:00:00Z.
+      disk-verified has no pricing or deletion date, completionType=SystemVerified,
+      platformStateUpdatedAt=2026-10-14T03:00:00Z.
+      Show the totals and resources using these supplied results only.
+      Do not query Azure, ask another question, or change anything.
+    rubric:
+      - The agent reports the supplied current Completed totals and resources for the same selected type and scope without querying Azure.
+      - It reuses the All Completed selection without another question and does not invent from/to bounds or a prior-day as-of.
+      - It retains all three resources, including the unpriced, undated Completed resource with Unavailable money and deletion date.
+      - It reports 108.90 USD realized savings and 1026.39 USD Cost separately, with Retail basis and pricing coverage of two out of three.
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: current-completed-report
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 40
+    graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor_recommendation_(summary|list|update)|subscription|(^|[._])ask_user$"
+      - type: output-matches
+        config:
+          pattern: "108\\.90"
+      - type: output-matches
+        config:
+          pattern: "1,?026\\.39"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|\\s*disk-deleted-a\\s*\\|"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|\\s*disk-deleted-b\\s*\\|"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|\\s*(?:disk-verified|\\[disk-verified\\]\\([^\\r\\n)]+\\))\\s*\\|[^\\r\\n]*Unavailable"
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+
+  - name: "Report a supplied Service Group scope failure without listing resources"
+    prompt: |
+      For all current Completed Azure Advisor Cost/IdleResources savings and resources
+      in Service Group Missing Group, the summary tool has already returned:
+      "No accessible Service Group matched 'Missing Group' in the selected tenant.
+      Verify the name or ID, tenant, and access."
+      Explain this result and what information is needed next. Do not query Azure again.
+    rubric:
+      - The agent reports that the Service Group could not be resolved and requests a corrected name or ID, tenant or access.
+      - It does not list recommendations, fall back to a subscription, or report zero savings or no Completed findings.
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: current-completed-report
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 40
+    graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor_recommendation_(summary|list|update)|subscription"
+      - type: output-matches
+        config:
+          pattern: "(?i)Missing Group"
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+
+  - name: "Keep unpriced Completed resources visible with portal lifecycle labels"
+    # Synthetic already-returned results; fixed amounts are not live Azure savings assertions.
+    prompt: |
+      Show these already-returned current Completed details for recommendation type
+      Unattached disks in subscription Demo, with no reporting window and no truncation.
+      Summary: 4 Completed records, realized savings 108.90 USD, Cost 1026.39 USD,
+      pricing basis Retail; 3 records have pricing and 1 is unavailable.
+      Each resource is in rg-demo, has completionType=SystemVerified, and has
+      platformStateUpdatedAt=2026-10-24T12:26:00Z.
+      disk-deleted-a has realizedSavings=91.42, cost=91.42, and resourceDeletedOn=2026-10-24T00:00:00Z.
+      disk-deleted-b has realizedSavings=8.74, cost=486.42, and resourceDeletedOn=2026-10-24T00:00:00Z.
+      disk-deleted-c has realizedSavings=8.74, cost=448.55, and resourceDeletedOn=2026-10-24T00:00:00Z.
+      disk-verified has no savings or deletion date. Its platformStateUpdatedAt is
+      2026-10-14T03:00:00Z. Do not query Azure or ask a follow-up question.
+    rubric:
+      - All four exact resource names appear in resource rows, including disk-verified with Unavailable money and deletion date, not zero.
+      - The response shows 108.90 USD realized savings and 1026.39 USD Cost separately, with Retail basis and pricing coverage of three out of four.
+      - Completed tables use Realized savings, Cost, Completed on, Completion details and Deletion date; no annual potential savings is presented as realized savings.
+      - The three deleted rows say Resource deleted; disk-verified says Verified completed, with its platform update timestamp rather than a fabricated deletion timestamp.
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: completed-unavailable-pricing
+      parity: response-shape
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 40
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?is)\\|disk-verified\\|[^\\r\\n]*Unavailable"
+      - type: output-matches
+        config:
+          pattern: "(?im)^## Completed cleanup\\s*$"
+      - type: output-matches
+        config:
+          pattern: "(?i)\\|Resource\\|Resource<br>group\\|Realized<br>savings\\|Cost\\|Completed<br>on\\|Completion<br>details\\|Deletion<br>date\\|"
+      - type: output-matches
+        config:
+          pattern: "(?i)\\|disk-deleted-b\\|rg-demo\\|\\$8\\.74\\|\\$486\\.42\\|"
+      - type: output-matches
+        config:
+          pattern: "(?i)Verified completed"
+      - type: output-matches
+        config:
+          pattern: "(?i)Resource deleted"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor_recommendation_(summary|list|update)|(^|[._])ask_user$"
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+
+  - name: "Use full summary totals for historical savings"
+    constraints:
+      max_turns: 40
+    prompt: "Report total realized savings for Advisor idle-resource cleanups from 2026-07-01T00:00:00Z through 2026-09-30T23:59:59Z in subscription 00000000-0000-0000-0000-000000000000. Use Advisor estimates, not billing."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: historical-totals
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)advisor_recommendation_summary"
+              args:
+                status: "^Completed$"
+                from: "^2026-07-01"
+                to: "^2026-09-30"
+          disallowed:
+            - name: "(?i)advisor_recommendation_list"
+
+  - name: "Preserve explicit New state with a historical timestamp"
+    constraints:
+      max_turns: 40
+    prompt: "Summarize active New Cost IdleResources Advisor recommendations as of 2026-09-30T00:00:00Z in subscription 00000000-0000-0000-0000-000000000000. Keep the explicit New filter rather than switching to Completed."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: historical-explicit-state
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)advisor_recommendation_summary"
+              args:
+                category: "^Cost$"
+                sub-category: "^IdleResources$"
+                status: "^New$"
+                as-of: "^2026-09-30"
+
+  - name: "List lifecycle detail without replacing full totals"
+    constraints:
+      max_turns: 40
+    prompt: "Show the individual postponed Advisor idle-resource findings in subscription 00000000-0000-0000-0000-000000000000 with their postponement dates."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: lifecycle-detail
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)advisor_recommendation_list"
+          disallowed:
+            - name: "(?i)advisor_recommendation_update"
+
+  - name: "Preserve Completed state during selected-type expansion"
+    constraints:
+      max_turns: 40
+    prompt: "Expand the completed idle-resource recommendation type 11111111-1111-1111-1111-111111111111 in Service Group finance-prod. Keep the same Completed state and show its individual resources; do not update anything."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: expansion-state
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)advisor_recommendation_list"
+              args:
+                category: "^Cost$"
+                sub-category: "^IdleResources$"
+                service-group: "^finance-prod$"
+                recommendation-type-id: "^11111111-1111-1111-1111-111111111111$"
+                status: "^Completed$"
+          disallowed:
+            - name: "(?i)advisor_recommendation_(summary|update)"
+
+  - name: "Select Dismissed source records before reactivation"
+    constraints:
+      max_turns: 40
+    prompt: "Reactivate dismissed idle-resource Advisor findings for type 11111111-1111-1111-1111-111111111111 in subscription 00000000-0000-0000-0000-000000000000. First show the dismissed candidates for selection and confirmation; do not change anything yet."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: reactivation-source-state
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)advisor_recommendation_list"
+              args:
+                category: "^Cost$"
+                sub-category: "^IdleResources$"
+                recommendation-type-id: "^11111111-1111-1111-1111-111111111111$"
+                status: "^Dismissed$"
+          disallowed:
+            - name: "(?i)advisor_recommendation_update"
+
+  - name: "Choose one recommendation type before prevalidation"
+    constraints:
+      max_turns: 40
+    prompt: "I want read-only deletion-safety checks for idle disks and unused App Service plans in subscription 00000000-0000-0000-0000-000000000000. Ask me which one recommendation type to validate first; do not make Azure calls yet."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: safety-limit
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)(choose|which|select).*(type|disk|plan)|(disk|plan).*(choose|which|select)"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor_recommendation_(list|summary|prevalidate|update)"
+
+  - name: "Prevalidate an exact selection without rediscovery"
+    prompt: >-
+      Run read-only prevalidation for Advisor Cost IdleResources recommendation type
+      48eda464-1485-4dcf-a674-d0905df5054a in subscription
+      00000000-0000-0000-0000-000000000001, for only the selected resource
+      /subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-demo/providers/Microsoft.Compute/disks/disk-a.
+      Require a minimum unused age of 45 days. Do not query another scope, rediscover
+      the recommendation type, generate scripts, or change anything.
+    constraints:
+      max_turns: 40
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: prevalidation-selection
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)advisor_recommendation_prevalidate"
+              args:
+                recommendation-type-id: "^48eda464-1485-4dcf-a674-d0905df5054a$"
+                minimum-unused-days: "^45$"
+                resources: "(?i)Microsoft.Compute/disks/disk-a"
+          disallowed:
+            - name: "(?i)advisor_recommendation_(list|summary|update)"
+            - name: "(?i)advisor_remediation_get"
+
+  - name: "Preserve supplied prevalidation verdicts and incomplete evidence"
+    prompt: >-
+      Explain this supplied read-only Advisor Cost IdleResources prevalidation result.
+      Do not query Azure, reclassify the resources, generate artifacts, or perform any action.
+      The resolved scope is subscription Demo; all four resources are in resource group rg-demo.
+      Pricing is Retail USD and minimumUnusedDays is 30. The safe array contains disk-a
+      with yearlyPotentialSavings=120, cost=null, a passed automated detection check, and
+      an outstanding manual backup confirmation. The needsReview array contains disk-b
+      with yearlyPotentialSavings=null and an unverified unused-age check because metric
+      history covers only 14 days. The blocked array contains disk-c with a failed management
+      lock check and disk-deleted with resourceDeletedOn=2026-10-24T00:00:00Z,
+      canPostponeDismiss=false, and a reason confirming an ARG Delete event and no
+      action needed. The blocked summary has deletedCount=1. Disk-deleted retains
+      a failed detection check mentioning attachment/ASR as possible stale-detection
+      causes and an unexecuted manual export-guidance check.
+      areResultsTruncated=true and unmatchedResources contains disk-missing.
+    constraints:
+      max_turns: 12
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: prevalidation-evidence
+      parity: response-shape
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    expected:
+      - It preserves the three returned safety buckets and shows all four resources.
+      - It explains that disk-a passed automated checks but still needs manual confirmation, without authorizing deletion.
+      - It keeps disk-b under review because 14 days cannot establish the required 30 days, and preserves unavailable pricing rather than zero.
+      - It identifies disk-c as locked and disk-deleted separately as already deleted with its supplied date, without offering lifecycle updates.
+      - It explains that no action is needed for disk-deleted and Advisor will remove the recommendation automatically within 72 hours once it refreshes, not 48 hours.
+      - It shows the deletion-history check and separately reports one already-deleted resource, without requiring attachment/ASR investigation, backups, export, or another pre-deletion task for disk-deleted.
+      - It labels known amounts Retail USD and discloses truncation and the unmatched disk-missing selection.
+      - It uses compact resource tables under all three bucket headings; the safe table contains only Resource, Resource group and Yearly potential savings.
+      - It shows one shared Checks performed table with exactly Check, Outcome and Minimal detail columns, using short returned facts or reasons.
+      - It groups repeated check outcomes and identifies affected resources and their actual outcomes for mixed results or limited coverage.
+      - It does not add per-resource evidence cards, tables or disclosures unless detailed evidence is explicitly requested.
+      - Failed and unverified checks remain visible in the main bucket tables; shared manual guidance is labeled not executed and not repeated for each resource.
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)Retail.*USD|USD.*Retail"
+      - type: output-matches
+        config:
+          pattern: "(?i)disk-missing"
+      - type: output-matches
+        config:
+          pattern: "(?i)72\\s*(hours|hrs)"
+      - type: output-matches
+        config:
+          pattern: "(?im)^## Checks performed\\s*$"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|\\s*Resource\\s*\\|\\s*Resource(?:\\s|<br\\s*/?>)+group\\s*\\|\\s*Yearly(?:\\s|<br\\s*/?>)+potential(?:\\s|<br\\s*/?>)+savings\\s*\\|\\s*$"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|\\s*Check\\s*\\|\\s*Outcome\\s*\\|\\s*Minimal(?:\\s|<br\\s*/?>)+detail\\s*\\|\\s*$"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|[^\\r\\n|]*unused.age[^\\r\\n|]*\\|[^\\r\\n|]*unverified[^\\r\\n|]*\\|[^\\r\\n|]*14[^\\r\\n|]*\\|"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)<details\\b|<summary\\b|Check evidence:|\\|\\s*Check\\s*\\|\\s*Outcome\\s*\\|\\s*Evidence\\s*\\|"
+      - type: output-not-matches
+        config:
+          pattern: "(?im)^####\\s+disk-"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor_recommendation_(list|summary|prevalidate|update)"
+            - name: "(?i)advisor_remediation_get"
+
+  - name: "Show detailed prevalidation evidence only when explicitly requested"
+    prompt: >-
+      Show detailed per-resource check evidence for disk-a using only this already-returned
+      Advisor Cost IdleResources prevalidation result. Do not query Azure, generate artifacts,
+      or change anything. Scope is subscription Demo, resource group rg-demo; minimumUnusedDays
+      is 30 and pricing is Retail USD. The safe array contains only disk-a with
+      yearlyPotentialSavings=120. Its detection check passed with evidence diskState=Unattached.
+      Its management-lock check passed with evidence that no effective management locks were
+      found. Backup confirmation is manual and has not been executed. The needsReview and
+      blocked arrays are empty, and the result is not truncated.
+    constraints:
+      max_turns: 12
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: prevalidation-evidence
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    expected:
+      - It provides detailed check evidence for the explicitly requested disk-a, including Unattached and no effective management locks.
+      - It distinguishes passed automated checks from the unexecuted manual backup confirmation and does not authorize deletion.
+      - It uses only supplied results and does not query Azure or take an action.
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)disk-a"
+      - type: output-matches
+        config:
+          pattern: "(?i)Unattached"
+      - type: output-matches
+        config:
+          pattern: "(?i)\\|\\s*Check\\s*\\|\\s*Outcome\\s*\\|\\s*Evidence\\s*\\|"
+      - type: output-matches
+        config:
+          pattern: "(?i)(not|never)[ -]executed|outstanding"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor_recommendation_(list|summary|prevalidate|update)"
+            - name: "(?i)advisor_remediation_get"
+
+  - name: "Do not infer deletion from failed detection or unreadable history"
+    prompt: >-
+      Explain this supplied Advisor Cost IdleResources prevalidation result without
+      querying Azure or changing anything. It contains two blocked disks. Disk-stale
+      has a failed scope detection check and an unverified deletion-status check because
+      Resource Graph change-history access was denied. Disk-locked has a passed detection
+      check and a failed management-lock check; no deletion probe was run for it.
+      Neither resource has resourceDeletedOn, and the blocked summary has deletedCount=0.
+      Does this mean they are already deleted and will disappear within 72 hours?
+    constraints:
+      max_turns: 1
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: prevalidation-deletion-evidence
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    expected:
+      - It keeps both resources blocked and clearly states neither is confirmed already deleted.
+      - It shows the failed detection and unreadable deletion-history evidence for disk-stale and the confirmed lock for disk-locked.
+      - It does not promise automatic removal within 72 hours for either resource or turn the access failure into a pass.
+      - It does not invent a deletion date or execute a separate ARG, ARM, CLI, or lifecycle operation.
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor_recommendation_(list|summary|prevalidate|update)"
+            - name: "(?i)advisor_remediation_get"
+
+  - name: "Require exact selection before remediation handoff"
+    prompt: "Create a script to remove unused resources in subscription 00000000-0000-0000-0000-000000000000."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: remediation-selection
+      requiredSkills:
+        - azure-advisor-cost-optimization
+        - azure-advisor-actionability
+    constraints:
+      max_turns: 40
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)advisor_recommendation_list"
+          disallowed:
+            - name: "(?i)advisor_remediation_get"
+            - name: "(?i)advisor_recommendation_update"
+
+  - name: "Require confirmation before postponing"
+    prompt: "Postpone the idle-resource Advisor findings for type 11111111-1111-1111-1111-111111111111 in subscription 00000000-0000-0000-0000-000000000000 until 2027-01-15."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: postpone-safety
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 40
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)advisor_recommendation_list"
+          disallowed:
+            - name: "(?i)advisor_recommendation_update"
+
+  - name: "Reuse a supplied dismissal reason but still confirm"
+    prompt: "Dismiss idle-resource Advisor findings for type 11111111-1111-1111-1111-111111111111 in subscription 00000000-0000-0000-0000-000000000000 because we are intentionally keeping these resources."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: dismiss-safety
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 40
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)advisor_recommendation_list"
+          disallowed:
+            - name: "(?i)advisor_recommendation_update"
+
+  - name: "Keep unknown pricing and numeric zero distinct"
+    constraints:
+      max_turns: 40
+    prompt: "The Advisor idle-resource result has yearly potential savings unavailable for disk-a and explicitly USD 0 for disk-b. Format only those values; do not query or invent a total."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: pricing-availability
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)disk-a[^\\n]*Unavailable"
+      - type: output-matches
+        config:
+          pattern: "(?i)disk-b[^\\n]*(0|zero)"
+
+  - name: "Keep complete totals independent of top groups"
+    constraints:
+      max_turns: 40
+    prompt: "An Advisor idle-resource summary returned one displayed group with potentialSavings 100, remainingRecommendationGroupCount 9, and summary.cost.currencyTotals containing USD potentialSavings 1000. Format the report using the returned total, without additional queries."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: full-population-totals
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)1,?000"
+      - type: output-matches
+        config:
+          pattern: "(?i)9.*(hidden|remaining|not shown|additional)|(?:hidden|remaining|not shown|additional).*9"
+
+  - name: "Do not override priority order with savings"
+    constraints:
+      max_turns: 40
+    prompt: "A prioritized Advisor idle-resource summary returned these types in priority order: Type B with yearly potential savings USD 100, then Type A with USD 500. Render their ranking without querying again."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: priority-order
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)Type B[\\s\\S]*Type A"
+
+  - name: "Normal counts are records not unique resources"
+    constraints:
+      max_turns: 40
+    prompt: "An ordinary non-prioritized Advisor idle-resource summary returned totalRecommendations 4 and one group count 4. Two physical resources each have two records. Explain the count without querying again."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: count-semantics
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)4.*(recommendation|record)"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)4 (unique|distinct|affected|physical) resources"
+
+  - name: "Show retail basis without introducing contractual pricing"
+    constraints:
+      max_turns: 40
+    prompt: "Advisor returned retail USD potential savings 1000 for idle-resource findings and raw contractual pricing in INR on one resource. Present the savings using the currently supported pricing basis, without additional queries."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: retail-usd
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)pricing basis[^\\r\\n]*retail"
+      - type: output-matches
+        config:
+          pattern: "USD"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)contractual|INR|converted"
+
+  - name: "Keep the screenshot prompt on the canonical opening shape"
+    prompt: |
+      My question was: "For service group Trey Research Shared Services, what Azure
+      resources am I paying for that are no longer being used?"
+      The existing prioritized summary has already returned New Cost/IdleResources findings
+      with complete coverage: totalRecommendations=15 (the sum of per-type affected-resource
+      counts) across 3 types, Retail USD.
+      Its returned priority order is:
+      Unattached disks, type 11111111-1111-1111-1111-111111111111: count 13,
+      yearly potential savings 5215.68, accumulated waste 1000.
+      Virtual network gateways with no connections, type 22222222-2222-2222-2222-222222222222:
+      count 1, yearly potential savings 1838.59, accumulated waste 400.
+      ExpressRoute circuits in a not-provisioned state, type 33333333-3333-3333-3333-333333333333:
+      count 1, yearly potential savings 1559.14, accumulated waste 438.32.
+      summary.cost.pricingBasis=Retail; currencyTotals contains potentialSavings=8613.41
+      and accumulatedWaste=1838.32 USD. Continue using these returned values without
+      querying Azure again. I have not selected a recommendation type.
+    rubric:
+      - The normal visible response uses exactly the opening sections Scope, Advisor found, Savings, and Recommendation types, in that order, before a follow-up question.
+      - Savings includes Yearly potential savings 8613.41, Cost 1838.32, USD and Pricing basis Retail.
+      - Recommendation types is a table showing all three exact type names, affected-resource counts, yearly potential savings and Cost; it is not replaced by a numbered list or labeled as recommendation-record counts.
+      - Both the table and the type-selection choices preserve the returned priority order of Unattached disks first, then Virtual network gateways with no connections, then ExpressRoute circuits in a not-provisioned state.
+      - The agent asks one type-selection question with those three individual choices first and Expand all recommendation types shown as the final choice, never first or recommended; it does not automatically list individual resources.
+      - The response does not substitute monthly conversions or the legacy Result, Organization and Evidence sections.
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: model-host-response-shape
+      parity: response-shape
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 40
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?is)## Scope\\b.*## Advisor found\\b.*## Savings\\b.*## Recommendation types\\b"
+      - type: output-matches
+        config:
+          pattern: "(?i)\\|\\s*Recommendation type\\s*\\|\\s*Affected resources\\s*\\|\\s*Yearly potential savings\\s*\\|\\s*Cost\\s*\\|"
+      - type: output-matches
+        config:
+          pattern: "(?i)pricing basis[^\\r\\n]*Retail"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)monthly savings|/month|per month|## (Result|Organization|Evidence)\\b"
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor_recommendation_(summary|list|update)"
+
+  - name: "Load required references before formatting supplied results"
+    prompt: |
+      Continue my opening idle-resource discovery for subscription Demo. Only the skill
+      entry file is currently loaded; its workflow and output references have not been read.
+      Advisor has already returned a normal New Cost/IdleResources summary with complete
+      coverage: one Unattached disks recommendation, type 11111111-1111-1111-1111-111111111111.
+      summary.cost.pricingBasis=Retail; currencyTotals and typeTotals contain
+      potentialSavings=1200 and accumulatedWaste=75 USD. Respond using these results
+      without another Azure query. No recommendation type has been selected.
+    rubric:
+      - The agent reads both references/workflow.md and references/output-and-savings.md before composing the result; reading only the entry file or inferring contents from links is insufficient.
+      - The normal visible response uses Scope, Advisor found, Savings and Recommendation types in order, with a type table including Cost.
+      - The response shows Yearly potential savings 1200, Cost 75, USD and Pricing basis Retail even though only one type is returned.
+      - A single type-selection question follows the visible result, including the returned type and an expand-all choice; no recommendation query or automatic resource expansion occurs.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: mandatory-reference-loading
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 40
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?is)## Scope\\b.*## Advisor found\\b.*## Savings\\b.*## Recommendation types\\b"
+      - type: output-matches
+        config:
+          pattern: "(?i)pricing basis[^\\r\\n]*Retail"
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor_recommendation_(summary|list|update)"
+
+  - name: "40314970 Show visible summary before expansion"
+    prompt: |
+      For my already-resolved Service Group finance-prod, I asked which unused resources
+      we are paying for. Advisor has returned a normal Cost/IdleResources summary:
+      4 recommendation records across 2 types, complete coverage, Retail USD.
+      Unattached disks: type 11111111-1111-1111-1111-111111111111, count 3,
+      potential savings 900 and accumulated waste 90.
+      Unused gateways: type 22222222-2222-2222-2222-222222222222, count 1,
+      potential savings 100 and accumulated waste 10.
+      summary.cost.pricingBasis is Retail; currencyTotals contains potentialSavings 1000
+      and accumulatedWaste 100 USD.
+      Present the result and offer the normal next step using this already-returned data;
+      do not query Azure again.
+    rubric:
+      - A normal visible assistant message contains Scope, Advisor found, Savings, and Recommendation types, in that order, before the expansion question or ask_user call.
+      - Reasoning, tool results, or summary text embedded only in ask_user do not count as the visible assistant summary.
+      - The summary shows both recommendation types, 4 recommendation records, yearly potential savings of USD 1000, Cost of USD 100, and Pricing basis Retail.
+      - Exactly one expansion question follows the visible summary, with both returned type names and an expand-all choice; no list call precedes selection.
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: visible-summary-regression
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 40
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?is)## Scope\\b.*## Advisor found\\b.*## Savings\\b.*## Recommendation types\\b"
+      - type: output-matches
+        config:
+          pattern: "(?i)pricing basis[^\\r\\n]*retail"
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor_recommendation_(summary|list|update)"
+
+  - name: "40314970 Keep savings visible for one type with missing values"
+    prompt: |
+      My scope is already subscription 00000000-0000-0000-0000-000000000000.
+      Advisor returned one Cost/IdleResources recommendation type: Unattached disks,
+      ID 11111111-1111-1111-1111-111111111111, count 2 recommendation records.
+      summary.cost.pricingBasis is Retail, but prices are unavailable, so potentialSavings
+      and accumulatedWaste are null.
+      Format the normal discovery response and next step from this returned result.
+      Do not query Azure again.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: visible-summary-regression
+      parity: response-shape
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 40
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?is)## Scope\\b.*## Advisor found\\b.*## Savings\\b.*Unavailable.*## Recommendation types\\b"
+      - type: output-matches
+        config:
+          pattern: "(?i)pricing basis[^\\r\\n]*retail"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor_recommendation_(summary|list|update)"
+
+  - name: "40315052 Label a focused savings answer Retail"
+    constraints:
+      max_turns: 40
+    prompt: |
+      I explicitly selected disk-a from the Advisor idle-resource findings in subscription
+      00000000-0000-0000-0000-000000000000. Its returned
+      properties.savings.retail.yearlyPotentialSavings is 1200 and cost is 75 USD.
+      How much could I save if I later remove this disk? Use the returned values only;
+      do not query Azure, assess deletion safety, or perform any action.
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: pricing-basis-regression
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)pricing basis[^\\r\\n]*retail"
+      - type: output-matches
+        config:
+          pattern: "1,?200"
+      - type: output-matches
+        config:
+          pattern: "USD"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)contractual|contracted|monthly|per day"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor_recommendation_(summary|list|update)"
+
+  - name: "40315052 Preserve the documented Retail calculation source"
+    constraints:
+      max_turns: 40
+    prompt: |
+      For subscription 00000000-0000-0000-0000-000000000000, the current Advisor
+      Cost/IdleResources summary returned potentialSavings 1200 USD but omitted
+      summary.cost.pricingBasis. These values were calculated from properties.savings.retail.
+      Show the reported savings and their actual pricing basis without querying again.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: pricing-basis-regression
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)pricing basis[^\\r\\n]*Retail"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)pricing basis[^\\r\\n]*Unavailable|Contractual pricing: Unavailable"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor_recommendation_(summary|list|update)"
+
+  - name: "Preserve compact resource formatting across models"
+    agent_environment:
+      commands:
+        - >-
+          node -e "const fs = require('node:fs');
+          const make = (resource, group, subscription, subscriptionName, id) => ({
+          id: '/subscriptions/' + subscription + '/providers/Microsoft.Advisor/recommendations/' + id,
+          name: id, type: 'Microsoft.Advisor/recommendations',
+          properties: { category: 'Cost', impactedValue: resource,
+          resourceMetadata: { resourceId: '/subscriptions/' + subscription + '/resourceGroups/' + group + '/providers/Microsoft.Web/serverfarms/' + resource },
+          savings: { retail: { yearlyPotentialSavings: 1200, cost: 75 } },
+          extendedProperties: { diagnosticContext: 'Synthetic response-size fixture; not evidence or display content. '.repeat(400) } },
+          subscriptionName });
+          fs.writeFileSync('advisor-results.json', JSON.stringify({ results: {
+          areResultsTruncated: false, recommendations: [
+          make('plan-demo', 'rg-demo', '00000000-0000-0000-0000-000000000000', 'Demo A', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'),
+          make('plan-team-east-001', 'rg-team', '11111111-1111-1111-1111-111111111111', 'Demo B', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb')
+          ] } }, null, 2));"
+    prompt: |
+      My selected type is Unused App Service plans in Service Group Demo Group.
+      The already-returned Advisor recommendation-list response is in advisor-results.json.
+      It contains two New resources with Retail USD pricing.
+      The already-returned selected-type yearly potential savings total is 2400 USD.
+      Read the saved response and show the selected-type resource details using the
+      existing compact table format.
+      Do not query Azure, repeat opening discovery, or ask for resource selection.
+    rubric:
+      - The response starts with Selected recommendation and the exact type name in bold, followed by a short count/savings introduction and coverage statement.
+      - A compact context line shows Demo Group, USD, Retail pricing basis and New status; the table uses Resource, Subscription, Resource group, Yearly potential savings, Cost in that order.
+      - Both exact resource names link to their affected resources in the default public Azure portal even though the response has no cloud field, and subscription names and resource groups are preserved. USD amounts use dollar symbols, thousands separators and two decimal places.
+      - The response ends with a brief retention caution, without inventing safety checks, deleting resources or asking for another selection.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: resource-format-regression
+      parity: response-shape
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 40
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)\\|Resource\\|Subscription\\|Resource<br>group\\|Yearly potential<br>savings\\|Cost\\|"
+      - type: output-matches
+        config:
+          pattern: "(?i)\\|\\[plan-demo\\]\\(https://portal\\.azure\\.com/#resource/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-demo/providers/Microsoft\\.Web/serverfarms/plan-demo/overview\\)\\|Demo A\\|rg-demo\\|\\$1,200\\.00\\|\\$75\\.00\\|"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|\\[plan-team-east-001\\]\\(https://portal\\.azure\\.com/#resource/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-team/providers/Microsoft\\.Web/serverfarms/plan-team-east-001/overview\\)\\|Demo B\\|rg-team\\|\\$1,200\\.00\\|\\$75\\.00\\|"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)subscription names? (?:were |are )?unavailable|\\|\\s*(?:00000000-0000-0000-0000-000000000000|11111111-1111-1111-1111-111111111111)\\s*\\||\\]\\(https://portal\\.azure\\.(?:us|cn)/"
+      - type: output-matches
+        config:
+          pattern: "(?i)pricing basis[^\\r\\n]*Retail"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor_recommendation_(summary|list|update)|(^|[._])ask_user$"
+            - name: "(?i)^(powershell|bash|pwsh)$"
+              args:
+                command: "(?i)\\baz\\s+(?:cloud|account)\\b"
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+
+  - name: "Reuse subscription names in prevalidation and preserve unknown-name fallback"
+    prompt: |
+      Show the read-only deletion-safety report for these already-returned Advisor
+      Cost/IdleResources results in Service Group Demo Group, cloud AzureUSGovernment. Do not query Azure,
+      generate artifacts, or change anything.
+      Earlier recommendation-list rows included this metadata:
+      {"subscriptionName":"Demo A","properties":{"resourceMetadata":{"resourceId":"/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-demo/providers/Microsoft.Compute/disks/disk-a"}}}
+      {"subscriptionName":"Demo B","properties":{"resourceMetadata":{"resourceId":"/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-team/providers/Microsoft.Compute/disks/disk-b"}}}
+      {"subscriptionName":null,"properties":{"resourceMetadata":{"resourceId":"/subscriptions/22222222-2222-2222-2222-222222222222/resourceGroups/rg-other/providers/Microsoft.Compute/disks/disk-unknown"}}}
+      The prevalidation result has minimumUnusedDays=30, Retail USD pricing,
+      complete coverage and no unmatched resources:
+      safe: disk-a at the resource ID above, yearlyPotentialSavings=120, passed detection;
+      disk-unknown at the resource ID above, yearlyPotentialSavings=30, passed detection.
+      needsReview: disk-b at the resource ID above, yearlyPotentialSavings=60,
+      unverified unused age because only 14 days of history are available.
+      blocked: disk-c at /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-demo/providers/Microsoft.Compute/disks/disk-c,
+      yearlyPotentialSavings=90, failed management-lock check.
+      The blocked array also contains disk-deleted at /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-demo/providers/Microsoft.Compute/disks/disk-deleted,
+      with resourceDeletedOn=2026-10-26T00:00:00Z, canPostponeDismiss=false,
+      and confirmed deletion from an ARG Delete event; no action is needed.
+      Resources other than disk-deleted still require manual backup confirmation; it has not been executed.
+    constraints:
+      max_turns: 20
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: resource-format-regression
+      parity: response-shape
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|\\s*\\[disk-a\\]\\(https://portal\\.azure\\.us/#resource/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-demo/providers/Microsoft\\.Compute/disks/disk-a/overview\\)\\s*\\|\\s*Demo A\\s*\\|\\s*rg-demo\\s*\\|"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|\\s*\\[disk-b\\]\\(https://portal\\.azure\\.us/#resource/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-team/providers/Microsoft\\.Compute/disks/disk-b/overview\\)\\s*\\|\\s*Demo B\\s*\\|\\s*rg-team\\s*\\|"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|\\s*\\[disk-c\\]\\(https://portal\\.azure\\.us/#resource/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-demo/providers/Microsoft\\.Compute/disks/disk-c/overview\\)\\s*\\|\\s*Demo A\\s*\\|\\s*rg-demo\\s*\\|"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|\\s*\\[disk-unknown\\]\\(https://portal\\.azure\\.us/#resource/subscriptions/22222222-2222-2222-2222-222222222222/resourceGroups/rg-other/providers/Microsoft\\.Compute/disks/disk-unknown/overview\\)\\s*\\|\\s*22222222-2222-2222-2222-222222222222\\s*\\|\\s*rg-other\\s*\\|"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|\\s*disk-deleted\\s*\\|\\s*Demo A\\s*\\|\\s*rg-demo\\s*\\|"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)\\|\\s*(?:00000000-0000-0000-0000-000000000000|11111111-1111-1111-1111-111111111111)\\s*\\||\\[disk-deleted\\]\\(|\\]\\(https://portal\\.azure\\.(?:com|cn)/"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor|subscription|(^|[._])ask_user$"
+
+  - name: "Encode resource links for Azure China and keep missing IDs plain"
+    prompt: |
+      Show the selected-type resource details for Unattached disks in subscription Demo,
+      cloud AzureChinaCloud. Use only these already-returned New recommendations, with
+      complete coverage and Retail USD pricing:
+      {"id":"/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Advisor/recommendations/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","subscriptionName":"Demo","properties":{"impactedValue":"disk(archive)","resourceMetadata":{"resourceId":"/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-demo/providers/Microsoft.Compute/disks/disk(archive)"},"savings":{"retail":{"yearlyPotentialSavings":120,"cost":10}}}}
+      {"id":"/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Advisor/recommendations/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb","subscriptionName":"Demo","properties":{"impactedValue":"disk-without-id","resourceMetadata":null,"savings":{"retail":{"yearlyPotentialSavings":60,"cost":5}}}}
+      Returned type totals are yearlyPotentialSavings=180 and cost=15 USD.
+      Do not query Azure, assess deletion safety, generate artifacts or ask for selection.
+    constraints:
+      max_turns: 20
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: resource-format-regression
+      parity: response-shape
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)\\[disk\\(archive\\)\\]\\(https://portal\\.azure\\.cn/#resource/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-demo/providers/Microsoft\\.Compute/disks/disk%28archive%29/overview\\)"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|\\s*disk-without-id\\s*\\|"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)\\[disk-without-id\\]\\(|\\]\\(https://portal\\.azure\\.(?:com|us)/|\\]\\([^\\r\\n]*Microsoft\\.Advisor/recommendations"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor|subscription|(^|[._])ask_user$"
+
+  - name: "Reveal resource rows inline in batches of fifteen"
+    prompt: |
+      In subscription Demo, my selected recommendation type returned exactly 31 New
+      resources named plan-01 through plan-31, in that order, all in resource group rg-demo.
+      Each row has properties.savings.retail.yearlyPotentialSavings=1200 and cost=75 USD.
+      The result is not truncated. Show these already-returned rows with 15 initially visible
+      and inline collapsible controls revealing the next 15, then the final row.
+      Keep the same compact table format. Do not ask a pagination or selection question,
+      invoke ask_user, query Azure again, or omit any returned row.
+    rubric:
+      - The initial resource table has exactly 15 rows, plan-01 through plan-15.
+      - An inline details/summary disclosure contains plan-16 through plan-30 in a table with identical columns.
+      - A nested final disclosure contains plan-31; no returned resource is omitted or duplicated.
+      - The visible context identifies 31 returned rows, 15 initially shown, USD and Retail pricing.
+      - There is no ask_user pagination call, extra query, or claim that display pagination is server truncation.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: inline-pagination
+      parity: response-shape
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 40
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?is)<details>\\s*<summary>Show 15 more.*?</summary>"
+      - type: output-matches
+        config:
+          pattern: "(?is)<summary>Show 1 more.*?</summary>"
+      - type: output-matches
+        config:
+          pattern: "(?is)\\|plan-01\\|.*\\|plan-15\\|.*<details>.*\\|plan-16\\|.*\\|plan-30\\|.*<details>.*\\|plan-31\\|"
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor_recommendation_(summary|list|update)|(^|[._])ask_user$"
+
+  - name: "Preserve a future returned Contractual calculation basis"
+    constraints:
+      max_turns: 40
+    prompt: |
+      A future supported Advisor summary returned summary.cost.pricingBasis=Contractual
+      and currencyTotals with potentialSavings=1200 and accumulatedWaste=75 USD,
+      calculated from properties.savings.contractual. Present only these returned
+      measures and their basis, without querying Azure or recalculating anything.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: pricing-basis-source
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)pricing basis[^\\r\\n]*Contractual"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)pricing basis[^\\r\\n]*Retail|Contractual pricing: Unavailable"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor_recommendation_(summary|list|update)"
+
+  - name: "Carry the historical default into list expansion"
+    constraints:
+      max_turns: 40
+    prompt: |
+      My previous Cost/IdleResources summary for Service Group finance-prod used
+      as-of=2026-09-30T00:00:00Z and omitted status, so the updated tool selected Completed.
+      Expand its selected recommendation type 11111111-1111-1111-1111-111111111111.
+      Show the matching records without repeating summary or changing state.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: historical-expansion
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)advisor_recommendation_list"
+              args:
+                service-group: "^finance-prod$"
+                category: "^Cost$"
+                sub-category: "^IdleResources$"
+                status: "^Completed$"
+                recommendation-type-id: "^11111111-1111-1111-1111-111111111111$"
+          disallowed:
+            - name: "(?i)advisor_recommendation_(summary|update)"
+
+  - name: "40315613 Preview a selected dismissal batch without duplicate confirmation"
+    prompt: &selected-dismissal-proposal |
+      From the Advisor list already shown, I selected disk-a, disk-b, and disk-c in
+      subscription 00000000-0000-0000-0000-000000000000, all in recommendation type
+      11111111-1111-1111-1111-111111111111. Their stable record names are
+      aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,
+      bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb,
+      cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc.
+      Their resource IDs are /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-demo/providers/Microsoft.Compute/disks/disk-a,
+      /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-demo/providers/Microsoft.Compute/disks/disk-b,
+      /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-demo/providers/Microsoft.Compute/disks/disk-c.
+      The same list returned Retail USD yearlyPotentialSavings/cost values:
+      disk-a 1111.70/6.09, disk-b 63.32/31.42, and disk-c null/0.
+      Dismiss those three because the risk is acceptable. Prepare the confirmation,
+      but do not perform updates yet or query Azure again.
+    rubric:
+      - A visible proposal identifies all three selected resources, the subscription scope, total count 3, Dismissed action, and the supplied shared reason.
+      - The proposal uses one compact resource/change/Yearly potential savings/Cost table and separately labeled full identifiers in an exact-target disclosure, not a long paragraph per resource.
+      - It shows disk-a savings 1111.70 and Cost 6.09, disk-b savings 63.32 and Cost 31.42, and disk-c savings Unavailable and Cost zero, with Retail USD labels. It does not substitute Cost for savings or calculate new amounts.
+      - Because this is preview-only, it does not ask an extra assistant confirmation question or call update; it explains that execution would use one recommendation-ids call and one server destructive approval.
+      - The agent reuses the supplied type, resource selection, and dismissal reason rather than asking the user to select or explain them again.
+      - No update or server approval request is initiated during this preview.
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: batch-confirmation-regression
+      parity: response-shape
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 40
+    graders:
+      - type: completed
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?is)disk-a.*disk-b.*disk-c"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|\\s*Resource\\s*\\|"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|[^\\r\\n]*disk-a[^\\r\\n]*1,?111\\.70[^\\r\\n]*6\\.09[^\\r\\n]*\\|"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|[^\\r\\n]*disk-b[^\\r\\n]*63\\.32[^\\r\\n]*31\\.42[^\\r\\n]*\\|"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|[^\\r\\n]*disk-c[^\\r\\n]*Unavailable[^\\r\\n]*\\|\\s*\\$?0(?:\\.00)?\\s*\\|"
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)(^|[._])ask_user$"
+            - name: "(?i)advisor_recommendation_(summary|list|update)"
+
+  - name: "Cancel the selected dismissal batch without updates"
+    turns:
+      - *selected-dismissal-proposal
+      - "Cancel. Do not make any changes or query Azure."
+    rubric:
+      - A visible preview identifies the entire selected batch without initiating an update or extra confirmation question.
+      - The Cancel follow-up is honored without any recommendation update, retry or further confirmation.
+      - The final response clearly states that no changes were made.
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: batch-confirmation-regression
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 40
+    graders:
+      - type: completed
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor_recommendation_(summary|list|update)"
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+
+  - name: "Preserve normalized yearly savings and Cost"
+    constraints:
+      max_turns: 40
+    prompt: "An active Advisor idle-resource row returned properties.savings.retail.yearlyPotentialSavings=1200 and cost=75 USD. Present those measures, not a daily/monthly conversion, without querying again."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: savings-labels
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)Yearly potential savings"
+      - type: output-matches
+        config:
+          pattern: "(?i)Cost"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)monthly savings|monthly equivalent|per month|daily cost"
+
+  - name: "Clarify a singular target among several resources"
+    prompt: "We just listed two unused App Service plans, plan-a and plan-b, in my Advisor scope. How much can I save if I delete it?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: singular-selection
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 40
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)which|choose|select"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor_recommendation_(update|prevalidate)"
+
+  - name: "Do not treat Advisor signals as duration evidence"
+    constraints:
+      max_turns: 40
+    prompt: "Explain whether Advisor IdleResources findings alone prove that a resource has had no activity for six months. Do not query anything."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: idle-signal-semantics
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)not.*(proof|prove)|cannot.*(prove|confirm)|does not"
+
+  - name: "Use completion timestamp independently of deletion"
+    constraints:
+      max_turns: 40
+    prompt: "A Completed Advisor idle-resource row has completionType SystemVerified, platformStateUpdatedAt 2026-09-20T12:00:00Z, customerStateUpdatedAt 2026-09-10T12:00:00Z, and savings.resourceDeletedOn 2026-09-15T12:00:00Z. Which is Completed on? Do not query again."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: completion-timestamp
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "2026-09-20"
+
+  - name: "Ask the postpone date after selecting the review batch"
+    prompt: &selected-review-postpone |
+      Current time for this scenario is 2026-10-27T13:35:00Z.
+      An Advisor Cost/IdleResources prevalidation result was already shown for type
+      11111111-1111-1111-1111-111111111111 in subscription
+      00000000-0000-0000-0000-000000000000. It is complete and untruncated.
+      Its needsReview bucket contains only disk-a and disk-b, both New, with stable
+      recommendation IDs aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      and bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb respectively.
+      Their full resource IDs are
+      /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-demo/providers/Microsoft.Compute/disks/disk-a
+      and /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-demo/providers/Microsoft.Compute/disks/disk-b.
+      Each warned that it was used or changed 2 days ago. Their returned Cost values
+      are 6.09 and 31.42, Retail USD. The same result also contains a passing disk-safe
+      and a confirmed already-deleted disk-deleted with canPostponeDismiss=false.
+      Postpone those requiring more work. No return date has been chosen.
+      Prepare the proposal and confirmation only; do not query or update Azure.
+    rubric:
+      - It reuses only disk-a and disk-b from needsReview without a new list or selection question; disk-safe and disk-deleted are excluded.
+      - The first question asks the return date, offering exactly 30 calendar days after the supplied current time with a timezone and a Cancel choice; it does not assume the proposed date is already chosen.
+      - It does not repeat resource selection or ask Confirm these changes; a date answer is not server destructive consent.
+      - No Azure query, update or server approval request occurs before a return date is chosen; eventual execution uses one selected recommendation-ids batch.
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: batch-postpone-confirmation
+      parity: response-shape
+      questionOnly: "true"
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"(?i)(^|[._])ask_user$","argsPattern":".*"}]'
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 40
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+      - type: tool-calls
+        config:
+          sequence:
+            - name: "(?i)(^|[._])ask_user$"
+              pattern: '(?is)(date|when|return|postpon).*(30|2026-11-26|November|Cancel)'
+          disallowed:
+            - name: "(?i)advisor_recommendation_(summary|list|prevalidate|update)"
+
+  - name: "Cancel the default-date postpone batch without updates"
+    turns:
+      - *selected-review-postpone
+      - "Cancel. Do not query or update Azure."
+    rubric:
+      - The first question selects a return date for the selected two-resource batch rather than authorizing an update.
+      - Cancel causes no updates, retries, replacement date question, or further confirmation.
+      - The final response clearly states that no changes were made.
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: batch-postpone-confirmation
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 40
+    graders:
+      - type: completed
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor_recommendation_(summary|list|prevalidate|update)"
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+
+  - name: "Plan one batch update without per-record tool calls"
+    prompt: |
+      Dry-run planning only: do not call Azure or perform any update.
+      An Advisor Cost/IdleResources postponement batch has already been selected
+      and visibly proposed, and the return date has been chosen.
+      Type is 11111111-1111-1111-1111-111111111111, scope is subscription
+      00000000-0000-0000-0000-000000000000, target status is Postponed, and the shared
+      approved return date is 2026-11-26T13:35:00Z. The exact selected records are
+      disk-a with recommendation ID aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      and disk-b with recommendation ID bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.
+      Neither update has been attempted. Explain the next call without executing it.
+      Any earlier approval for a different invocation does not authorize this new call.
+    rubric:
+      - It describes one existing recommendation-update call with recommendation-ids containing both selected stable IDs and the same scope, status and exact deadline, not two single-ID calls.
+      - It explains that this single destructive call requests server consent once; it does not reuse an old invocation approval or add an assistant confirmation question.
+      - It does not claim that any update has happened and does not invoke Azure during this dry run.
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: batch-approval-reuse
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 12
+    graders:
+      - type: output-matches
+        config:
+          pattern: "recommendation-ids"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)(^|[._])ask_user$"
+            - name: "(?i)advisor_recommendation_(summary|list|prevalidate|update)"
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+
+  - name: "Ask eligible resource selection before asking the postpone date"
+    prompt: |
+      Advisor has already listed active New Cost/IdleResources recommendations of one
+      selected type in subscription 00000000-0000-0000-0000-000000000000.
+      The complete eligible list contains disk-a (stable recommendation ID rec-a)
+      and disk-b (stable recommendation ID rec-b). A separate disk-deleted row is
+      confirmed already deleted and has canPostponeDismiss=false.
+      I want to postpone some of these, but have not selected which resources or a date.
+      Ask the next question without querying or updating Azure.
+    rubric:
+      - It shows or clearly references only disk-a and disk-b as eligible, excluding disk-deleted.
+      - Its first question asks which eligible resources to postpone, offering selection or all eligible shown resources without assuming either.
+      - It does not ask the date or approval first, invent IDs, query Azure or perform an update.
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: batch-resource-selection
+      questionOnly: "true"
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"(?i)(^|[._])ask_user$","argsPattern":".*"}]'
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 40
+    graders:
+      - type: tool-calls
+        config:
+          sequence:
+            - name: "(?i)(^|[._])ask_user$"
+              pattern: "(?is)(which|select|resource)"
+          disallowed:
+            - name: "(?i)advisor_recommendation_(summary|list|prevalidate|update)"
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+
+  - name: "Render partial dismissal results without retry or reconfirmation"
+    prompt: |
+      Render only the final result of this already confirmed and completed Advisor
+      Cost/IdleResources batch. Do not query Azure, retry, or ask any more questions.
+      Scope is subscription 00000000-0000-0000-0000-000000000000.
+      Both selected resources were New and the shared dismissal reason was RiskIsAcceptable.
+      Their previously returned Retail USD yearlyPotentialSavings/cost values were
+      disk-a 1111.70/6.09 and disk-b 63.32/31.42.
+      The update for disk-a succeeded and returned recommendation-status Dismissed.
+      The update for disk-b failed with access denied; its final status is unverified.
+      No Azure resource was deleted or reconfigured.
+    rubric:
+      - One compact final summary says one succeeded and one failed, followed by a Resource, Outcome, Recommendation status, Yearly potential savings, Cost, Details table.
+      - Both measures retain their distinct previously returned values for each resource, including the failed row. It shows Retail USD and qualifies the amounts as previous estimates, not savings achieved by dismissal.
+      - It shows disk-a as successfully Dismissed and disk-b as failed with access denied and an unavailable or unverified final status, not both dismissed.
+      - It preserves the scope and shared reason, explains that charges continue, and does not repeat the proposal or ask for confirmation.
+      - It does not retry the failed update, reapply the successful update, or call any Azure operation.
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: batch-update-result
+      parity: response-shape
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 12
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|\\s*Resource\\s*\\|"
+      - type: output-matches
+        config:
+          pattern: "(?i)access denied"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|[^\\r\\n]*disk-a[^\\r\\n]*1,?111\\.70[^\\r\\n]*6\\.09[^\\r\\n]*\\|"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|[^\\r\\n]*disk-b[^\\r\\n]*63\\.32[^\\r\\n]*31\\.42[^\\r\\n]*\\|"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)(^|[._])ask_user$"
+            - name: "(?i)advisor_recommendation_(summary|list|prevalidate|update)"
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+
+  - name: "Report postponement from the existing update response"
+    prompt: |
+      Render only the final result of an already approved Advisor Cost/IdleResources
+      postponement batch in subscription 00000000-0000-0000-0000-000000000000.
+      The chosen return date is 2099-01-01T12:30:00+05:30.
+      Selected disk-a has recommendation ID rec-a; disk-b has recommendation ID rec-b.
+      Their previously returned Retail USD yearlyPotentialSavings/cost values were
+      disk-a 1111.70/6.09 and disk-b null/0.
+      The existing advisor_recommendation_update returned these results, in this order:
+      [
+        {"recommendationId":"rec-b","outcome":"Succeeded","recommendation":{"name":"rec-b","properties":{"recommendationStatus":"Postponed","postponedUntilDateTime":"2099-01-01T12:30:00+05:30"}}},
+        {"recommendationId":"rec-a","outcome":"Succeeded","recommendation":{"name":"rec-a","properties":{"recommendationStatus":"Postponed","postponedUntilDateTime":"2099-01-01T12:30:00+05:30"}}}
+      ]
+      An earlier list showed New; the update response above is newer.
+      Do not query Azure, repeat an update, or ask any more questions.
+    rubric:
+      - It reports two succeeded and zero failed directly from the existing update response. Both rows show Succeeded and Postponed, never failed or unverified because of the earlier New list or unavailable savings.
+      - It maps the reversed results by recommendationId to the correct resources, preserving the returned date and scope without adding verification calls or inventing a new response contract.
+      - Its result table shows Yearly potential savings before Cost. Disk-a retains 1111.70 and 6.09; disk-b shows savings Unavailable and Cost zero. Both are explicitly previous estimates in Retail USD, not savings achieved by postponement.
+      - It explains that resource charges continue and makes no Azure calls, retries, or confirmation requests.
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: batch-update-result
+      parity: response-shape
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 12
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|[^\\r\\n]*disk-a[^\\r\\n]*Succeeded[^\\r\\n]*Postponed[^\\r\\n]*1,?111\\.70[^\\r\\n]*6\\.09[^\\r\\n]*\\|"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|[^\\r\\n]*disk-b[^\\r\\n]*Succeeded[^\\r\\n]*Postponed[^\\r\\n]*Unavailable[^\\r\\n]*\\|\\s*\\$?0(?:\\.00)?\\s*\\|"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)(^|[._])ask_user$"
+            - name: "(?i)advisor_recommendation_(summary|list|prevalidate|update)"
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+
+  - name: "Keep billing requests outside Advisor idle analysis"
+    prompt: "Show my Azure bill and explain why it increased this month."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+    constraints:
+      max_turns: 1
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-advisor-cost-optimization

@@ -1,7 +1,7 @@
 import { computeMetrics } from "@microsoft/vally";
 import { collectEvaluationAnswerBilling, type EvaluationAnswerBilling } from "../skill-improvement/billing.ts";
 import { fileURLToPath } from "url";
-import { getAzureFixtureManifestPath, getEarlyTerminateCondition, getRequiredSkillsCondition, getSkillName, getSystemPrompt, getTakeScreenshotCondition } from "./tag-helpers.ts";
+import { getAzureFixtureManifestPath, getEarlyTerminateCondition, getQuestionOnlyInputHandler, getRequiredSkillsCondition, getSkillName, getSystemPrompt, getTakeScreenshotCondition } from "./tag-helpers.ts";
 import { listPlugins, type Plugin, type SkillRef } from "../utils/skill-loader.ts";
 import { normalizeTestName } from "./utils.ts";
 import * as path from "node:path";
@@ -79,7 +79,13 @@ export class CopilotSdkAgentRunner implements Executor {
       followUps = stimulus.turns.slice(1);
     }
 
+    const mcpMode = tags?.mcpMode;
+    if (mcpMode !== undefined && mcpMode !== "all") {
+      throw new Error("mcpMode must be 'all' when specified.");
+    }
     const runConfig: AgentRunConfig = {
+      onUserInputRequest: getQuestionOnlyInputHandler(tags),
+      mcpMode,
       workspace: workDir,
       env: {
         UV_CACHE_DIR: path.join(workDir, ".uv-cache"),

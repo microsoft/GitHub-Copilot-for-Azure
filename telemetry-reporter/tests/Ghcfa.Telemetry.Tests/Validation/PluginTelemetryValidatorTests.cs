@@ -94,6 +94,46 @@ public sealed class PluginTelemetryValidatorTests
             result.Message);
     }
 
+    [Theory]
+    [InlineData("azure-advisor-cost-optimization")]
+    public void ValidateAndNormalize_AcceptsAdvisorCostSkills(string skillName)
+    {
+        var options = new PluginTelemetryOptions
+        {
+            Timestamp = "timestamp",
+            EventType = "event",
+            SessionId = "session",
+            SkillName = skillName
+        };
+
+        Assert.True(_validator.ValidateAndNormalize(options).IsValid);
+    }
+
+    [Theory]
+    [InlineData("azure-advisor\\references\\workflow.md")]
+    [InlineData("azure-advisor-cost-optimization\\references\\README.md")]
+    [InlineData("azure-advisor-cost-optimization\\references\\examples.md")]
+    [InlineData("azure-advisor-cost-optimization\\references\\lifecycle.md")]
+    [InlineData("azure-advisor-cost-optimization\\references\\output-and-savings.md")]
+    [InlineData("azure-advisor-cost-optimization\\references\\scope-resolution.md")]
+    [InlineData("azure-advisor-cost-optimization\\references\\selection-and-handoff.md")]
+    [InlineData("azure-advisor-cost-optimization\\references\\state-updates.md")]
+    [InlineData("azure-advisor-cost-optimization\\references\\table-format.md")]
+    [InlineData("azure-advisor-cost-optimization\\references\\tools-and-recovery.md")]
+    [InlineData("azure-advisor-cost-optimization\\references\\workflow.md")]
+    public void ValidateAndNormalize_AcceptsAdvisorCostReferences(string fileReference)
+    {
+        var options = new PluginTelemetryOptions
+        {
+            Timestamp = "timestamp",
+            EventType = "event",
+            SessionId = "session",
+            FileReference = fileReference
+        };
+
+        Assert.True(_validator.ValidateAndNormalize(options).IsValid);
+    }
+
     [Fact]
     public void ValidateAndNormalize_RejectsUnknownFileReference()
     {
