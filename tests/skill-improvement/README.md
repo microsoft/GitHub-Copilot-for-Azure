@@ -341,9 +341,9 @@ verify it directly rather than demanding another improvement.
 
 The Kusto improvement spec deliberately leaves held-out evaluation disabled.
 Its listed held-out suite therefore provides no evidence in this stage.
-When enabling `requireHeldOutImprovement`, account for the baseline and
-candidate held-out calls and remember that it requires relative improvement,
-not simply perfect results. Do not expose held-out failures to the improvement
+When enabling `heldOutAcceptance.enabled`, account for the baseline and
+candidate held-out calls and configure its independent improvement and
+regression thresholds. Do not expose held-out failures to the improvement
 agent or tune acceptance after seeing them.
 
 Before changing thresholds, record baseline counts and desired additional
@@ -370,10 +370,9 @@ More answer models, repetitions, or judges increase these totals; validate
 before dispatch. Four iterations is a maximum, not a guarantee: no actionable
 failures, time limits, or errors can stop the run earlier.
 
-Reusable AI-credit collection and report enhancements are maintained separately
-from this Kusto experiment. Credit measurements below are historical evidence
-from run `38649557149` at the pre-split commit `81ac404a`; they do not imply that
-the Kusto-only branch implements billing collection. They cover answer
+Reusable AI-credit collection and report enhancements come from main rather
+than this Kusto experiment. Credit measurements below are historical evidence
+from run `38649557149` at the pre-split commit `81ac404a`. They cover answer
 consumption, not judges, improvement agents, invoice charges, or workflow totals.
 
 `iteration-<n>-agent-usage.json` records the improvement

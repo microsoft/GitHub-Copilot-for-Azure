@@ -1,6 +1,6 @@
 ---
 name: azure-kusto
-description: "Query and analyze data in Azure Data Explorer (Kusto/ADX) using KQL for log analytics, telemetry, and time series analysis. WHEN: KQL queries, Kusto database queries, Azure Data Explorer, ADX clusters, log analytics, time series data, IoT telemetry, anomaly detection."
+description: "Query Azure Data Explorer (ADX/Kusto) with KQL. WHEN: KQL, ADX clusters, logs, telemetry, time series, IoT, or anomaly analysis."
 license: MIT
 metadata:
   author: Microsoft
@@ -11,29 +11,30 @@ metadata:
 
 ## Workflow
 
-1. Resolve subscription, resource group, cluster, and database from input or read-only discovery; never invent identifiers.
-2. Inspect table schemas and function signatures. Use only verified names, types, join keys, and parameters.
-3. Run read-only, bounded KQL with early filters and limited exploratory output. Mutate only when explicitly requested.
-4. Report evidence; distinguish empty results, missing objects, and failures.
+1. Resolve subscription, cluster, and database from input or read-only discovery; never invent IDs.
+2. Verify schemas, signatures, types, keys, and parameters.
+3. Use bounded, read-only KQL; mutate only when explicitly requested.
+4. Report evidence; distinguish empty, missing, denied, and failed.
 
 ## Multi-source Discovery
 
-When location is unknown, derive finite candidates. Batch metadata listing across candidate Kusto databases or Log Analytics workspaces; match exact tables, then query confirmed matches. An empty table is a match. Report "not found" only after checking all candidates; combine matches when required.
+For unknown locations, batch-list finite Kusto/Log Analytics candidates; inspect exact table matches before querying. Report absence only after all candidates; combine confirmed matches when needed.
 
 ## MCP Tools Used
 
-| Tool | Purpose |
-|------|---------|
-| `kusto_cluster_list` | Discover clusters |
-| `kusto_database_list` | Discover databases |
-| `kusto_table_schema_get` | Verify table schemas |
-| `kusto_query` | Run read-only KQL |
+| Tool | Required inputs | Optional inputs |
+|------|-----------------|-----------------|
+| `kusto_cluster_list` | subscription | resource group, tenant |
+| `kusto_database_list` | subscription, resource group, cluster | tenant |
+| `kusto_table_schema_get` | subscription, cluster, database, table | resource group, tenant |
+| `kusto_query` | subscription, cluster, database, query | resource group, tenant |
 
-Pass discovered identifiers and use tenant or resource group to disambiguate.
+Use discovered IDs; never pass a cluster URI and name together.
 
 ## Failure Handling
 
-- Access denied: name the resource and required read permission; do not call it absent.
-- Unknown object, syntax, type, or empty results: recheck metadata, context, and bounds; never guess.
-- Timeout: narrow time, filter earlier, project fewer columns, or limit results.
-- MCP unavailable: report it. If Azure CLI exists, use it for discovery and `az rest` for queries; never present guidance as executed evidence.
+- Denied: name required read permission; do not call the resource absent.
+- Missing context/source: ask for minimum input and give read-only next steps plus a bounded template or generic optimization.
+- Missing object: check finite candidates; label alternatives, never silently substitute. Use supplied schemas as unverified assumptions; do not claim execution.
+- Syntax, type, or empty result: recheck metadata and bounds. Timeout: narrow time, filter/project early, or limit results.
+- MCP unavailable: report it; use Azure CLI/`az rest` only if available and distinguish guidance from execution.

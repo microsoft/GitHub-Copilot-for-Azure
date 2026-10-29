@@ -146,7 +146,6 @@ describe("skill improvement configuration", () => {
       maximumEvalRegressionPoints: 0,
       maximumModelRegressionPoints: 0,
       minimumSkillInvocationRate: 1,
-      requireHeldOutImprovement: false,
     });
     expect(runSpec.refinement.minimumScoreImprovementPoints).toBe(0.5);
     expect(runSpec.refinement.maximumQualityRegressionPoints).toBe(0);
@@ -176,6 +175,7 @@ describe("skill improvement configuration", () => {
       "resource-group-from-environment"
     );
     expect(runSpec.models.answers).toEqual(["gpt-5.6-sol", "claude-sonnet-5"]);
+    expect(runSpec.models.judges).toEqual(["claude-opus-4.8"]);
     expect(runSpec.limits.maxAnswerGenerations).toBe(1820);
     expect(runSpec.limits.maxJudgeCalls).toBe(1820);
     const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
@@ -183,6 +183,7 @@ describe("skill improvement configuration", () => {
     vi.stubEnv("AZURE_EVALS_RESOURCE_GROUP", "resource-group-from-environment");
     try {
       const plan = createRunPlan(repoRoot, runSpec);
+      expect(plan.heldOutAnswerGenerations).toBe(0);
       expect(plan.maximumAnswerGenerations).toBe(1820);
       expect(plan.maximumJudgeCalls).toBe(1820);
       expect(() => enforceRunLimits(runSpec, plan)).not.toThrow();
