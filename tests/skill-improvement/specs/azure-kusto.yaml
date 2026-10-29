@@ -29,7 +29,7 @@ models:
   answers:
     - gpt-6.1-sol
   judges:
-    - claude-opus-4.8
+    - claude-sonnet-5
 
 experiment:
   repetitions: 1
