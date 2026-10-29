@@ -162,6 +162,12 @@ describe("Gulp allowlist packaging", () => {
 
     for (const plugin of ["alpha", "beta"]) {
       write(`plugins/${plugin}/version.json`, JSON.stringify({ version: "1.0" }));
+      for (const manifestDirectory of [".plugin", ".cursor-plugin", ".claude-plugin"]) {
+        write(
+          `plugins/${plugin}/${manifestDirectory}/plugin.json`,
+          JSON.stringify({ name: plugin, version: "0.0.0-placeholder" }),
+        );
+      }
       write(`plugins/${plugin}/hooks/scripts/pluginPathAllowPattern.sh`);
       write(`plugins/${plugin}/hooks/scripts/pluginPathAllowPattern.ps1`);
       write(`plugins/${plugin}/skills/${plugin}-skill/SKILL.md`, 'version: "0.0.0-placeholder"\n');

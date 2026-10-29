@@ -35,6 +35,11 @@ const REQUIRED_PLUGIN_HOOK_FILES = [
   "scripts/pluginPathAllowPattern.ps1",
   "scripts/pluginPathAllowPattern.sh",
 ] as const;
+const PLUGIN_METADATA_CLIENTS = [
+  { clientName: "copilot", manifestDirectory: ".plugin" },
+  { clientName: "cursor", manifestDirectory: ".cursor-plugin" },
+  { clientName: "claude-code", manifestDirectory: ".claude-plugin" },
+] as const;
 
 type HookManifest = {
   hooks: Record<string, unknown[]>;
@@ -263,6 +268,117 @@ function copyHookFile(sourcePath: string, destinationPath: string): void {
   chmodSync(destinationPath, statSync(sourcePath).mode);
 }
 
+function readJsonObject(filePath: string, description: string): Record<string, unknown> {
+  let value: unknown;
+  try {
+    value = JSON.parse(readFileSync(filePath, "utf8"));
+  } catch (error) {
+    throw new Error(
+      `Invalid JSON in ${description}: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error(`${description} must contain a JSON object.`);
+  }
+
+  return value as Record<string, unknown>;
+}
+
+function requireMetadataString(
+  value: unknown,
+  fieldName: string,
+  description: string
+): string {
+  if (
+    typeof value !== "string" ||
+    value.length === 0 ||
+    /[\u0000-\u001f\u007f]/.test(value)
+  ) {
+    throw new Error(
+      `${description} field "${fieldName}" must contain a non-empty string without control characters.`
+    );
+  }
+  return value;
+}
+
+function writePluginHookMetadata(
+  pluginDirname: string,
+  outputRoot: string,
+  destinationRoot: string
+): void {
+  const pluginOutputRoot = path.join(outputRoot, pluginDirname);
+  let pluginName: string | undefined;
+  let pluginVersion: string | undefined;
+
+  for (const client of PLUGIN_METADATA_CLIENTS) {
+    const manifestPath = path.join(
+      pluginOutputRoot,
+      client.manifestDirectory,
+      "plugin.json"
+    );
+    if (!existsSync(manifestPath)) {
+      throw new Error(
+        `Missing built plugin manifest output/${pluginDirname}/${client.manifestDirectory}/plugin.json.`
+      );
+    }
+
+    const description =
+      `built plugin manifest output/${pluginDirname}/${client.manifestDirectory}/plugin.json`;
+    const manifest = readJsonObject(manifestPath, description);
+    const clientPluginName = requireMetadataString(manifest.name, "name", description);
+    const clientPluginVersion = requireMetadataString(
+      manifest.version,
+      "version",
+      description
+    );
+
+    pluginName ??= clientPluginName;
+    pluginVersion ??= clientPluginVersion;
+    if (clientPluginName !== pluginName || clientPluginVersion !== pluginVersion) {
+      throw new Error(
+        `Built plugin manifests for ${pluginDirname} must use the same name and version; ` +
+        `${client.clientName} has "${clientPluginName}" version "${clientPluginVersion}", ` +
+        `expected "${pluginName}" version "${pluginVersion}".`
+      );
+    }
+  }
+
+  if (!pluginName || !pluginVersion) {
+    throw new Error(`No built plugin manifests were found for ${pluginDirname}.`);
+  }
+
+  const mcpConfigPath = path.join(pluginOutputRoot, ".mcp.json");
+  let mcpServerNames: string[] = [];
+
+  if (existsSync(mcpConfigPath)) {
+    const description = `built MCP configuration output/${pluginDirname}/.mcp.json`;
+    const config = readJsonObject(mcpConfigPath, description);
+    if (
+      typeof config.mcpServers !== "object" ||
+      config.mcpServers === null ||
+      Array.isArray(config.mcpServers)
+    ) {
+      throw new Error(`${description} field "mcpServers" must contain a JSON object.`);
+    }
+
+    mcpServerNames = Object.keys(config.mcpServers).sort();
+    for (const serverName of mcpServerNames) {
+      requireMetadataString(serverName, "mcpServers key", description);
+    }
+  }
+
+  const metadataLines = [
+    `plugin-name=${pluginName}`,
+    `plugin-version=${pluginVersion}`,
+    ...mcpServerNames.map(serverName => `mcp-server=${serverName}`),
+  ];
+  writeFileSync(
+    path.join(destinationRoot, "metadata.txt"),
+    `${metadataLines.join("\n")}\n`
+  );
+}
+
 export function assemblePluginHooks(
   pluginDirname: string,
   options: HookAssemblyOptions = {},
@@ -342,6 +458,8 @@ export function assemblePluginHooks(
       `${JSON.stringify(compiledManifest, null, 2)}\n`,
     );
   }
+
+  writePluginHookMetadata(pluginDirname, outputRoot, destinationRoot);
 }
 
 function buildPlugin(pluginDirname: string): Promise<void> {

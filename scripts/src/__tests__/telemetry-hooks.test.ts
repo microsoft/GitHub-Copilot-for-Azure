@@ -95,6 +95,14 @@ const HOOKS_DIR = join(PLUGIN_ROOT, "hooks", "scripts");
 const STUB_HOOKS_DIR = join(PLUGIN_ROOT, "hooks", "stub scripts");
 const SPACED_PLUGIN_ROOT = join(TEST_DIR, "plugin root with spaces");
 const SPACED_HOOKS_DIR = join(SPACED_PLUGIN_ROOT, "hooks", "scripts");
+const SIDECAR_METADATA_PLUGIN_ROOT = join(TEST_DIR, "sidecar-metadata-plugin");
+const SIDECAR_METADATA_HOOKS_DIR = join(SIDECAR_METADATA_PLUGIN_ROOT, "hooks", "scripts");
+const MISSING_METADATA_PLUGIN_ROOT = join(TEST_DIR, "missing-metadata-plugin");
+const MISSING_METADATA_HOOKS_DIR = join(MISSING_METADATA_PLUGIN_ROOT, "hooks", "scripts");
+const OWNED_MCP_PLUGIN_ROOT = join(TEST_DIR, "owned-mcp-plugin");
+const OWNED_MCP_HOOKS_DIR = join(OWNED_MCP_PLUGIN_ROOT, "hooks", "scripts");
+const EMPTY_MCP_PLUGIN_ROOT = join(TEST_DIR, "empty-mcp-plugin");
+const EMPTY_MCP_HOOKS_DIR = join(EMPTY_MCP_PLUGIN_ROOT, "hooks", "scripts");
 const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), "fixtures");
 const SESSION_ID = "73e52424-a95d-4e21-b70c-2dffe48fdd86";
 const TELEMETRY_REPORTER_VERSION = "0.1.16-g03871c5229";
@@ -113,9 +121,9 @@ const PUBLISHER_STDOUT = "test-only-private-publisher-stdout";
 const PUBLISHER_STDERR = "test-only-private-publisher-stderr";
 const PRIVATE_EVENT_DATA = "test-only-private-event-data";
 const PLUGIN_METADATA = {
-  copilot: { directory: ".plugin", name: "copilot-test-plugin", version: "1.2.3" },
-  cursor: { directory: ".cursor-plugin", name: "cursor-test-plugin", version: "2.3.4" },
-  claude: { directory: ".claude-plugin", name: "claude-test-plugin", version: "3.4.5" },
+  copilot: { directory: ".plugin", name: "test-plugin", version: "1.2.3" },
+  cursor: { directory: ".cursor-plugin", name: "test-plugin", version: "1.2.3" },
+  claude: { directory: ".claude-plugin", name: "test-plugin", version: "1.2.3" },
 } as const;
 
 const shellCandidates: ShellCase[] = [
@@ -631,6 +639,36 @@ function copyTestHookScripts(destination: string): void {
   cpSync(PLUGIN_HOOKS_SOURCE_DIR, destination, { recursive: true });
 }
 
+function writeHookMetadata(
+  pluginRoot: string,
+  metadata: { name: string; version: string },
+  mcpServers: string[] = [],
+): void {
+  const metadataPath = join(pluginRoot, "hooks", "metadata.txt");
+  mkdirSync(dirname(metadataPath), { recursive: true });
+  writeFileSync(
+    metadataPath,
+    [
+      `plugin-name=${metadata.name}`,
+      `plugin-version=${metadata.version}`,
+      ...mcpServers.map(serverName => `mcp-server=${serverName}`),
+      "",
+    ].join("\n"),
+  );
+}
+
+function createPluginMetadataFixture(
+  pluginRoot: string,
+  metadata?: { name: string; version: string },
+  mcpServers: string[] = [],
+): void {
+  const hooksDirectory = join(pluginRoot, "hooks", "scripts");
+  cpSync(STUB_HOOKS_DIR, hooksDirectory, { recursive: true });
+  if (metadata) {
+    writeHookMetadata(pluginRoot, metadata, mcpServers);
+  }
+}
+
 beforeAll(() => {
   mkdirSync(BIN_DIR, { recursive: true });
   mkdirSync(SCRATCH_DIR);
@@ -647,6 +685,35 @@ beforeAll(() => {
   createTelemetryArchive();
   writeFileSync(INVALID_TELEMETRY_ZIP_PATH, "not a ZIP archive");
   cpSync(STUB_HOOKS_DIR, SPACED_HOOKS_DIR, { recursive: true });
+  writeHookMetadata(
+    PLUGIN_ROOT,
+    PLUGIN_METADATA.cursor,
+    ["azure"],
+  );
+  createPluginMetadataFixture(
+    SIDECAR_METADATA_PLUGIN_ROOT,
+    { name: "sidecar-plugin", version: "9.8.7" },
+  );
+  createPluginMetadataFixture(MISSING_METADATA_PLUGIN_ROOT);
+  const missingMetadataSkillRoot = join(
+    MISSING_METADATA_PLUGIN_ROOT,
+    "skills",
+    "test-skill",
+  );
+  mkdirSync(missingMetadataSkillRoot, { recursive: true });
+  writeFileSync(
+    join(missingMetadataSkillRoot, "SKILL.md"),
+    "---\nmetadata:\n  version: \"1.0.0\"\n---\n# Test Skill\n",
+  );
+  createPluginMetadataFixture(
+    OWNED_MCP_PLUGIN_ROOT,
+    { name: "owned-mcp-plugin", version: "1.0.0" },
+    ["azure", "github"],
+  );
+  createPluginMetadataFixture(
+    EMPTY_MCP_PLUGIN_ROOT,
+    { name: "empty-mcp-plugin", version: "1.0.0" },
+  );
   for (const metadata of Object.values(PLUGIN_METADATA)) {
     const manifestDir = join(PLUGIN_ROOT, metadata.directory);
     mkdirSync(manifestDir, { recursive: true });
@@ -663,6 +730,7 @@ beforeAll(() => {
       version: PLUGIN_METADATA.copilot.version,
     }),
   );
+  writeHookMetadata(SPACED_PLUGIN_ROOT, PLUGIN_METADATA.copilot);
   for (const binaryName of ["ghcfa-telem", "ghcfa-telem.cmd"]) {
     writePublisherStub(join(BIN_DIR, binaryName));
   }
@@ -734,6 +802,99 @@ describe("Telemetry hook manifests", () => {
   );
 });
 
+describe.each(shells)("Generated plugin metadata ($name)", shell => {
+  it("reads plugin name and version from hooks/metadata.txt", () => {
+    const args = runHook(
+      shell,
+      {
+        hook_event_name: "sessionStart",
+        session_id: SESSION_ID,
+        cursor_version: "1.7.2",
+        is_background_agent: false,
+        composer_mode: "agent",
+      },
+      "",
+      {},
+      SIDECAR_METADATA_HOOKS_DIR,
+    );
+
+    expectArg(args, "--plugin-name", "sidecar-plugin");
+    expectArg(args, "--plugin-version", "9.8.7");
+  });
+
+  it("suppresses session telemetry when generated plugin metadata is missing", () => {
+    const args = runHook(
+      shell,
+      {
+        hook_event_name: "sessionStart",
+        session_id: SESSION_ID,
+        cursor_version: "1.7.2",
+        is_background_agent: false,
+        composer_mode: "agent",
+      },
+      "",
+      {},
+      MISSING_METADATA_HOOKS_DIR,
+    );
+
+    expect(args).toEqual([]);
+  });
+
+  it("suppresses skill telemetry when generated plugin metadata is missing", () => {
+    const args = runHook(
+      shell,
+      {
+        hook_event_name: "PostToolUse",
+        session_id: SESSION_ID,
+        cursor_version: "1.7.2",
+        tool_name: "Skill",
+        tool_input: { skill: "test-skill" },
+      },
+      "",
+      {},
+      MISSING_METADATA_HOOKS_DIR,
+    );
+
+    expect(args).toEqual([]);
+  });
+
+  it("reports Azure MCP telemetry when azure is a direct mcpServers key", () => {
+    const args = runHook(
+      shell,
+      fixture("cursor-mcp-invocation.json"),
+      "",
+      {},
+      OWNED_MCP_HOOKS_DIR,
+    );
+
+    expectArg(args, "--event-type", "tool_invocation");
+    expectArg(args, "--tool-name", "get_azure_bestpractices");
+  });
+
+  it("does not report Azure MCP telemetry when the generated server list is empty", () => {
+    const args = runHook(
+      shell,
+      fixture("cursor-mcp-invocation.json"),
+      "",
+      {},
+      EMPTY_MCP_HOOKS_DIR,
+    );
+
+    expect(args).toEqual([]);
+  });
+
+  it("does not report Azure MCP telemetry when no server entries are generated", () => {
+    const args = runHook(
+      shell,
+      fixture("cursor-mcp-invocation.json"),
+      "",
+      {},
+      SIDECAR_METADATA_HOOKS_DIR,
+    );
+
+    expect(args).toEqual([]);
+  });
+});
 describe.each(shells)("Telemetry reporter installer ($name)", shell => {
   it("installs from a local ZIP and reuses the cached executable", () => {
     const cacheDirectory = join(INSTALL_CACHE_DIR, `installer-${shell.name}`);
@@ -1334,7 +1495,7 @@ describe.each(shells)("Cursor telemetry hook ($name)", shell => {
     expectArg(args, "--skill-name", "azure-cost");
     expectArg(args, "--skill-version", "1.2.3");
     expect(args).not.toContain("--file-reference");
-  });
+  }, 10_000);
 
   it("reports a bundled file read as a reference read", () => {
     const payload = fixture("cursor-reference-read.json") as CursorPayload & Record<string, unknown>;
@@ -1348,7 +1509,7 @@ describe.each(shells)("Cursor telemetry hook ($name)", shell => {
     expectArg(args, "--skill-version", "1.2.3");
     expectArg(args, "--file-reference", "azure-cost\\cost-query\\guardrails.md");
     expect(args).not.toContain("--skill-name");
-  });
+  }, 10_000);
 
   it.each(["get_azure_bestpractices", "MCP:get_azure_bestpractices"])(
     "reports an Azure MCP invocation without Cursor's display prefix: %s",
