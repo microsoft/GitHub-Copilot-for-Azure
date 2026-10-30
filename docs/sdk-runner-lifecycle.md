@@ -8,11 +8,11 @@ An agent session contains all the context that can influence future LLM output, 
 
 ## Turn
 
-Vally defines a turn as the interactions between a user submits a prompt and the agent concludes that there is no more work to be done until the next user prompt. It's worth noting that agent sdks have different concepts that are also called turns.
+Vally defines a turn as the interactions between when a user submits a prompt and the agent concludes that when there is no more work to be done until the next user prompt. It's worth noting that agent sdks have different concepts that are also called turns.
 
 ## Copilot Sdk Runner
 
-Copilot Sdk runner manages the lifecycle of an agent session by subscribing to the events emitted to the CopilotSession object. The emitted sessions contains key information that allows the runner to identify the state of the session.
+Copilot Sdk runner manages the lifecycle of an agent session by subscribing to the events emitted by the CopilotSession object. The emitted sessions contain key information that allows the runner to identify the state of the session.
 
 Here are some important events that the runner keeps track of.
 
@@ -23,7 +23,7 @@ Here are some important events that the runner keeps track of.
 - **"tool.execution_start", "tool.execution_complete"**. These events indicate the agent executing tool call requests from the LLM and the results of the execution.
 - **"skill.invoked"**. These events indicate a skill is loaded. We are interested in identifying which skills are invoked since this project is built for skills.
 
-> Note: A turn of our definition may contain multiple Copilot Sdk turns if the agent makes more than one requests to the LLM.
+> Note: A turn under our definition may contain multiple Copilot Sdk turns if the agent makes more than one request to the LLM.
 
 Here is an example to illustrate the difference between Vally's turn definition and Copilot Sdk's turn definition. Suppose a user asks the agent to use AzCli to query the tags of a resource group.
 
@@ -40,4 +40,4 @@ Here is an example to illustrate the difference between Vally's turn definition 
     - End of Copilot Sdk turn 2
 - End of our turn 1
 
-There are 2 Copilot Sdk turns but there are only 1 turn in Vally's definition. If we need to write a grader that is scoped to a specific turn or use maxTurns property, the turn number needs to be set following Vally's turn definition.
+There are 2 Copilot Sdk turns but there is only 1 turn in Vally's definition. If we need to write a grader that is scoped to a specific turn or use `maxTurns` property, the turn number needs to be set following Vally's turn definition.
