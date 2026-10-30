@@ -162,7 +162,7 @@ describe("Gulp allowlist packaging", () => {
 
     for (const plugin of ["alpha", "beta"]) {
       write(`plugins/${plugin}/version.json`, JSON.stringify({ version: "1.0" }));
-      for (const manifestDirectory of [".plugin", ".cursor-plugin", ".claude-plugin"]) {
+      for (const manifestDirectory of [".", ".plugin", ".cursor-plugin", ".claude-plugin"]) {
         write(
           `plugins/${plugin}/${manifestDirectory}/plugin.json`,
           JSON.stringify({ name: plugin, version: "0.0.0-placeholder" }),
@@ -214,6 +214,15 @@ describe("Gulp allowlist packaging", () => {
         (plugin === "alpha" ? "alpha-skill\\references\\removed.md\n" : ""),
       );
       expect(read(`output/${plugin}`, `skills/${plugin}-skill/SKILL.md`)).toBe('version: "1.2.3"\n');
+      const portableManifest = JSON.parse(read(`output/${plugin}`, "plugin.json"));
+      expect(portableManifest.version).toMatch(/^\d+\.\d+\.\d+$/);
+      for (const directory of [".plugin", ".cursor-plugin", ".claude-plugin"]) {
+        expect(JSON.parse(read(`output/${plugin}`, `${directory}/plugin.json`)))
+          .toEqual(portableManifest);
+      }
+      expect(read(`output/${plugin}`, "com.github.copilot/hooks/hooks.json"))
+        .toBe(read(`output/${plugin}`, "hooks/copilot-hooks.json"));
+      expect(existsSync(join(root, "output", plugin, "hooks", "hooks.json"))).toBe(false);
       for (const filename of ["allowed-skills.txt", "allowed-references.txt"]) {
         expect(existsSync(join(root, "output", plugin, filename))).toBe(false);
       }

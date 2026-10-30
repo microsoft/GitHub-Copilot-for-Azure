@@ -15,6 +15,25 @@ const SEMVER_RE = /^\d+\.\d+\.\d+$/;
 const PLACEHOLDER = "0.0.0-placeholder";
 
 function verifyBuildOutputVersions(outputDir: string): boolean {
+  if (!fs.existsSync(path.join(outputDir, "plugin.json")) &&
+      !fs.existsSync(path.join(outputDir, ".plugin"))) {
+    const pluginDirs = fs.readdirSync(outputDir, { withFileTypes: true })
+      .filter(entry => entry.isDirectory());
+    if (pluginDirs.length === 0) {
+      console.error(`❌ No built plugins found in ${outputDir}`);
+      return false;
+    }
+    let valid = true;
+    for (const plugin of pluginDirs) {
+      // Do not short-circuit: report failures in every package.
+      valid = verifyPluginVersions(path.join(outputDir, plugin.name)) && valid;
+    }
+    return valid;
+  }
+  return verifyPluginVersions(outputDir);
+}
+
+function verifyPluginVersions(outputDir: string): boolean {
   let hasError = false;
 
   // Check all SKILL.md files have real semver versions (not placeholder)
@@ -45,10 +64,14 @@ function verifyBuildOutputVersions(outputDir: string): boolean {
   }
 
   // Check all plugin.json files have real semver versions (not placeholder)
-  const pluginDirs = [".plugin", ".claude-plugin", ".cursor-plugin"];
+  const pluginDirs = [".", ".plugin", ".claude-plugin", ".cursor-plugin"];
   for (const dir of pluginDirs) {
     const jsonPath = path.join(outputDir, dir, "plugin.json");
-    if (!fs.existsSync(jsonPath)) continue;
+    if (!fs.existsSync(jsonPath)) {
+      console.error(`❌ Missing built plugin manifest: ${jsonPath}`);
+      hasError = true;
+      continue;
+    }
     const json = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
     if (json.version === PLACEHOLDER) {
       console.log(

@@ -4,6 +4,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi, type MockInstance } from "vitest";
 import * as fs from "node:fs";
+import * as path from "node:path";
 import { checkPluginVersionPlaceholders } from "../check-plugin-version-pr.js";
 
 vi.mock("node:fs", async () => {
@@ -56,6 +57,22 @@ describe("checkPluginVersionPlaceholders", () => {
     expect(mockExit).toHaveBeenCalledWith(1);
     expect(mockConsoleError).toHaveBeenCalledWith(
       expect.stringContaining('expected version "0.0.0-placeholder", found "1.0.1"')
+    );
+  });
+
+  it("checks portable root manifests as well as legacy manifests", () => {
+    vi.mocked(fs.existsSync).mockReturnValue(true);
+    vi.mocked(fs.readFileSync).mockImplementation(file =>
+      JSON.stringify({
+        version: path.basename(path.dirname(String(file))) === ".plugin" ||
+          path.basename(path.dirname(String(file))) === ".claude-plugin" ||
+          path.basename(path.dirname(String(file))) === ".cursor-plugin"
+          ? "0.0.0-placeholder" : "1.2.3",
+      })
+    );
+    expect(() => checkPluginVersionPlaceholders()).toThrow("process.exit() called");
+    expect(mockConsoleError).toHaveBeenCalledWith(
+      expect.stringContaining("plugins/azure-skills/plugin.json: expected version")
     );
   });
 
