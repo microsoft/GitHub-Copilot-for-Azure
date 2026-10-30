@@ -1,4 +1,11 @@
-import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
+import type {
+  SDKAssistantMessage,
+  SDKMessage,
+  SDKResultSuccess,
+  SDKSystemMessage,
+  SDKUserMessage,
+} from "@anthropic-ai/claude-agent-sdk";
+import { randomUUID } from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import {
@@ -38,6 +45,7 @@ describe("claude-sdk-runner", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.useRealTimers();
     fs.rmSync(mocks.skillsDirectory, { recursive: true, force: true });
   });
 
@@ -56,53 +64,210 @@ describe("claude-sdk-runner", () => {
     expect(clearTimeoutSpy).toHaveBeenCalledWith(setTimeoutSpy.mock.results[0].value);
   });
 
-  test.each([undefined, 0, 1, 2, 3])("enforces maxTurns=%s using system/init messages", async (maxTurns) => {
-    const messages = Array.from({ length: 3 }, (_, index) => [
-      {
-        type: "system",
-        subtype: "init",
-        session_id: "session-1",
-        uuid: `init-${index + 1}`,
-        claude_code_version: "2.1.287",
-        model: "claude-sonnet-5",
-        mcp_servers: [],
-      },
-      assistantToolMessage(`message-${index + 1}`, `read-${index + 1}`, "Read", {
+  test.each([
+    { maxTurns: undefined, expectedTurns: 4, aborted: false },
+    { maxTurns: 0, expectedTurns: 1, aborted: true },
+    { maxTurns: 1, expectedTurns: 2, aborted: true },
+    { maxTurns: 2, expectedTurns: 3, aborted: true },
+    { maxTurns: 3, expectedTurns: 4, aborted: false },
+    { maxTurns: 4, expectedTurns: 4, aborted: false },
+  ])("enforces maxTurns=$maxTurns on manually counted prompt turns", async ({
+    maxTurns,
+    expectedTurns,
+    aborted,
+  }) => {
+    const prompts = ["Start.", "Continue.", "Continue again.", "Finish."];
+    const streams = prompts.map((_, promptIndex) => Array.from({ length: 3 }, (_, eventTurn) => [
+      initMessage(),
+      assistantToolMessage(`message-${promptIndex}-${eventTurn}`, `read-${promptIndex}-${eventTurn}`, "Read", {
         file_path: path.join(mocks.skillsDirectory, "azure-ai", "SKILL.md"),
       }),
-    ]).flat() as unknown as SDKMessage[];
+      resultMessage(),
+    ]).flat());
     const streamClosed = vi.fn();
-    mocks.query.mockReturnValue((async function* () {
-      try {
-        yield* messages;
-      } finally {
-        streamClosed();
-      }
-    })());
+    for (const messages of streams) {
+      mocks.query.mockReturnValueOnce((async function* () {
+        try {
+          yield* messages;
+        } finally {
+          streamClosed();
+        }
+      })());
+    }
+    const observedTurnCounts: number[] = [];
 
     const runner = useClaudeAgentRunner({ testName: "max-turns" });
     const metadata = await runner.run({
-      prompt: "Start the run.",
-      followUp: ["Continue the run."],
+      prompt: prompts[0],
+      followUp: prompts.slice(1),
       timeout: 30 * 1000,
       maxTurns,
+      shouldEarlyTerminate: currentMetadata => {
+        observedTurnCounts.push(currentMetadata.turnCount);
+        return false;
+      },
     });
 
-    const exceeded = maxTurns !== undefined && maxTurns < 3;
-    const expectedTurns = exceeded ? maxTurns + 1 : 3;
-    expect(mocks.query).toHaveBeenCalledTimes(1);
-    expect(mocks.query.mock.calls[0][0].options).not.toHaveProperty("maxTurns");
-    expect(mocks.query.mock.calls[0][0].options.abortController.signal.aborted).toBe(exceeded);
+    // The guard is checked before each prompt and aborts only after count > maxTurns.
+    expect(mocks.query).toHaveBeenCalledTimes(expectedTurns);
+    expect(mocks.query.mock.calls.map(([config]) => config.prompt)).toEqual(prompts.slice(0, expectedTurns));
+    for (const [config] of mocks.query.mock.calls) {
+      expect(config.options).not.toHaveProperty("maxTurns");
+      expect(config.options.abortController.signal.aborted).toBe(aborted);
+    }
+    expect(mocks.query.mock.calls[0][0].options).not.toHaveProperty("resume");
+    for (const [config] of mocks.query.mock.calls.slice(1)) {
+      expect(config.options.resume).toBe("session-1");
+    }
     expect(metadata.turnCount).toBe(expectedTurns);
-    expect(metadata.events.filter(event => event.type === "session.start")).toHaveLength(expectedTurns);
-    expect(metadata.rawData).toEqual(messages.slice(0, exceeded ? 2 * expectedTurns - 1 : messages.length));
-    expect(metadata.toolCounts).toEqual(expectedTurns === 1 && exceeded
-      ? {}
-      : { read: exceeded ? expectedTurns - 1 : expectedTurns });
-    expect(metadata.testComments).toEqual(exceeded
+    expect(observedTurnCounts).toEqual(
+      streams.slice(0, expectedTurns).flatMap((messages, index) => messages.map(() => index)),
+    );
+    expect(metadata.rawData).toEqual(streams.slice(0, expectedTurns).flat());
+    expect(metadata.toolCounts).toEqual({ read: expectedTurns * 3 });
+    const starts = metadata.events.filter(event => event.type === "assistant.turn_start");
+    const ends = metadata.events.filter(event => event.type === "assistant.turn_end");
+    expect(starts).toHaveLength(expectedTurns * 3);
+    expect(ends).toHaveLength(expectedTurns * 3);
+    expect(starts.map(event => event.data.turnId)).toEqual(ends.map(event => event.data.turnId));
+    expect(new Set(starts.map(event => event.data.turnId)).size).toBe(expectedTurns);
+    expect(metadata.testComments).toEqual(aborted
       ? [`⚠️ Run aborted: turn count (${expectedTurns}) exceeded maxTurns (${maxTurns}).`]
       : []);
-    expect(streamClosed).toHaveBeenCalledOnce();
+    expect(streamClosed).toHaveBeenCalledTimes(expectedTurns);
+  });
+
+  test("counts a prompt once even without SDK turn or tool-call messages", async () => {
+    mocks.query.mockImplementation(() => toAsyncIterable([]));
+
+    const runner = useClaudeAgentRunner({ testName: "empty-prompts" });
+    const metadata = await runner.run({
+      prompt: "Start.",
+      followUp: ["Continue.", "Do not send."],
+      maxTurns: 0,
+      timeout: 30 * 1000,
+    });
+
+    expect(metadata.turnCount).toBe(1);
+    expect(metadata.events).toEqual([]);
+    expect(metadata.rawData).toBeUndefined();
+    expect(mocks.query).toHaveBeenCalledOnce();
+    expect(metadata.testComments).toEqual([
+      "⚠️ Run aborted: turn count (1) exceeded maxTurns (0).",
+    ]);
+  });
+
+  test("translates init and result boundaries without injecting extra stream boundaries", async () => {
+    const user = userTextMessage("Start.");
+    const init = { ...initMessage(), timestamp: "2026-01-01T00:00:01.000Z" };
+    const result = resultMessage();
+    const afterResult = userTextMessage("A message after the result.");
+    mocks.query.mockReturnValue(toAsyncIterable([user, init, result, afterResult]));
+
+    const runner = useClaudeAgentRunner({ testName: "turn-boundaries" });
+    const metadata = await runner.run({ prompt: "Start.", timeout: 30 * 1000 });
+
+    expect(metadata.events.map(event => event.type)).toEqual([
+      "user.message",
+      "assistant.turn_start",
+      "assistant.message",
+      "assistant.turn_end",
+      "user.message",
+    ]);
+    expect(metadata.events[1]).toEqual({
+      type: "assistant.turn_start",
+      id: init.uuid,
+      parentId: user.uuid,
+      timestamp: init.timestamp,
+      data: { turnId: expect.any(String) },
+    });
+    expect(metadata.events[2]).toMatchObject({
+      id: result.uuid,
+      parentId: init.uuid,
+      data: { content: result.result },
+    });
+    expect(metadata.events[3]).toMatchObject({
+      id: `${result.uuid}:1`,
+      parentId: result.uuid,
+      timestamp: "1970-01-01T00:00:00.000Z",
+      data: metadata.events[1].data,
+    });
+    expect(metadata.events[4].parentId).toBe(`${result.uuid}:1`);
+    expect(new Set(metadata.events.map(event => event.id)).size).toBe(metadata.events.length);
+    expect(metadata.turnCount).toBe(1);
+    expect(metadata.testComments).toEqual([]);
+  });
+
+  test("emits only a turn end for a result when an assistant response already exists", async () => {
+    const init = initMessage();
+    const assistant = assistantMessage("message-1", [{ type: "text", text: "Done", citations: null }]);
+    const result = { ...resultMessage(), timestamp: "2026-01-01T00:00:03.000Z" };
+    mocks.query.mockReturnValue(toAsyncIterable([init, assistant, result]));
+
+    const runner = useClaudeAgentRunner({ testName: "existing-assistant-result" });
+    const metadata = await runner.run({ prompt: "Start.", timeout: 30 * 1000 });
+
+    expect(metadata.events.filter(event => event.type === "assistant.message")).toHaveLength(1);
+    expect(metadata.events.at(-1)).toMatchObject({
+      type: "assistant.turn_end",
+      id: result.uuid,
+      parentId: assistant.uuid,
+      timestamp: result.timestamp,
+      data: metadata.events[0].data,
+    });
+    expect(metadata.testComments).toEqual([]);
+  });
+
+  test.each([
+    "error_during_execution",
+    "error_max_turns",
+    "error_max_budget_usd",
+    "error_max_structured_output_retries",
+    "success",
+  ] as const)("closes the turn after an error result with subtype %s", async (subtype) => {
+    const init = initMessage();
+    const result = subtype === "success"
+      ? { ...resultMessage(), is_error: true, result: "Failed" }
+      : { ...resultMessage(), subtype, is_error: true, errors: ["Failed", "Details"] };
+    mocks.query.mockReturnValue(toAsyncIterable([init, result]));
+
+    const runner = useClaudeAgentRunner({ testName: "error-result" });
+    const metadata = await runner.run({ prompt: "Start.", timeout: 30 * 1000 });
+
+    expect(metadata.events.map(event => event.type)).toEqual([
+      "assistant.turn_start",
+      "session.error",
+      "assistant.turn_end",
+    ]);
+    expect(metadata.events[1]).toMatchObject({
+      id: result.uuid,
+      parentId: init.uuid,
+      data: {
+        errorType: subtype,
+        message: subtype === "success" ? "Failed" : "Failed\nDetails",
+      },
+    });
+    expect(metadata.events[2]).toMatchObject({
+      id: `${result.uuid}:1`,
+      parentId: result.uuid,
+      data: metadata.events[0].data,
+    });
+    expect(metadata.turnCount).toBe(1);
+    expect(metadata.testComments).toEqual([]);
+  });
+
+  test.each([false, true])("does not synthesize turn boundaries without init/result (init=%s)", async (withInit) => {
+    const messages = [...withInit ? [initMessage()] : [], userTextMessage("Start.")];
+    mocks.query.mockReturnValue(toAsyncIterable(messages));
+
+    const runner = useClaudeAgentRunner({ testName: "unfinished-turn" });
+    const metadata = await runner.run({ prompt: "Start.", timeout: 30 * 1000 });
+
+    expect(metadata.events.map(event => event.type)).toEqual(withInit
+      ? ["assistant.turn_start", "user.message"]
+      : ["user.message"]);
+    expect(metadata.turnCount).toBe(1);
+    expect(metadata.testComments).toEqual([]);
   });
 
   test.each([new Error("query failed"), "query failed"])("returns metadata when query throws %s", async (error) => {
@@ -125,88 +290,52 @@ describe("claude-sdk-runner", () => {
     expect(metadata.toolCounts).toEqual({});
     expect(metadata.skillFiles).toEqual({});
     expect(metadata.skillsLoaded).toEqual([{ name: "azure-ai" }]);
-    expect(mocks.query).toHaveBeenCalledTimes(1);
+    expect(mocks.query).toHaveBeenCalledOnce();
     expect(logError).toHaveBeenCalledWith("Agent runner error:", "query failed");
     expect(fs.existsSync(mocks.query.mock.calls[0][0].options.cwd)).toBe(false);
   });
 
   test.each([false, true])("preserves collected data when a message stream fails (follow-up=%s)", async (isFollowUp) => {
     const logError = vi.spyOn(console, "error").mockImplementation(() => { });
-    const completedMessages: SDKMessage[] = [{
-      type: "result",
-      subtype: "success",
-      uuid: "00000000-0000-4000-8000-000000000001",
-      session_id: "session-1",
-      is_error: false,
-      result: "Done",
-      duration_ms: 10,
-      duration_api_ms: 10,
-      num_turns: 1,
-      stop_reason: "end_turn",
-      total_cost_usd: 0,
-      usage: {
-        input_tokens: 3,
-        output_tokens: 7,
-        cache_read_input_tokens: 0,
-        cache_creation_input_tokens: 0,
-        cache_creation: {
-          ephemeral_1h_input_tokens: 0,
-          ephemeral_5m_input_tokens: 0,
-        },
-        fallback_credit: null,
-        inference_geo: "global",
-        iterations: [],
-        output_tokens_details: { thinking_tokens: 0 },
-        server_tool_use: { web_fetch_requests: 0, web_search_requests: 0 },
-        service_tier: "standard",
-        speed: "standard",
-      },
-      modelUsage: {},
-      permission_denials: [],
-    }];
+    const completedMessages = [initMessage(), resultMessage()];
     const partialMessages = [
+      initMessage(),
       assistantToolMessage("message-1", "read-call", "Read", {
         file_path: path.join(mocks.skillsDirectory, "azure-ai", "SKILL.md"),
       }),
-      toolResultMessage("read-result", "read-call", "skill contents"),
-    ] as SDKMessage[];
-    const runner = useClaudeAgentRunner({ testName: "stream-failure" });
-    const config = {
-      model: "claude-sonnet-5",
-      prompt: "Start the run.",
-      followUp: isFollowUp ? ["Continue the run."] : [],
-      timeout: 30 * 1000,
-    };
-    mocks.query.mockReturnValueOnce(toAsyncIterable([
-      ...(isFollowUp ? completedMessages : []),
-      ...partialMessages,
-    ]));
-    const expected = await runner.run(config);
-
-    mocks.query.mockReset();
+      toolResultMessage("read-call", "skill contents"),
+    ];
+    if (isFollowUp) {
+      mocks.query.mockReturnValueOnce(toAsyncIterable(completedMessages));
+    }
+    const streamClosed = vi.fn();
     mocks.query.mockReturnValueOnce((async function* () {
-      if (isFollowUp) {
-        yield* completedMessages;
+      try {
+        yield* partialMessages;
+        throw new Error("stream failed");
+      } finally {
+        streamClosed();
       }
-      yield* partialMessages;
-      throw new Error("stream failed");
     })());
 
+    const runner = useClaudeAgentRunner({ testName: "stream-failure" });
     const metadata = await runner.run({
-      ...config,
-      followUp: [...config.followUp, "Do not send this prompt."],
+      prompt: "Start the run.",
+      followUp: [...isFollowUp ? ["Continue."] : [], "Do not send this prompt."],
+      timeout: 30 * 1000,
     });
 
-    expect(metadata).toEqual({
-      ...expected,
-      testComments: ["Agent runner error: stream failed"],
-    });
-    expect(metadata.rawData).toEqual(isFollowUp
-      ? [...completedMessages, ...partialMessages]
-      : partialMessages);
+    expect(metadata.testComments).toEqual(["Agent runner error: stream failed"]);
+    expect(metadata.rawData).toEqual([
+      ...isFollowUp ? completedMessages : [],
+      ...partialMessages,
+    ]);
     expect(metadata.toolCounts).toEqual({ read: 1 });
-    expect(metadata.turnCount).toBe(0);
-    expect(mocks.query).toHaveBeenCalledTimes(1);
+    expect(metadata.turnCount).toBe(isFollowUp ? 1 : 0);
+    expect(metadata.events.filter(event => event.type === "assistant.turn_end")).toHaveLength(isFollowUp ? 1 : 0);
+    expect(metadata.events.at(-1)?.type).toBe("tool.execution_complete");
+    expect(mocks.query).toHaveBeenCalledTimes(isFollowUp ? 2 : 1);
+    expect(streamClosed).toHaveBeenCalledOnce();
     expect(logError).toHaveBeenCalledWith("Agent runner error:", "stream failed");
     expect(fs.existsSync(mocks.query.mock.calls.at(-1)![0].options.cwd)).toBe(false);
   });
@@ -219,7 +348,7 @@ describe("claude-sdk-runner", () => {
     });
     const message = assistantToolMessage("message-1", "read-call", "Read", {
       file_path: path.join(mocks.skillsDirectory, "azure-ai", "SKILL.md"),
-    }) as SDKMessage;
+    });
     mocks.query.mockReturnValue(toAsyncIterable([message]));
     let collectedMetadata: AgentMetadata | undefined;
 
@@ -240,77 +369,25 @@ describe("claude-sdk-runner", () => {
   });
 
   test("translates skill, reference read, and MCP tool messages", async () => {
-    const messages = [
-      {
-        type: "system",
-        subtype: "init",
-        session_id: "session-1",
-        uuid: "init-1",
-        claude_code_version: "2.1.287",
-        model: "claude-sonnet-5",
-        mcp_servers: [{ name: "plugin:azure:azure", status: "pending" }],
-      },
-      assistantToolMessage("message-1", "skill-call", "Skill", {
-        skill: "azure:azure-ai",
-      }),
-      toolResultMessage("skill-result", "skill-call", "Launching skill: azure:azure-ai"),
-      userTextMessage(
-        "skill-content",
-        "Base directory for this skill: /plugins/azure-skills/skills/azure-ai\n\n# Azure AI Services",
-      ),
-      assistantToolMessage("message-2", "read-call", "Read", {
-        file_path: path.join(mocks.skillsDirectory, "azure-ai", "references", "search.md"),
-      }),
-      toolResultMessage("read-result", "read-call", "reference contents"),
-      assistantToolMessage(
-        "message-3",
-        "mcp-call",
-        "mcp__plugin_azure_azure__search",
-        { learn: true },
-      ),
-      toolResultMessage("mcp-result", "mcp-call", [
-        { type: "text", text: "MCP response" },
-      ]),
-      {
-        type: "assistant",
-        uuid: "assistant-final",
-        session_id: "session-1",
-        parent_tool_use_id: null,
-        message: {
-          id: "message-4",
-          model: "claude-sonnet-5",
-          role: "assistant",
-          content: [{ type: "text", text: "Done" }],
-          usage: usage({
-            inputTokens: 2,
-            outputTokens: 5,
-            cacheWriteTokens: 43993,
-          }),
-        },
-      },
-      {
-        type: "result",
-        subtype: "success",
-        uuid: "result-1",
-        session_id: "session-1",
-        is_error: false,
-        result: "Done",
-        duration_api_ms: 13460,
-        num_turns: 5,
-        usage: {
-          input_tokens: 8,
-          output_tokens: 1019,
-          cache_read_input_tokens: 144136,
-          cache_creation_input_tokens: 118482,
-        },
-        modelUsage: {
-          "claude-sonnet-5": {
-            inputTokens: 1231,
-            outputTokens: 1039,
-          },
-        },
-      },
-    ] as unknown as SDKMessage[];
+    const init = initMessage([{ name: "plugin:azure:azure", status: "pending" }]);
+    const skill = assistantToolMessage("message-1", "skill-call", "Skill", { skill: "azure:azure-ai" });
+    const skillResult = toolResultMessage("skill-call", "Launching skill: azure:azure-ai");
+    const skillContent = userTextMessage(
+      "Base directory for this skill: /plugins/azure-skills/skills/azure-ai\n\n# Azure AI Services",
+    );
+    const read = assistantToolMessage("message-2", "read-call", "Read", {
+      file_path: path.join(mocks.skillsDirectory, "azure-ai", "references", "search.md"),
+    });
+    const readResult = toolResultMessage("read-call", "reference contents");
+    const mcp = assistantToolMessage("message-3", "mcp-call", "mcp__plugin_azure_azure__search", { learn: true });
+    const mcpResult = toolResultMessage("mcp-call", [{ type: "text", text: "MCP response" }]);
+    const final = assistantMessage("message-4", [{ type: "text", text: "Done", citations: null }], usage({
+      inputTokens: 2,
+      outputTokens: 5,
+      cacheWriteTokens: 43993,
+    }));
+    const result = resultMessage();
+    const messages = [init, skill, skillResult, skillContent, read, readResult, mcp, mcpResult, final, result];
     mocks.query.mockReturnValue(toAsyncIterable(messages));
 
     const runner = useClaudeAgentRunner({ testName: "translation" });
@@ -321,7 +398,7 @@ describe("claude-sdk-runner", () => {
     });
 
     const skillEvent = metadata.events.find(event => event.type === "skill.invoked");
-    expect(skillEvent?.id).toBe("skill-content");
+    expect(skillEvent?.id).toBe(skillContent.uuid);
     expect(skillEvent?.data).toMatchObject({
       name: "azure-ai",
       path: path.join("/plugins/azure-skills/skills/azure-ai", "SKILL.md"),
@@ -332,47 +409,26 @@ describe("claude-sdk-runner", () => {
     });
 
     const toolStarts = metadata.events.filter(event => event.type === "tool.execution_start");
-    expect(toolStarts.map(event => event.id)).toEqual([
-      "skill-call-message",
-      "read-call-message",
-      "mcp-call-message",
-    ]);
-    expect(toolStarts.map(event => event.data.toolName)).toEqual([
-      "skill",
-      "read",
-      "azure-search",
-    ]);
+    expect(toolStarts.map(event => event.id)).toEqual([skill.uuid, read.uuid, mcp.uuid]);
+    expect(toolStarts.map(event => event.data.toolName)).toEqual(["skill", "read", "azure-search"]);
     expect(toolStarts[0].data.arguments).toEqual({ skill: "azure-ai" });
     expect(toolStarts[2].data).toMatchObject({
       mcpConfigServerName: "plugin:azure:azure",
       mcpServerName: "plugin:azure:azure",
       mcpToolName: "search",
     });
-    expect(toolStarts[2].timestamp).toBe("2026-01-01T00:00:01.000Z");
+    expect(toolStarts[2].timestamp).toBe(mcp.timestamp);
 
-    const toolCompletions = metadata.events
-      .filter(event => event.type === "tool.execution_complete");
-    expect(toolCompletions.map(event => event.id)).toEqual([
-      "skill-result",
-      "read-result",
-      "mcp-result",
-    ]);
-    expect(toolCompletions).toHaveLength(3);
+    const toolCompletions = metadata.events.filter(event => event.type === "tool.execution_complete");
+    expect(toolCompletions.map(event => event.id)).toEqual([skillResult.uuid, readResult.uuid, mcpResult.uuid]);
     expect(toolCompletions[2].data).toMatchObject({
       toolCallId: "mcp-call",
       success: true,
-      result: {
-        content: "MCP response",
-        detailedContent: "MCP response",
-      },
+      result: { content: "MCP response", detailedContent: "MCP response" },
     });
-    expect(toolCompletions[2].timestamp).toBe("2026-01-01T00:00:02.000Z");
-
+    expect(toolCompletions[2].timestamp).toBe(mcpResult.timestamp);
     expect(metadata.events.filter(event => event.type === "user.message")).toHaveLength(0);
-    expect(metadata.toolCounts).toEqual({
-      read: 1,
-      "azure-search": 1,
-    });
+    expect(metadata.toolCounts).toEqual({ read: 1, "azure-search": 1 });
     expect(metadata.skillFiles).toEqual({
       "azure-ai": [
         normalizePath(path.join(mocks.skillsDirectory, "azure-ai", "SKILL.md")),
@@ -387,97 +443,56 @@ describe("claude-sdk-runner", () => {
       totalApiDurationMs: 0,
       apiCallCount: 4,
       model: "claude-sonnet-5",
-      perCallUsage: [
-        {
-          model: "claude-sonnet-5",
-          inputTokens: 0,
-          outputTokens: 0,
-          cacheReadTokens: 0,
-          cacheWriteTokens: 0,
-          durationMs: 0,
-          initiator: "message-1",
-        },
-        {
-          model: "claude-sonnet-5",
-          inputTokens: 0,
-          outputTokens: 0,
-          cacheReadTokens: 0,
-          cacheWriteTokens: 0,
-          durationMs: 0,
-          initiator: "message-2",
-        },
-        {
-          model: "claude-sonnet-5",
-          inputTokens: 0,
-          outputTokens: 0,
-          cacheReadTokens: 0,
-          cacheWriteTokens: 0,
-          durationMs: 0,
-          initiator: "message-3",
-        },
-        {
-          model: "claude-sonnet-5",
-          inputTokens: 2,
-          outputTokens: 5,
-          cacheReadTokens: 0,
-          cacheWriteTokens: 43993,
-          durationMs: 0,
-          initiator: "message-4",
-        },
-      ],
+      perCallUsage: [skill, read, mcp, final].map(message => ({
+        model: "claude-sonnet-5",
+        inputTokens: message.message.usage.input_tokens,
+        outputTokens: message.message.usage.output_tokens,
+        cacheReadTokens: message.message.usage.cache_read_input_tokens,
+        cacheWriteTokens: message.message.usage.cache_creation_input_tokens,
+        durationMs: 0,
+        initiator: message.message.id,
+      })),
     });
     const trajectoryEvents = convertToTrajectoryEvents(metadata);
-    const skillActivations = trajectoryEvents.filter(
-      event => event.type === "skill_activation",
-    );
+    const skillActivations = trajectoryEvents.filter(event => event.type === "skill_activation");
     expect(skillActivations).toHaveLength(1);
     expect(skillActivations[0].data).toMatchObject({
       name: "azure-ai",
       path: path.join("/plugins/azure-skills/skills/azure-ai", "SKILL.md"),
     });
-    expect(
-      trajectoryEvents.some(event =>
-        event.type === "token_usage"
-        && ((event.data.inputTokens ?? 0) > 0 || (event.data.outputTokens ?? 0) > 0)),
+    expect(trajectoryEvents.some(event =>
+      event.type === "token_usage"
+      && ((event.data.inputTokens ?? 0) > 0 || (event.data.outputTokens ?? 0) > 0)),
     ).toBe(true);
-    expect(metadata.events[0].id).toBe("init-1");
-    expect(metadata.events[0].timestamp).toBe("1970-01-01T00:00:00.000Z");
-    expect(metadata.events.at(-1)?.type).toBe("assistant.turn_end");
-    expect(metadata.events.at(-1)?.id).toBe("result-1");
+    expect(metadata.events[0]).toMatchObject({
+      type: "assistant.turn_start",
+      id: init.uuid,
+      timestamp: "1970-01-01T00:00:00.000Z",
+    });
+    expect(metadata.events.at(-1)).toMatchObject({ type: "assistant.turn_end", id: result.uuid });
     expect(metadata.turnCount).toBe(1);
+    expect(metadata.testComments).toEqual([]);
   });
 
-  test("reports assistant usage when the run is early terminated", async () => {
+  test("reports assistant usage and counts the prompt when early terminated before a result", async () => {
     const messages = [
-      {
-        type: "system",
-        subtype: "init",
-        session_id: "session-1",
-        uuid: "init-1",
-        claude_code_version: "2.1.287",
-        model: "claude-sonnet-5",
-        mcp_servers: [],
-      },
-      {
-        type: "assistant",
-        uuid: "assistant-1",
-        session_id: "session-1",
-        parent_tool_use_id: null,
-        message: {
-          id: "message-1",
-          model: "claude-sonnet-5",
-          role: "assistant",
-          content: [{ type: "text", text: "Ready to stop" }],
-          usage: usage({
-            inputTokens: 3,
-            outputTokens: 7,
-            cacheReadTokens: 100,
-            cacheWriteTokens: 200,
-          }),
-        },
-      },
-    ] as unknown as SDKMessage[];
-    mocks.query.mockReturnValue(toAsyncIterable(messages));
+      initMessage(),
+      assistantMessage("message-1", [{ type: "text", text: "Ready to stop", citations: null }], usage({
+        inputTokens: 3,
+        outputTokens: 7,
+        cacheReadTokens: 100,
+        cacheWriteTokens: 200,
+      })),
+      resultMessage(),
+    ];
+    const streamClosed = vi.fn();
+    mocks.query.mockReturnValue((async function* () {
+      try {
+        yield* messages;
+      } finally {
+        streamClosed();
+      }
+    })());
 
     const runner = useClaudeAgentRunner({ testName: "early-termination" });
     const metadata = await runner.run({
@@ -496,52 +511,26 @@ describe("claude-sdk-runner", () => {
       apiCallCount: 1,
       model: "claude-sonnet-5",
     });
+    expect(metadata.rawData).toEqual(messages.slice(0, 2));
+    expect(metadata.turnCount).toBe(1);
+    expect(metadata.events.filter(event => event.type === "assistant.turn_end")).toHaveLength(0);
+    expect(mocks.query.mock.calls[0][0].options.abortController.signal.aborted).toBe(true);
+    expect(streamClosed).toHaveBeenCalledOnce();
+    expect(metadata.testComments).toEqual([]);
   });
 
   test("uses the latest cumulative usage snapshot for each assistant message", async () => {
     const messages = [
-      {
-        type: "system",
-        subtype: "init",
-        session_id: "session-1",
-        uuid: "init-1",
-        claude_code_version: "2.1.287",
-        model: "claude-sonnet-5",
-        mcp_servers: [],
-      },
-      {
-        type: "assistant",
-        uuid: "assistant-thinking",
-        session_id: "session-1",
-        parent_tool_use_id: null,
-        message: {
-          id: "message-1",
-          model: "claude-sonnet-5",
-          role: "assistant",
-          content: [{ type: "thinking", thinking: "Working", signature: "signature" }],
-          usage: usage({
-            inputTokens: 2,
-            outputTokens: 3,
-          }),
-        },
-      },
-      {
-        type: "assistant",
-        uuid: "assistant-text",
-        session_id: "session-1",
-        parent_tool_use_id: null,
-        message: {
-          id: "message-1",
-          model: "claude-sonnet-5",
-          role: "assistant",
-          content: [{ type: "text", text: "Done" }],
-          usage: usage({
-            inputTokens: 2,
-            outputTokens: 5,
-          }),
-        },
-      },
-    ] as unknown as SDKMessage[];
+      initMessage(),
+      assistantMessage("message-1", [{ type: "thinking", thinking: "Working", signature: "signature" }], usage({
+        inputTokens: 2,
+        outputTokens: 3,
+      })),
+      assistantMessage("message-1", [{ type: "text", text: "Done", citations: null }], usage({
+        inputTokens: 2,
+        outputTokens: 5,
+      })),
+    ];
     mocks.query.mockReturnValue(toAsyncIterable(messages));
 
     const runner = useClaudeAgentRunner({ testName: "usage-snapshots" });
@@ -555,30 +544,71 @@ describe("claude-sdk-runner", () => {
       inputTokens: 2,
       outputTokens: 5,
       apiCallCount: 1,
-      perCallUsage: [
-        {
-          model: "claude-sonnet-5",
-          inputTokens: 2,
-          outputTokens: 5,
-          cacheReadTokens: 0,
-          cacheWriteTokens: 0,
-          durationMs: 0,
-          initiator: "message-1",
-        },
-      ],
+      perCallUsage: [{
+        model: "claude-sonnet-5",
+        inputTokens: 2,
+        outputTokens: 5,
+        cacheReadTokens: 0,
+        cacheWriteTokens: 0,
+        durationMs: 0,
+        initiator: "message-1",
+      }],
     });
+    const usageEvents = metadata.events.filter(event => event.type === "assistant.usage");
+    expect(usageEvents).toHaveLength(1);
+    expect(usageEvents[0].data).toMatchObject({ inputTokens: 2, outputTokens: 5 });
+    expect(metadata.turnCount).toBe(1);
+    expect(metadata.testComments).toEqual([]);
   });
 });
 
-function assistantToolMessage(
+function initMessage(mcpServers: SDKSystemMessage["mcp_servers"] = []): SDKSystemMessage {
+  return {
+    type: "system",
+    subtype: "init",
+    uuid: randomUUID(),
+    session_id: "session-1",
+    apiKeySource: "none",
+    claude_code_version: "2.1.287",
+    cwd: mocks.skillsDirectory,
+    tools: [],
+    mcp_servers: mcpServers,
+    model: "claude-sonnet-5",
+    permissionMode: "default",
+    slash_commands: [],
+    output_style: "default",
+    skills: [],
+    plugins: [],
+  };
+}
+
+function resultMessage(): SDKResultSuccess {
+  return {
+    type: "result",
+    subtype: "success",
+    uuid: randomUUID(),
+    session_id: "session-1",
+    is_error: false,
+    result: "Done",
+    duration_ms: 10,
+    duration_api_ms: 10,
+    num_turns: 50,
+    stop_reason: "end_turn",
+    total_cost_usd: 0,
+    usage: usage(),
+    modelUsage: {},
+    permission_denials: [],
+  };
+}
+
+function assistantMessage(
   messageId: string,
-  toolCallId: string,
-  name: string,
-  input: Record<string, unknown>,
-): unknown {
+  content: SDKAssistantMessage["message"]["content"],
+  tokenUsage = usage(),
+): SDKAssistantMessage & { timestamp: string } {
   return {
     type: "assistant",
-    uuid: `${toolCallId}-message`,
+    uuid: randomUUID(),
     session_id: "session-1",
     timestamp: "2026-01-01T00:00:01.000Z",
     parent_tool_use_id: null,
@@ -586,10 +616,26 @@ function assistantToolMessage(
       id: messageId,
       model: "claude-sonnet-5",
       role: "assistant",
-      content: [{ type: "tool_use", id: toolCallId, name, input }],
-      usage: usage(),
+      type: "message",
+      content,
+      stop_reason: null,
+      stop_sequence: null,
+      container: null,
+      context_management: null,
+      diagnostics: null,
+      stop_details: null,
+      usage: tokenUsage,
     },
   };
+}
+
+function assistantToolMessage(
+  messageId: string,
+  toolCallId: string,
+  name: string,
+  input: Record<string, unknown>,
+): SDKAssistantMessage & { timestamp: string } {
+  return assistantMessage(messageId, [{ type: "tool_use", id: toolCallId, name, input }]);
 }
 
 function usage({
@@ -602,7 +648,7 @@ function usage({
   outputTokens?: number;
   cacheReadTokens?: number;
   cacheWriteTokens?: number;
-} = {}): object {
+} = {}): SDKResultSuccess["usage"] {
   return {
     cache_creation: {
       ephemeral_1h_input_tokens: 0,
@@ -613,13 +659,22 @@ function usage({
     inference_geo: "global",
     input_tokens: inputTokens,
     output_tokens: outputTokens,
+    fallback_credit: null,
+    iterations: [],
+    output_tokens_details: { thinking_tokens: 0 },
+    server_tool_use: { web_fetch_requests: 0, web_search_requests: 0 },
+    service_tier: "standard",
+    speed: "standard",
   };
 }
 
-function toolResultMessage(uuid: string, toolUseId: string, content: unknown): unknown {
+function toolResultMessage(
+  toolUseId: string,
+  content: string | Array<{ type: "text"; text: string }>,
+): SDKUserMessage & { timestamp: string } {
   return {
     type: "user",
-    uuid,
+    uuid: randomUUID(),
     session_id: "session-1",
     timestamp: "2026-01-01T00:00:02.000Z",
     parent_tool_use_id: null,
@@ -630,16 +685,13 @@ function toolResultMessage(uuid: string, toolUseId: string, content: unknown): u
   };
 }
 
-function userTextMessage(uuid: string, text: string): unknown {
+function userTextMessage(text: string): SDKUserMessage {
   return {
     type: "user",
-    uuid,
+    uuid: randomUUID(),
     session_id: "session-1",
     parent_tool_use_id: null,
-    message: {
-      role: "user",
-      content: [{ type: "text", text }],
-    },
+    message: { role: "user", content: [{ type: "text", text }] },
   };
 }
 

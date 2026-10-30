@@ -159,7 +159,7 @@ export function useClaudeAgentRunner(_agentRunnerConfig: AgentRunnerConfig): IAg
 
       const eventCountBefore = metadata.events.length;
 
-      let sessionTimeout: NodeJS.Timeout | undefined = setTimeout(() => {
+      const sessionTimeout: NodeJS.Timeout | undefined = setTimeout(() => {
         const currentTime = new Date().getTime();
         metadata.testComments.push(
           `⚠️ Run aborted: run time (${currentTime - startTime} ms) exceeded timeout (${runConfig.timeout} ms).`
@@ -182,30 +182,27 @@ export function useClaudeAgentRunner(_agentRunnerConfig: AgentRunnerConfig): IAg
         // We also augment the system prompt to tell the agent to never end a turn when there are unfinished background tasks
         // so we can build test flows where subsequent prompts depend on the result of the previous ones.
         for (const prompt of prompts) {
+          if (runConfig.maxTurns !== undefined && metadata.turnCount > runConfig.maxTurns) {
+            metadata.testComments.push(
+              `⚠️ Run aborted: turn count (${metadata.turnCount}) exceeded maxTurns (${runConfig.maxTurns}).`
+            );
+            abortController.abort();
+            break;
+          }
+
           const turnId = randomUUID();
-          let hasTurnStart = false;
           const queryResult = query({
             prompt, options: {
               ...baseOptions,
               ...sessionId ? { resume: sessionId } : {}
             }
           });
+
           for await (const message of queryResult) {
-            // Inject an artificially created turn start event so we can translate
-            // to vally's turn start/end events for its turn based graders
-            if (!hasTurnStart) {
-              metadata.events.push({
-                type: "assistant.turn_start",
-                id: randomUUID(),
-                parentId: null,
-                timestamp: new Date().toISOString(),
-                data: {
-                  turnId: turnId
-                }
-              });
-              hasTurnStart = true;
+            // Initialize sessionId once
+            if (!sessionId) {
+              sessionId = "session_id" in message ? message.session_id : "unknown";
             }
-            sessionId = "session_id" in message ? message.session_id : sessionId;
             lastEventId = appendSessionEvents(
               metadata,
               translationState,
@@ -213,15 +210,8 @@ export function useClaudeAgentRunner(_agentRunnerConfig: AgentRunnerConfig): IAg
               runConfig.model,
               eventCountBefore,
               lastEventId,
+              turnId,
             );
-
-            if (runConfig.maxTurns !== undefined && metadata.turnCount > runConfig.maxTurns) {
-              metadata.testComments.push(
-                `⚠️ Run aborted: turn count (${metadata.turnCount}) exceeded maxTurns (${runConfig.maxTurns}).`
-              );
-              abortController.abort();
-              break;
-            }
 
             if (runConfig.shouldEarlyTerminate?.(metadata)) {
               abortController.abort();
@@ -229,15 +219,6 @@ export function useClaudeAgentRunner(_agentRunnerConfig: AgentRunnerConfig): IAg
             }
           }
 
-          metadata.events.push({
-            type: "assistant.turn_end",
-            id: randomUUID(),
-            parentId: null,
-            timestamp: new Date().toISOString(),
-            data: {
-              turnId: turnId
-            }
-          });
           metadata.turnCount += 1;
         }
       } catch (error) {
@@ -281,6 +262,7 @@ function appendSessionEvents(
   model: string | undefined,
   eventCountBeforePrompt: number,
   parentId: string | null,
+  turnId: string,
 ): string | null {
   if (!metadata.rawData) {
     metadata.rawData = [message];
@@ -291,23 +273,15 @@ function appendSessionEvents(
   const timestamp = getMessageTimestamp(message);
 
   if (message.type === "system" && message.subtype === "init") {
-    // Claude SDK's maxTurn option accounts for tool call turns instead of LLM turns.
-    // We count LLM turns ourselves and abort the run when it exceeds the configured maxTurns.
-    metadata.turnCount++;
     state.mcpServerNames = message.mcp_servers.map(server => server.name);
     metadata.tokenUsage!.model = message.model;
-    const event: Extract<SessionEvent, { type: "session.start" }> = {
-      type: "session.start",
+    const event: Extract<SessionEvent, { type: "assistant.turn_start" }> = {
+      type: "assistant.turn_start",
       id: message.uuid,
       parentId: lastEventId,
       timestamp,
       data: {
-        copilotVersion: message.claude_code_version,
-        producer: "claude-agent-sdk",
-        selectedModel: message.model,
-        sessionId: message.session_id,
-        startTime: timestamp,
-        version: 1,
+        turnId,
       },
     };
     metadata.events.push(event);
@@ -365,8 +339,8 @@ function appendSessionEvents(
     return lastEventId;
   }
 
-  const isError = message.subtype !== "success" || message.is_error;
   let messageEventIndex = 0;
+  const isError = message.subtype !== "success" || message.is_error;
   if (isError) {
     const details = message.subtype === "success"
       ? message.result
@@ -383,9 +357,7 @@ function appendSessionEvents(
     };
     metadata.events.push(errorEvent);
     lastEventId = errorEvent.id;
-  }
-
-  if (
+  } else if (
     !isError
     && message.subtype === "success"
     && (
@@ -407,7 +379,17 @@ function appendSessionEvents(
     lastEventId = event.id;
   }
 
-  return null;
+  const turnEndEvent: Extract<SessionEvent, { type: "assistant.turn_end" }> = {
+    type: "assistant.turn_end",
+    id: getMessageEventId(message.uuid, messageEventIndex),
+    parentId: lastEventId,
+    timestamp,
+    data: {
+      turnId,
+    },
+  };
+  metadata.events.push(turnEndEvent);
+  return turnEndEvent.id;
 }
 
 function createEmptyTokenUsage(): TokenUsage {
