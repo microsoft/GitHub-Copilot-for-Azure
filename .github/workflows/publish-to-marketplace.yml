@@ -216,8 +216,13 @@ jobs:
       # We workaround this difference by replicating the plugin files so the agent clients can still find them.
       - name: Copy azure plugin files to repo root
         run: |
-          cp "source-repo/output/azure-skills/.plugin/plugin.json" "target-repo/plugin.json"
+          cp "source-repo/output/azure-skills/plugin.json" "target-repo/plugin.json"
+          cp "source-repo/output/azure-skills/mcp.json" "target-repo/mcp.json"
           cp "source-repo/output/azure-skills/.mcp.json" "target-repo/.mcp.json"
+          mkdir -p "target-repo/.plugin/"
+          cp "source-repo/output/azure-skills/.plugin/plugin.json" "target-repo/.plugin/plugin.json"
+          mkdir -p "target-repo/com.github.copilot/"
+          rsync --archive --delete --verbose "source-repo/output/azure-skills/com.github.copilot/" "target-repo/com.github.copilot/"
           mkdir -p "target-repo/.claude-plugin/"
           cp "source-repo/output/azure-skills/.claude-plugin/plugin.json" "target-repo/.claude-plugin/plugin.json"
           mkdir -p "target-repo/skills/"
@@ -234,7 +239,7 @@ jobs:
       # Otherwise they will all get 404.
       - name: Replace repository URLs
         run: |
-          TARGET_DIRS=("target-repo/.github/plugins/azure-skills/" "target-repo/skills/" "target-repo/hooks/" "target-repo/plugin.json" "target-repo/.mcp.json" "target-repo/.claude-plugin/plugin.json" "target-repo/gemini-extension.json")
+          TARGET_DIRS=("target-repo/.github/plugins/azure-skills/" "target-repo/skills/" "target-repo/hooks/" "target-repo/com.github.copilot/" "target-repo/plugin.json" "target-repo/mcp.json" "target-repo/.mcp.json" "target-repo/.plugin/plugin.json" "target-repo/.claude-plugin/plugin.json" "target-repo/gemini-extension.json")
           for target in "${TARGET_DIRS[@]}"; do
             if [ -e "$target" ]; then
               if matches=$(grep -rli --include='*.md' --include='*.json' --exclude='CHANGELOG.md' --exclude='changelog-*.md' 'https://github.com/microsoft/github-copilot-for-azure' "$target"); then

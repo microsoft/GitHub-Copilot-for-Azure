@@ -52,13 +52,24 @@ Each plugin has the following files under the `plugins/<plugin>` directory:
 ├──   assets/               (assets, referenced by Cursor plugin manifest)
 ├──   hooks/                (hook files)
 ├──   skills/               (skill files)
-├──   .mcp.json             (mcp definition)
+├──   plugin.json           (Agent Plugins 1.0 manifest)
+├──   mcp.json              (portable MCP definition)
+├──   .mcp.json             (legacy MCP definition)
 ├──   LICENSE               (your plugin LICENSE)
 ├──   README.md             (user facing README.md for your plugin)
 ├──   version.json          (base version file)
 ```
 
 Each plugin has all its files stored under `plugins/<your-plugin-name>/`, which is called the plugin root. `plugins/azure-skills/` is a well-established plugin you can use as an example.
+
+Root `plugin.json` and `mcp.json` target
+[Agent Plugins 1.0.0](https://agent-plugins.org/specification). Each includes
+its canonical versioned `$schema` URL. The manifest contains metadata only;
+skills and MCP servers are discovered from `skills/` and `mcp.json`.
+Keep portable metadata and MCP servers synchronized with the legacy files.
+Portable MCP servers require an explicit transport: `stdio` for local
+executables or `streamable-http` for HTTP servers. Keep legacy transport
+syntax in `.mcp.json`. See [plugin-manifest.md](./plugin-manifest.md).
 
 `.claude-plugin/` contains the plugin manifest for Claude Code. `.cursor-plugin/` contains the plugin manifest for Cursor. `.plugin/` contains the plugin manifest for Copilot CLI and VS Code. We have to maintain separate plugin manifests because clients use them in different ways. See [plugin-manifest.md](./plugin-manifest.md) for more information. Every new plugin should provide at least these manifests to make sure it works for these clients.
 
@@ -71,6 +82,11 @@ Optional `copilot-hooks.json`, `claude-hooks.json`, and `cursor-hooks.json`
 files are fragments: list only plugin-owned event registrations, and the build
 will append them to shared events or add new events. See
 [hooks.md](./hooks.md) for the client-specific formats and merge behavior.
+
+The build copies compiled `hooks/copilot-hooks.json` unchanged to
+`com.github.copilot/hooks/hooks.json` for Copilot's Agent Plugins extension.
+This generated manifest uses the same scripts under `hooks/scripts/`;
+do not maintain a second source manifest or duplicate those scripts.
 
 `skills/` contains the skill files. The `.mcp.json` file contains the MCP server configuration you want to add to the agent. Skills and MCP configuration are the bread and butter added to the agent context to help the agent solve problems. `LICENSE` is the software license for your plugin. `README.md` is user-facing documentation for users of the plugin. Preserve the scaffolded telemetry disclosure when completing the README. Add an `npx` and `.npmrc` security warning only when the plugin's actual MCP configuration invokes `npx`; the shared telemetry hook does not use it. `version.json` sets the base major and minor version numbers so the automated versioning script can generate version numbers for your plugin. See [VERSIONING.md](./VERSIONING.md) to learn how it works.
 

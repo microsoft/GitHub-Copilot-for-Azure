@@ -26,7 +26,16 @@ A plugin can optionally add `copilot-hooks.json`, `claude-hooks.json`, or
 - Top-level metadata can only repeat an existing shared value exactly.
 
 The build validates all fragments and emits the compiled manifests at the
-existing client paths.
+existing client paths. It also copies compiled `hooks/copilot-hooks.json`
+unchanged to `com.github.copilot/hooks/hooks.json` in each built package,
+the Copilot extension location for Agent Plugins 1.0. Only shared and
+plugin-local `copilot-hooks.json` registrations contribute to this file;
+Claude and Cursor hooks are not included.
+
+The namespaced manifest still references `${PLUGIN_ROOT}/hooks/scripts/`.
+Scripts, metadata, allowlists, and legacy manifests stay under `hooks/`;
+no scripts are duplicated. The namespaced file is generated during the
+build rather than maintained separately in plugin sources.
 
 After assembling hooks, the build generates `hooks/allowlists/allowed-skills.txt`
 and `hooks/allowlists/allowed-references.txt` in each plugin package. These
@@ -153,4 +162,4 @@ not trigger a fallback.
 
 Most clients look for `hooks/hooks.json` as the default hook configuration and try to use it if no explicit `hooks` property is defined in the plugin manifest. We decided to explicitly define a hooks manifest for every client because it's impossible to create one hooks manifest for all clients. Copilot/VS Code, Claude and Cursor use mutually exclusive schema for hooks manifest, which means the manifest is guaranteed to cause syntax errors in one or more clients. Besides, clients use different variables to represent the plugin root. Having the incorrect variable will cause the client to fail to resolve the script path, resulting in runtime failures.
 
-For this reason there is intentionally no file at the default `hooks/hooks.json` path. The Copilot/VS Code manifest is named `copilot-hooks.json` and is referenced explicitly from the Copilot plugin manifest. If a Copilot-format `hooks.json` were left at the default path, clients such as Claude Code — whose `hooks` property is *additive* to the default discovery rather than a replacement — would also load it and fail schema validation against their own hooks manifest (see [issue #2957](https://github.com/microsoft/GitHub-Copilot-for-Azure/issues/2957)).
+For this reason there is intentionally no file at the default `hooks/hooks.json` path. The Copilot/VS Code manifest is named `copilot-hooks.json` and is referenced explicitly from the legacy Copilot plugin manifest. If a Copilot-format `hooks.json` were left at the default path, clients such as Claude Code — whose `hooks` property is *additive* to the default discovery rather than a replacement — would also load it and fail schema validation against their own hooks manifest (see [issue #2957](https://github.com/microsoft/GitHub-Copilot-for-Azure/issues/2957)).
