@@ -128,6 +128,12 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig): IAgentRunn
               type: "stdio",
               command: "npx",
               args: ["-y", "@azure/mcp", "server", "start"],
+              env: {
+                ...(process.env.CI === "true" ? {
+                  AZURE_TOKEN_CREDENTIALS: "AzureCliCredential",
+                } : {}),
+                ...runConfig.env
+              },
               tools: ["*"]
             }
           }

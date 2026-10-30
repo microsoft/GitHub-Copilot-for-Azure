@@ -34,6 +34,7 @@ import {
 } from "../utils/agent-runner.ts";
 import { listPlugins, type Plugin, type SkillRef } from "../utils/skill-loader.ts";
 import {
+  getAzureEnvironment,
   getAzureFixtureManifestPath,
   getEarlyTerminateCondition,
   getRequiredSkillsCondition,
@@ -106,6 +107,7 @@ export abstract class SdkAgentExecutor implements Executor {
       env: {
         ...options.env,
         UV_CACHE_DIR: path.join(workDir, ".uv-cache"),
+        ...getAzureEnvironment(tags)
       },
       model,
       prompt,

@@ -1,0 +1,145 @@
+name: azure-resource-lookup-routing-eval
+description: |
+  Tests skill routing for cross-subscription resource queries, orphaned resource discovery,
+  tag compliance, App Service listing, and resource health prompts
+  using invocation rate measurement (5 runs, 80% threshold).
+
+tags:
+  type: integration
+  skill: azure-resource-lookup
+
+defaults:
+  runs: 5
+  timeout: "10m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ── cross-subscription-resource-inventory ──
+  # Jest: "handles cross-subscription resource inventory"
+  # Vally: checks skill invocation (routing coverage added beyond original Jest keyword check)
+  - name: "Cross-subscription resource inventory"
+    prompt: "How many resources do I have by type across all subscriptions?"
+    tags:
+      azurePermission: none
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-resource-lookup"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-lookup
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── resources-by-location ──
+  # Jest: "finds resources by location"
+  # Vally: checks skill invocation (routing coverage added beyond original Jest keyword check)
+  - name: "Resources by location across subscriptions"
+    prompt: "Show me resources by location across subscriptions"
+    tags:
+      azurePermission: none
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-resource-lookup"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-lookup
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── orphaned-disks ──
+  # Jest: "finds orphaned disks"
+  # Vally: checks skill invocation (routing coverage added beyond original Jest keyword check)
+  - name: "Find orphaned or unattached disks"
+    prompt: "Find orphaned or unattached disks in my subscription"
+    tags:
+      azurePermission: none
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-resource-lookup"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-lookup
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── resources-missing-tags ──
+  # Jest: "finds resources missing tags"
+  # Vally: checks skill invocation (routing coverage added beyond original Jest keyword check)
+  - name: "Find resources missing required tags"
+    prompt: "Find resources missing required tags in my subscription"
+    tags:
+      azurePermission: none
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-resource-lookup"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-lookup
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── list-websites ──
+  # Jest: "lists websites in subscription" + "skill should be invoked for resource listing prompts"
+  # Vally: checks skill invocation (preserves original Jest isSkillInvoked assertion)
+  - name: "List websites in subscription"
+    prompt: "List the websites in my subscription"
+    tags:
+      azurePermission: none
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-resource-lookup"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-lookup
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── resource-health-status ──
+  # Jest: "checks resource health status"
+  # Vally: checks skill invocation (routing coverage added beyond original Jest keyword check)
+  - name: "Find unhealthy or degraded resources"
+    prompt: "Find resources in unhealthy or degraded state"
+    tags:
+      azurePermission: none
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-resource-lookup"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-lookup
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
