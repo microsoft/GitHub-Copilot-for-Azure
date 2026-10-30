@@ -89,6 +89,13 @@ export type AgentMetadata = {
    * Loaded skills after applying the filters in the configuration and environment variable.
    */
   skillsLoaded: SkillRef[];
+
+  /**
+   * Optional. The raw data emitted by the agent for the test run trajectory.
+   * For reporting compatibility, all agents must translate the raw data into Copilot SDK SessionEvents.
+   * They can save the raw data here for further processing.
+   */
+  rawData?: object[];
 }
 
 export type AgentRunConfig = {
@@ -160,7 +167,7 @@ export type AgentRunConfig = {
   /**
    * Number of milliseconds as timeout for the entire run.
    */
-  timeout?: number;
+  timeout: number;
 
   /**
    * Whether to take a screenshot of the application after the agent work.
@@ -218,7 +225,7 @@ export type AgentRunnerConfig = {
 
 /**
  * An agent runner for integration test. The agent run has the following duties:
- * 1. Collect agent run events and save them as Copilot SDK compatible events in AgentMetadata. Write agent metadata to the
+ * 1. Collect agent run events and save them as Copilot SDK compatible events in AgentMetadata.
  * 2. Compute statistics and save them in AgentMetadata
  */
 export interface IAgentRunner {
@@ -843,7 +850,8 @@ function writeMarkdownReport(testName: string, config: AgentRunConfig, agentMeta
       tokenUsage: agentMetadata.tokenUsage,
       toolCounts: agentMetadata.toolCounts,
       skillFiles: agentMetadata.skillFiles,
-      skillsLoaded: agentMetadata.skillsLoaded
+      skillsLoaded: agentMetadata.skillsLoaded,
+      rawData: agentMetadata.rawData
     };
     fs.writeFileSync(jsonPath, redactSecrets(JSON.stringify(jsonData, null, 2)), "utf-8");
 
