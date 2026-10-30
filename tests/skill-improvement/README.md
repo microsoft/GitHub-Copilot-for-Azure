@@ -319,7 +319,7 @@ created—not whether it passed the evals.
 
 The policy and run history below describe earlier improvement experiments.
 The checked-in Kusto spec now runs a baseline-only comparison: one repetition
-across six answer models, all four Skill/MCP arms, and `claude-opus-4.8` as
+across six answer models, all four Skill/MCP arms, and `claude-sonnet-5` as
 judge. It permits 2184 answers and judge calls, disables improvement and
 held-out evaluation, and creates no issue or draft PR.
 
