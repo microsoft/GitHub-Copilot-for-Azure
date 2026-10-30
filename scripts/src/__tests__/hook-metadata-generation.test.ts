@@ -28,6 +28,12 @@ function writeJson(path: string, value: unknown): void {
   write(path, `${JSON.stringify(value, null, 2)}\n`);
 }
 
+function updateManifest(directory: string, changes: Record<string, unknown>): void {
+  const file = join(outputRoot, pluginName, directory, "plugin.json");
+  const manifest = JSON.parse(readFileSync(file, "utf8"));
+  writeJson(file, { ...manifest, ...changes });
+}
+
 function assemblePluginHooks(): ReturnType<typeof spawnSync> {
   const script = `
     const { assemblePluginHooks } = require(${JSON.stringify(gulpfile)});
@@ -88,9 +94,30 @@ beforeEach(() => {
   }
 
   for (const manifestDirectory of clientManifestDirectories) {
+    const hookManifest = {
+      ".plugin": "copilot-hooks.json",
+      ".cursor-plugin": "cursor-hooks.json",
+      ".claude-plugin": "claude-hooks.json",
+    }[manifestDirectory];
     writeJson(
       join(outputRoot, pluginName, manifestDirectory, "plugin.json"),
-      { name: "shared-plugin-name", version: "4.5.6" },
+      {
+        name: "shared-plugin-name",
+        version: "4.5.6",
+        description: "Shared plugin description",
+        author: { name: "Microsoft", url: "https://www.microsoft.com" },
+        homepage: "https://example.com/plugin",
+        repository: "https://example.com/repository",
+        license: "MIT",
+        keywords: ["azure", "cloud"],
+        ...(hookManifest ? {
+          skills: "./skills/",
+          mcpServers: "./.mcp.json",
+          hooks: `./hooks/${hookManifest}`,
+        } : {
+          $schema: "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+        }),
+      },
     );
   }
 });
@@ -170,6 +197,85 @@ describe("generated hook metadata", () => {
     const result = assemblePluginHooks();
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain("must declare equivalent servers");
+  });
+
+  it.each([".plugin", ".claude-plugin", ".cursor-plugin"])(
+    "rejects shared metadata drift in %s",
+    directory => {
+      for (const [field, changed] of Object.entries({
+        author: { name: "Microsoft", url: "https://different.example.com" },
+        homepage: "https://different.example.com",
+        repository: "https://different.example.com/repository",
+        license: "Apache-2.0",
+        keywords: ["azure", "different"],
+      })) {
+        const file = join(outputRoot, pluginName, directory, "plugin.json");
+        const original = readFileSync(file, "utf8");
+        updateManifest(directory, { [field]: changed });
+        const result = assemblePluginHooks();
+        expect(result.status).not.toBe(0);
+        expect(result.stderr).toContain(`${directory}/plugin.json field "${field}" is out of sync`);
+        write(file, original);
+      }
+    }, 30_000,
+  );
+
+  it.each([".plugin", ".claude-plugin", ".cursor-plugin"])(
+    "rejects missing shared metadata in %s",
+    directory => {
+      updateManifest(directory, { author: undefined });
+      const result = assemblePluginHooks();
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain('field "author" is out of sync');
+      expect(result.stderr).toContain("found a missing field");
+    },
+  );
+
+  it("compares Copilot descriptions with the portable manifest", () => {
+    updateManifest(".plugin", { description: "Outdated description" });
+    const result = assemblePluginHooks();
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain('.plugin/plugin.json field "description" is out of sync');
+  });
+
+  it("rejects stale legacy metadata when the portable manifest changes", () => {
+    updateManifest(".", { homepage: "https://new.example.com" });
+    const result = assemblePluginHooks();
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain('.plugin/plugin.json field "homepage" is out of sync');
+    expect(result.stderr).toContain('expected "https://new.example.com"');
+  });
+
+  it.each([".plugin", ".claude-plugin", ".cursor-plugin"])(
+    "rejects incorrect component paths in %s",
+    directory => {
+      for (const [field, changed] of Object.entries({
+        skills: "./other-skills/",
+        mcpServers: "./mcp.json",
+        hooks: "./hooks/wrong-client.json",
+      })) {
+        const file = join(outputRoot, pluginName, directory, "plugin.json");
+        const original = readFileSync(file, "utf8");
+        updateManifest(directory, { [field]: changed });
+        const result = assemblePluginHooks();
+        expect(result.status).not.toBe(0);
+        expect(result.stderr).toContain(`${directory}/plugin.json field "${field}" is out of sync`);
+        write(file, original);
+      }
+    }, 30_000,
+  );
+
+  it("allows client-specific descriptions, extensions, logos, and object key ordering", () => {
+    updateManifest(".claude-plugin", { description: "Manage Azure from Claude Code." });
+    updateManifest(".cursor-plugin", {
+      description: "Manage Azure from Cursor.",
+      logo: "./assets/azure-logo.svg",
+    });
+    updateManifest(".", { extensions: { "com.openai": { setting: true } } });
+    updateManifest(".plugin", {
+      author: { url: "https://www.microsoft.com", name: "Microsoft" },
+    });
+    expectAssemblySuccess();
   });
 
   it("copies only compiled copilot-hooks.json into the namespace and refreshes it", () => {

@@ -36,10 +36,10 @@ const REQUIRED_PLUGIN_HOOK_FILES = [
   "scripts/pluginPathAllowPattern.sh",
 ] as const;
 const PLUGIN_METADATA_CLIENTS = [
-  { clientName: "agent-plugins", manifestDirectory: "." },
-  { clientName: "copilot", manifestDirectory: ".plugin" },
-  { clientName: "cursor", manifestDirectory: ".cursor-plugin" },
-  { clientName: "claude-code", manifestDirectory: ".claude-plugin" },
+  { clientName: "agent-plugins", manifestDirectory: ".", hookManifest: null },
+  { clientName: "copilot", manifestDirectory: ".plugin", hookManifest: "copilot-hooks.json" },
+  { clientName: "cursor", manifestDirectory: ".cursor-plugin", hookManifest: "cursor-hooks.json" },
+  { clientName: "claude-code", manifestDirectory: ".claude-plugin", hookManifest: "claude-hooks.json" },
 ] as const;
 
 type HookManifest = {
@@ -342,6 +342,7 @@ function writePluginHookMetadata(
   const pluginOutputRoot = path.join(outputRoot, pluginDirname);
   let pluginName: string | undefined;
   let pluginVersion: string | undefined;
+  let portableManifest: Record<string, unknown> | undefined;
 
   for (const client of PLUGIN_METADATA_CLIENTS) {
     const manifestPath = path.join(
@@ -373,6 +374,34 @@ function writePluginHookMetadata(
         `${client.clientName} has "${clientPluginName}" version "${clientPluginVersion}", ` +
         `expected "${pluginName}" version "${pluginVersion}".`
       );
+    }
+
+    portableManifest ??= manifest;
+    if (client.hookManifest !== null) {
+      const expectedFields: Record<string, unknown> = {
+        author: portableManifest.author,
+        homepage: portableManifest.homepage,
+        repository: portableManifest.repository,
+        license: portableManifest.license,
+        keywords: portableManifest.keywords,
+        skills: "./skills/",
+        mcpServers: "./.mcp.json",
+        hooks: `./hooks/${client.hookManifest}`,
+      };
+      // Claude and Cursor descriptions intentionally include their client names.
+      if (client.clientName === "copilot") {
+        expectedFields.description = portableManifest.description;
+      }
+
+      for (const [field, expected] of Object.entries(expectedFields)) {
+        if (!isDeepStrictEqual(manifest[field], expected)) {
+          throw new Error(
+            `${description} field "${field}" is out of sync: ` +
+            `expected ${JSON.stringify(expected) ?? "a missing field"}, ` +
+            `found ${JSON.stringify(manifest[field]) ?? "a missing field"}.`
+          );
+        }
+      }
     }
   }
 

@@ -36,6 +36,17 @@ These manifests describe plugin metadata and component paths for clients
 using their older formats. They remain alongside the portable manifest;
 they do not override its core metadata.
 
+The build checks every legacy manifest against root `plugin.json` for
+matching `name`, `version`, `author`, `homepage`, `repository`, `license`,
+and `keywords`. Copilot's `description` must also match; Claude and Cursor
+descriptions may include client-specific wording. Metadata differences
+fail the build with the manifest path and field name.
+
+Legacy component paths must remain `skills: "./skills/"`,
+`mcpServers: "./.mcp.json"`, and the corresponding
+`hooks: "./hooks/<client>-hooks.json"`. Portable `$schema` and `extensions`
+and Cursor's `logo` are format-specific, not shared metadata.
+
 Every plugin manifest references a dedicated hooks manifest because every client supports hooks in incompatible ways.
 
 ### Copilot CLI
