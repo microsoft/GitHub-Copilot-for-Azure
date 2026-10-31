@@ -1,5 +1,9 @@
 {
   "skills": {
+    "azure-advisor": [
+      "azure-advisor-cost-optimization",
+      "azure-advisor-cost-user-context"
+    ],
     "aks-skills": [
       "aks-cost-optimization",
       "aks-gpu-inference",
