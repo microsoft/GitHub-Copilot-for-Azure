@@ -27,7 +27,7 @@ terraform apply -var "vm_name=dev-vm" -var "admin_public_key=$(cat ~/.ssh/id_rsa
 | `admin_public_key` * | string (sensitive) | — | Contents of `id_rsa.pub` |
 | `ssh_source_address_prefix` * | string | — | Your public IP as `<ip>/32` or a trusted CIDR. `"*"` opens port 22 to the internet — only pass it if you have accepted that risk. |
 | `location` | string | `eastus` | Azure region |
-| `size` | string | `Standard_D2s_v5` | Verify with `compute_vm_list-skus` |
+| `size` | string | `Standard_D2s_v5` | Verify with `az vm list-skus --location <region> --size <size>` |
 | `admin_username` | string | `azureuser` | |
 | `zone` | string | `""` | `1`/`2`/`3`, or empty for regional |
 | `os_disk_type` | string | `Premium_LRS` | |
