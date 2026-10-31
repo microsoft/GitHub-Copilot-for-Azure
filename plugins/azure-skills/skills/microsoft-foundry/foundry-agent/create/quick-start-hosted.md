@@ -206,7 +206,9 @@ azd provision --no-state --no-prompt
 
 `--no-state` skips the existing-deployment check; safe here because the golden path starts from a fresh environment (Step 4). Keep it for this quickstart; you can omit it later when re-provisioning the same environment.
 
-⏳ May take time — creates the resource group, Foundry account + project, model deployment, App Insights, Log Analytics. Wait for the prompt to return; do not interrupt.
+⏳ May take time — creates the resource group, Foundry account + project, and model deployment. Supporting native azd builds attempt App Insights/Log Analytics separately when monitoring is enabled; older/custom/Terraform paths must not be assumed to do so. Wait for the prompt to return; do not interrupt.
+
+Follow [best-effort tracing setup](../../references/agent-tracing-setup.md) for the actual provisioning path, including an existing-project quickstart that skipped provision. Preserve existing destinations/authentication and opt-outs. Warn and continue on optional setup/access failures; obtain separate approval before repairing an existing project.
 
 ### Step 9 — Wire local env vars
 
@@ -303,6 +305,8 @@ azd ai agent invoke "<short representative prompt>"
 ```
 
 Run the smoke invocation only as part of the requested deployment or test.
+
+Capture its UTC window and available response/conversation identifiers, then follow [fresh trace verification](../../references/agent-tracing-verification.md). Reuse this invocation, not an additional billed call. Report successful deployment/invocation separately from human read access and stored-trace verification; optional failures warn and continue to the remaining workflow.
 
 ### Step 13 — Submit eval suite generation (async, fire-and-forget)
 

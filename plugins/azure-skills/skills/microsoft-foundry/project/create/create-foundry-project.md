@@ -118,6 +118,8 @@ azd env get-values
 
 Capture `AZURE_AI_PROJECT_ID`, `AZURE_AI_PROJECT_ENDPOINT`, and `AZURE_RESOURCE_GROUP`. Direct user to verify at https://ai.azure.com.
 
+For agent use, follow [best-effort tracing setup](../../references/agent-tracing-setup.md): this starter already provisions monitoring, so inspect its actual outputs and effective AppInsights connection rather than adding duplicates. Confirm the intended human's query access separately from project-identity evaluation roles. Resource existence does not verify tracing; [fresh verification](../../references/agent-tracing-verification.md) follows the subsequent approved agent invocation. Optional tracing/access failures warn without changing successful project provisioning.
+
 ### Step 6: Next Steps
 
 > **Next — azd Golden Path:** create a hosted agent with [foundry-agent/create/create-hosted.md](../../foundry-agent/create/create-hosted.md).

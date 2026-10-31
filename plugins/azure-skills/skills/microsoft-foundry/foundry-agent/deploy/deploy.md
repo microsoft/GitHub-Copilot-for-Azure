@@ -117,12 +117,14 @@ azd provision --no-prompt
 What this does:
 
 - Creates the Foundry project (if not present) and supporting resources under `infra/`.
-- Creates connections declared as top-level `azure.ai.connection` services. `${PARAM_*}` placeholders resolve from the active azd env.
+- Provisions required infrastructure. Top-level `azure.ai.connection` services are reconciled during **deploy**, not project provisioning.
 - Wires model deployments, AI Search, ACR, etc. `infra/layers/` provision in parallel when present.
 
 After provision completes for a new project, run `azd env get-values` and set missing required azd env values, especially `AZURE_AI_PROJECT_ID` and `AZURE_TENANT_ID`, before local run or the first `azd deploy`.
 
 ### Step 3 -- Pre-deployment check
+
+For hosted text agents, follow [best-effort tracing setup](../../references/agent-tracing-setup.md), even when Step 2 was skipped for an existing project or redeploy. Reuse effective monitoring and preserve opt-outs/authentication; obtain separate approval for existing-project repairs. Optional failures warn and continue. Native supporting builds attempt monitoring during provision and its connection before agent deployment; older tooling and Terraform must not be assumed to provide that capability.
 
 Branch by deploy mode.
 
@@ -188,6 +190,8 @@ For a multi-protocol service, pass `--protocol` explicitly.
 For the Activity protocol, `azd ai agent invoke` won't work; follow [invoke](../invoke/invoke.md) to invoke the agent.
 
 Run one remote invocation only unless the user explicitly asked to test multi-turn/session behavior. A single successful response is enough for the deployment smoke test. Anything other than a completed/successful response -> run `azd ai agent doctor --output json`, then follow [troubleshoot](../troubleshoot/troubleshoot.md).
+
+For hosted text agents, capture the UTC window and available identifiers around that invocation, then follow [fresh trace verification](../../references/agent-tracing-verification.md). A successful response proves invocation, not stored tracing. Report deployment, invocation, human access, and tracing separately; optional query/ingestion failures warn without failing the deployment.
 
 ### Step 6: Auto-Generate Evaluation Suite (MANDATORY — RUNS AUTOMATICALLY)
 
@@ -369,8 +373,9 @@ Ordinary Prompt Agents are not containerized -- they are a model + instructions 
 
 1. **Collect config** -- resolve endpoint from `azd env get-values` or ask. Then ask for **agent name**, **model deployment** (e.g. `gpt-4o`), and optional **instructions**, **temperature**, **tools**.
 2. **Get schema** -- `agent_definition_schema_get` with `schemaType: "prompt"`.
+   Before deployment, follow [best-effort tracing setup](../../references/agent-tracing-setup.md), including reused projects. Existing-project repair requires separate approval; optional failures warn and continue without changing authentication.
 3. **Create** -- `agent_update` with `{"kind": "prompt", "model": "<deployment>", "instructions": "...", "temperature": 0.7}`.
-4. **Smoke test** -- follow [invoke](../invoke/invoke.md).
+4. **Smoke test** -- follow [invoke](../invoke/invoke.md), capture UTC/identifiers, and [verify this invocation's fresh stored trace](../../references/agent-tracing-verification.md). Do not invoke again for tracing; report optional verification/access warnings separately from deployment/invocation.
 5. **Auto-generate evaluation suite** -- see [Step 5: Auto-Generate Evaluation Suite (Prompt)](#step-5-auto-generate-evaluation-suite-prompt-mandatory--runs-automatically) below.
 6. **Hand off** -- evaluate via [observe](../observe/observe.md); clone via `agent_update` + `isCloneRequest`; delete via `agent_delete`.
 

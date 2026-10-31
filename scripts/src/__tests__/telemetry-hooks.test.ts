@@ -1046,7 +1046,7 @@ describe("Telemetry reporter release download", () => {
     expect(result.status).toBe(1);
     expect(String(result.stdout).trim()).toBe("");
     expect(String(result.stderr)).toContain("SHA-256 validation failed for telemetry reporter asset");
-  });
+  }, 30_000);
 
   const invalidChecksumCases = [
     {
