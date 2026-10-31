@@ -27,6 +27,8 @@ param toolUsageTableName string = 'integrationtoolusage'
 @description('Principal (object) ID of the user-assigned managed identity used by the integration test pipeline to write token usage rows (skillcitestidentity).')
 param ciTestIdentityPrincipalId string = '531282f7-49cb-4149-af74-6c84a5270e87'
 
+var quotaSubscriptionId = 'cda6aeab-6dec-4567-a4d8-3770583a13f0'
+
 var tags = {
   'azd-env-name': environmentName
   skipDelete: true
@@ -45,6 +47,13 @@ module identity './modules/managed-identity.bicep' = {
     location: location
     tags: tags
     environmentName: environmentName
+  }
+}
+
+module quotaReader './modules/subscription-reader.bicep' = {
+  scope: subscription(quotaSubscriptionId)
+  params: {
+    principalId: identity.outputs.identityPrincipalId
   }
 }
 
@@ -102,6 +111,7 @@ module functionApp './modules/function-app.bicep' = {
     userAssignedIdentityId: identity.outputs.identityId
     userAssignedIdentityClientId: identity.outputs.identityClientId
     userAssignedIdentityPrincipalId: identity.outputs.identityPrincipalId
+    quotaSubscriptionId: quotaSubscriptionId
     storageAccountName: storage.outputs.storageAccountName
     tokenUsageTableName: storage.outputs.tokenUsageTableName
     toolUsageTableName: storage.outputs.toolUsageTableName
