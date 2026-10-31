@@ -117,6 +117,8 @@ Read [references/post-deployment-validation.md](references/post-deployment-valid
 
 If any test fails, run `microsoft_docs_search` for the error before attempting remediation.
 
+**Bicep template 15a (private evaluation):** use its setup helper for Steps 3–5 and its read-only diagnostic for Step 6 — see [references/template-15a-evaluation.md](references/template-15a-evaluation.md).
+
 ---
 
 ## Error Handling
