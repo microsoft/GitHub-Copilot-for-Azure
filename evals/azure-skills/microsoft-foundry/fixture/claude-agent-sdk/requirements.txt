@@ -1,4 +1,4 @@
 claude-agent-sdk==0.2.125
 fastapi==0.133.1
-mcp==1.28.1
+mcp==1.30.0
 uvicorn==0.35.0
