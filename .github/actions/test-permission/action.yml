@@ -48,6 +48,7 @@ runs:
       working-directory: tests
       env:
         SKILL: ${{ inputs.skill }}
+        TEST_PERMISSION: ${{ inputs.permission }}
         TEST_AZURE_PERMISSION: ${{ inputs.permission }}
         NO_SKILLS: ${{ inputs.no-skills == 'true' && 'true' || '' }}
         MODEL_OVERRIDE: ${{ inputs.model-override }}

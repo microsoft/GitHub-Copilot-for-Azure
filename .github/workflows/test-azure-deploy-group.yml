@@ -92,6 +92,7 @@ jobs:
           NO_SKILLS: ${{ inputs.no-skills && 'true' || '' }}
           MODEL_OVERRIDE: ${{ inputs.model-override }}
           TEST_GROUP: ${{ inputs.group }}
+          TEST_PERMISSION: ${{ inputs.permission }}
         run: npm run test:vally -- --plugin azure-skills --skill azure-deploy --tag "category=$TEST_GROUP"
       - name: Record test execution status
         if: always()

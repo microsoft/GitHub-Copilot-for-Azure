@@ -61,6 +61,12 @@ async function publishReports(client: ContainerClient, run: string, skill: strin
   }
 }
 
+async function cleanupReports(client: ContainerClient, prefix: string): Promise<void> {
+  for await (const blob of client.listBlobsFlat({ prefix })) {
+    await client.getBlockBlobClient(blob.name).deleteIfExists({ deleteSnapshots: "include" });
+  }
+}
+
 export async function transferReports(command: string): Promise<void> {
   const account = required("REPORT_STORAGE_ACCOUNT");
   const container = required("REPORT_STORAGE_CONTAINER");
@@ -89,6 +95,8 @@ export async function transferReports(command: string): Promise<void> {
       return downloadReports(client, prefix, key, attempt);
     case "publish":
       return publishReports(client, run, skill);
+    case "cleanup":
+      return cleanupReports(client, prefix);
     default:
       throw new Error(`Unsupported report transfer command: ${command}`);
   }

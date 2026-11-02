@@ -506,6 +506,45 @@ describe("failure boundaries", () => {
 });
 
 describe("Azure CLI command contract", () => {
+  it.each([
+    undefined,
+    [],
+    [{ key: "sku", value: "basic" }],
+    [{ key: "testPrincipalId", value: "explicit-principal" }],
+    [{ key: "testPrincipalId", value: "" }],
+  ])("skips principal discovery for parameters %j", async (parameters) => {
+    const fake = environment();
+    const result = await provisionWithDependencies(
+      manifestPath,
+      {
+        ...manifest,
+        persistence: "never",
+        bicepConfigs: manifest.bicepConfigs.map(config => ({ ...config, parameters })),
+      },
+      fake.createDependencies("no-principal"),
+    );
+
+    expect(result.context.testPrincipalId).toBeUndefined();
+    expect(azCommands(fake).some(args => args[0] === "ad")).toBe(false);
+    expect(fake.deploymentCount).toBe(2);
+    if (parameters?.[0]?.key === "testPrincipalId") {
+      expect(azCommands(fake).find(args => args.slice(0, 3).join(" ") === "deployment group create"))
+        .toContain(`testPrincipalId=${String(parameters[0].value)}`);
+    }
+  });
+
+  it("propagates principal lookup failures when a parameter requires it", async () => {
+    const fake = environment();
+    fake.fail({ operation: "ad sp show", error: new Error("Principal lookup denied") });
+
+    await expect(provisionWithDependencies(
+      manifestPath,
+      { ...manifest, persistence: "never" },
+      fake.createDependencies("required-principal"),
+    )).rejects.toThrow("Principal lookup denied");
+    expect(fake.deploymentCount).toBe(0);
+  });
+
   it("uses service-principal discovery and exact mutation arguments", async () => {
     const fake = environment();
     await provisionWithDependencies(

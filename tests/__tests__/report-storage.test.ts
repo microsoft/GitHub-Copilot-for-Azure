@@ -10,6 +10,7 @@ const storage = vi.hoisted(() => ({
   publicAccess: undefined as string | undefined,
   credential: { getToken: vi.fn() },
   failUpload: false,
+  failDelete: false,
 }));
 vi.mock("../utils/azure-environment.ts", () => ({
   createStageCredential: () => storage.credential,
@@ -30,6 +31,13 @@ vi.mock("@azure/storage-blob", () => ({
             storage.blobs.set(name, readFileSync(file));
           },
           downloadToFile: async (file: string) => { writeFileSync(file, storage.blobs.get(name)!); },
+          deleteIfExists: async (options: { deleteSnapshots: string }) => {
+            expect(options).toEqual({ deleteSnapshots: "include" });
+            if (storage.failDelete) {
+              throw new Error("storage deletion failed");
+            }
+            return { succeeded: storage.blobs.delete(name) };
+          },
         }),
         listBlobsFlat: async function* ({ prefix }: { prefix: string }) {
           for (const name of storage.blobs.keys()) {
@@ -52,6 +60,7 @@ describe("private report storage", () => {
     storage.blobs.clear();
     storage.publicAccess = undefined;
     storage.failUpload = false;
+    storage.failDelete = false;
     for (const [name, value] of Object.entries({
       SKILL: "plugin/skill", RUN_ID: "123", RUN_ATTEMPT: "2",
       REPORT_STORAGE_ACCOUNT: "stage", REPORT_STORAGE_CONTAINER: "reports",
@@ -90,6 +99,44 @@ describe("private report storage", () => {
     const report = [...storage.blobs].find(([name]) => /^\d{4}-\d{2}-\d{2}\/123\/skill\/testResults.json$/.test(name));
     expect(report).toBeDefined();
     expect(JSON.parse(report![1].toString())).toEqual({ read: { isPass: true }, none: { isPass: true } });
+    await transferReports("cleanup");
+    expect([...storage.blobs.keys()].some(name => name.startsWith("workflow-runs/123/2/plugin__skill/")))
+      .toBe(false);
+    expect(storage.blobs.get(report![0])).toBe(report![1]);
+  });
+
+  test("cleanup deletes only the current skill and attempt, preserving final reports and other runs", async () => {
+    const temporary = [
+      "workflow-runs/123/2/plugin__skill/read/permission-run.json",
+      "workflow-runs/123/2/plugin__skill/none/reports/test/.hidden",
+    ];
+    const preserved = [
+      "workflow-runs/123/2/plugin__skill-other/read/permission-run.json",
+      "workflow-runs/123/2/other-plugin__skill/read/permission-run.json",
+      "workflow-runs/123/1/plugin__skill/read/permission-run.json",
+      "workflow-runs/1234/2/plugin__skill/read/permission-run.json",
+      "2026-11-02/123/skill/testResults.json",
+    ];
+    for (const name of [...temporary, ...preserved]) {
+      storage.blobs.set(name, Buffer.from("{}"));
+    }
+
+    await transferReports("cleanup");
+    expect([...storage.blobs.keys()]).toEqual(preserved);
+    await transferReports("cleanup");
+    expect([...storage.blobs.keys()]).toEqual(preserved);
+  });
+
+  test("surfaces cleanup failures and preserves undeleted reports for a later retry", async () => {
+    const name = "workflow-runs/123/2/plugin__skill/read/permission-run.json";
+    storage.blobs.set(name, Buffer.from("{}"));
+    storage.failDelete = true;
+
+    await expect(transferReports("cleanup")).rejects.toThrow("storage deletion failed");
+    expect(storage.blobs.has(name)).toBe(true);
+    storage.failDelete = false;
+    await transferReports("cleanup");
+    expect(storage.blobs.size).toBe(0);
   });
 
   test("does not download reports from a different run attempt", async () => {
@@ -100,9 +147,9 @@ describe("private report storage", () => {
     ).complete).toBe(false);
   });
 
-  test("rejects public containers", async () => {
+  test.each(["download", "cleanup"])("rejects public containers for %s", async (command) => {
     storage.publicAccess = "blob";
-    await expect(transferReports("download")).rejects.toThrow("must not allow public access");
+    await expect(transferReports(command)).rejects.toThrow("must not allow public access");
   });
 
   test("surfaces upload failures", async () => {

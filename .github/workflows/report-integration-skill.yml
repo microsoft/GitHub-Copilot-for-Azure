@@ -70,12 +70,15 @@ jobs:
           EXPECTED_GROUPS: ${{ inputs.groups }}
         run: npx tsx aggregate-permission-results.ts
       - name: Generate skill report
+        id: generate
         if: always() && steps.aggregate.outputs.has-results == 'true'
         run: npm run report -- --skill "${SKILL##*/}"
       - name: Publish consolidated reports privately
+        id: publish
         if: always() && steps.aggregate.outputs.has-results == 'true'
         run: npx tsx report-storage.ts publish
       - name: Upload token usage to table
+        id: token-usage
         if: always() && steps.aggregate.outputs.has-results == 'true'
         env:
           TOKEN_USAGE_STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
@@ -85,6 +88,7 @@ jobs:
           export SKILL="${SKILL##*/}"
           npm run upload:token-usage
       - name: Upload tool usage to table
+        id: tool-usage
         if: always() && steps.aggregate.outputs.has-results == 'true'
         env:
           TOOL_USAGE_STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
@@ -93,6 +97,10 @@ jobs:
         run: |
           export SKILL="${SKILL##*/}"
           npm run upload:tool-usage
+      - name: Clean up temporary private reports
+        if: success() && steps.download.outcome == 'success' && steps.aggregate.outcome == 'success' && steps.generate.outcome == 'success' && steps.publish.outcome == 'success' && steps.token-usage.outcome == 'success' && steps.tool-usage.outcome == 'success'
+        continue-on-error: true
+        run: npx tsx report-storage.ts cleanup
       - name: Stop profile refresh
         if: always()
         uses: ./.github/actions/stop-azure-profiles

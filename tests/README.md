@@ -144,8 +144,14 @@ filters: `--tag azurePermission=<permission>` for tagged tests, or
 `--tag 'azurePermission!=read' --tag 'azurePermission!=write' --tag 'azurePermission!=admin' --tag 'azurePermission!=none'`
 for untagged tests.
 The unchanged Vally wrapper discovers suites using `--plugin` and `--skill`.
-`TEST_AZURE_PERMISSION` rejects stimuli assigned to another job
-without switching profiles. Local runs without this variable are unchanged.
+`TEST_PERMISSION` opts the agent into explicit Azure identity/profile selection,
+regardless of `CI`; an empty value also enables selection for untagged tests.
+When it is undefined, the executor supplies no Azure environment overrides and
+uses the available credentials, including in CI. Workflow test steps set it explicitly.
+The profile action also exports `TEST_PERMISSION` for subsequent steps. CI fixtures
+use it to resolve the agent's principal, treating an empty value as `admin`.
+`TEST_AZURE_PERMISSION` additionally rejects stimuli assigned to another job
+when explicit selection is enabled.
 Expose `AZURE_READ_CLIENT_ID`, `AZURE_WRITE_CLIENT_ID`, and `AZURE_ADMIN_CLIENT_ID`
 to the test process for the permissions it runs, with federated credentials
 configured for their managed identities.
@@ -171,6 +177,12 @@ and usage uploads. Final reports retain the dashboard's
 `<UTC-date>/<run-id>/<skill>/` prefix. The azure-deploy workflow uses the same
 reporting workflow to merge all selected deployment categories and its
 `skill-invocation` category before generating its final report.
+After successful download, aggregation, report generation, publication, and both
+usage-table uploads, the reporting job attempts
+`npx tsx report-storage.ts cleanup`. It deletes only the current skill and attempt
+under `workflow-runs/`; other skills, attempts, and final dated reports are retained.
+Incomplete or failed publication keeps the temporary blobs. Cleanup errors are
+visible but do not fail an otherwise successful reporting job.
 
 ## Testing This Project
 

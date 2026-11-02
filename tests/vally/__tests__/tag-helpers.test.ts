@@ -4,6 +4,7 @@ import { compileEarlyTerminatePattern, getAzureEnvironment } from "../tag-helper
 describe("getAzureEnvironment", () => {
   const env = {
     CI: "true",
+    TEST_PERMISSION: "",
     AZURE_READ_CLIENT_ID: "read-client",
     AZURE_WRITE_CLIENT_ID: "write-client",
     AZURE_ADMIN_CLIENT_ID: "admin-client",
@@ -14,11 +15,23 @@ describe("getAzureEnvironment", () => {
     AZURE_NONE_CONFIG_DIR: "/tmp/azure-none",
   };
 
-  test.each([undefined, "", "false"])("preserves local credentials when CI is %j", (ci) => {
+  test.each([undefined, "", "false", "true"])("preserves credentials without TEST_PERMISSION when CI is %j", (ci) => {
     for (const permission of ["read", "write", "admin", "none", "unsupported"]) {
-      expect(getAzureEnvironment({ azurePermission: permission }, { ...env, CI: ci })).toEqual({});
+      expect(getAzureEnvironment({ azurePermission: permission }, {
+        ...env, CI: ci, TEST_PERMISSION: undefined, TEST_AZURE_PERMISSION: "none",
+      })).toEqual({});
       expect(getAzureEnvironment({ azurePermission: permission }, { CI: ci })).toEqual({});
     }
+    expect(getAzureEnvironment(undefined, { CI: ci })).toEqual({});
+  });
+
+  test.each([undefined, "", "false", "true"])("selects explicit credentials with TEST_PERMISSION when CI is %j", (ci) => {
+    expect(getAzureEnvironment({ azurePermission: "read" }, { ...env, CI: ci, TEST_PERMISSION: "read" }))
+      .toEqual({ AZURE_CLIENT_ID: "read-client", AZURE_CONFIG_DIR: "/tmp/azure-read" });
+    expect(getAzureEnvironment({ azurePermission: "none" }, { ...env, CI: ci, TEST_PERMISSION: "none" }))
+      .toEqual({ AZURE_CLIENT_ID: "", AZURE_CONFIG_DIR: "/tmp/azure-none" });
+    expect(getAzureEnvironment(undefined, { ...env, CI: ci }))
+      .toEqual({ AZURE_CLIENT_ID: "admin-client", AZURE_CONFIG_DIR: "/tmp/azure-admin" });
   });
 
   test("uses admin for untagged tests, never the stage identity", () => {
@@ -27,7 +40,7 @@ describe("getAzureEnvironment", () => {
         AZURE_CLIENT_ID: "admin-client", AZURE_CONFIG_DIR: "/tmp/azure-admin",
       });
     }
-    expect(getAzureEnvironment(undefined, { ...env, AZURE_TEST_PERMISSION: "none" })).toEqual({
+    expect(getAzureEnvironment(undefined, { ...env, TEST_PERMISSION: "none" })).toEqual({
       AZURE_CLIENT_ID: "", AZURE_CONFIG_DIR: "/tmp/azure-none",
     });
   });
@@ -79,7 +92,7 @@ describe("getAzureEnvironment", () => {
     })).toEqual({ AZURE_CLIENT_ID: "", AZURE_CONFIG_DIR: "/tmp/azure-none" });
   });
 
-  test.each([env, { CI: "true", AZURE_NONE_CONFIG_DIR: "/tmp/azure-none" }])("uses an unauthenticated profile for none: %j", (parentEnv) => {
+  test.each([env, { TEST_PERMISSION: "none", AZURE_NONE_CONFIG_DIR: "/tmp/azure-none" }])("uses an unauthenticated profile for none: %j", (parentEnv) => {
     expect(getAzureEnvironment({ azurePermission: "none" }, parentEnv))
       .toEqual({ AZURE_CLIENT_ID: "", AZURE_CONFIG_DIR: "/tmp/azure-none" });
   });

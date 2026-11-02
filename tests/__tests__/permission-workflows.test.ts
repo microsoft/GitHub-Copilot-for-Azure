@@ -15,6 +15,7 @@ type Step = {
   run?: string;
   if?: string;
   shell?: string;
+  "continue-on-error"?: boolean;
   env?: Record<string, string>;
   with?: Record<string, unknown>;
 };
@@ -103,6 +104,7 @@ describe("permission integration workflows", () => {
     expect(upload?.env).not.toHaveProperty("REPORT_STORAGE_CONTAINER");
     const invocation = callee.jobs.test.steps?.find(step => step.uses === "./.github/actions/test-permission");
     expect(invocation?.with?.permission).toBe(group === "default" ? "" : group);
+    expect(action.find(step => step.id === "tests")?.env?.TEST_PERMISSION).toBe("${{ inputs.permission }}");
   });
 
   test.each([
@@ -144,6 +146,7 @@ describe("permission integration workflows", () => {
     expect(steps.find(step => step.uses === "./.github/actions/azure-profiles")?.with?.permission)
       .toBe("${{ inputs.permission }}");
     expect(steps.find(step => step.id === "tests")?.run).toContain('--tag "category=$TEST_GROUP"');
+    expect(steps.find(step => step.id === "tests")?.env?.TEST_PERMISSION).toBe("${{ inputs.permission }}");
   });
 
   test.each(["storage", "none", "read", "write", "admin"])("logs in only the needed explicit CLI profiles for %s", (permission) => {
@@ -182,6 +185,8 @@ require("node:fs").appendFileSync(process.env.CAPTURE, JSON.stringify({
       });
       expect(result.stderr).toBe("");
       expect(result.status).toBe(0);
+      expect(readFileSync(path.join(directory, "environment"), "utf8").split("\n"))
+        .toContain(`TEST_PERMISSION=${permission}`);
       const commands: { args: string[]; profile: string }[] = readFileSync(capture, "utf8").trim().split("\n").map(line => JSON.parse(line));
       const expected = ["stage", ...(permission === "storage" ? [] : ["write"]),
         ...(permission === "read" || permission === "admin" ? [permission] : [])];
@@ -244,6 +249,32 @@ require("node:fs").writeFileSync(process.env.CAPTURE, JSON.stringify(process.arg
       .toBeLessThan(steps.findIndex(step => step.name === "Generate skill report"));
     expect(steps.find(step => step.name === "Publish consolidated reports privately")?.run)
       .toBe("npx tsx report-storage.ts publish");
+  });
+
+  test("cleanup is best-effort and runs only after every report publication step succeeds", () => {
+    const steps = report.steps ?? [];
+    const cleanupIndex = steps.findIndex(step => step.run === "npx tsx report-storage.ts cleanup");
+    const cleanup = steps[cleanupIndex];
+    expect(cleanup?.["continue-on-error"]).toBe(true);
+    expect(cleanupIndex).toBeLessThan(steps.findIndex(step => step.name === "Stop profile refresh"));
+    const prerequisites = ["download", "aggregate", "generate", "publish", "token-usage", "tool-usage"];
+    const outcomes = Object.fromEntries(prerequisites.map(id => [id, { outcome: "success" }]));
+    const condition = cleanup?.if?.replace(/steps\.([a-z-]+)\.outcome/g, 'steps["$1"].outcome');
+    if (!condition) {
+      throw new Error("Missing cleanup success condition");
+    }
+    expect(runInNewContext(condition, { steps: outcomes, success: () => true }, { timeout: 1000 })).toBe(true);
+    expect(runInNewContext(condition, { steps: outcomes, success: () => false }, { timeout: 1000 })).toBe(false);
+    for (const id of prerequisites) {
+      const prerequisiteIndex = steps.findIndex(step => step.id === id);
+      expect(prerequisiteIndex).toBeGreaterThanOrEqual(0);
+      expect(prerequisiteIndex).toBeLessThan(cleanupIndex);
+      for (const outcome of ["failure", "skipped", "cancelled"]) {
+        expect(runInNewContext(condition, {
+          steps: { ...outcomes, [id]: { outcome } }, success: () => true,
+        }, { timeout: 1000 })).toBe(false);
+      }
+    }
   });
 
   test("never transfers artifacts through GitHub and all embedded Bash is valid", () => {

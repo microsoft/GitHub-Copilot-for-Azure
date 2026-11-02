@@ -46,9 +46,9 @@ export type FixtureRunContext = {
   resourceGroupNames: Record<string, string>;
 
   /**
-   * Object ID of the identity the agent runs as.
+   * Object ID of the identity the agent runs as, resolved only when a Bicep parameter requires it.
    */
-  testPrincipalId: string;
+  testPrincipalId?: string;
 };
 
 function resolveBicepParameter(context: FixtureRunContext, parameterConfig: BicepParameterConfig): JsonValue {
@@ -196,7 +196,7 @@ type AzureAccount = {
  * Get the test principal ID using AZ CLI.
  */
 function getTestPrincipalId(account: AzureAccount, runCommand: ProvisioningDependencies["runAz"] = runAz): string {
-  const permission = process.env.AZURE_TEST_PERMISSION;
+  const permission = process.env.TEST_PERMISSION === "" ? "admin" : process.env.TEST_PERMISSION;
   if (process.env.CI === "true" && (permission === "read" || permission === "write" || permission === "admin")) {
     const clientId = process.env[`AZURE_${permission.toUpperCase()}_CLIENT_ID`]?.trim();
     if (!clientId) {
@@ -231,7 +231,9 @@ function computeRunContext(
     subscriptionId: account.id,
     tenantId: account.tenantId,
     resourceGroupNames,
-    testPrincipalId: getTestPrincipalId(account, runCommand),
+    testPrincipalId: manifest.bicepConfigs.some(config =>
+      config.parameters?.some(parameter => parameter.key === "testPrincipalId" && parameter.value === undefined),
+    ) ? getTestPrincipalId(account, runCommand) : undefined,
   };
 }
 

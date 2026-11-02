@@ -14,6 +14,15 @@ afterEach(() => {
 });
 
 describe("isolated Azure profile consumers", () => {
+  test("preserves local credentials without explicit permission selection", () => {
+    const env = { AZURE_CLIENT_ID: "local-client", AZURE_CONFIG_DIR: "/tmp/local" };
+    expect(getProfileEnvironment("read", env)).toEqual(env);
+  });
+
+  test("explicit permission selection requires a valid profile even outside CI", () => {
+    expect(() => getProfileEnvironment("read", { TEST_PERMISSION: "read" })).toThrow("AZURE_READ_CONFIG_DIR");
+  });
+
   test("fixture commands always use write, never the inherited stage or agent profile", () => {
     vi.stubEnv("CI", "true");
     vi.stubEnv("AZURE_CONFIG_DIR", "/tmp/stage");

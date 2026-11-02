@@ -6,7 +6,7 @@ export function getProfileEnvironment(
   profile: "stage" | "read" | "write" | "admin" | "none",
   env: NodeJS.ProcessEnv = process.env,
 ): NodeJS.ProcessEnv {
-  if (env.CI !== "true") {
+  if (env.CI !== "true" && env.TEST_PERMISSION === undefined) {
     return { ...env };
   }
   const variable = `AZURE_${profile.toUpperCase()}_CONFIG_DIR`;

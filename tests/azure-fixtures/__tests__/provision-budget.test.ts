@@ -89,23 +89,30 @@ afterEach(() => {
 });
 
 describe("per-invocation provisioning budgets", () => {
-  it("uses the write profile for provisioning and both fixture script phases", async () => {
+  it.each([
+    { permission: "read", clientId: "read-client" },
+    { permission: "", clientId: "admin-client" },
+  ])("uses the write profile for provisioning and resolves the test principal for permission '$permission'", async ({ permission, clientId }) => {
     vi.stubEnv("CI", "true");
     vi.stubEnv("AZURE_CONFIG_DIR", "/tmp/stage");
     vi.stubEnv("AZURE_CLIENT_ID", "stage-client");
     vi.stubEnv("AZURE_WRITE_CONFIG_DIR", "/tmp/write");
     vi.stubEnv("AZURE_WRITE_CLIENT_ID", "write-client");
-    vi.stubEnv("AZURE_TEST_PERMISSION", "read");
+    vi.stubEnv("TEST_PERMISSION", permission);
     vi.stubEnv("AZURE_READ_CLIENT_ID", "read-client");
+    vi.stubEnv("AZURE_ADMIN_CLIENT_ID", "admin-client");
     const config: FixtureManifest = {
       ...manifest, persistence: "never", postTestScript: { path: "./post-test.ts" },
+      bicepConfigs: manifest.bicepConfigs.map(config => ({
+        ...config, parameters: [{ key: "testPrincipalId" }],
+      })),
     };
     const result = await provision(manifestPath, config);
     runPostTestScript(result.context, config, "/fixtures/budget");
     for (const [, , options] of execFileSync.mock.calls) {
       expect(options.env).toMatchObject({ AZURE_CONFIG_DIR: "/tmp/write", AZURE_CLIENT_ID: "write-client" });
     }
-    expect(execFileSync.mock.calls.some(([, args]) => args.includes("read-client"))).toBe(true);
+    expect(execFileSync.mock.calls.some(([, args]) => args.includes(clientId))).toBe(true);
     expect(execFileSync.mock.calls.filter(([command]) => command === "npx" || command === "npx.cmd"))
       .toHaveLength(2);
   });
