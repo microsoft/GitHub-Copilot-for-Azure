@@ -37,6 +37,7 @@ stimuli:
   - name: "AI Runway setup prompt"
     prompt: "How do I set up AI Runway on my AKS cluster?"
     tags:
+      azurePermission: none
       type: integration
       tier: smoke
       cost: llm
@@ -57,6 +58,7 @@ stimuli:
   - name: "model deployment prompt"
     prompt: "I want to deploy Llama on my AKS cluster with GPUs"
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -77,6 +79,7 @@ stimuli:
   - name: "GPU inference setup prompt"
     prompt: "How do I set up GPU inference on my AKS cluster to run LLMs?"
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -100,6 +103,7 @@ stimuli:
     config:
       runs: 1
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -122,6 +126,7 @@ stimuli:
     config:
       runs: 1
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -144,6 +149,7 @@ stimuli:
     config:
       runs: 1
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -166,6 +172,7 @@ stimuli:
     config:
       runs: 1
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -193,6 +200,7 @@ stimuli:
         - src: fixture/kubeconfig.yaml
           dest: kubeconfig.yaml
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -216,6 +224,7 @@ stimuli:
     config:
       runs: 1
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm

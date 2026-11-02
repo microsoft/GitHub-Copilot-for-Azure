@@ -31,6 +31,7 @@ stimuli:
   - name: "KQL query to analyze logs"
     prompt: "Write a KQL query to analyze logs in my Azure Data Explorer database"
     tags:
+      azurePermission: none
       type: integration
       tier: smoke
       cost: llm
@@ -52,6 +53,7 @@ stimuli:
   - name: "Kusto time series aggregation"
     prompt: "Query my Kusto database to show events aggregated by hour for the last 24 hours"
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm

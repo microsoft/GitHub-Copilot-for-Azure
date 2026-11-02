@@ -31,6 +31,7 @@ stimuli:
   - name: "Entra app registration for OAuth"
     prompt: "How do I create a Microsoft Entra app registration for OAuth authentication?"
     tags:
+      azurePermission: none
       type: integration
       tier: smoke
       cost: llm
@@ -52,6 +53,7 @@ stimuli:
   - name: "API permissions for Microsoft Graph"
     prompt: "Configure API permissions for my Entra ID application to access Microsoft Graph"
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm

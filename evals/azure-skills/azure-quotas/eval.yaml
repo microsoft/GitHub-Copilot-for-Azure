@@ -43,6 +43,7 @@ stimuli:
   - name: "Quota check for compute in East US"
     prompt: "How do I check my Azure compute quota limits in East US?"
     tags:
+      azurePermission: read
       type: integration
       tier: smoke
       cost: llm
@@ -64,6 +65,7 @@ stimuli:
   - name: "Quota increase request for VM vCPUs"
     prompt: "I need to request a quota increase for VM vCPUs in my subscription"
     tags:
+      azurePermission: read
       type: integration
       tier: full
       cost: llm
@@ -92,6 +94,7 @@ stimuli:
     config:
       runs: 1
     tags:
+      azurePermission: read
       type: integration
       tier: full
       cost: llm
@@ -119,6 +122,7 @@ stimuli:
     config:
       runs: 1
     tags:
+      azurePermission: read
       type: integration
       tier: full
       cost: llm
@@ -143,6 +147,7 @@ stimuli:
     config:
       runs: 1
     tags:
+      azurePermission: read
       type: integration
       tier: full
       cost: llm
@@ -171,6 +176,7 @@ stimuli:
     config:
       runs: 1
     tags:
+      azurePermission: read
       type: integration
       tier: full
       cost: llm

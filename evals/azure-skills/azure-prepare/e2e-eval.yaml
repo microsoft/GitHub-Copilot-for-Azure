@@ -46,6 +46,7 @@ stimuli:
       - "Create a static whiteboard web app and deploy it to Azure using azd."
       - "Continue with recommended options until complete."
     tags:
+      azurePermission: read
       type: integration
       tier: smoke
       cost: llm
@@ -71,6 +72,7 @@ stimuli:
       - "Create a simple todo web app and deploy it to Azure using azd."
       - "Continue with recommended options until complete."
     tags:
+      azurePermission: read
       type: integration
       tier: full
       cost: llm
@@ -105,6 +107,7 @@ stimuli:
       - "Create a simple todo web app and deploy it to Azure using azd with Terraform as the infrastructure provider."
       - "Continue with recommended options until complete."
     tags:
+      azurePermission: read
       type: integration
       tier: full
       cost: llm
@@ -136,6 +139,7 @@ stimuli:
       - "Create a simple todo web app and deploy it to Azure using azd with standalone Bicep templates."
       - "Continue with recommended options until complete."
     tags:
+      azurePermission: read
       type: integration
       tier: full
       cost: llm
@@ -183,6 +187,7 @@ stimuli:
         - git sparse-checkout set samples/aspire-with-azure-functions
         - git checkout -q FETCH_HEAD
     tags:
+      azurePermission: read
       type: integration
       tier: full
       cost: llm
@@ -225,6 +230,7 @@ stimuli:
         - git sparse-checkout set samples/container-build
         - git checkout -q FETCH_HEAD
     tags:
+      azurePermission: read
       type: integration
       tier: full
       cost: llm
@@ -260,6 +266,7 @@ stimuli:
       - "Create an ASP.NET Core 8 web API with a Todo model using Entity Framework Core and SQL Server. Then prepare it for Azure deployment using azd. Use the eastus2 region and my current subscription."
       - "Continue with recommended options until complete."
     tags:
+      azurePermission: read
       type: integration
       tier: full
       cost: llm
@@ -304,6 +311,7 @@ stimuli:
       - "Prepare the Azure deployment infrastructure for a new workflow app that will orchestrate a multi-step order processing pipeline. Use azd with Bicep — generate the Bicep templates, RBAC assignments, and azure.yaml. Use the eastus2 region and my current subscription."
       - "Continue with recommended options until complete."
     tags:
+      azurePermission: read
       type: integration
       tier: full
       cost: llm
@@ -367,6 +375,7 @@ stimuli:
       - "Create a Python Azure Functions HTTP API with a health endpoint and deploy it to Azure using azd."
       - "Continue with recommended options until complete."
     tags:
+      azurePermission: read
       type: integration
       tier: full
       cost: llm
@@ -396,6 +405,7 @@ stimuli:
       - "Create a Python Azure Functions app with a timer trigger that runs every 5 minutes and deploy it to Azure using azd."
       - "Continue with recommended options until complete."
     tags:
+      azurePermission: read
       type: integration
       tier: full
       cost: llm
@@ -425,6 +435,7 @@ stimuli:
       - "Create a Python Azure Functions app with a Cosmos DB change feed trigger and deploy it to Azure using azd."
       - "Continue with recommended options until complete."
     tags:
+      azurePermission: read
       type: integration
       tier: full
       cost: llm
@@ -458,6 +469,7 @@ stimuli:
       - "Create a Python Azure Functions app with a SQL database trigger and deploy it to Azure using azd."
       - "Continue with recommended options until complete."
     tags:
+      azurePermission: read
       type: integration
       tier: full
       cost: llm
@@ -491,6 +503,7 @@ stimuli:
       - "Create a Python Azure Functions app with Blob storage trigger using Event Grid and deploy it to Azure using azd."
       - "Continue with recommended options until complete."
     tags:
+      azurePermission: read
       type: integration
       tier: full
       cost: llm
@@ -524,6 +537,7 @@ stimuli:
       - "Create a Python Azure Functions app with a Service Bus queue trigger for message processing and deploy it to Azure using azd."
       - "Continue with recommended options until complete."
     tags:
+      azurePermission: read
       type: integration
       tier: full
       cost: llm
@@ -557,6 +571,7 @@ stimuli:
       - "Create a Python Azure Functions app with an Event Hub trigger for streaming events and deploy it to Azure using azd."
       - "Continue with recommended options until complete."
     tags:
+      azurePermission: read
       type: integration
       tier: full
       cost: llm
@@ -590,6 +605,7 @@ stimuli:
       - "Create a Python Azure Durable Functions app with an orchestrator pattern and deploy it to Azure using azd."
       - "Continue with recommended options until complete."
     tags:
+      azurePermission: read
       type: integration
       tier: full
       cost: llm
@@ -623,6 +639,7 @@ stimuli:
       - "Create a Python Azure Functions MCP server that exposes tools over HTTP and deploy it to Azure using azd."
       - "Continue with recommended options until complete."
     tags:
+      azurePermission: read
       type: integration
       tier: full
       cost: llm
@@ -652,6 +669,7 @@ stimuli:
       - "Create a Python Azure Functions HTTP API and deploy it to Azure using azd with Terraform infrastructure."
       - "Continue with recommended options until complete."
     tags:
+      azurePermission: read
       type: integration
       tier: full
       cost: llm
@@ -681,6 +699,7 @@ stimuli:
       - "Create a Python Azure Functions app with Cosmos DB change feed trigger and deploy it to Azure using azd with Terraform."
       - "Continue with recommended options until complete."
     tags:
+      azurePermission: read
       type: integration
       tier: full
       cost: llm
@@ -714,6 +733,7 @@ stimuli:
       - "Create a TypeScript Azure Functions HTTP API with a health endpoint and deploy it to Azure using azd."
       - "Continue with recommended options until complete."
     tags:
+      azurePermission: read
       type: integration
       tier: full
       cost: llm
@@ -743,6 +763,7 @@ stimuli:
       - "Create a TypeScript Azure Functions app with a Service Bus queue trigger for message processing and deploy it to Azure using azd."
       - "Continue with recommended options until complete."
     tags:
+      azurePermission: read
       type: integration
       tier: full
       cost: llm
@@ -776,6 +797,7 @@ stimuli:
       - "Create a TypeScript Azure Functions app with a Cosmos DB change feed trigger and deploy it to Azure using azd."
       - "Continue with recommended options until complete."
     tags:
+      azurePermission: read
       type: integration
       tier: full
       cost: llm
