@@ -10,13 +10,14 @@ defaults:
   timeout: "10m"
   executor: copilot-sdk-agent-runner
   model: claude-sonnet-5
+  judge_model: claude-sonnet-5
 
 scoring:
   threshold: 0.8
 
 stimuli:
-  - name: "Route Advisor summary request"
-    prompt: "Summarize my top Azure Advisor recommendation types for subscription 00000000-0000-0000-0000-000000000000."
+  - name: "Route top Advisor actions to prioritized summary"
+    prompt: "List the top 3 Azure Advisor actions to take for subscription 00000000-0000-0000-0000-000000000000."
     tags:
       type: integration
       tier: smoke
@@ -24,30 +25,71 @@ stimuli:
       area: routing
       requiredSkills:
         - azure-advisor
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-advisor"},{"type":"tool-call-count","count":3}]'
+    constraints:
+      max_turns: 5
     graders:
       - type: skill-invocation
         config:
           required:
             - azure-advisor
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)(advisor_recommendation_summary|advisor)$"
+              pattern: '^(?!.*"learn"\s*:\s*true)(?!.*"command"\s*:\s*"(?!advisor_recommendation_summary"))(?!.*"group-by"\s*:\s*"(?!recommendation-type"))(?=.*"prioritized"\s*:\s*true)(?=.*"top"\s*:\s*3\b)(?=.*"subscription"\s*:\s*"00000000-0000-0000-0000-000000000000")'
+              result: &advisor-success '"status\\?"\s*:\s*200\b'
+          disallowed:
+            - name: "(?i)advisor_recommendation_list$"
+            - name: "(?i)advisor$"
+              args:
+                command: "^advisor_recommendation_list$"
+            - name: "(?i)advisor_recommendation_update|advisor_remediation_get"
+            - name: "(?i)advisor$"
+              args:
+                command: "advisor_recommendation_update|advisor_remediation_get"
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-advisor-actionability
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   - name: "Route impacted resource request"
-    prompt: "Show the resources impacted by Azure Advisor security recommendations in subscription 00000000-0000-0000-0000-000000000000."
+    prompt: "Show up to 5 Azure Advisor security recommendations and their affected resources in subscription 00000000-0000-0000-0000-000000000000."
     tags:
       type: integration
       tier: full
       cost: llm
       area: routing
     constraints:
-      max_turns: 4
+      max_turns: 8
+    rubric:
+      - &affected-resource-answer "Finish with a non-empty user-facing answer identifying affected resources from the returned recommendations, or explicitly state no matches when the successful query returns none. Duplicate recommendation/resource rows, including tracked/review recommendations, are valid; do not require deduplication or fail for displaying or labeling returned duplicates. Truncated results are valid: accept a truncation notice when areResultsTruncated is true, and never infer truncation from transcript excerpts. Do not invent resources or claim a limited or truncated list is exhaustive. A progress message or tool call alone is not a completed answer."
     graders:
       - type: skill-invocation
         config:
           required:
             - azure-advisor
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)(advisor_recommendation_list|advisor)$"
+              pattern: '^(?!.*"learn"\s*:\s*true)(?!.*"command"\s*:\s*"(?!advisor_recommendation_list"))(?=.*"category"\s*:\s*"Security")(?=.*"top"\s*:\s*5\b)(?=.*"subscription"\s*:\s*"00000000-0000-0000-0000-000000000000")'
+              result: *advisor-success
+          disallowed:
+            - name: "(?i)advisor_recommendation_summary$"
+            - name: "(?i)advisor$"
+              args:
+                command: "^advisor_recommendation_summary$"
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: '\S'
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
@@ -91,6 +133,132 @@ stimuli:
         config:
           disallowed:
             - name: "(?i)advisor_recommendation_update"
+
+  - name: "Known type priorities use list directly"
+    prompt: "Show the top 2 highest-priority Azure Advisor recommendations for type 55a560ff-1039-4a49-b6da-6f272dc52db6 in subscription 00000000-0000-0000-0000-000000000000."
+    tags: &routing
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    constraints: &bounded
+      max_turns: 5
+    graders:
+      - &advisor-skill
+        type: skill-invocation
+        config:
+          required: [azure-advisor]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)(advisor_recommendation_list|advisor)$"
+              pattern: '^(?!.*"learn"\s*:\s*true)(?!.*"command"\s*:\s*"(?!advisor_recommendation_list"))(?=.*"recommendation-type-id"\s*:\s*"55a560ff-1039-4a49-b6da-6f272dc52db6")(?=.*"prioritized"\s*:\s*true)(?=.*"top"\s*:\s*2\b)(?=.*"subscription"\s*:\s*"00000000-0000-0000-0000-000000000000")'
+              result: *advisor-success
+          disallowed:
+            - name: "(?i)advisor_recommendation_summary$"
+            - name: "(?i)advisor$"
+              args:
+                command: "^advisor_recommendation_summary$"
+
+  - name: "Category counts use non-prioritized summary"
+    prompt: "How many Azure Advisor recommendations do I have in each category in subscription 00000000-0000-0000-0000-000000000000?"
+    tags: *routing
+    constraints:
+      max_turns: 8
+    rubric:
+      - "Finish with a non-empty answer reporting category counts from a successful non-prioritized summary, using category labels and counts from the returned groups. Accept the default category grouping or an explicit category grouping. If no groups are returned, explain that no matching recommendations were found. Do not invent counts or count a capped list of individual recommendations."
+    graders:
+      - *advisor-skill
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)(advisor_recommendation_summary|advisor)$"
+              pattern: '^(?!.*"learn"\s*:\s*true)(?!.*"command"\s*:\s*"(?!advisor_recommendation_summary"))(?!.*"(?:group-by|groupBy)"\s*:\s*"(?!category"))(?=.*"subscription"\s*:\s*"00000000-0000-0000-0000-000000000000")(?!.*"prioritized"\s*:\s*true)'
+              result: *advisor-success
+          disallowed:
+            - name: "(?i)advisor_recommendation_list$"
+            - name: "(?i)advisor$"
+              args:
+                command: "^advisor_recommendation_list$"
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: '\S'
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+
+  - name: "Prioritized Cost summary drills into returned type"
+    turns:
+      - "Show the top 2 Azure Advisor savings opportunities in my configured default subscription."
+      - "List affected resources for the first recommendation type you returned."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: chaining
+    constraints:
+      max_turns: 12
+    rubric:
+      - "A successful summary containing at least one group must precede a successful list; an empty or failed summary cannot establish drill-down coverage. List must use the first actual returned group's GUID key as recommendation-type-id, preserve the resolved subscription and category Cost, and retain prioritized true. Do not copy summary top=2 to the record limit."
+    graders:
+      - *advisor-skill
+      - type: tool-calls
+        config:
+          sequence:
+            - name: "(?i)(advisor_recommendation_summary|advisor)$"
+              pattern: &cost-summary-input '^(?!.*"learn"\s*:\s*true)(?!.*"command"\s*:\s*"(?!advisor_recommendation_summary"))(?!.*"group-by"\s*:\s*"(?!recommendation-type"))(?=.*"prioritized"\s*:\s*true)(?=.*"category"\s*:\s*"Cost")(?=.*"top"\s*:\s*2\b)'
+            - name: "(?i)(advisor_recommendation_list|advisor)$"
+              pattern: &cost-list-input '^(?!.*"learn"\s*:\s*true)(?!.*"command"\s*:\s*"(?!advisor_recommendation_list"))(?=.*"recommendation-type-id"\s*:\s*"[0-9a-fA-F-]{36}")(?=.*"prioritized"\s*:\s*true)(?=.*"category"\s*:\s*"Cost")(?!.*"top"\s*:\s*2\b)'
+          required:
+            - name: "(?i)(advisor_recommendation_summary|advisor)$"
+              pattern: *cost-summary-input
+              result: *advisor-success
+            - name: "(?i)(advisor_recommendation_list|advisor)$"
+              pattern: *cost-list-input
+              result: *advisor-success
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+
+  - name: "Critical recommendations mean priority not an impact value"
+    prompt: "What are my critical Azure Advisor recommendations in subscription 00000000-0000-0000-0000-000000000000?"
+    tags: *routing
+    constraints: *bounded
+    graders:
+      - *advisor-skill
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)(advisor_recommendation_summary|advisor)$"
+              pattern: '^(?!.*"learn"\s*:\s*true)(?!.*"command"\s*:\s*"(?!advisor_recommendation_summary"))(?!.*"group-by"\s*:\s*"(?!recommendation-type"))(?=.*"prioritized"\s*:\s*true)(?=.*"subscription"\s*:\s*"00000000-0000-0000-0000-000000000000")(?!.*"impact"\s*:\s*"Critical")'
+              result: *advisor-success
+          disallowed:
+            - name: "(?i)advisor_recommendation_list$"
+            - name: "(?i)advisor$"
+              args:
+                command: "^advisor_recommendation_list$"
+
+  - name: "Prioritized retirements preserve subcategory and date filter"
+    prompt: "Show my top 3 Azure Advisor retirements on or before 2026-12-31 in subscription 00000000-0000-0000-0000-000000000000."
+    tags: *routing
+    constraints:
+      max_turns: 8
+    graders:
+      - *advisor-skill
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)(advisor_recommendation_summary|advisor)$"
+              pattern: '^(?!.*"learn"\s*:\s*true)(?!.*"command"\s*:\s*"(?!advisor_recommendation_summary"))(?!.*"group-by"\s*:\s*"(?!recommendation-type"))(?=.*"prioritized"\s*:\s*true)(?=.*"sub-category"\s*:\s*"ServiceUpgradeAndRetirement")(?=.*"retirement-date"\s*:\s*"le:2026-12-31")(?=.*"top"\s*:\s*3\b)(?=.*"subscription"\s*:\s*"00000000-0000-0000-0000-000000000000")'
+              result: *advisor-success
+          disallowed:
+            - name: "(?i)advisor_recommendation_list$"
+            - name: "(?i)advisor$"
+              args:
+                command: "^advisor_recommendation_list$"
 
   - name: "Prefer actionability for remediation"
     prompt: "Fix Azure Advisor recommendation type 55a560ff-1039-4a49-b6da-6f272dc52db6 for /subscriptions/76cb77fa-8b17-4eab-9493-b65dace99813/resourceGroups/bernardmtestarm/providers/Microsoft.Web/sites/bernardmarmdiagtestwebl."
