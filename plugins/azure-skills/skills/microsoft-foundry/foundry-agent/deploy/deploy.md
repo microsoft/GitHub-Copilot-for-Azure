@@ -110,7 +110,7 @@ Run provision only for new projects or real infrastructure changes:
 azd provision --no-prompt
 ```
 
-For a hosted text agent on a new project, complete the [tracing setup preflight](../../references/agent-tracing-setup.md#preflight-before-provisioning) first: capability, opt-out, any `network:` block, and monitoring charges/privacy approval.
+For a hosted text agent on a new project, complete the [tracing setup preflight](../../references/agent-tracing-setup.md#preflight-before-provisioning) first: any `network:` block (requires `monitoring.enabled: false`; a missing setting means monitoring is on by default), capability, opt-out, and monitoring charges/privacy approval.
 
 > Optional: run `azd provision --preview --no-prompt` first to preview the resource changes (a what-if) before applying them.
 >

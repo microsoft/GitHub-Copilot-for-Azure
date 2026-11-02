@@ -204,7 +204,7 @@ If recovery still fails → escape to [create-hosted.md](create-hosted.md).
 azd provision --no-state --no-prompt
 ```
 
-Before running this for a new project, complete the [tracing setup preflight](../../references/agent-tracing-setup.md#preflight-before-provisioning): check capability and opt-out, handle a `network:` block, and get monitoring charges/privacy approval. An existing project that skips provisioning needs no approval unless the user supplies a component ID.
+Before running this for a new project, complete the [tracing setup preflight](../../references/agent-tracing-setup.md#preflight-before-provisioning): handle a `network:` block first (it requires `monitoring.enabled: false`; a missing setting means monitoring is on by default), check capability and opt-out, and get monitoring charges/privacy approval. An existing project that skips provisioning needs no approval unless the user supplies a component ID.
 
 `--no-state` skips the existing-deployment check; safe here because the golden path starts from a fresh environment (Step 4). Keep it for this quickstart; you can omit it later when re-provisioning the same environment.
 

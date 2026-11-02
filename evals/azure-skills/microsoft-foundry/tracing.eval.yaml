@@ -126,11 +126,12 @@ stimuli:
       - |
         Run the preflight before provisioning: note that automatic monitoring
         does not configure private-network ingestion, so a project with a
-        network: block must set monitoring.enabled: false, and that a new
-        project also needs monitoring charges/privacy approval. If provision
-        fails on monitoring, report it as a provisioning failure with its
-        cause, not as an optional warning that lets deployment continue. Do not
-        continue to agent deployment as if provisioning succeeded, enable
+        network: block must set monitoring.enabled: false. Because monitoring
+        is then disabled, no monitoring charges/privacy approval is needed
+        (approval applies only to new projects without a network: block). If
+        provision fails on monitoring, report it as a provisioning failure with
+        its cause, not as an optional warning that lets deployment continue. Do
+        not continue to agent deployment as if provisioning succeeded, enable
         public access, or invent resource IDs.
     graders:
       - *tracing-skill

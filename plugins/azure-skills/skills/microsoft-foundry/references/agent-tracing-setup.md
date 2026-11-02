@@ -20,10 +20,12 @@ These describe provisioning configuration, not stored-trace evidence. Inspect wi
 
 Run before any `azd provision` that could create a new project, and before a redeploy that skips provisioning. Provisioning is the step that creates monitoring, so approval cannot wait until afterward.
 
-1. Check capability and path (below). Older tooling and custom IaC create no monitoring.
-2. Check for an existing opt-out (`monitoring.enabled: false`) and respect it.
-3. If the project has a `network:` block, set `monitoring.enabled: false` first; otherwise provisioning fails.
-4. For a new project, get approval covering monitoring charges and privacy before provisioning.
+A missing `monitoring` setting on a new project means monitoring is on by default, not "open to configure".
+
+1. If the project has a `network:` block, stop here: set `monitoring.enabled: false` (automatic monitoring does not configure private ingestion, and provisioning fails otherwise). Do not ask for monitoring approval or try to enable monitoring.
+2. Check capability and path (below). Older tooling and custom IaC create no monitoring.
+3. Check for an existing opt-out (`monitoring.enabled: false`) and respect it.
+4. For a new project without a `network:` block, get approval covering monitoring charges and privacy before provisioning.
 5. For an existing project, do nothing unless the user supplies `applicationInsightsResourceId` and approves the connection write.
 
 Effective-connection discovery and human access checks happen after provisioning (and on redeploys that skip it).

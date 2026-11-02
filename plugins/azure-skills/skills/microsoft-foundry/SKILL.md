@@ -135,7 +135,7 @@ Every agent source folder can keep Foundry-specific cache and overlay state unde
 
 ## Agent: Setup References
 
-- Ordinary prompt and hosted text-agent deployments, including redeploys: follow [best-effort tracing setup](references/agent-tracing-setup.md), then [verify the requested invocation's stored trace](references/agent-tracing-verification.md). Optional tracing failures warn and continue; deployment success is not tracing verification.
+- Ordinary prompt and hosted text-agent deployments, including redeploys: follow [best-effort tracing setup](references/agent-tracing-setup.md), then [verify the requested invocation's stored trace](references/agent-tracing-verification.md). Optional tracing failures warn and continue. Deployment success only means ARM created the resources; tracing verification confirms the invoked agent's trace is stored and the user can read it.
 - [Standard Agent Setup](references/standard-agent-setup.md) — advanced setup for production workloads that need data-residency control (bring-your-own Cosmos DB / Storage / AI Search via a Foundry capability host). The default `azd ai agent` flow uses **Basic Agent Setup** and does **not** provision `capabilityHosts/agents` — do not flag its absence as a bug. For default post-provision state, see the "Expected env-var fingerprint" section in [foundry-agent/create/create-hosted.md](foundry-agent/create/create-hosted.md).
 
 ## Agent: Common Project Context Resolution
