@@ -17,7 +17,7 @@ scoring:
 
 stimuli:
   - name: "Route top Advisor actions to prioritized summary"
-    prompt: "List the top 3 Azure Advisor actions to take for subscription 00000000-0000-0000-0000-000000000000."
+    prompt: "List the top 3 Azure Advisor actions to take in my configured default subscription."
     tags:
       type: integration
       tier: smoke
@@ -26,7 +26,7 @@ stimuli:
       requiredSkills:
         - azure-advisor
     constraints:
-      max_turns: 5
+      max_turns: 8
     graders:
       - type: skill-invocation
         config:
@@ -36,7 +36,7 @@ stimuli:
         config:
           required:
             - name: "(?i)(advisor_recommendation_summary|advisor)$"
-              pattern: '^(?!.*"learn"\s*:\s*true)(?!.*"command"\s*:\s*"(?!advisor_recommendation_summary"))(?!.*"group-by"\s*:\s*"(?!recommendation-type"))(?=.*"prioritized"\s*:\s*true)(?=.*"top"\s*:\s*3\b)(?=.*"subscription"\s*:\s*"00000000-0000-0000-0000-000000000000")'
+              pattern: '^(?!.*"learn"\s*:\s*true)(?!.*"command"\s*:\s*"(?!advisor_recommendation_summary"))(?!.*"group-by"\s*:\s*"(?!recommendation-type"))(?=.*"prioritized"\s*:\s*true)(?=.*"top"\s*:\s*3\b)'
               result: &advisor-success '"status\\?"\s*:\s*200\b'
           disallowed:
             - name: "(?i)advisor_recommendation_list$"
@@ -56,7 +56,7 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   - name: "Route impacted resource request"
-    prompt: "Show up to 5 Azure Advisor security recommendations and their affected resources in subscription 00000000-0000-0000-0000-000000000000."
+    prompt: "Show up to 5 Azure Advisor security recommendations and their affected resources in my configured default subscription."
     tags:
       type: integration
       tier: full
@@ -75,7 +75,7 @@ stimuli:
         config:
           required:
             - name: "(?i)(advisor_recommendation_list|advisor)$"
-              pattern: '^(?!.*"learn"\s*:\s*true)(?!.*"command"\s*:\s*"(?!advisor_recommendation_list"))(?=.*"category"\s*:\s*"Security")(?=.*"top"\s*:\s*5\b)(?=.*"subscription"\s*:\s*"00000000-0000-0000-0000-000000000000")'
+              pattern: '^(?!.*"learn"\s*:\s*true)(?!.*"command"\s*:\s*"(?!advisor_recommendation_list"))(?=.*"category"\s*:\s*"Security")(?=.*"top"\s*:\s*5\b)'
               result: *advisor-success
           disallowed:
             - name: "(?i)advisor_recommendation_summary$"
@@ -135,14 +135,14 @@ stimuli:
             - name: "(?i)advisor_recommendation_update"
 
   - name: "Known type priorities use list directly"
-    prompt: "Show the top 2 highest-priority Azure Advisor recommendations for type 55a560ff-1039-4a49-b6da-6f272dc52db6 in subscription 00000000-0000-0000-0000-000000000000."
+    prompt: "Show the top 2 highest-priority Azure Advisor recommendations for type 55a560ff-1039-4a49-b6da-6f272dc52db6 in my configured default subscription."
     tags: &routing
       type: integration
       tier: full
       cost: llm
       area: routing
     constraints: &bounded
-      max_turns: 5
+      max_turns: 8
     graders:
       - &advisor-skill
         type: skill-invocation
@@ -152,7 +152,7 @@ stimuli:
         config:
           required:
             - name: "(?i)(advisor_recommendation_list|advisor)$"
-              pattern: '^(?!.*"learn"\s*:\s*true)(?!.*"command"\s*:\s*"(?!advisor_recommendation_list"))(?=.*"recommendation-type-id"\s*:\s*"55a560ff-1039-4a49-b6da-6f272dc52db6")(?=.*"prioritized"\s*:\s*true)(?=.*"top"\s*:\s*2\b)(?=.*"subscription"\s*:\s*"00000000-0000-0000-0000-000000000000")'
+              pattern: '^(?!.*"learn"\s*:\s*true)(?!.*"command"\s*:\s*"(?!advisor_recommendation_list"))(?=.*"recommendation-type-id"\s*:\s*"55a560ff-1039-4a49-b6da-6f272dc52db6")(?=.*"prioritized"\s*:\s*true)(?=.*"top"\s*:\s*2\b)'
               result: *advisor-success
           disallowed:
             - name: "(?i)advisor_recommendation_summary$"
@@ -161,7 +161,7 @@ stimuli:
                 command: "^advisor_recommendation_summary$"
 
   - name: "Category counts use non-prioritized summary"
-    prompt: "How many Azure Advisor recommendations do I have in each category in subscription 00000000-0000-0000-0000-000000000000?"
+    prompt: "How many Azure Advisor recommendations do I have in each category in my configured default subscription?"
     tags: *routing
     constraints:
       max_turns: 8
@@ -173,7 +173,7 @@ stimuli:
         config:
           required:
             - name: "(?i)(advisor_recommendation_summary|advisor)$"
-              pattern: '^(?!.*"learn"\s*:\s*true)(?!.*"command"\s*:\s*"(?!advisor_recommendation_summary"))(?!.*"(?:group-by|groupBy)"\s*:\s*"(?!category"))(?=.*"subscription"\s*:\s*"00000000-0000-0000-0000-000000000000")(?!.*"prioritized"\s*:\s*true)'
+              pattern: '^(?!.*"learn"\s*:\s*true)(?!.*"command"\s*:\s*"(?!advisor_recommendation_summary"))(?!.*"(?:group-by|groupBy)"\s*:\s*"(?!category"))(?!.*"prioritized"\s*:\s*true)'
               result: *advisor-success
           disallowed:
             - name: "(?i)advisor_recommendation_list$"
@@ -224,7 +224,7 @@ stimuli:
           threshold: 1
 
   - name: "Critical recommendations mean priority not an impact value"
-    prompt: "What are my critical Azure Advisor recommendations in subscription 00000000-0000-0000-0000-000000000000?"
+    prompt: "What are my critical Azure Advisor recommendations in my configured default subscription?"
     tags: *routing
     constraints: *bounded
     graders:
@@ -233,7 +233,7 @@ stimuli:
         config:
           required:
             - name: "(?i)(advisor_recommendation_summary|advisor)$"
-              pattern: '^(?!.*"learn"\s*:\s*true)(?!.*"command"\s*:\s*"(?!advisor_recommendation_summary"))(?!.*"group-by"\s*:\s*"(?!recommendation-type"))(?=.*"prioritized"\s*:\s*true)(?=.*"subscription"\s*:\s*"00000000-0000-0000-0000-000000000000")(?!.*"impact"\s*:\s*"Critical")'
+              pattern: '^(?!.*"learn"\s*:\s*true)(?!.*"command"\s*:\s*"(?!advisor_recommendation_summary"))(?!.*"group-by"\s*:\s*"(?!recommendation-type"))(?=.*"prioritized"\s*:\s*true)(?!.*"impact"\s*:\s*"Critical")'
               result: *advisor-success
           disallowed:
             - name: "(?i)advisor_recommendation_list$"
@@ -242,7 +242,7 @@ stimuli:
                 command: "^advisor_recommendation_list$"
 
   - name: "Prioritized retirements preserve subcategory and date filter"
-    prompt: "Show my top 3 Azure Advisor retirements on or before 2026-12-31 in subscription 00000000-0000-0000-0000-000000000000."
+    prompt: "Show my top 3 Azure Advisor retirements on or before 2026-12-31 in my configured default subscription."
     tags: *routing
     constraints:
       max_turns: 8
@@ -252,7 +252,7 @@ stimuli:
         config:
           required:
             - name: "(?i)(advisor_recommendation_summary|advisor)$"
-              pattern: '^(?!.*"learn"\s*:\s*true)(?!.*"command"\s*:\s*"(?!advisor_recommendation_summary"))(?!.*"group-by"\s*:\s*"(?!recommendation-type"))(?=.*"prioritized"\s*:\s*true)(?=.*"sub-category"\s*:\s*"ServiceUpgradeAndRetirement")(?=.*"retirement-date"\s*:\s*"le:2026-12-31")(?=.*"top"\s*:\s*3\b)(?=.*"subscription"\s*:\s*"00000000-0000-0000-0000-000000000000")'
+              pattern: '^(?!.*"learn"\s*:\s*true)(?!.*"command"\s*:\s*"(?!advisor_recommendation_summary"))(?!.*"group-by"\s*:\s*"(?!recommendation-type"))(?=.*"prioritized"\s*:\s*true)(?=.*"sub-category"\s*:\s*"ServiceUpgradeAndRetirement")(?=.*"retirement-date"\s*:\s*"le:2026-12-31")(?=.*"top"\s*:\s*3\b)'
               result: *advisor-success
           disallowed:
             - name: "(?i)advisor_recommendation_list$"
