@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   convertToTrajectoryEvents: vi.fn(),
   createMarkdownReport: vi.fn(),
   deleteResourceGroup: vi.fn(),
+  getAzureEnvironment: vi.fn(),
   getAzureFixtureManifestPath: vi.fn(),
   getAzureScopePrompt: vi.fn(),
   getEarlyTerminateCondition: vi.fn(),
@@ -55,6 +56,7 @@ vi.mock("../tag-helpers.ts", () => ({
   getSkillName: mocks.getSkillName,
   getSystemPrompt: mocks.getSystemPrompt,
   getTakeScreenshotCondition: mocks.getTakeScreenshotCondition,
+  getAzureEnvironment: mocks.getAzureEnvironment,
 }));
 
 import { SdkAgentExecutor } from "../sdk-agent-executor.ts";
@@ -134,6 +136,7 @@ describe("SdkAgentExecutor", { concurrent: false }, () => {
     vi.clearAllMocks();
     mocks.convertToTrajectoryEvents.mockReturnValue(convertedEvents);
     mocks.createMarkdownReport.mockResolvedValue(undefined);
+    mocks.getAzureEnvironment.mockReturnValue({});
     mocks.getAzureFixtureManifestPath.mockReturnValue(undefined);
     mocks.getAzureScopePrompt.mockReturnValue("Azure scope");
     mocks.getEarlyTerminateCondition.mockReturnValue({});
