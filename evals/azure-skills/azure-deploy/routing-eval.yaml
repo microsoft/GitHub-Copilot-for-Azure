@@ -44,6 +44,7 @@ stimuli:
         - src: fixture/swa-bicep/infra/main.parameters.json
           dest: infra/main.parameters.json
     tags:
+      azurePermission: none
       type: integration
       tier: smoke
       cost: llm
@@ -74,6 +75,7 @@ stimuli:
         - src: fixture/swa-bicep/infra/main.parameters.json
           dest: infra/main.parameters.json
     tags:
+      azurePermission: none
       type: integration
       tier: smoke
       cost: llm
@@ -106,6 +108,7 @@ stimuli:
         - src: fixture/functions-bicep/infra/main.parameters.json
           dest: infra/main.parameters.json
     tags:
+      azurePermission: none
       type: integration
       tier: smoke
       cost: llm
@@ -140,6 +143,7 @@ stimuli:
         - src: fixture/container-apps-bicep/infra/main.parameters.json
           dest: infra/main.parameters.json
     tags:
+      azurePermission: none
       type: integration
       tier: smoke
       cost: llm
