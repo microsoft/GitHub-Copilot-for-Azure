@@ -51,6 +51,10 @@ jobs:
     name: Resolve workflow inputs
     runs-on: ubuntu-latest
     environment: cideploytest
+    env:
+      AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      AZURE_STAGE_SUBSCRIPTION_ID: ${{ vars.AZURE_STAGE_SUBSCRIPTION_ID }}
     if: github.repository == 'microsoft/GitHub-Copilot-for-Azure'
     outputs:
       skills: ${{ steps.resolve.outputs.skills }}
@@ -108,6 +112,10 @@ jobs:
     needs: resolve-inputs
     runs-on: ubuntu-latest
     environment: cideploytest
+    env:
+      AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      AZURE_STAGE_SUBSCRIPTION_ID: ${{ vars.AZURE_STAGE_SUBSCRIPTION_ID }}
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
       has_azure_deploy: ${{ steps.set-matrix.outputs.has_azure_deploy }}

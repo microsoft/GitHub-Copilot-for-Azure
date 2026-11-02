@@ -20,6 +20,9 @@ jobs:
       id-token: write
       copilot-requests: write
     env:
+      AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      AZURE_STAGE_SUBSCRIPTION_ID: ${{ vars.AZURE_STAGE_SUBSCRIPTION_ID }}
       REPORT_STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
       REPORT_STORAGE_CONTAINER: ${{ github.event_name == 'schedule' && (vars.REPORT_STORAGE_CONTAINER || 'integration-reports') || (vars.MANUAL_REPORT_STORAGE_CONTAINER || 'manual-integration-reports') }}
       SKILL: ${{ inputs.skill }}

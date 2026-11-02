@@ -19,6 +19,7 @@ type Step = {
   with?: Record<string, unknown>;
 };
 type Job = {
+  env?: Record<string, string>;
   outputs?: Record<string, string>;
   uses?: string;
   with?: Record<string, string>;
@@ -45,6 +46,41 @@ describe("permission integration workflows", () => {
   const profiles = readAction("azure-profiles");
   const action = readAction("test-permission");
   const report = readWorkflow("report-integration-skill.yml").jobs.report;
+  const stageVariables = ["AZURE_CLIENT_ID", "AZURE_TENANT_ID", "AZURE_STAGE_SUBSCRIPTION_ID"];
+  const testVariables = [
+    ...stageVariables, "AZURE_READ_CLIENT_ID", "AZURE_WRITE_CLIENT_ID", "AZURE_ADMIN_CLIENT_ID",
+    "AZURE_SUBSCRIPTION_ID", "AZURE_FIXTURE_COORDINATION_STORAGE_ACCOUNT", "AZURE_FIXTURE_COORDINATION_CONTAINER",
+  ];
+
+  test.each(["azure-profiles", "test-permission", "stop-azure-profiles"])(
+    "%s composite action does not reference the unavailable vars context",
+    (name) => {
+      expect(JSON.stringify(readAction(name))).not.toMatch(/\$\{\{[^}]*\bvars\s*(?:\.|\[)/);
+    },
+  );
+
+  test("profile action reads configuration exclusively from caller environment", () => {
+    expect(profiles[0].env).toMatchObject({
+      STAGE_CLIENT_ID: "${{ env.AZURE_CLIENT_ID }}",
+      READ_CLIENT_ID: "${{ env.AZURE_READ_CLIENT_ID }}",
+      WRITE_CLIENT_ID: "${{ env.AZURE_WRITE_CLIENT_ID }}",
+      ADMIN_CLIENT_ID: "${{ env.AZURE_ADMIN_CLIENT_ID }}",
+      TENANT_ID: "${{ env.AZURE_TENANT_ID }}",
+      TEST_SUBSCRIPTION_ID: "${{ env.AZURE_SUBSCRIPTION_ID }}",
+      STAGE_SUBSCRIPTION_ID: "${{ env.AZURE_STAGE_SUBSCRIPTION_ID }}",
+      FIXTURE_STORAGE_ACCOUNT: "${{ env.AZURE_FIXTURE_COORDINATION_STORAGE_ACCOUNT }}",
+      FIXTURE_STORAGE_CONTAINER: "${{ env.AZURE_FIXTURE_COORDINATION_CONTAINER }}",
+    });
+  });
+
+  test("all stage-only callers supply their authentication configuration", () => {
+    for (const job of [workflow.jobs["resolve-inputs"], workflow.jobs.setup, deploy.jobs.setup, report]) {
+      expect(job.steps?.some(step => step.uses === "./.github/actions/azure-profiles")).toBe(true);
+      for (const variable of stageVariables) {
+        expect(job.env?.[variable]).toBe(`\${{ vars.${variable} }}`);
+      }
+    }
+  });
 
   test.each(["read", "write", "admin", "none", "default"])("dispatches the %s matrix to its reusable workflow", (group) => {
     expect(workflow.jobs.setup.outputs?.[`${group}-matrix`])
@@ -56,6 +92,15 @@ describe("permission integration workflows", () => {
     const callee = readWorkflow(`test-integration-${group}.yml`);
     expect(callee.permissions["id-token"]).toBe("write");
     expect(callee.jobs.test.environment).toBe("cideploytest");
+    for (const variable of [...testVariables, "REPORT_STORAGE_ACCOUNT"]) {
+      expect(callee.jobs.test.env?.[variable]).toBe(`\${{ vars.${variable} }}`);
+    }
+    expect(callee.jobs.test.env?.REPORT_STORAGE_CONTAINER).toBe(
+      "${{ github.event_name == 'schedule' && (vars.REPORT_STORAGE_CONTAINER || 'integration-reports') || (vars.MANUAL_REPORT_STORAGE_CONTAINER || 'manual-integration-reports') }}",
+    );
+    const upload = action.find(step => step.name === "Upload private reports");
+    expect(upload?.env).not.toHaveProperty("REPORT_STORAGE_ACCOUNT");
+    expect(upload?.env).not.toHaveProperty("REPORT_STORAGE_CONTAINER");
     const invocation = callee.jobs.test.steps?.find(step => step.uses === "./.github/actions/test-permission");
     expect(invocation?.with?.permission).toBe(group === "default" ? "" : group);
   });
@@ -91,7 +136,11 @@ describe("permission integration workflows", () => {
       .toBe(`\${{ fromJson(needs.setup.outputs.${group}-matrix) }}`);
     expect(job.uses).toBe("./.github/workflows/test-azure-deploy-group.yml");
     expect(job.with?.permission).toBe(group);
-    const steps = readWorkflow("test-azure-deploy-group.yml").jobs.test.steps ?? [];
+    const callee = readWorkflow("test-azure-deploy-group.yml").jobs.test;
+    for (const variable of testVariables) {
+      expect(callee.env?.[variable]).toBe(`\${{ vars.${variable} }}`);
+    }
+    const steps = callee.steps ?? [];
     expect(steps.find(step => step.uses === "./.github/actions/azure-profiles")?.with?.permission)
       .toBe("${{ inputs.permission }}");
     expect(steps.find(step => step.id === "tests")?.run).toContain('--tag "category=$TEST_GROUP"');

@@ -23,6 +23,15 @@ jobs:
     environment: cideploytest
     runs-on: ubuntu-latest
     env:
+      AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      AZURE_READ_CLIENT_ID: ${{ vars.AZURE_READ_CLIENT_ID }}
+      AZURE_WRITE_CLIENT_ID: ${{ vars.AZURE_WRITE_CLIENT_ID }}
+      AZURE_ADMIN_CLIENT_ID: ${{ vars.AZURE_ADMIN_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      AZURE_STAGE_SUBSCRIPTION_ID: ${{ vars.AZURE_STAGE_SUBSCRIPTION_ID }}
+      AZURE_FIXTURE_COORDINATION_STORAGE_ACCOUNT: ${{ vars.AZURE_FIXTURE_COORDINATION_STORAGE_ACCOUNT }}
+      AZURE_FIXTURE_COORDINATION_CONTAINER: ${{ vars.AZURE_FIXTURE_COORDINATION_CONTAINER }}
       SKILL: azure-skills/azure-deploy
       REPORT_GROUP: ${{ inputs.group }}
       RUN_ID: ${{ github.run_id }}

@@ -120,7 +120,10 @@ No login uses the default Azure CLI profile.
 | Read tests | `AZURE_READ_CLIENT_ID` | `AZURE_SUBSCRIPTION_ID` | `AZURE_READ_CONFIG_DIR` |
 | Admin tests | `AZURE_ADMIN_CLIENT_ID` | `AZURE_SUBSCRIPTION_ID` | `AZURE_ADMIN_CONFIG_DIR` |
 
-Configure these variables in the `cideploytest` environment. All identities use
+Configure these variables in the `cideploytest` environment. Workflows use
+job `env` mappings to pass configuration to composite actions;
+composite action manifests use `env`, not the unsupported `vars` context.
+All identities use
 `AZURE_TENANT_ID` and need GitHub federated credentials. The stage identity needs
 Blob read/write and Table write access. Configure
 `AZURE_FIXTURE_COORDINATION_STORAGE_ACCOUNT` and
