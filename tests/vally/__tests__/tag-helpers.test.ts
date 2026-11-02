@@ -35,7 +35,7 @@ describe("getAzureEnvironment", () => {
     expect(env.AZURE_CLIENT_ID).toBe("admin-client");
   });
 
-  test.each(["read", ""])("uses only the current job identity for permission %j", (permission) => {
+  test.each(["read", "write", "admin", ""])("uses only the current job identity for permission %j", (permission) => {
     expect(getAzureEnvironment(permission ? { azurePermission: permission } : undefined, {
       CI: "true",
       TEST_AZURE_PERMISSION: permission,
@@ -45,16 +45,16 @@ describe("getAzureEnvironment", () => {
     });
   });
 
-  test.each(["read", "none", ""])("rejects tests belonging to a different permission job: %j", (permission) => {
+  test.each(["read", "write", "admin", "none", ""])("rejects tests belonging to a different permission job: %j", (permission) => {
     expect(() => getAzureEnvironment({ azurePermission: "read" }, {
       ...env,
       TEST_AZURE_PERMISSION: permission === "read" ? "" : permission,
     })).toThrow("does not match");
   });
 
-  test("fails closed when the isolated job identity is missing", () => {
-    expect(() => getAzureEnvironment({ azurePermission: "read" }, {
-      CI: "true", TEST_AZURE_PERMISSION: "read",
+  test.each(["read", "write", "admin"])("fails closed when the isolated %s job identity is missing", (permission) => {
+    expect(() => getAzureEnvironment({ azurePermission: permission }, {
+      CI: "true", TEST_AZURE_PERMISSION: permission,
     })).toThrow("Permission-isolated jobs require");
   });
 
@@ -93,7 +93,12 @@ describe("getAzureEnvironment", () => {
       .toThrow("refusing to use the default Azure identity");
   });
 
-  test.each(["admin", "write", "reed", "", ["read"], ["none"]])("rejects unsupported permission tags: %j", (permission) => {
+  test.each(["write", "admin"])("requires an isolated job for %s in CI", (permission) => {
+    expect(() => getAzureEnvironment({ azurePermission: permission }, env))
+      .toThrow("require a matching TEST_AZURE_PERMISSION job");
+  });
+
+  test.each(["reed", "", ["read"], ["none"]])("rejects unsupported permission tags: %j", (permission) => {
     expect(() => getAzureEnvironment({ azurePermission: permission }, env))
       .toThrow("tags.azurePermission");
   });

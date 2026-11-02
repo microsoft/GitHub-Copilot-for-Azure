@@ -4,8 +4,8 @@
  * azurePermission tags represent the default identity ("").
  *
  * Used by the setup job in .github/workflows/test-all-integration.yml.
- * With comma-separated SKILLS_INPUT, writes read-matrix, none-matrix,
- * default-matrix, and report-matrix JSON outputs to GITHUB_OUTPUT. These drive
+ * With comma-separated SKILLS_INPUT, writes read-matrix, write-matrix,
+ * admin-matrix, none-matrix, default-matrix, and report-matrix JSON outputs to GITHUB_OUTPUT. These drive
  * the permission-specific test jobs and per-skill report aggregation.
  * Invalid skill references or unsupported permissions fail matrix generation;
  * azure-skills/azure-deploy is excluded because it has a separate workflow.
@@ -75,6 +75,8 @@ export function discoverAzurePermissions(evalDir: string): string[] {
 export function buildPermissionMatrices(workspace: string, skills: string[]) {
   const matrices = {
     read: [] as string[],
+    write: [] as string[],
+    admin: [] as string[],
     none: [] as string[],
     default: [] as string[],
     report: [] as { skill: string; permissions: string[] }[],
@@ -88,7 +90,7 @@ export function buildPermissionMatrices(workspace: string, skills: string[]) {
     }
     const permissions = discoverAzurePermissions(path.join(workspace, "evals", skill));
     for (const permission of permissions) {
-      if (permission !== "" && permission !== "read" && permission !== "none") {
+      if (permission !== "" && permission !== "read" && permission !== "write" && permission !== "admin" && permission !== "none") {
         throw new Error(`Unsupported Azure permission "${permission}" in ${skill}`);
       }
       matrices[permission === "" ? "default" : permission].push(skill);

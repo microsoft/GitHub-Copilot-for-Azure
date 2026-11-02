@@ -61,6 +61,19 @@ describe("aggregatePermissionResults", () => {
     expect(summary.issues).toContain("Missing execution manifest for none");
   });
 
+  test("aggregates write and admin reports", () => {
+    addArtifact("write", "skill_write");
+    addArtifact("admin", "skill_admin");
+    const summary = aggregatePermissionResults(artifacts, output, "plugin__skill", "1", ["write", "admin"]);
+    expect(summary.complete).toBe(true);
+    expect(summary.outcomes).toEqual({ write: "success", admin: "success" });
+    const reports = path.join(output, "reports/test-run-all-integration");
+    expect(Object.keys(JSON.parse(readFileSync(path.join(reports, "testResults.json"), "utf8"))))
+      .toEqual(["skill_write", "skill_admin"]);
+    expect(readFileSync(path.join(reports, "results.jsonl"), "utf8"))
+      .toBe('{"group":"write"}\n{"group":"admin"}\n');
+  });
+
   test("accepts failed tests with complete result files", () => {
     addArtifact("read", "skill_read", "failure");
     const summary = aggregatePermissionResults(artifacts, output, "plugin__skill", "1", ["read"]);

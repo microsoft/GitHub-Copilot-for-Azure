@@ -6,7 +6,7 @@ inputs:
     description: Plugin/skill reference
   permission:
     required: true
-    description: Azure permission (read, none, or empty for default)
+    description: Azure permission (read, write, admin, none, or empty for default)
   model-override:
     default: ""
     description: Model override
@@ -105,8 +105,10 @@ runs:
       run: |
         case "$TEST_AZURE_PERMISSION" in
           read) tag_args=(--tag azurePermission=read) ;;
+          write) tag_args=(--tag azurePermission=write) ;;
+          admin) tag_args=(--tag azurePermission=admin) ;;
           none) tag_args=(--tag azurePermission=none) ;;
-          "") tag_args=(--tag 'azurePermission!=read' --tag 'azurePermission!=none') ;;
+          "") tag_args=(--tag 'azurePermission!=read' --tag 'azurePermission!=write' --tag 'azurePermission!=admin' --tag 'azurePermission!=none') ;;
           *) echo "::error::Unsupported Azure permission: $TEST_AZURE_PERMISSION"; exit 1 ;;
         esac
 

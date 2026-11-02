@@ -108,6 +108,8 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
       has_azure_deploy: ${{ steps.set-matrix.outputs.has_azure_deploy }}
       read-matrix: ${{ steps.azure-permissions.outputs.read-matrix }}
+      write-matrix: ${{ steps.azure-permissions.outputs.write-matrix }}
+      admin-matrix: ${{ steps.azure-permissions.outputs.admin-matrix }}
       none-matrix: ${{ steps.azure-permissions.outputs.none-matrix }}
       default-matrix: ${{ steps.azure-permissions.outputs.default-matrix }}
       report-matrix: ${{ steps.azure-permissions.outputs.report-matrix }}
@@ -180,6 +182,36 @@ jobs:
       model-override: ${{ inputs.model-override || '' }}
       no-skills: ${{ inputs.no-skills || false }}
 
+  test-write:
+    name: Integration write – ${{ matrix.skill }}
+    needs: setup
+    if: needs.setup.outputs.write-matrix != '[]'
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        skill: ${{ fromJson(needs.setup.outputs.write-matrix) }}
+    uses: ./.github/workflows/test-integration-write.yml
+    with:
+      skill: ${{ matrix.skill }}
+      model-override: ${{ inputs.model-override || '' }}
+      no-skills: ${{ inputs.no-skills || false }}
+
+  test-admin:
+    name: Integration admin – ${{ matrix.skill }}
+    needs: setup
+    if: needs.setup.outputs.admin-matrix != '[]'
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        skill: ${{ fromJson(needs.setup.outputs.admin-matrix) }}
+    uses: ./.github/workflows/test-integration-admin.yml
+    with:
+      skill: ${{ matrix.skill }}
+      model-override: ${{ inputs.model-override || '' }}
+      no-skills: ${{ inputs.no-skills || false }}
+
   test-none:
     name: Integration none – ${{ matrix.skill }}
     needs: setup
@@ -212,7 +244,7 @@ jobs:
 
   report:
     name: Aggregate and report – ${{ matrix.skill }}
-    needs: [setup, test-read, test-none, test-default]
+    needs: [setup, test-read, test-write, test-admin, test-none, test-default]
     if: always() && !cancelled() && needs.setup.result == 'success' && needs.setup.outputs.report-matrix != '[]'
     environment: cideploytest
     runs-on: ubuntu-latest

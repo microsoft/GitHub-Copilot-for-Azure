@@ -58,7 +58,7 @@ export function aggregatePermissionResults(
 
   for (const permission of permissions) {
     const group = permission === "" ? "default" : permission;
-    if (!["default", "read", "none"].includes(group)) {
+    if (!["default", "read", "write", "admin", "none"].includes(group)) {
       throw new Error(`Unsupported permission: ${permission}`);
     }
     const artifactDir = path.join(artifactsDir, `integration-${artifactKey}-${group}-${attempt}`);

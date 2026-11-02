@@ -17,6 +17,7 @@ type Step = {
   with?: Record<string, unknown>;
 };
 type Job = {
+  outputs?: Record<string, string>;
   uses?: string;
   needs?: string[];
   if?: string;
@@ -40,7 +41,9 @@ describe("permission integration workflows", () => {
     fileURLToPath(new URL("../../.github/actions/test-permission/action.yml", import.meta.url)), "utf8",
   ));
 
-  test.each(["read", "none", "default"])("dispatches the %s matrix to its reusable workflow", (group) => {
+  test.each(["read", "write", "admin", "none", "default"])("dispatches the %s matrix to its reusable workflow", (group) => {
+    expect(workflow.jobs.setup.outputs?.[`${group}-matrix`])
+      .toBe(`\${{ steps.azure-permissions.outputs.${group}-matrix }}`);
     const caller = workflow.jobs[`test-${group}`];
     expect(caller.uses).toBe(`./.github/workflows/test-integration-${group}.yml`);
     expect(caller.if).toContain(`needs.setup.outputs.${group}-matrix != '[]'`);
@@ -54,7 +57,7 @@ describe("permission integration workflows", () => {
       expect(callee.jobs.test.env?.AZURE_CLIENT_ID).toBe("");
     } else {
       expect(callee.jobs.test.env?.AZURE_CLIENT_ID)
-        .toBe(group === "read" ? "${{ vars.AZURE_READ_CLIENT_ID }}" : "${{ vars.AZURE_CLIENT_ID }}");
+        .toBe(group === "default" ? "${{ vars.AZURE_CLIENT_ID }}" : `\${{ vars.AZURE_${group.toUpperCase()}_CLIENT_ID }}`);
       expect(callee.jobs.test.env).not.toHaveProperty("AZURE_READ_CLIENT_ID");
     }
   });
@@ -80,7 +83,7 @@ describe("permission integration workflows", () => {
     expect(steps.find(step => step.id === "tests")?.run).not.toContain("az login");
   });
 
-  test.each(["read", "none", ""])("passes native Vally filters selecting only permission %j", (permission) => {
+  test.each(["read", "write", "admin", "none", ""])("passes native Vally filters selecting only permission %j", (permission) => {
     const directory = mkdtempSync(path.join(tmpdir(), "permission-command-"));
     try {
       const capture = path.join(directory, "arguments.json");
@@ -108,7 +111,7 @@ require("node:fs").writeFileSync(process.env.CAPTURE, JSON.stringify(process.arg
       expect(args).not.toContain("--eval-spec");
       const filters = args.flatMap((arg, index) => arg === "--tag" ? [args[index + 1]] : []);
       const filter = parseSuiteFilter(filters);
-      for (const candidate of ["read", "none", ""]) {
+      for (const candidate of ["read", "write", "admin", "none", ""]) {
         const tags: Record<string, string[]> = candidate ? { azurePermission: [candidate] } : {};
         expect(matchesSuiteFilter(tags, filter.include, filter.exclude)).toBe(candidate === permission);
       }
@@ -119,7 +122,7 @@ require("node:fs").writeFileSync(process.env.CAPTURE, JSON.stringify(process.arg
 
   test("aggregates after all permission jobs, including failed or skipped groups", () => {
     const report = workflow.jobs.report;
-    expect(report.needs).toEqual(["setup", "test-read", "test-none", "test-default"]);
+    expect(report.needs).toEqual(["setup", "test-read", "test-write", "test-admin", "test-none", "test-default"]);
     expect(report.if).toContain("always()");
     const steps = report.steps ?? [];
     expect(steps.findIndex(step => step.id === "aggregate"))

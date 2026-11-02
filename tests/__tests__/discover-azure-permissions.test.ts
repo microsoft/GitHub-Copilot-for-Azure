@@ -58,16 +58,18 @@ describe("discoverAzurePermissions", () => {
   test("builds only discovered permission jobs and skips azure-deploy", () => {
     const evalDir = path.join(directory, "evals/plugin/skill");
     mkdirSync(evalDir, { recursive: true });
-    writeFileSync(path.join(evalDir, "eval.yaml"), "stimuli:\n  - tags: {azurePermission: read}\n  - name: default\n");
+    writeFileSync(path.join(evalDir, "eval.yaml"), "stimuli:\n  - tags: {azurePermission: read}\n  - tags: {azurePermission: write}\n  - tags: {azurePermission: admin}\n  - name: default\n");
     expect(buildPermissionMatrices(directory, ["plugin/skill", "plugin/skill", "azure-skills/azure-deploy"]))
       .toEqual({
         read: ["plugin/skill"],
+        write: ["plugin/skill"],
+        admin: ["plugin/skill"],
         none: [],
         default: ["plugin/skill"],
-        report: [{ skill: "plugin/skill", permissions: ["read", ""] }],
+        report: [{ skill: "plugin/skill", permissions: ["read", "write", "admin", ""] }],
       });
     expect(() => buildPermissionMatrices(directory, ["../skill"])).toThrow("Invalid plugin/skill");
-    writeFileSync(path.join(evalDir, "eval.yaml"), "stimuli:\n  - tags: {azurePermission: write}\n");
+    writeFileSync(path.join(evalDir, "eval.yaml"), "stimuli:\n  - tags: {azurePermission: unsupported}\n");
     expect(() => buildPermissionMatrices(directory, ["plugin/skill"])).toThrow("Unsupported Azure permission");
   });
 
@@ -93,5 +95,37 @@ describe("discoverAzurePermissions", () => {
     expect(result.stderr).toBe("");
     expect(result.status).toBe(0);
     expect(readFileSync(output, "utf8")).toBe('permissions=["read",""]\n');
+  });
+
+  test("writes write and admin matrix outputs only for skills needing them", () => {
+    for (const permission of ["write", "admin"]) {
+      const evalDir = path.join(directory, `evals/plugin/${permission}-skill`);
+      mkdirSync(evalDir, { recursive: true });
+      writeFileSync(path.join(evalDir, "eval.yaml"), `stimuli:\n  - tags: {azurePermission: ${permission}}\n`);
+    }
+    const output = path.join(directory, "output");
+    const result = spawnSync(process.execPath, [
+      "--import", "tsx", fileURLToPath(new URL("../discover-azure-permissions.ts", import.meta.url)),
+    ], {
+      env: {
+        ...process.env,
+        GITHUB_WORKSPACE: directory,
+        SKILLS_INPUT: "plugin/write-skill,plugin/admin-skill",
+        GITHUB_OUTPUT: output,
+      },
+      encoding: "utf8",
+    });
+
+    expect(result.stderr).toBe("");
+    expect(result.status).toBe(0);
+    expect(readFileSync(output, "utf8").split("\n")).toEqual([
+      "read-matrix=[]",
+      'write-matrix=["plugin/write-skill"]',
+      'admin-matrix=["plugin/admin-skill"]',
+      "none-matrix=[]",
+      "default-matrix=[]",
+      'report-matrix=[{"skill":"plugin/write-skill","permissions":["write"]},{"skill":"plugin/admin-skill","permissions":["admin"]}]',
+      "",
+    ]);
   });
 });

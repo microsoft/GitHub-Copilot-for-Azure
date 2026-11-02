@@ -21,7 +21,7 @@ export function getAzureEnvironment(
   const permission = tags?.azurePermission;
   const jobPermission = env.TEST_AZURE_PERMISSION;
   if (jobPermission !== undefined) {
-    if (!["", "read", "none"].includes(jobPermission) || (permission ?? "") !== jobPermission) {
+    if (!["", "read", "write", "admin", "none"].includes(jobPermission) || (permission ?? "") !== jobPermission) {
       throw new Error("Stimulus azurePermission does not match the test job's permission");
     }
     if (jobPermission === "none") {
@@ -35,6 +35,9 @@ export function getAzureEnvironment(
   }
   if (permission === undefined) {
     return {};
+  }
+  if (permission === "write" || permission === "admin") {
+    throw new Error("Write and admin tests require a matching TEST_AZURE_PERMISSION job");
   }
   if (permission === "none") {
     return {

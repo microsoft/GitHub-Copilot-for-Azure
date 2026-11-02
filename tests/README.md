@@ -75,9 +75,12 @@ tags:
 
 Use `azurePermission: none` for tests whose agent should not use the test subscription's Azure login. In CI, this overrides `AZURE_CONFIG_DIR` with a unique, nonexistent temporary path for each run and sets `AZURE_CLIENT_ID` to an empty string, so Azure CLI and Azure MCP do not use the authenticated Azure config or inherit the test identity's client ID. No read-only profile is required.
 
-Local runs ignore both values and use the available local Azure credentials.
+Use `azurePermission: write` or `azurePermission: admin` for tests that require
+the corresponding managed identity.
+
+Local runs ignore permission tags and use the available local Azure credentials.
 In CI, omitting the tag preserves the default Azure permissions, and a `read`
-run fails if read-only access is not configured. Only `read` and `none` are
+run fails if read-only access is not configured. Only `read`, `write`, `admin`, and `none` are
 supported; other values are rejected by eval validation.
 
 CI runs `npx tsx discover-azure-permissions.ts` from `tests/` after installing
@@ -85,22 +88,28 @@ dependencies. It scans nested `.yaml` files for each selected skill and builds
 permission-specific matrices. Invalid YAML or stimuli shapes are logged and skipped.
 Unsupported permission strings fail discovery.
 
-The three reusable workflows run only the stimuli in their group:
+The five reusable workflows run only the stimuli in their group:
 
 | Stimulus tag | Workflow | Available Azure identity |
 |---|---|---|
 | `azurePermission: read` | `test-integration-read.yml` | `AZURE_READ_CLIENT_ID`, exposed as `AZURE_CLIENT_ID` |
+| `azurePermission: write` | `test-integration-write.yml` | `AZURE_WRITE_CLIENT_ID`, exposed as `AZURE_CLIENT_ID` |
+| `azurePermission: admin` | `test-integration-admin.yml` | `AZURE_ADMIN_CLIENT_ID`, exposed as `AZURE_CLIENT_ID` |
 | No tag (`""`) | `test-integration-default.yml` | `AZURE_CLIENT_ID` |
 | `azurePermission: none` | `test-integration-none.yml` | No Azure login, no Azure OIDC permission |
 
 Each job installs dependencies and uses its fresh runner's default Azure CLI and azd profiles.
 Authenticated jobs log in to only their selected identity and refresh its CLI
 token in a dedicated background-refresh step. The test command uses native Vally
-filters: `--tag azurePermission=read`, `--tag azurePermission=none`, or both
-`--tag 'azurePermission!=read' --tag 'azurePermission!=none'` for untagged tests.
+filters: `--tag azurePermission=<permission>` for tagged tests, or
+`--tag 'azurePermission!=read' --tag 'azurePermission!=write' --tag 'azurePermission!=admin' --tag 'azurePermission!=none'`
+for untagged tests.
 The unchanged Vally wrapper discovers suites using `--plugin` and `--skill`.
 `TEST_AZURE_PERMISSION` rejects stimuli assigned to another job
 without switching profiles. Local runs without this variable are unchanged.
+Configure `AZURE_WRITE_CLIENT_ID` and `AZURE_ADMIN_CLIENT_ID` in the
+`cideploytest` environment, with federated credentials for their managed identities.
+In CI, write/admin tests require their matching permission-isolated job.
 
 Every job uploads its reports tree and execution manifest, even on test
 failure. A per-skill reporting job downloads the artifacts and runs
