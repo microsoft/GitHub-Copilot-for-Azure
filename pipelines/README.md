@@ -6,14 +6,14 @@ On the temporary `skaluvak/bami-test` branch,
 [`azure-benchmarks.yml`](azure-benchmarks.yml) is a manual-only, parameter-free
 check of `msbench-benchmarks` repository access. It runs
 [`Test-BenchmarkRepositoryAccess.ps1`](scripts/Test-BenchmarkRepositoryAccess.ps1)
-first with `azure_msbench_eval`, then with `azure_msbench_eval_bami`, even if
-the Microsoft check fails. It does not clone the benchmark repository, read
+with `azure_msbench_eval_bami` only. Microsoft principal access is already
+established, so it is not retested. It does not clone the benchmark repository, read
 Key Vault secrets, submit benchmarks or write to storage.
 
 To run it in `azure-sdk/internal`, open the existing benchmark pipeline linked
 to `pipelines/azure-benchmarks.yml`, select **Run pipeline**, and select
 `skaluvak/bami-test` as the branch. No new pipeline definition is needed.
-The pipeline needs authorization to use both service connections and the
+The pipeline needs authorization to use the BAMI service connection and the
 existing Azure SDK Linux pool. Keep `System.Debug` disabled.
 
 This branch replaces benchmark execution with access checks and removes scheduled
@@ -25,8 +25,7 @@ repository HEAD using an in-memory Azure DevOps bearer token. Git credential
 helpers and tracing are disabled; tokens are masked in pipeline logs, never
 passed in command arguments or written to files. Failures fail the task.
 
-If Microsoft passes and BAMI receives HTTP 403, the principals have different
-effective access. An administrator must check the logged Microsoft principal's
+If BAMI receives HTTP 403, an administrator must check its principal's
 membership in the **devdiv** organization and **OnlineServices** project, then
 **Project settings > Repositories > msbench-benchmarks > Security** for direct or
 group-inherited Read permission and any Deny. Service connection pipeline

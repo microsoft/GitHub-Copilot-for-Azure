@@ -13,17 +13,7 @@ pool:
 
 steps:
 - task: AzureCLI@2
-  displayName: 'Check Microsoft principal repository access'
-  inputs:
-    connectedServiceNameARM: 'azure_msbench_eval'
-    scriptType: 'pscore'
-    scriptLocation: 'scriptPath'
-    scriptPath: $(Build.SourcesDirectory)/pipelines/scripts/Test-BenchmarkRepositoryAccess.ps1
-    scriptArguments: '-ConnectionName "azure_msbench_eval"'
-
-- task: AzureCLI@2
   displayName: 'Check BAMI principal repository access'
-  condition: succeededOrFailed()
   inputs:
     connectedServiceNameARM: 'azure_msbench_eval_bami'
     scriptType: 'pscore'
