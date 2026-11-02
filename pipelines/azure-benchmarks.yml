@@ -1,56 +1,34 @@
+# Temporary access-only pipeline for skaluvak/bami-test. Do not merge into main.
 trigger: none
 
 pr: none
 
-schedules:
-- cron: '0 8 * * *'
-  displayName: 'Daily 8am UTC'
-  branches:
-    include:
-    - main
-  always: true
+variables:
+- template: /pipelines/templates/variables/image.yml
 
-stages:
-- stage: RunBenchmark
-  displayName: 'Run Benchmarks'
-  pool:
-    name: $(LINUXPOOL)
-    image: $(LINUXVMIMAGE)
-    os: linux
-  variables:
-  - template: /pipelines/templates/variables/image.yml
-  - template: /pipelines/templates/variables/globals.yml
-  jobs:
-  - job: RunBenchmark
-    displayName: 'Run Copilot Benchmarks'
-    steps:
-    - task: UsePythonVersion@0
-      displayName: 'Use Python 3.12'
-      inputs:
-        versionSpec: '3.12'
+pool:
+  name: $(LINUXPOOL)
+  image: $(LINUXVMIMAGE)
+  os: linux
 
-    - task: PipAuthenticate@1
-      displayName: 'Authenticate pip with MicrosoftSweBench feed'
-      inputs:
-        artifactFeeds: 'internal/MicrosoftSweBench'
+steps:
+- task: AzureCLI@2
+  displayName: 'Check Microsoft principal repository access'
+  inputs:
+    connectedServiceNameARM: 'azure_msbench_eval'
+    scriptType: 'pscore'
+    scriptLocation: 'scriptPath'
+    scriptPath: $(Build.SourcesDirectory)/pipelines/scripts/Test-BenchmarkRepositoryAccess.ps1
+    scriptArguments: '-ConnectionName "azure_msbench_eval"'
 
-    - task: AzureCLI@2
-      name: RunBenchmarks
-      displayName: 'Run Copilot Benchmarks script'
-      inputs:
-        connectedServiceNameARM: 'azure_msbench_eval'
-        addSpnToEnvironment: true
-        scriptType: 'pscore'
-        scriptLocation: 'scriptPath'
-        scriptPath: $(Build.SourcesDirectory)/pipelines/scripts/Invoke-RunBenchmarks.ps1
-        scriptArguments: >
-          -OutputPath "$(Build.ArtifactStagingDirectory)"
-          -StorageAccountName "msbenchnightlydata"
-          -ContainerName "msbench-reports"
-
-    - script: echo "Run IDs - $(RunBenchmarks.RUN_IDS)"
-      displayName: 'Display Run IDs'
-
-    - publish: $(Build.ArtifactStagingDirectory)
-      artifact: benchmark-run-ids
-      displayName: 'Publish benchmark run IDs artifact'
+- task: AzureCLI@2
+  displayName: 'Check BAMI principal repository access'
+  condition: succeededOrFailed()
+  inputs:
+    connectedServiceNameARM: 'azure_msbench_eval_bami'
+    scriptType: 'pscore'
+    scriptLocation: 'scriptPath'
+    scriptPath: $(Build.SourcesDirectory)/pipelines/scripts/Test-BenchmarkRepositoryAccess.ps1
+    scriptArguments: >
+      -ConnectionName "azure_msbench_eval_bami"
+      -ExpectedTenantId "8bc0d684-4df2-4244-8286-188358e31c5c"

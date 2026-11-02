@@ -1,5 +1,45 @@
 # Azure DevOps pipelines
 
+## Benchmark repository access dry run
+
+On the temporary `skaluvak/bami-test` branch,
+[`azure-benchmarks.yml`](azure-benchmarks.yml) is a manual-only, parameter-free
+check of `msbench-benchmarks` repository access. It runs
+[`Test-BenchmarkRepositoryAccess.ps1`](scripts/Test-BenchmarkRepositoryAccess.ps1)
+first with `azure_msbench_eval`, then with `azure_msbench_eval_bami`, even if
+the Microsoft check fails. It does not clone the benchmark repository, read
+Key Vault secrets, submit benchmarks or write to storage.
+
+To run it in `azure-sdk/internal`, open the existing benchmark pipeline linked
+to `pipelines/azure-benchmarks.yml`, select **Run pipeline**, and select
+`skaluvak/bami-test` as the branch. No new pipeline definition is needed.
+The pipeline needs authorization to use both service connections and the
+existing Azure SDK Linux pool. Keep `System.Debug` disabled.
+
+This branch replaces benchmark execution with access checks and removes scheduled
+triggers. The `main` branch is unchanged. **Do not merge this temporary YAML into
+main**, because it would disable the real benchmark pipeline.
+
+Each task logs its principal's tenant, subscription and app/client ID, then probes
+repository HEAD using an in-memory Azure DevOps bearer token. Git credential
+helpers and tracing are disabled; tokens are masked in pipeline logs, never
+passed in command arguments or written to files. Failures fail the task.
+
+If Microsoft passes and BAMI receives HTTP 403, the principals have different
+effective access. An administrator must check the logged Microsoft principal's
+membership in the **devdiv** organization and **OnlineServices** project, then
+**Project settings > Repositories > msbench-benchmarks > Security** for direct or
+group-inherited Read permission and any Deny. Service connection pipeline
+permissions in **azure-sdk/internal** do not grant access to this repository.
+
+Mocked local checks require PowerShell 7 and Pester 5:
+
+```powershell
+pwsh -NoProfile -Command "Invoke-Pester -Path './tests/pipelines/BenchmarkRepositoryAccess.Tests.ps1' -Output Detailed -CI"
+```
+
+These tests validate the probe without using either real service connection.
+
 ## Telemetry reporter nightly build
 
 The independent
