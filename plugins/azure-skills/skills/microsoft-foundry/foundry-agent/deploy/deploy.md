@@ -110,6 +110,8 @@ Run provision only for new projects or real infrastructure changes:
 azd provision --no-prompt
 ```
 
+For a hosted text agent on a new project, complete the [tracing setup preflight](../../references/agent-tracing-setup.md#preflight-before-provisioning) first: capability, opt-out, any `network:` block, and monitoring charges/privacy approval.
+
 > Optional: run `azd provision --preview --no-prompt` first to preview the resource changes (a what-if) before applying them.
 >
 > Optional: add `--no-state` on a fresh azd environment to skip the existing-deployment check and provision faster; omit it when re-provisioning an existing one.
@@ -124,7 +126,7 @@ After provision completes for a new project, run `azd env get-values` and set mi
 
 ### Step 3 -- Pre-deployment check
 
-For hosted text agents, follow [best-effort tracing setup](../../references/agent-tracing-setup.md), even when Step 2 was skipped for an existing project or redeploy. Reuse effective monitoring and preserve opt-outs/authentication; connecting a component to an existing project needs its resource ID and separate approval (azd does not create one). Optional access and verification failures warn and continue. Native supporting builds set up monitoring as part of `azd provision` for new projects (a monitoring failure there fails the provision); older tooling and custom IaC must not be assumed to provide that capability.
+For hosted text agents, follow [best-effort tracing setup](../../references/agent-tracing-setup.md) for effective-connection discovery and human access checks, even when Step 2 was skipped for an existing project or redeploy. Approval and opt-out checks belong in the Step 2 preflight, before provisioning. Reuse effective monitoring and preserve opt-outs/authentication; connecting a component to an existing project needs its resource ID and separate approval (azd does not create one). Optional access and verification failures warn and continue. Native supporting builds set up monitoring as part of `azd provision` for new projects (a monitoring failure there fails the provision); older tooling and custom IaC must not be assumed to provide that capability.
 
 Branch by deploy mode.
 

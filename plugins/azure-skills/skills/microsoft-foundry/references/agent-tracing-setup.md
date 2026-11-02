@@ -16,6 +16,18 @@ Use [Common Project Context Resolution](../SKILL.md#agent-common-project-context
 
 These describe provisioning configuration, not stored-trace evidence. Inspect with `project_connection_list`. Preserve equivalent AppInsights connections, including inherited/shared connections and authentication. Do not overwrite or fetch credentials for discovery.
 
+## Preflight Before Provisioning
+
+Run before any `azd provision` that could create a new project, and before a redeploy that skips provisioning. Provisioning is the step that creates monitoring, so approval cannot wait until afterward.
+
+1. Check capability and path (below). Older tooling and custom IaC create no monitoring.
+2. Check for an existing opt-out (`monitoring.enabled: false`) and respect it.
+3. If the project has a `network:` block, set `monitoring.enabled: false` first; otherwise provisioning fails.
+4. For a new project, get approval covering monitoring charges and privacy before provisioning.
+5. For an existing project, do nothing unless the user supplies `applicationInsightsResourceId` and approves the connection write.
+
+Effective-connection discovery and human access checks happen after provisioning (and on redeploys that skip it).
+
 ## Select the Actual Provisioning Path
 
 - **Native azd:** requires matched projects/agents/connections builds that include automatic monitoring; versions alone are insufficient, so check release notes. Confirm after provisioning that `azd env get-values` contains `AZD_FOUNDRY_MONITORING_MODE`. Until released, only matched development builds support this. Do not install them automatically.
@@ -23,7 +35,7 @@ These describe provisioning configuration, not stored-trace evidence. Inspect wi
 - Existing projects are unchanged unless `monitoring.applicationInsightsResourceId` is set. azd never creates a new component for an existing project.
 - **Private networking:** automatic monitoring does not configure private ingestion. A new project with a `network:` block fails unless `monitoring.enabled: false`, and an existing network-isolated project is rejected. Do not try to work around this; tell the user tracing needs a private-link design.
 - **Ejected IaC:** azd-ejected Bicep and Terraform include monitoring (`modules/monitoring.bicep`, `monitoring.tf`). After ejection, those files are authoritative, not `azure.yaml`.
-- **Starter Bicep:** `azd-ai-starter-basic` has monitoring and a connection. Inspect actual outputs/connections; do not duplicate.
+- **Starter Bicep:** `azd-ai-starter-basic` has monitoring and a connection and exports `APPLICATIONINSIGHTS_RESOURCE_ID`. Inspect actual outputs/connections; do not duplicate.
 - **Older tooling and custom IaC:** do not assume automatic monitoring. Reuse an existing working connection or warn that setup is unavailable and continue the agent workflow.
 
 Native settings:
