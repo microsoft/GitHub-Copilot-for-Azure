@@ -73,14 +73,18 @@ tags:
   azurePermission: read
 ```
 
-Use `azurePermission: none` for tests whose agent should not use the test subscription's Azure login. In CI, this overrides `AZURE_CONFIG_DIR` with a unique, nonexistent temporary path for each run and sets `AZURE_CLIENT_ID` to an empty string, so Azure CLI and Azure MCP do not use the authenticated Azure config or inherit the test identity's client ID. No read-only profile is required.
+Use `azurePermission: none` for tests whose agent should not use a managed identity.
+In CI, this sets `AZURE_CLIENT_ID` to an empty string. It does not change Azure CLI
+profiles or clear cached credentials, so these jobs must skip Azure and azd login.
 
 Use `azurePermission: write` or `azurePermission: admin` for tests that require
 the corresponding managed identity.
 
 Local runs ignore permission tags and use the available local Azure credentials.
-In CI, omitting the tag preserves the default Azure permissions, and a `read`
-run fails if read-only access is not configured. Only `read`, `write`, `admin`, and `none` are
+In CI, omitting the tag preserves the inherited Azure identity. Tagged runs select
+`AZURE_CLIENT_ID` from `AZURE_READ_CLIENT_ID`, `AZURE_WRITE_CLIENT_ID`, or
+`AZURE_ADMIN_CLIENT_ID` and fail if the selected variable is missing or blank.
+No `AZURE_CONFIG_DIR` override is used. Only `read`, `write`, `admin`, and `none` are
 supported; other values are rejected by eval validation.
 
 CI runs `npx tsx discover-azure-permissions.ts` from `tests/` after installing
@@ -107,9 +111,9 @@ for untagged tests.
 The unchanged Vally wrapper discovers suites using `--plugin` and `--skill`.
 `TEST_AZURE_PERMISSION` rejects stimuli assigned to another job
 without switching profiles. Local runs without this variable are unchanged.
-Configure `AZURE_WRITE_CLIENT_ID` and `AZURE_ADMIN_CLIENT_ID` in the
-`cideploytest` environment, with federated credentials for their managed identities.
-In CI, write/admin tests require their matching permission-isolated job.
+Expose `AZURE_READ_CLIENT_ID`, `AZURE_WRITE_CLIENT_ID`, and `AZURE_ADMIN_CLIENT_ID`
+to the test process for the permissions it runs, with federated credentials
+configured for their managed identities.
 
 Every job uploads its reports tree and execution manifest, even on test
 failure. A per-skill reporting job downloads the artifacts and runs

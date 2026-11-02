@@ -2,8 +2,6 @@
  * Helper functions for extracting test related metadata from stimuli tags.
  */
 import type { SystemMessageConfig } from "@github/copilot-sdk";
-import { randomUUID } from "node:crypto";
-import { tmpdir } from "node:os";
 import * as path from "node:path";
 import type { AgentMetadata } from "../utils/agent-runner.ts";
 import { isSkillInvoked, getToolCalls, getAllAssistantMessages, argsString } from "../utils/evaluate.ts";
@@ -24,38 +22,23 @@ export function getAzureEnvironment(
     if (!["", "read", "write", "admin", "none"].includes(jobPermission) || (permission ?? "") !== jobPermission) {
       throw new Error("Stimulus azurePermission does not match the test job's permission");
     }
-    if (jobPermission === "none") {
-      return { AZURE_CLIENT_ID: "" };
-    }
-    const clientId = env.AZURE_CLIENT_ID?.trim();
-    if (!clientId) {
-      throw new Error("Permission-isolated jobs require AZURE_CLIENT_ID");
-    }
-    return { AZURE_CLIENT_ID: clientId };
   }
   if (permission === undefined) {
     return {};
   }
-  if (permission === "write" || permission === "admin") {
-    throw new Error("Write and admin tests require a matching TEST_AZURE_PERMISSION job");
-  }
   if (permission === "none") {
-    return {
-      AZURE_CONFIG_DIR: path.join(tmpdir(), `azure-no-access-${randomUUID()}`),
-      // Overwrite AZURE_CLIENT_ID to ensure no tools can use the managed identity configured in the CI pipeline.
-      AZURE_CLIENT_ID: "",
-    };
+    return { AZURE_CLIENT_ID: "" };
   }
-  if (permission !== "read") {
-    throw new Error("tags.azurePermission must be 'read' or 'none' when specified");
+  if (permission !== "read" && permission !== "write" && permission !== "admin") {
+    throw new Error("tags.azurePermission must be 'read', 'write', 'admin', or 'none' when specified");
   }
 
-  const configDir = env.AZURE_READ_CONFIG_DIR?.trim();
-  const clientId = env.AZURE_READ_CLIENT_ID?.trim();
-  if (!configDir || !path.isAbsolute(configDir) || !clientId) {
-    throw new Error("Read-only tests require an absolute AZURE_READ_CONFIG_DIR and AZURE_READ_CLIENT_ID; refusing to use the default Azure identity");
+  const clientIdVariable = `AZURE_${permission.toUpperCase()}_CLIENT_ID`;
+  const clientId = env[clientIdVariable]?.trim();
+  if (!clientId) {
+    throw new Error(`${permission} tests require ${clientIdVariable}; refusing to use the default Azure identity`);
   }
-  return { AZURE_CONFIG_DIR: configDir, AZURE_CLIENT_ID: clientId };
+  return { AZURE_CLIENT_ID: clientId };
 }
 
 export function compileEarlyTerminatePattern(pattern: string): RegExp {
