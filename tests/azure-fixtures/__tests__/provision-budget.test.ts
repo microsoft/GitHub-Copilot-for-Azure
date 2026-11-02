@@ -2,10 +2,10 @@ import { resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createBudget, runAz, type FixtureManifest } from "../fixture-common.ts";
-import { provision } from "../provision-fixture.ts";
+import { provision, runPostTestScript } from "../provision-fixture.ts";
 
 const { execFileSync } = vi.hoisted(() => ({
-  execFileSync: vi.fn<(command: string, args: string[], options: { timeout?: number }) => string>(),
+  execFileSync: vi.fn<(command: string, args: string[], options: { timeout?: number; env?: NodeJS.ProcessEnv }) => string>(),
 }));
 
 vi.mock("node:child_process", () => ({ execFileSync }));
@@ -71,6 +71,7 @@ function commandOutput(command: string, args: string[]): string {
 }
 
 beforeEach(() => {
+  vi.stubEnv("CI", "false");
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(start);
   vi.stubEnv("AZURE_FIXTURE_COORDINATION_STORAGE_ACCOUNT", "storage");
@@ -88,6 +89,26 @@ afterEach(() => {
 });
 
 describe("per-invocation provisioning budgets", () => {
+  it("uses the write profile for provisioning and both fixture script phases", async () => {
+    vi.stubEnv("CI", "true");
+    vi.stubEnv("AZURE_CONFIG_DIR", "/tmp/stage");
+    vi.stubEnv("AZURE_CLIENT_ID", "stage-client");
+    vi.stubEnv("AZURE_WRITE_CONFIG_DIR", "/tmp/write");
+    vi.stubEnv("AZURE_WRITE_CLIENT_ID", "write-client");
+    vi.stubEnv("AZURE_TEST_PERMISSION", "read");
+    vi.stubEnv("AZURE_READ_CLIENT_ID", "read-client");
+    const config: FixtureManifest = {
+      ...manifest, persistence: "never", postTestScript: { path: "./post-test.ts" },
+    };
+    const result = await provision(manifestPath, config);
+    runPostTestScript(result.context, config, "/fixtures/budget");
+    for (const [, , options] of execFileSync.mock.calls) {
+      expect(options.env).toMatchObject({ AZURE_CONFIG_DIR: "/tmp/write", AZURE_CLIENT_ID: "write-client" });
+    }
+    expect(execFileSync.mock.calls.some(([, args]) => args.includes("read-client"))).toBe(true);
+    expect(execFileSync.mock.calls.filter(([command]) => command === "npx" || command === "npx.cmd"))
+      .toHaveLength(2);
+  });
   it.each([5, 10])("does not reset a pending run's budget when another starts %i minutes later", async (minutes) => {
     let deployed: () => void = () => {};
     const firstDeployment = new Promise<void>((resolvePromise) => {

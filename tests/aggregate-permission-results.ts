@@ -49,6 +49,7 @@ export function aggregatePermissionResults(
   artifactKey: string,
   attempt: string,
   permissions: string[],
+  testGroups = false,
 ) {
   const reportsDir = path.join(outputDir, "reports/test-run-all-integration");
   mkdirSync(reportsDir, { recursive: true });
@@ -58,7 +59,7 @@ export function aggregatePermissionResults(
 
   for (const permission of permissions) {
     const group = permission === "" ? "default" : permission;
-    if (!["default", "read", "write", "admin", "none"].includes(group)) {
+    if (testGroups ? !/^[a-z0-9-]+$/.test(group) : !["default", "read", "write", "admin", "none"].includes(group)) {
       throw new Error(`Unsupported permission: ${permission}`);
     }
     const artifactDir = path.join(artifactsDir, `integration-${artifactKey}-${group}-${attempt}`);
@@ -128,16 +129,17 @@ export function aggregatePermissionResults(
 }
 
 function main(): void {
-  const { SKILL, RUN_ATTEMPT, EXPECTED_PERMISSIONS, GITHUB_OUTPUT } = process.env;
-  if (!SKILL || !RUN_ATTEMPT || !EXPECTED_PERMISSIONS || !GITHUB_OUTPUT) {
-    throw new Error("SKILL, RUN_ATTEMPT, EXPECTED_PERMISSIONS, and GITHUB_OUTPUT are required");
+  const { SKILL, RUN_ATTEMPT, EXPECTED_PERMISSIONS, EXPECTED_GROUPS, GITHUB_OUTPUT } = process.env;
+  if (!SKILL || !RUN_ATTEMPT || !(EXPECTED_PERMISSIONS || EXPECTED_GROUPS) || !GITHUB_OUTPUT) {
+    throw new Error("SKILL, RUN_ATTEMPT, EXPECTED_PERMISSIONS or EXPECTED_GROUPS, and GITHUB_OUTPUT are required");
   }
-  const permissions: unknown = JSON.parse(EXPECTED_PERMISSIONS);
+  const permissions: unknown = JSON.parse(EXPECTED_GROUPS || EXPECTED_PERMISSIONS!);
   if (!Array.isArray(permissions) || !permissions.every((value): value is string => typeof value === "string")) {
     throw new Error("EXPECTED_PERMISSIONS must be an array of strings");
   }
   const summary = aggregatePermissionResults(
     path.resolve("permission-artifacts"), process.cwd(), SKILL.replace("/", "__"), RUN_ATTEMPT, permissions,
+    Boolean(EXPECTED_GROUPS),
   );
   appendFileSync(GITHUB_OUTPUT, `has-results=${summary.hasResults}\n`);
   console.log(JSON.stringify(summary, null, 2));

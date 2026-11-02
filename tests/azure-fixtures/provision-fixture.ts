@@ -20,6 +20,7 @@ import {
   type RunBudget,
 } from "./fixture-common.ts";
 import { ResourceLock, type ResourceLockLease } from "./resource-lock.ts";
+import { getProfileEnvironment } from "../utils/azure-environment.ts";
 
 /**
  * Run-scoped values available to substitution tokens in Bicep parameters.
@@ -195,6 +196,14 @@ type AzureAccount = {
  * Get the test principal ID using AZ CLI.
  */
 function getTestPrincipalId(account: AzureAccount, runCommand: ProvisioningDependencies["runAz"] = runAz): string {
+  const permission = process.env.AZURE_TEST_PERMISSION;
+  if (process.env.CI === "true" && (permission === "read" || permission === "write" || permission === "admin")) {
+    const clientId = process.env[`AZURE_${permission.toUpperCase()}_CLIENT_ID`]?.trim();
+    if (!clientId) {
+      throw new Error(`Missing ${permission} test identity for fixture principal resolution`);
+    }
+    return runCommand(["ad", "sp", "show", "--id", clientId, "--query", "id", "-o", "tsv"]);
+  }
   // The signed-in identity is a user locally and a federated service principal in CI.
   // They need different commands to get the principal ID.
   if (account.user?.type === "servicePrincipal" && account.user.name) {
@@ -291,7 +300,7 @@ function runPostProvisionScripts(
       const stdout = execFileSync(
         NPX_COMMAND,
         ["-y", "tsx", resolve(manifestDir, scriptConfig.path), "--resource-groups", ...resourceGroupNames],
-        { encoding: "utf8", timeout: budget.remainingMs(step), killSignal: "SIGKILL", shell: true }
+        { env: getProfileEnvironment("write"), encoding: "utf8", timeout: budget.remainingMs(step), killSignal: "SIGKILL", shell: true }
       );
       return stdout;
     } catch (error) {
@@ -312,7 +321,7 @@ export function runPostTestScript(context: FixtureRunContext, manifest: FixtureM
     const stdout = execFileSync(
       NPX_COMMAND,
       ["-y", "tsx", resolve(manifestDir, scriptConfig.path), "--resource-groups", ...resourceGroupNames],
-      { encoding: "utf8", killSignal: "SIGKILL", shell: true }
+      { env: getProfileEnvironment("write"), encoding: "utf8", killSignal: "SIGKILL", shell: true }
     );
     return stdout;
   }

@@ -81,6 +81,17 @@ describe("aggregatePermissionResults", () => {
     expect(summary.outcomes).toEqual({ read: "failure" });
   });
 
+  test("consolidates azure-deploy categories into one skill report", () => {
+    addArtifact("skill-invocation", "routing_test");
+    addArtifact("vanilla-app-service-deploy", "deployment_test");
+    const groups = ["skill-invocation", "vanilla-app-service-deploy"];
+    expect(aggregatePermissionResults(artifacts, output, "plugin__skill", "1", groups, true))
+      .toMatchObject({ complete: true, hasResults: true, permissions: groups });
+    const reports = path.join(output, "reports/test-run-all-integration");
+    expect(Object.keys(JSON.parse(readFileSync(path.join(reports, "testResults.json"), "utf8"))))
+      .toEqual(["routing_test", "deployment_test"]);
+  });
+
   test("rejects duplicate test keys rather than overwriting them", () => {
     addArtifact("read", "skill_same");
     addArtifact("", "skill_same");

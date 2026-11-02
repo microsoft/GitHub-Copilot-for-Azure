@@ -74,17 +74,21 @@ tags:
 ```
 
 Use `azurePermission: none` for tests whose agent should not use a managed identity.
-In CI, this sets `AZURE_CLIENT_ID` to an empty string. It does not change Azure CLI
-profiles or clear cached credentials, so these jobs must skip Azure and azd login.
+In CI, the agent receives an empty `AZURE_CLIENT_ID` and an unauthenticated
+`AZURE_NONE_CONFIG_DIR` profile. The job still authenticates stage storage and
+fixture provisioning separately, but never logs in to azd for `none` tests.
 
 Use `azurePermission: write` or `azurePermission: admin` for tests that require
 the corresponding managed identity.
 
 Local runs ignore permission tags and use the available local Azure credentials.
-In CI, omitting the tag preserves the inherited Azure identity. Tagged runs select
+In CI, untagged tests use the admin test identity, except azure-deploy's
+`skill-invocation` group, which uses `none`. Tagged runs select
 `AZURE_CLIENT_ID` from `AZURE_READ_CLIENT_ID`, `AZURE_WRITE_CLIENT_ID`, or
 `AZURE_ADMIN_CLIENT_ID` and fail if the selected variable is missing or blank.
-No `AZURE_CONFIG_DIR` override is used. Only `read`, `write`, `admin`, and `none` are
+The agent's `AZURE_CONFIG_DIR` selects the matching CLI profile. Missing or
+relative profile paths fail rather than falling back to default credentials.
+Only `read`, `write`, `admin`, and `none` are
 supported; other values are rejected by eval validation.
 
 CI runs `npx tsx discover-azure-permissions.ts` from `tests/` after installing
@@ -99,12 +103,40 @@ The five reusable workflows run only the stimuli in their group:
 | `azurePermission: read` | `test-integration-read.yml` | `AZURE_READ_CLIENT_ID`, exposed as `AZURE_CLIENT_ID` |
 | `azurePermission: write` | `test-integration-write.yml` | `AZURE_WRITE_CLIENT_ID`, exposed as `AZURE_CLIENT_ID` |
 | `azurePermission: admin` | `test-integration-admin.yml` | `AZURE_ADMIN_CLIENT_ID`, exposed as `AZURE_CLIENT_ID` |
-| No tag (`""`) | `test-integration-default.yml` | `AZURE_CLIENT_ID` |
-| `azurePermission: none` | `test-integration-none.yml` | No Azure login, no Azure OIDC permission |
+| No tag (`""`) | `test-integration-default.yml` | `AZURE_ADMIN_CLIENT_ID` |
+| `azurePermission: none` | `test-integration-none.yml` | Unauthenticated agent profile |
 
-Each job installs dependencies and uses its fresh runner's default Azure CLI and azd profiles.
-Authenticated jobs log in to only their selected identity and refresh its CLI
-token in a dedicated background-refresh step. The test command uses native Vally
+Every job logs in to stage storage using an explicit CLI profile. Test jobs also
+log in to the test subscription's write identity for fixture deployment, post-test
+scripts, and cleanup, including jobs whose agents have `none` permission.
+Read/admin test jobs additionally log in to their declared identity; write tests
+reuse the fixture write profile. CLI tokens are refreshed every 240 seconds.
+No login uses the default Azure CLI profile.
+
+| Purpose | Client ID variable | Subscription variable | CLI profile variable |
+|---|---|---|---|
+| Stage Blob/Table storage | `AZURE_CLIENT_ID` | `AZURE_STAGE_SUBSCRIPTION_ID` | `AZURE_STAGE_CONFIG_DIR` |
+| Fixtures and write tests | `AZURE_WRITE_CLIENT_ID` | `AZURE_SUBSCRIPTION_ID` | `AZURE_WRITE_CONFIG_DIR` |
+| Read tests | `AZURE_READ_CLIENT_ID` | `AZURE_SUBSCRIPTION_ID` | `AZURE_READ_CONFIG_DIR` |
+| Admin tests | `AZURE_ADMIN_CLIENT_ID` | `AZURE_SUBSCRIPTION_ID` | `AZURE_ADMIN_CONFIG_DIR` |
+
+Configure these variables in the `cideploytest` environment. All identities use
+`AZURE_TENANT_ID` and need GitHub federated credentials. The stage identity needs
+Blob read/write and Table write access. Configure
+`AZURE_FIXTURE_COORDINATION_STORAGE_ACCOUNT` and
+`AZURE_FIXTURE_COORDINATION_CONTAINER` for fixture coordination in the test
+subscription. Resource locks and lease renewal use the test write identity,
+which needs Blob write/lease access to this coordination storage.
+The authentication action creates profile paths under the runner's temp
+directory and exposes them to child processes. Storage SDKs request tokens
+through the explicit stage CLI profile for reports and usage uploads, or the
+test write profile for fixture coordination, not `DefaultAzureCredential` in CI.
+Fixture child processes always select the write profile, and the executor
+selects the agent profile per stimulus without modifying the parent's environment.
+Only read/write/admin test identities are used for azd login, in an isolated
+`AZD_CONFIG_DIR`; stage and fixture-only identities never log in to azd.
+
+The test command uses native Vally
 filters: `--tag azurePermission=<permission>` for tagged tests, or
 `--tag 'azurePermission!=read' --tag 'azurePermission!=write' --tag 'azurePermission!=admin' --tag 'azurePermission!=none'`
 for untagged tests.
@@ -115,16 +147,27 @@ Expose `AZURE_READ_CLIENT_ID`, `AZURE_WRITE_CLIENT_ID`, and `AZURE_ADMIN_CLIENT_
 to the test process for the permissions it runs, with federated credentials
 configured for their managed identities.
 
-Every job uploads its reports tree and execution manifest, even on test
-failure. A per-skill reporting job downloads the artifacts and runs
+Test jobs upload their reports tree and execution manifest, even on failure,
+to a **private** Blob container. GitHub artifacts are never uploaded.
+`REPORT_STORAGE_ACCOUNT` is required. Scheduled runs use `REPORT_STORAGE_CONTAINER`
+(default `integration-reports`); other runs use `MANUAL_REPORT_STORAGE_CONTAINER`
+(default `manual-integration-reports`). Containers must already exist and must
+not permit public access.
+
+Intermediate reports use `workflow-runs/<run-id>/<attempt>/<plugin>__<skill>/<group>/`,
+isolating skills, groups, and retries. A per-skill reporting job downloads them
+with `npx tsx report-storage.ts download` and runs
 `npx tsx aggregate-permission-results.ts`. It merges test results and per-test files
 into `reports/test-run-all-integration/`. The `results.jsonl` and
 `token-summary.jsonl` files from each permission's reports directory are
 concatenated into one file of each name. Nothing from `results/` is uploaded.
 Duplicate test keys fail aggregation. Missing groups produce an explicitly
 incomplete summary and fail the reporting job while preserving available results.
-One skill report is generated from the merged reports before artifact/storage
-publication and usage uploads.
+One consolidated skill report is generated before private storage publication
+and usage uploads. Final reports retain the dashboard's
+`<UTC-date>/<run-id>/<skill>/` prefix. The azure-deploy workflow uses the same
+reporting workflow to merge all selected deployment categories and its
+`skill-invocation` category before generating its final report.
 
 ## Testing This Project
 

@@ -1,0 +1,104 @@
+name: Run one azure-deploy group
+on:
+  workflow_call:
+    inputs:
+      group:
+        required: true
+        type: string
+      permission:
+        required: true
+        type: string
+      model-override:
+        type: string
+        default: ""
+      no-skills:
+        type: boolean
+        default: false
+permissions:
+  contents: read
+  id-token: write
+  copilot-requests: write
+jobs:
+  test:
+    environment: cideploytest
+    runs-on: ubuntu-latest
+    env:
+      SKILL: azure-skills/azure-deploy
+      REPORT_GROUP: ${{ inputs.group }}
+      RUN_ID: ${{ github.run_id }}
+      RUN_ATTEMPT: ${{ github.run_attempt }}
+      REPORT_STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
+      REPORT_STORAGE_CONTAINER: ${{ github.event_name == 'schedule' && (vars.REPORT_STORAGE_CONTAINER || 'integration-reports') || (vars.MANUAL_REPORT_STORAGE_CONTAINER || 'manual-integration-reports') }}
+    defaults:
+      run:
+        working-directory: tests
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          fetch-depth: 0
+      - name: Install azd
+        uses: Azure/setup-azd@0b7e3a35ab00f2eee7080c845eb39c3f0ebfa553 # v2
+      - name: Setup terraform
+        uses: hashicorp/setup-terraform@5e8dbf3c6d9deaf4193ca7a8fb23f2ac83bb6c85 # v4
+      - name: Authenticate isolated profiles
+        uses: ./.github/actions/azure-profiles
+        with:
+          permission: ${{ inputs.permission }}
+          refresh: "true"
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: tests/package-lock.json
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: "10.0.x"
+      - name: Setup Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright Browsers
+        run: |
+          npm install --no-save @playwright/mcp@0.0.71
+          npx playwright install --with-deps chromium
+      - name: Build plugin output
+        run: |
+          cd ..
+          npm ci --ignore-scripts
+          npm run build
+      - name: Setup Copilot CLI
+        uses: mvkaran/setup-copilot-cli@d05a47209e6b3185c9c55702bef49f28e6eebef7 # v1
+        with:
+          token: ${{ github.token }}
+      - name: Run group tests
+        id: tests
+        env:
+          GH_HEAD_SHA: ${{ github.sha }}
+          TEST_RUN_ID: azure-deploy
+          NO_SKILLS: ${{ inputs.no-skills && 'true' || '' }}
+          MODEL_OVERRIDE: ${{ inputs.model-override }}
+          TEST_GROUP: ${{ inputs.group }}
+        run: npm run test:vally -- --plugin azure-skills --skill azure-deploy --tag "category=$TEST_GROUP"
+      - name: Record test execution status
+        if: always()
+        env:
+          TEST_OUTCOME: ${{ steps.tests.outcome }}
+        run: |
+          node --input-type=module - <<'JS'
+          import { writeFileSync } from "node:fs";
+          writeFileSync("permission-run.json", JSON.stringify({
+            permission: process.env.REPORT_GROUP,
+            outcome: process.env.TEST_OUTCOME,
+          }));
+          JS
+      - name: Upload private reports
+        if: always()
+        run: npx tsx report-storage.ts upload
+      - name: Stop profile refresh
+        if: always()
+        uses: ./.github/actions/stop-azure-profiles

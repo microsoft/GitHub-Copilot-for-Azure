@@ -50,14 +50,17 @@ jobs:
   resolve-inputs:
     name: Resolve workflow inputs
     runs-on: ubuntu-latest
+    environment: cideploytest
     if: github.repository == 'microsoft/GitHub-Copilot-for-Azure'
     outputs:
       skills: ${{ steps.resolve.outputs.skills }}
       deploy-test-pattern: ${{ steps.resolve.outputs.deploy-test-pattern }}
     steps:
       - name: Checkout repository
-        if: github.event_name == 'schedule'
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Authenticate stage storage
+        uses: ./.github/actions/azure-profiles
 
       - name: Resolve inputs based on trigger type
         id: resolve
@@ -104,6 +107,7 @@ jobs:
     name: Build skill matrix
     needs: resolve-inputs
     runs-on: ubuntu-latest
+    environment: cideploytest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
       has_azure_deploy: ${{ steps.set-matrix.outputs.has_azure_deploy }}
@@ -116,6 +120,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Authenticate stage storage
+        uses: ./.github/actions/azure-profiles
 
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -246,206 +253,13 @@ jobs:
     name: Aggregate and report – ${{ matrix.skill }}
     needs: [setup, test-read, test-write, test-admin, test-none, test-default]
     if: always() && !cancelled() && needs.setup.result == 'success' && needs.setup.outputs.report-matrix != '[]'
-    environment: cideploytest
-    runs-on: ubuntu-latest
-    env:
-      AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
-      AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
-      AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
     strategy:
       fail-fast: false
       max-parallel: 5
       matrix:
         include: ${{ fromJson(needs.setup.outputs.report-matrix) }}
 
-    defaults:
-      run:
-        working-directory: tests
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: "22"
-          cache: "npm"
-          cache-dependency-path: tests/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build plugin output
-        run: |
-          cd ..
-          npm ci --ignore-scripts
-          npm run build
-
-      # github.token(aka. GITHUB_TOKEN) is granted permission to make CAPI requests by having the copilot-requests permission
-      - name: Setup Copilot CLI
-        id: setup-copilot-cli
-        uses: mvkaran/setup-copilot-cli@d05a47209e6b3185c9c55702bef49f28e6eebef7 # v1
-        with:
-          token: ${{ github.token }}
-
-      - name: Resolve artifact key
-        id: artifact-key
-        env:
-          SKILL: ${{ matrix.skill }}
-        run: |
-          echo "key=${SKILL%%/*}__${SKILL##*/}" >> "$GITHUB_OUTPUT"
-
-      - name: Download permission results
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          pattern: integration-${{ steps.artifact-key.outputs.key }}-*-${{ github.run_attempt }}
-          path: tests/permission-artifacts
-
-      - name: Aggregate reports
-        id: aggregate
-        continue-on-error: true
-        env:
-          SKILL: ${{ matrix.skill }}
-          RUN_ATTEMPT: ${{ github.run_attempt }}
-          EXPECTED_PERMISSIONS: ${{ toJson(matrix.permissions) }}
-        run: npx tsx aggregate-permission-results.ts
-
-      - name: Generate skill report
-        if: always() && steps.aggregate.outputs.has-results == 'true'
-        id: generate-skill-report
-        env:
-          SKILL: ${{ matrix.skill }}
-        run: |
-          SKILL_NAME="${SKILL##*/}"
-          npm run report -- --skill "$SKILL_NAME"
-
-      - name: Show skill report
-        if: always() && steps.aggregate.outputs.has-results == 'true'
-        id: show-skill-report
-        run: |
-          SKILL_REPORT=$(find reports -name "*-SKILL-REPORT.md" -type f | head -n 1)
-          if [ -n "$SKILL_REPORT" ]; then
-            echo "Found skill report: $SKILL_REPORT"
-            cat "$SKILL_REPORT" >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "No skill report found"
-          fi
-
-      - name: Show aggregation completeness
-        if: always()
-        run: |
-          if [ -f reports/test-run-all-integration/aggregation.json ]; then
-            echo '### Permission result aggregation' >> "$GITHUB_STEP_SUMMARY"
-            echo '```json' >> "$GITHUB_STEP_SUMMARY"
-            cat reports/test-run-all-integration/aggregation.json >> "$GITHUB_STEP_SUMMARY"
-            echo '' >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-          fi
-
-      - name: Upload aggregated reports
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: aggregated-${{ steps.artifact-key.outputs.key }}-${{ github.run_attempt }}
-          if-no-files-found: error
-          include-hidden-files: true
-          path: |
-            tests/reports/test-run-all-integration/
-
-      - name: Azure login for publishing
-        if: always() && steps.aggregate.outputs.has-results == 'true' && vars.REPORT_STORAGE_ACCOUNT != ''
-        uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
-        with:
-          client-id: ${{ vars.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-
-      # Note: The managed identity must have write permission to the target storage account
-      - name: Publish report to Azure Storage
-        if: always() && steps.aggregate.outputs.has-results == 'true' && github.event_name == 'schedule' && vars.REPORT_STORAGE_ACCOUNT != ''
-        id: publish-report
-        env:
-          RUN_ID: ${{ github.run_id }}
-          JOB_ID: ${{ github.job }}
-          STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
-          STORAGE_CONTAINER: ${{ vars.REPORT_STORAGE_CONTAINER || 'integration-reports' }}
-          SKILL: ${{ matrix.skill }}
-        run: |
-          DATE=$(date -u +%Y-%m-%d)
-          SKILL_NAME="${SKILL##*/}"
-          PREFIX="${DATE}/${RUN_ID}/${SKILL_NAME}/"
-          echo "Uploading reports to ${STORAGE_ACCOUNT}/${STORAGE_CONTAINER}/${PREFIX}"
-          az storage blob upload-batch \
-            --account-name "$STORAGE_ACCOUNT" \
-            --destination "$STORAGE_CONTAINER" \
-            --destination-path "$PREFIX" \
-            --source reports/test-run-all-integration/ \
-            --auth-mode login \
-            --overwrite
-
-      # Publish reports to the same storage account but a separate container for manual runs.
-      # Note: The managed identity must have write permission to the target storage account.
-      - name: Publish report to Azure Storage (manual run)
-        if: always() && steps.aggregate.outputs.has-results == 'true' && github.event_name == 'workflow_dispatch' && vars.REPORT_STORAGE_ACCOUNT != ''
-        id: publish-report-manual
-        env:
-          RUN_ID: ${{ github.run_id }}
-          JOB_ID: ${{ github.job }}
-          STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
-          STORAGE_CONTAINER: ${{ vars.MANUAL_REPORT_STORAGE_CONTAINER || 'manual-integration-reports' }}
-          SKILL: ${{ matrix.skill }}
-        run: |
-          DATE=$(date -u +%Y-%m-%d)
-          SKILL_NAME="${SKILL##*/}"
-          PREFIX="${DATE}/${RUN_ID}/${SKILL_NAME}/"
-          echo "Uploading reports to ${STORAGE_ACCOUNT}/${STORAGE_CONTAINER}/${PREFIX}"
-          az storage blob upload-batch \
-            --account-name "$STORAGE_ACCOUNT" \
-            --destination "$STORAGE_CONTAINER" \
-            --destination-path "$PREFIX" \
-            --source reports/test-run-all-integration/ \
-            --auth-mode login \
-            --overwrite
-
-      # Upload per-test token usage to the Azure Table that powers the dashboard's
-      # "token usage over time" page. Runs for both scheduled and manual runs.
-      # Note: The managed identity must have Storage Table Data Contributor on the storage account.
-      - name: Upload token usage to table
-        if: always() && steps.aggregate.outputs.has-results == 'true' && vars.REPORT_STORAGE_ACCOUNT != ''
-        env:
-          TOKEN_USAGE_STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
-          TOKEN_USAGE_TABLE_NAME: ${{ vars.TOKEN_USAGE_TABLE || 'integrationtokenusage' }}
-          SKILL_INPUT: ${{ matrix.skill }}
-          BRANCH: ${{ github.ref_name }}
-          RUN_ID: ${{ github.run_id }}
-        run: |
-          export SKILL="${SKILL_INPUT##*/}"
-          npm run upload:token-usage
-
-      # Upload per-run tool usage (one row per tool call) to the Azure Table that
-      # powers the dashboard's per-run tool review. Runs for both scheduled and manual runs.
-      # Note: The managed identity must have Storage Table Data Contributor on the storage account.
-      - name: Upload tool usage to table
-        if: always() && steps.aggregate.outputs.has-results == 'true' && vars.REPORT_STORAGE_ACCOUNT != ''
-        env:
-          TOOL_USAGE_STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
-          TOOL_USAGE_TABLE_NAME: ${{ vars.TOOL_USAGE_TABLE || 'integrationtoolusage' }}
-          SKILL_INPUT: ${{ matrix.skill }}
-          BRANCH: ${{ github.ref_name }}
-          RUN_ID: ${{ github.run_id }}
-        run: |
-          export SKILL="${SKILL_INPUT##*/}"
-          npm run upload:tool-usage
-
-      - name: Require complete aggregation
-        if: always()
-        env:
-          AGGREGATE_OUTCOME: ${{ steps.aggregate.outcome }}
-        run: |
-          if [ "$AGGREGATE_OUTCOME" != "success" ]; then
-            echo "::error::Permission results are missing, incomplete, or could not be merged"
-            exit 1
-          fi
+    uses: ./.github/workflows/report-integration-skill.yml
+    with:
+      skill: ${{ matrix.skill }}
+      permissions: ${{ toJson(matrix.permissions) }}

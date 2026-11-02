@@ -8,6 +8,10 @@ describe("getAzureEnvironment", () => {
     AZURE_WRITE_CLIENT_ID: "write-client",
     AZURE_ADMIN_CLIENT_ID: "admin-client",
     AZURE_CLIENT_ID: "default-client",
+    AZURE_READ_CONFIG_DIR: "/tmp/azure-read",
+    AZURE_WRITE_CONFIG_DIR: "/tmp/azure-write",
+    AZURE_ADMIN_CONFIG_DIR: "/tmp/azure-admin",
+    AZURE_NONE_CONFIG_DIR: "/tmp/azure-none",
   };
 
   test.each([undefined, "", "false"])("preserves local credentials when CI is %j", (ci) => {
@@ -17,15 +21,22 @@ describe("getAzureEnvironment", () => {
     }
   });
 
-  test("preserves the inherited identity for untagged tests", () => {
-    expect(getAzureEnvironment(undefined, env)).toEqual({});
-    expect(getAzureEnvironment({ area: "routing" }, env)).toEqual({});
+  test("uses admin for untagged tests, never the stage identity", () => {
+    for (const tags of [undefined, { area: "routing" }]) {
+      expect(getAzureEnvironment(tags, env)).toEqual({
+        AZURE_CLIENT_ID: "admin-client", AZURE_CONFIG_DIR: "/tmp/azure-admin",
+      });
+    }
+    expect(getAzureEnvironment(undefined, { ...env, AZURE_TEST_PERMISSION: "none" })).toEqual({
+      AZURE_CLIENT_ID: "", AZURE_CONFIG_DIR: "/tmp/azure-none",
+    });
   });
 
   test.each(["read", "write", "admin"])("selects the %s client ID without changing the parent environment", (permission) => {
     const parentEnv = { ...env };
     expect(getAzureEnvironment({ azurePermission: permission }, parentEnv)).toEqual({
       AZURE_CLIENT_ID: `${permission}-client`,
+      AZURE_CONFIG_DIR: `/tmp/azure-${permission}`,
     });
     expect(parentEnv).toEqual(env);
   });
@@ -36,11 +47,14 @@ describe("getAzureEnvironment", () => {
       TEST_AZURE_PERMISSION: permission,
     })).toEqual({
       AZURE_CLIENT_ID: `${permission}-client`,
+      AZURE_CONFIG_DIR: `/tmp/azure-${permission}`,
     });
   });
 
-  test("preserves the inherited identity in an untagged job", () => {
-    expect(getAzureEnvironment(undefined, { ...env, TEST_AZURE_PERMISSION: "" })).toEqual({});
+  test("uses admin for the default permission job", () => {
+    expect(getAzureEnvironment(undefined, { ...env, TEST_AZURE_PERMISSION: "" })).toEqual({
+      AZURE_CLIENT_ID: "admin-client", AZURE_CONFIG_DIR: "/tmp/azure-admin",
+    });
   });
 
   test.each(["read", "write", "admin", "none", ""])("rejects tests belonging to a different permission job: %j", (permission) => {
@@ -55,26 +69,35 @@ describe("getAzureEnvironment", () => {
       expect(() => getAzureEnvironment({ azurePermission: permission }, {
         ...env,
         [`AZURE_${permission.toUpperCase()}_CLIENT_ID`]: clientId,
-      })).toThrow(`require AZURE_${permission.toUpperCase()}_CLIENT_ID`);
+      })).toThrow(`Missing Azure client ID for ${permission}`);
     }
   });
 
   test("clears the client ID in a none job", () => {
     expect(getAzureEnvironment({ azurePermission: "none" }, {
-      CI: "true", TEST_AZURE_PERMISSION: "none", AZURE_CLIENT_ID: "",
-    })).toEqual({ AZURE_CLIENT_ID: "" });
+      ...env, TEST_AZURE_PERMISSION: "none",
+    })).toEqual({ AZURE_CLIENT_ID: "", AZURE_CONFIG_DIR: "/tmp/azure-none" });
   });
 
-  test.each([env, { CI: "true" }])("clears the client ID without configuring an Azure directory: %j", (parentEnv) => {
+  test.each([env, { CI: "true", AZURE_NONE_CONFIG_DIR: "/tmp/azure-none" }])("uses an unauthenticated profile for none: %j", (parentEnv) => {
     expect(getAzureEnvironment({ azurePermission: "none" }, parentEnv))
-      .toEqual({ AZURE_CLIENT_ID: "" });
+      .toEqual({ AZURE_CLIENT_ID: "", AZURE_CONFIG_DIR: "/tmp/azure-none" });
   });
 
   test.each(["read", "write", "admin"])("trims the %s client ID", (permission) => {
     expect(getAzureEnvironment({ azurePermission: permission }, {
-      CI: "true",
+      ...env,
       [`AZURE_${permission.toUpperCase()}_CLIENT_ID`]: "  selected-client  ",
-    })).toEqual({ AZURE_CLIENT_ID: "selected-client" });
+    })).toEqual({ AZURE_CLIENT_ID: "selected-client", AZURE_CONFIG_DIR: `/tmp/azure-${permission}` });
+  });
+
+  test.each(["read", "write", "admin", "none"])("rejects a missing or relative %s profile", (permission) => {
+    for (const directory of [undefined, "", "relative/profile"]) {
+      expect(() => getAzureEnvironment({ azurePermission: permission }, {
+        ...env,
+        [`AZURE_${permission.toUpperCase()}_CONFIG_DIR`]: directory,
+      })).toThrow("must be an absolute Azure CLI profile path");
+    }
   });
 
   test.each(["reed", "", ["read"], ["none"]])("rejects unsupported permission tags: %j", (permission) => {

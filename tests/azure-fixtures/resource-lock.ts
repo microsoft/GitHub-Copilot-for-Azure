@@ -1,4 +1,4 @@
-import { DefaultAzureCredential } from "@azure/identity";
+import { createWriteCredential } from "../utils/azure-environment.ts";
 import { BlobServiceClient } from "@azure/storage-blob";
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
@@ -202,7 +202,7 @@ export class ResourceLock {
       createBlobClient: (account, container, blob) => {
         const serviceClient = new BlobServiceClient(
           `https://${account}.blob.core.windows.net`,
-          new DefaultAzureCredential(),
+          createWriteCredential(),
         );
         return serviceClient.getContainerClient(container).getBlockBlobClient(blob);
       },

@@ -1,60 +1,59 @@
-# Test azure-deploy deployment tests
-#
-# Runs the deployment test groups for azure-deploy skill.
-# The skill-invocation group runs without Azure authentication or Azure uploads.
-# Triggered manually.
-
+# azure-deploy groups use isolated fixture/test profiles and private stage reports.
 name: Integration Tests - azure-deploy
-
 permissions:
   id-token: write
   contents: read
   copilot-requests: write
-
 on:
   workflow_dispatch:
     inputs:
       model-override:
-        description: 'Model to use for testing'
+        description: Model to use for testing
         required: false
         type: choice
         options:
           - claude-sonnet-5
           - claude-opus-4.8
       test-pattern:
-        description: 'Optional: Comma separated patterns by name or describe block (e.g. "creates todo list", "vanilla-static-web-apps-deploy", "Terraform"). If empty, all tests will be run.'
+        description: Optional comma-separated test groups; empty runs all groups.
         required: false
         type: string
-        default: ''
+        default: ""
       no-skills:
-        description: 'Optional: whether to override the run to load no skills'
+        description: Disable skill loading
         required: false
         type: boolean
         default: false
   workflow_call:
     inputs:
       model-override:
-        description: 'Model to use for testing'
+        description: Model to use for testing
         required: false
         type: string
       test-pattern:
-        description: 'Optional: Comma delimited tests by name or describe block'
+        description: Optional comma-separated test groups
         required: false
         type: string
-        default: ''
+        default: ""
       no-skills:
-        description: 'Optional: whether to override the run to load no skills'
+        description: Disable skill loading
         required: false
         type: boolean
         default: false
-
 jobs:
   setup:
     name: Build test matrix
+    environment: cideploytest
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      none-matrix: ${{ steps.set-matrix.outputs.none-matrix }}
+      admin-matrix: ${{ steps.set-matrix.outputs.admin-matrix }}
+      report-groups: ${{ steps.set-matrix.outputs.report-groups }}
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - name: Authenticate stage storage
+        uses: ./.github/actions/azure-profiles
       - name: Parse test-pattern input into matrix
         id: set-matrix
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
@@ -64,211 +63,50 @@ jobs:
           script: |
             const DEFAULT = ["skill-invocation","vanilla-static-web-apps-deploy","vanilla-app-service-deploy","vanilla-azure-functions-deploy","vanilla-azure-container-apps-deploy","terraform-static-web-apps-deploy","terraform-app-service-deploy","terraform-azure-functions-deploy","terraform-azure-container-apps-deploy","brownfield-dotnet","brownfield-javascript","brownfield-python"];
             const input = process.env.INPUT || "";
-
-            const matrix = input
+            const matrix = [...new Set(input
               ? input.split(",").map(s => s.trim()).filter(Boolean)
-              : DEFAULT;
-
-            core.setOutput("matrix", JSON.stringify(matrix));
-
-  test:
-    name: azure-deploy – ${{ matrix.test-group }}
+              : DEFAULT)];
+            if (matrix.some(group => !/^[a-z0-9-]+$/.test(group))) {
+              throw new Error("Test group names must contain only lowercase letters, digits, and hyphens");
+            }
+            core.setOutput("none-matrix", JSON.stringify(matrix.filter(group => group === "skill-invocation")));
+            core.setOutput("admin-matrix", JSON.stringify(matrix.filter(group => group !== "skill-invocation")));
+            core.setOutput("report-groups", JSON.stringify(matrix));
+  test-none:
+    name: azure-deploy none – ${{ matrix.test-group }}
     needs: setup
-    environment: cideploytest
-    runs-on: ubuntu-latest
-    env:
-      AZURE_CLIENT_ID: ${{ matrix.test-group != 'skill-invocation' && vars.AZURE_ADMIN_CLIENT_ID || '' }}
-      AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
-      AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+    if: needs.setup.outputs.none-matrix != '[]'
     strategy:
       fail-fast: false
       max-parallel: 4
       matrix:
-        test-group: ${{ fromJson(needs.setup.outputs.matrix) }}
-    defaults:
-      run:
-        working-directory: tests
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
-        with:
-          fetch-depth: 0
-
-      - name: Install azd
-        uses: Azure/setup-azd@0b7e3a35ab00f2eee7080c845eb39c3f0ebfa553 # v2
-
-      - name: Setup terraform
-        uses: hashicorp/setup-terraform@5e8dbf3c6d9deaf4193ca7a8fb23f2ac83bb6c85 # v4
-
-      - name: Log in with Azure (Federated Credentials)
-        if: matrix.test-group != 'skill-invocation'
-        run: |
-          azd auth login `
-            --client-id "$Env:AZURE_CLIENT_ID" `
-            --federated-credential-provider "github" `
-            --tenant-id "$Env:AZURE_TENANT_ID"
-        shell: pwsh
-
-      - name: Azure login
-        if: matrix.test-group != 'skill-invocation'
-        uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
-        with:
-          client-id: ${{ env.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-      
-      # azure/login only fetches the OIDC access token once.
-      # If a test starts after the token expires, it will fail with authentication errors.
-      # This step runs code to refresh the cached OIDC access token periodically to ensure all tests have a valid access token.
-      # Learn more at https://github.com/Azure/login/issues/372
-      # Refresh interval is sub-5-minutes because the OIDC token's lifetime is
-      # 5 minutes. Using 240s avoids seeing invalid tokens due to clock skew.
-      - name: Fetch OIDC token every 240 seconds
-        if: matrix.test-group != 'skill-invocation'
-        shell: bash
-        env:
-          AZURE_CLIENT_ID: ${{ env.AZURE_CLIENT_ID }}
-          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
-        run: |
-          while true; do
-            token=$(curl -s -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange" | jq .value -r)
-            az login --service-principal -u $AZURE_CLIENT_ID -t $AZURE_TENANT_ID --federated-token $token --output none
-            sleep 240
-          done &
-
-      - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: tests/package-lock.json
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
-        with:
-          dotnet-version: '10.0.x'
-
-      - name: Setup Python
-        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
-        with:
-          python-version: '3.13'
-
-      - name: Install dependencies
-        run: npm ci
-
-      # Install Playwright browsers
-      - name: Install Playwright Browsers
-        run: |
-          npm install --no-save @playwright/mcp@0.0.71
-          npx playwright install --with-deps chromium
-
-      - name: Build plugin output
-        run: |
-          cd ..
-          npm ci --ignore-scripts
-          npm run build
-      
-      # github.token(aka. GITHUB_TOKEN) is granted permission to make CAPI requests by having the copilot-requests permission
-      - name: Setup Copilot CLI
-        id: setup-copilot-cli
-        uses: mvkaran/setup-copilot-cli@d05a47209e6b3185c9c55702bef49f28e6eebef7 # v1
-        with:
-          token: ${{ github.token }}
-
-      - name: Run tests – ${{ matrix.test-group }}
-        env:
-          GH_HEAD_SHA: ${{ github.sha }}
-          TEST_RUN_ID: azure-deploy
-          NO_SKILLS: ${{ inputs.no-skills && 'true' || '' }}
-          MODEL_OVERRIDE: ${{ inputs.model-override }}
-          TEST_GROUP: ${{ matrix.test-group }}
-        run: |
-          npm run test:vally -- --plugin azure-skills --skill azure-deploy --tag "category=$TEST_GROUP"
-        continue-on-error: true
-
-      - name: Generate report
-        if: always()
-        id: generate-report
-        run: npm run report -- --skill azure-deploy
-
-      - name: Show skill report
-        if: always()
-        id: show-skill-report
-        run: |
-          SKILL_REPORT=$(find reports -name "*-SKILL-REPORT.md" -type f | head -n 1)
-          if [ -n "$SKILL_REPORT" ]; then
-            echo "Found skill report: $SKILL_REPORT"
-            cat "$SKILL_REPORT" >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "No skill report found"
-          fi
-
-      # Note: The managed identity must have write permission to the target storage account
-      - name: Publish report to Azure Storage
-        if: always() && matrix.test-group != 'skill-invocation' && github.event_name == 'schedule' && vars.REPORT_STORAGE_ACCOUNT != ''
-        env:
-          RUN_ID: ${{ github.run_id }}
-          JOB_ID: ${{ github.job }}
-          STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
-          STORAGE_CONTAINER: ${{ vars.REPORT_STORAGE_CONTAINER || 'integration-reports' }}
-          TEST_GROUP: ${{ matrix.test-group }}
-        run: |
-          DATE=$(date -u +%Y-%m-%d)
-          PREFIX="${DATE}/${RUN_ID}/azure-deploy/${TEST_GROUP}/"
-          echo "Uploading reports to ${STORAGE_ACCOUNT}/${STORAGE_CONTAINER}/${PREFIX}"
-          az storage blob upload-batch \
-            --account-name "$STORAGE_ACCOUNT" \
-            --destination "$STORAGE_CONTAINER" \
-            --destination-path "$PREFIX" \
-            --source reports/test-run-azure-deploy \
-            --auth-mode login \
-            --overwrite
-
-      # Publish reports to the same storage account but a separate container for manual runs.
-      # Note: The managed identity must have write permission to the target storage account.
-      - name: Publish report to Azure Storage (manual run)
-        if: always() && matrix.test-group != 'skill-invocation' && github.event_name == 'workflow_dispatch' && vars.REPORT_STORAGE_ACCOUNT != ''
-        env:
-          RUN_ID: ${{ github.run_id }}
-          JOB_ID: ${{ github.job }}
-          STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
-          STORAGE_CONTAINER: ${{ vars.MANUAL_REPORT_STORAGE_CONTAINER || 'manual-integration-reports' }}
-          TEST_GROUP: ${{ matrix.test-group }}
-        run: |
-          DATE=$(date -u +%Y-%m-%d)
-          PREFIX="${DATE}/${RUN_ID}/azure-deploy/${TEST_GROUP}/"
-          echo "Uploading reports to ${STORAGE_ACCOUNT}/${STORAGE_CONTAINER}/${PREFIX}"
-          az storage blob upload-batch \
-            --account-name "$STORAGE_ACCOUNT" \
-            --destination "$STORAGE_CONTAINER" \
-            --destination-path "$PREFIX" \
-            --source reports/test-run-azure-deploy \
-            --auth-mode login \
-            --overwrite
-
-      # Upload per-test token usage to the Azure Table that powers the dashboard's
-      # "token usage over time" page. Runs for both scheduled and manual runs.
-      # Note: The managed identity must have Storage Table Data Contributor on the storage account.
-      - name: Upload token usage to table
-        if: always() && matrix.test-group != 'skill-invocation' && vars.REPORT_STORAGE_ACCOUNT != ''
-        env:
-          TOKEN_USAGE_STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
-          TOKEN_USAGE_TABLE_NAME: ${{ vars.TOKEN_USAGE_TABLE || 'integrationtokenusage' }}
-          SKILL: azure-deploy
-          BRANCH: ${{ github.ref_name }}
-          RUN_ID: ${{ github.run_id }}
-        run: npm run upload:token-usage
-
-      # Upload per-run tool usage (one row per tool call) to the Azure Table that
-      # powers the dashboard's per-run tool review. Runs for both scheduled and manual runs.
-      # Note: The managed identity must have Storage Table Data Contributor on the storage account.
-      - name: Upload tool usage to table
-        if: always() && matrix.test-group != 'skill-invocation' && vars.REPORT_STORAGE_ACCOUNT != ''
-        env:
-          TOOL_USAGE_STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
-          TOOL_USAGE_TABLE_NAME: ${{ vars.TOOL_USAGE_TABLE || 'integrationtoolusage' }}
-          SKILL: azure-deploy
-          BRANCH: ${{ github.ref_name }}
-          RUN_ID: ${{ github.run_id }}
-        run: npm run upload:tool-usage
+        test-group: ${{ fromJson(needs.setup.outputs.none-matrix) }}
+    uses: ./.github/workflows/test-azure-deploy-group.yml
+    with:
+      group: ${{ matrix.test-group }}
+      permission: none
+      model-override: ${{ inputs.model-override || '' }}
+      no-skills: ${{ inputs.no-skills || false }}
+  test-admin:
+    name: azure-deploy admin – ${{ matrix.test-group }}
+    needs: setup
+    if: needs.setup.outputs.admin-matrix != '[]'
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        test-group: ${{ fromJson(needs.setup.outputs.admin-matrix) }}
+    uses: ./.github/workflows/test-azure-deploy-group.yml
+    with:
+      group: ${{ matrix.test-group }}
+      permission: admin
+      model-override: ${{ inputs.model-override || '' }}
+      no-skills: ${{ inputs.no-skills || false }}
+  report:
+    name: Consolidate azure-deploy reports
+    needs: [setup, test-none, test-admin]
+    if: always() && !cancelled() && needs.setup.result == 'success' && needs.setup.outputs.report-groups != '[]'
+    uses: ./.github/workflows/report-integration-skill.yml
+    with:
+      skill: azure-skills/azure-deploy
+      groups: ${{ needs.setup.outputs.report-groups }}

@@ -4,6 +4,7 @@
 import type { SystemMessageConfig } from "@github/copilot-sdk";
 import * as path from "node:path";
 import type { AgentMetadata } from "../utils/agent-runner.ts";
+import { getProfileEnvironment } from "../utils/azure-environment.ts";
 import { isSkillInvoked, getToolCalls, getAllAssistantMessages, argsString } from "../utils/evaluate.ts";
 
 const INLINE_PATTERN_FLAGS = /^\(\?([ims]+)\)/;
@@ -16,29 +17,22 @@ export function getAzureEnvironment(
   if (env.CI !== "true") {
     return {};
   }
-  const permission = tags?.azurePermission;
+  const permission = tags?.azurePermission ?? (env.AZURE_TEST_PERMISSION === "none" ? "none" : "admin");
   const jobPermission = env.TEST_AZURE_PERMISSION;
   if (jobPermission !== undefined) {
-    if (!["", "read", "write", "admin", "none"].includes(jobPermission) || (permission ?? "") !== jobPermission) {
+    if (!["", "read", "write", "admin", "none"].includes(jobPermission) || (tags?.azurePermission ?? "") !== jobPermission) {
       throw new Error("Stimulus azurePermission does not match the test job's permission");
     }
   }
-  if (permission === undefined) {
-    return {};
-  }
-  if (permission === "none") {
-    return { AZURE_CLIENT_ID: "" };
-  }
-  if (permission !== "read" && permission !== "write" && permission !== "admin") {
+  if (permission !== "none" && permission !== "read" && permission !== "write" && permission !== "admin") {
     throw new Error("tags.azurePermission must be 'read', 'write', 'admin', or 'none' when specified");
   }
 
-  const clientIdVariable = `AZURE_${permission.toUpperCase()}_CLIENT_ID`;
-  const clientId = env[clientIdVariable]?.trim();
-  if (!clientId) {
-    throw new Error(`${permission} tests require ${clientIdVariable}; refusing to use the default Azure identity`);
-  }
-  return { AZURE_CLIENT_ID: clientId };
+  const selected = getProfileEnvironment(permission, env);
+  return {
+    AZURE_CLIENT_ID: selected.AZURE_CLIENT_ID!,
+    AZURE_CONFIG_DIR: selected.AZURE_CONFIG_DIR!,
+  };
 }
 
 export function compileEarlyTerminatePattern(pattern: string): RegExp {

@@ -19,10 +19,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
     environment: cideploytest
-    env:
-      AZURE_CLIENT_ID: ${{ vars.AZURE_WRITE_CLIENT_ID }}
-      AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
-      AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
