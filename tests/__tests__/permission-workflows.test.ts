@@ -62,6 +62,29 @@ describe("permission integration workflows", () => {
     }
   });
 
+  test("runs azure-deploy skill-invocation without Azure authentication or uploads", () => {
+    const job = readWorkflow("test-azure-deploy.yml").jobs.test;
+    expect(job.env?.AZURE_CLIENT_ID)
+      .toBe("${{ matrix.test-group != 'skill-invocation' && vars.AZURE_ADMIN_CLIENT_ID || '' }}");
+    const steps = job.steps ?? [];
+    for (const name of [
+      "Log in with Azure (Federated Credentials)",
+      "Azure login",
+      "Fetch OIDC token every 240 seconds",
+      "Publish report to Azure Storage",
+      "Publish report to Azure Storage (manual run)",
+      "Upload token usage to table",
+      "Upload tool usage to table",
+    ]) {
+      expect(steps.find(step => step.name === name)?.if)
+        .toContain("matrix.test-group != 'skill-invocation'");
+    }
+    expect(steps.find(step => step.name === "Fetch OIDC token every 240 seconds")?.env?.AZURE_CLIENT_ID)
+      .toBe("${{ env.AZURE_CLIENT_ID }}");
+    expect(steps.find(step => step.name?.startsWith("Run tests"))?.if).toBeUndefined();
+    expect(steps.find(step => step.name === "Generate report")?.if).toBe("always()");
+  });
+
   test("installs dependencies before executing tests and never logs in for none", () => {
     const steps = action.runs.steps;
     expect(steps.findIndex(step => step.run === "npm ci")).toBeLessThan(steps.findIndex(step => step.id === "tests"));

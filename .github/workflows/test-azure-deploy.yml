@@ -1,6 +1,7 @@
 # Test azure-deploy deployment tests
 #
 # Runs the deployment test groups for azure-deploy skill.
+# The skill-invocation group runs without Azure authentication or Azure uploads.
 # Triggered manually.
 
 name: Integration Tests - azure-deploy
@@ -76,7 +77,7 @@ jobs:
     environment: cideploytest
     runs-on: ubuntu-latest
     env:
-      AZURE_CLIENT_ID: ${{ vars.AZURE_ADMIN_CLIENT_ID }}
+      AZURE_CLIENT_ID: ${{ matrix.test-group != 'skill-invocation' && vars.AZURE_ADMIN_CLIENT_ID || '' }}
       AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
     strategy:
@@ -101,6 +102,7 @@ jobs:
         uses: hashicorp/setup-terraform@5e8dbf3c6d9deaf4193ca7a8fb23f2ac83bb6c85 # v4
 
       - name: Log in with Azure (Federated Credentials)
+        if: matrix.test-group != 'skill-invocation'
         run: |
           azd auth login `
             --client-id "$Env:AZURE_CLIENT_ID" `
@@ -109,6 +111,7 @@ jobs:
         shell: pwsh
 
       - name: Azure login
+        if: matrix.test-group != 'skill-invocation'
         uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
         with:
           client-id: ${{ env.AZURE_CLIENT_ID }}
@@ -122,9 +125,10 @@ jobs:
       # Refresh interval is sub-5-minutes because the OIDC token's lifetime is
       # 5 minutes. Using 240s avoids seeing invalid tokens due to clock skew.
       - name: Fetch OIDC token every 240 seconds
+        if: matrix.test-group != 'skill-invocation'
         shell: bash
         env:
-          AZURE_CLIENT_ID: ${{ vars.AZURE_ADMIN_CLIENT_ID }}
+          AZURE_CLIENT_ID: ${{ env.AZURE_CLIENT_ID }}
           AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
         run: |
           while true; do
@@ -202,7 +206,7 @@ jobs:
 
       # Note: The managed identity must have write permission to the target storage account
       - name: Publish report to Azure Storage
-        if: always() && github.event_name == 'schedule' && vars.REPORT_STORAGE_ACCOUNT != ''
+        if: always() && matrix.test-group != 'skill-invocation' && github.event_name == 'schedule' && vars.REPORT_STORAGE_ACCOUNT != ''
         env:
           RUN_ID: ${{ github.run_id }}
           JOB_ID: ${{ github.job }}
@@ -224,7 +228,7 @@ jobs:
       # Publish reports to the same storage account but a separate container for manual runs.
       # Note: The managed identity must have write permission to the target storage account.
       - name: Publish report to Azure Storage (manual run)
-        if: always() && github.event_name == 'workflow_dispatch' && vars.REPORT_STORAGE_ACCOUNT != ''
+        if: always() && matrix.test-group != 'skill-invocation' && github.event_name == 'workflow_dispatch' && vars.REPORT_STORAGE_ACCOUNT != ''
         env:
           RUN_ID: ${{ github.run_id }}
           JOB_ID: ${{ github.job }}
@@ -247,7 +251,7 @@ jobs:
       # "token usage over time" page. Runs for both scheduled and manual runs.
       # Note: The managed identity must have Storage Table Data Contributor on the storage account.
       - name: Upload token usage to table
-        if: always() && vars.REPORT_STORAGE_ACCOUNT != ''
+        if: always() && matrix.test-group != 'skill-invocation' && vars.REPORT_STORAGE_ACCOUNT != ''
         env:
           TOKEN_USAGE_STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
           TOKEN_USAGE_TABLE_NAME: ${{ vars.TOKEN_USAGE_TABLE || 'integrationtokenusage' }}
@@ -260,7 +264,7 @@ jobs:
       # powers the dashboard's per-run tool review. Runs for both scheduled and manual runs.
       # Note: The managed identity must have Storage Table Data Contributor on the storage account.
       - name: Upload tool usage to table
-        if: always() && vars.REPORT_STORAGE_ACCOUNT != ''
+        if: always() && matrix.test-group != 'skill-invocation' && vars.REPORT_STORAGE_ACCOUNT != ''
         env:
           TOOL_USAGE_STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
           TOOL_USAGE_TABLE_NAME: ${{ vars.TOOL_USAGE_TABLE || 'integrationtoolusage' }}
