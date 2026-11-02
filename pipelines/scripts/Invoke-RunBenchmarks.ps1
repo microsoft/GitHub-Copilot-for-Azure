@@ -28,6 +28,17 @@
 .PARAMETER ContainerName
     Required. The blob container name to upload run artifacts to.
 
+.PARAMETER UseBamiCredentials
+    Forwards BAMI_CLIENT_SECRET from the task environment through --encrypted-env.
+    Submission remains authenticated with the existing Microsoft service connection.
+
+.PARAMETER InstanceId
+    Optional. Select exactly one existing dataset instance for a smoke test.
+
+.PARAMETER SubscriptionOverride
+    Optional. Replace GithubCopilotForAzure-Testing in the selected instance's prompt.
+    Requires InstanceId so the override cannot accidentally affect the full dataset.
+
 .LINK
     https://github.com/devdiv-microsoft/MicrosoftSweBench/wiki
 #>
@@ -45,7 +56,10 @@
         ),
         [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$OutputPath,
         [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$StorageAccountName,
-        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$ContainerName
+        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$ContainerName,
+        [switch]$UseBamiCredentials,
+        [string]$InstanceId,
+        [string]$SubscriptionOverride
     )
 
     Set-StrictMode -Version Latest
@@ -58,11 +72,34 @@
     if (!$Model -or $Model.Count -eq 0) {
         throw "Model parameter is required."
     }
+    if ($SubscriptionOverride -and [string]::IsNullOrWhiteSpace($InstanceId)) {
+        throw 'SubscriptionOverride requires InstanceId.'
+    }
 
     Write-Host "Benchmark: $Benchmark"
     Write-Host "Models: $($Model -join ', ')"
     Write-Host "Output Path: $OutputPath"
     $pipelineRun = $env:TF_BUILD -eq "True"
+
+    $encryptedEnvNames = @('CAPI_INTEGRATION_ID', 'CAPI_HMAC_KEY')
+    if ($UseBamiCredentials) {
+        Set-PSDebug -Off
+        if ($env:SYSTEM_DEBUG -eq 'true') {
+            throw 'Disable System.Debug before submitting BAMI credentials.'
+        }
+        if ([string]::IsNullOrWhiteSpace($env:BAMI_CLIENT_SECRET) -or $env:BAMI_CLIENT_SECRET -match '^\$\([^)]+\)$') {
+            throw 'BAMI credential forwarding requires BAMI_CLIENT_SECRET in the task environment.'
+        }
+        if ($pipelineRun) {
+            $escaped = $env:BAMI_CLIENT_SECRET.Replace('%', '%AZP25').Replace("`r", '%0D').Replace("`n", '%0A')
+            Write-Host "##vso[task.setsecret]$escaped"
+            $escaped = $null
+        }
+        $encryptedEnvNames += 'BAMI_CLIENT_SECRET'
+        Write-Host 'Forwarding BAMI_CLIENT_SECRET as an encrypted environment variable.'
+    } elseif (-not [string]::IsNullOrWhiteSpace($env:BAMI_CLIENT_SECRET)) {
+        throw 'BAMI_CLIENT_SECRET is set without -UseBamiCredentials. Enable forwarding explicitly or remove it.'
+    }
 
     $vaultName = "kv-msbench-eval-azuremcp"
     $secretNameCAPIID = "azure-mcp-eval-capi-id"
@@ -161,6 +198,24 @@
     Write-Host "Changing directory to $targetDir"
     Set-Location $targetDir
 
+    $datasetPath = Join-Path $targetDir 'metadata.csv'
+    if ($InstanceId) {
+        $selectedRows = @(Import-Csv -Path $datasetPath -ErrorAction Stop | Where-Object { $_.instance_id -ceq $InstanceId })
+        if ($selectedRows.Count -ne 1) {
+            throw "Expected exactly one dataset row for '$InstanceId'; found $($selectedRows.Count)."
+        }
+        if ($SubscriptionOverride) {
+            $originalSubscription = 'GithubCopilotForAzure-Testing'
+            if (-not $selectedRows[0].problem_statement.Contains($originalSubscription)) {
+                throw "Selected prompt does not contain '$originalSubscription'; subscription override was not applied."
+            }
+            $selectedRows[0].problem_statement = $selectedRows[0].problem_statement.Replace($originalSubscription, $SubscriptionOverride)
+        }
+        $datasetPath = Join-Path $targetDir 'metadata.selected.csv'
+        $selectedRows | Export-Csv -Path $datasetPath -NoTypeInformation -Encoding utf8 -ErrorAction Stop
+        Write-Host "Using one existing benchmark instance: $InstanceId"
+    }
+
     $failedModels = @()
     $runIds = @()
 
@@ -172,9 +227,10 @@
             "--agent", "github-copilot-cli",
             "--benchmark", $Benchmark,
             "--model", $m,
-            "--encrypted-env", "CAPI_INTEGRATION_ID", "CAPI_HMAC_KEY",
+            "--encrypted-env"
+        ) + $encryptedEnvNames + @(
             "--env", "USE_COPILOT_CLI_VERSION",
-            "--dataset", (Join-Path $targetDir "metadata.csv"),
+            "--dataset", $datasetPath,
             "--tag", "org=CoreAI Cloud and Tools",
             "--no-wait",
             "--confirm"
@@ -216,7 +272,7 @@
     }
 
     # Set pipeline output variable with collected run IDs
-    $runIds = $runIds | Select-Object -Unique
+    $runIds = @($runIds | Select-Object -Unique)
     $runIdsValue = $runIds -join ','
     Write-Host "Collected run IDs: $runIdsValue"
     if ($pipelineRun -and $runIds.Count -gt 0) {

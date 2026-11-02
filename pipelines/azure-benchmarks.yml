@@ -1,24 +1,75 @@
-# Temporary access-only pipeline for skaluvak/bami-test. Do not merge into main.
 trigger: none
 
 pr: none
 
-variables:
-- template: /pipelines/templates/variables/image.yml
+schedules:
+- cron: '0 8 * * *'
+  displayName: 'Daily 8am UTC'
+  branches:
+    include:
+    - main
+  always: true
 
-pool:
-  name: $(LINUXPOOL)
-  image: $(LINUXVMIMAGE)
-  os: linux
+stages:
+- stage: RunBenchmark
+  displayName: 'Run Benchmarks'
+  pool:
+    name: $(LINUXPOOL)
+    image: $(LINUXVMIMAGE)
+    os: linux
+  variables:
+  - template: /pipelines/templates/variables/image.yml
+  - template: /pipelines/templates/variables/globals.yml
+  jobs:
+  - job: RunBenchmark
+    displayName: 'Run Copilot Benchmarks'
+    steps:
+    - task: UsePythonVersion@0
+      displayName: 'Use Python 3.12'
+      inputs:
+        versionSpec: '3.12'
 
-steps:
-- task: AzureCLI@2
-  displayName: 'Check BAMI principal repository access'
-  inputs:
-    connectedServiceNameARM: 'azure_msbench_eval_bami'
-    scriptType: 'pscore'
-    scriptLocation: 'scriptPath'
-    scriptPath: $(Build.SourcesDirectory)/pipelines/scripts/Test-BenchmarkRepositoryAccess.ps1
-    scriptArguments: >
-      -ConnectionName "azure_msbench_eval_bami"
-      -ExpectedTenantId "8bc0d684-4df2-4244-8286-188358e31c5c"
+    - task: PipAuthenticate@1
+      displayName: 'Authenticate pip with MicrosoftSweBench feed'
+      inputs:
+        artifactFeeds: 'internal/MicrosoftSweBench'
+
+    - task: AzureCLI@2
+      name: BamiCredentials
+      displayName: 'Retrieve BAMI workload client secret'
+      inputs:
+        connectedServiceNameARM: 'azure_msbench_eval_bami'
+        scriptType: 'pscore'
+        scriptLocation: 'scriptPath'
+        scriptPath: $(Build.SourcesDirectory)/pipelines/scripts/Get-BamiBenchmarkCredential.ps1
+      env:
+        BAMI_KEY_VAULT: 'kv-msbench-eval'
+        BAMI_SECRET_NAME: 'msbench-evals-app-secret'
+
+    # Microsoft identity handles repository cloning, MSBench submission, CAPI credentials and report storage.
+    - task: AzureCLI@2
+      name: RunBenchmarks
+      displayName: 'Run Copilot Benchmarks script'
+      inputs:
+        connectedServiceNameARM: 'azure_msbench_eval'
+        addSpnToEnvironment: true
+        scriptType: 'pscore'
+        scriptLocation: 'scriptPath'
+        scriptPath: $(Build.SourcesDirectory)/pipelines/scripts/Invoke-RunBenchmarks.ps1
+        scriptArguments: >
+          -OutputPath "$(Build.ArtifactStagingDirectory)"
+          -StorageAccountName "msbenchnightlydata"
+          -ContainerName "msbench-reports"
+          -UseBamiCredentials
+          -Model "gpt-5.5"
+          -InstanceId "function_deployment_skill"
+          -SubscriptionOverride "Azure Skills Evaluation Playground (subscription ID 12687fa6-5767-4fa6-8c97-7a4bb7a7427d)"
+      env:
+        BAMI_CLIENT_SECRET: $(BamiCredentials.BAMI_CLIENT_SECRET)
+
+    - script: echo "Run IDs - $(RunBenchmarks.RUN_IDS)"
+      displayName: 'Display Run IDs'
+
+    - publish: $(Build.ArtifactStagingDirectory)
+      artifact: benchmark-run-ids
+      displayName: 'Publish benchmark run IDs artifact'

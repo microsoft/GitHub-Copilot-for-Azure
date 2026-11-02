@@ -1,43 +1,53 @@
 # Azure DevOps pipelines
 
-## Benchmark repository access dry run
+## Azure benchmarks with a BAMI workload secret
 
-On the temporary `skaluvak/bami-test` branch,
-[`azure-benchmarks.yml`](azure-benchmarks.yml) is a manual-only, parameter-free
-check of `msbench-benchmarks` repository access. It runs
-[`Test-BenchmarkRepositoryAccess.ps1`](scripts/Test-BenchmarkRepositoryAccess.ps1)
-with `azure_msbench_eval_bami` only. Microsoft principal access is already
-established, so it is not retested. It does not clone the benchmark repository, read
-Key Vault secrets, submit benchmarks or write to storage.
+[`azure-benchmarks.yml`](azure-benchmarks.yml) uses two fixed service connections,
+with no YAML parameters:
 
-To run it in `azure-sdk/internal`, open the existing benchmark pipeline linked
-to `pipelines/azure-benchmarks.yml`, select **Run pipeline**, and select
-`skaluvak/bami-test` as the branch. No new pipeline definition is needed.
-The pipeline needs authorization to use the BAMI service connection and the
-existing Azure SDK Linux pool. Keep `System.Debug` disabled.
+1. `azure_msbench_eval_bami` reads `msbench-evals-app-secret` from
+   `kv-msbench-eval` using
+   [`Get-BamiBenchmarkCredential.ps1`](scripts/Get-BamiBenchmarkCredential.ps1).
+   It exports a masked secret task output.
+2. `azure_msbench_eval` runs
+   [`Invoke-RunBenchmarks.ps1`](scripts/Invoke-RunBenchmarks.ps1).
+   Microsoft authentication handles repository cloning, MSBench submission,
+   CAPI credentials and report storage. The BAMI task output is explicitly mapped
+   into this task as `BAMI_CLIENT_SECRET`.
 
-This branch replaces benchmark execution with access checks and removes scheduled
-triggers. The `main` branch is unchanged. **Do not merge this temporary YAML into
-main**, because it would disable the real benchmark pipeline.
+The submission script adds `BAMI_CLIENT_SECRET` alongside `CAPI_INTEGRATION_ID`
+and `CAPI_HMAC_KEY` in `--encrypted-env`. Only variable names appear in CLI
+arguments; the secret stays in memory. Missing secrets or failed BAMI Key Vault
+calls fail the run. Existing Microsoft/CAPI authentication variables are not
+overwritten. No tenant, subscription or workload client ID is needed just to
+retrieve and forward the secret.
 
-Each task logs its principal's tenant, subscription and app/client ID, then probes
-repository HEAD using an in-memory Azure DevOps bearer token. Git credential
-helpers and tracing are disabled; tokens are masked in pipeline logs, never
-passed in command arguments or written to files. Failures fail the task.
+Authorize the existing pipeline to use both connections and keep `System.Debug`
+disabled. The BAMI connection must already have read access to the named secret.
+Do not put secret values in YAML, parameters, logs or artifacts.
 
-If BAMI receives HTTP 403, an administrator must check its principal's
-membership in the **devdiv** organization and **OnlineServices** project, then
-**Project settings > Repositories > msbench-benchmarks > Security** for direct or
-group-inherited Read permission and any Deny. Service connection pipeline
-permissions in **azure-sdk/internal** do not grant access to this repository.
+On this test branch, the pipeline runs only `function_deployment_skill` with
+`gpt-5.5`. After cloning, the script creates a temporary single-row
+`metadata.selected.csv` and replaces the prompt's testing subscription with
+Azure Skills Evaluation Playground (`12687fa6-5767-4fa6-8c97-7a4bb7a7427d`).
+The original metadata files, image and patch are unchanged. No new benchmark
+metadata JSON or Harbor/Vally conversion is needed. Without the optional
+`InstanceId`/`SubscriptionOverride` arguments, the script retains its full-dataset
+behavior and default model list.
+
+This is a live Function App deployment case, not a read-only access probe.
+The secret forwarding change does not implement the container's Azure login
+or prove that the workload uses BAMI resources. Check the resulting run for
+credential consumption and the actual subscription used. Do not merge this
+single-case test-branch YAML into main as the nightly configuration.
 
 Mocked local checks require PowerShell 7 and Pester 5:
 
 ```powershell
-pwsh -NoProfile -Command "Invoke-Pester -Path './tests/pipelines/BenchmarkRepositoryAccess.Tests.ps1' -Output Detailed -CI"
+pwsh -NoProfile -Command "Invoke-Pester -Path './tests/pipelines/BamiBenchmarkAuth.Tests.ps1' -Output Detailed -CI"
 ```
 
-These tests validate the probe without using either real service connection.
+These checks do not retrieve real secrets, submit benchmarks or deploy resources.
 
 ## Telemetry reporter nightly build
 
