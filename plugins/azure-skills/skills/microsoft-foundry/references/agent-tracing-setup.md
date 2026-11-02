@@ -46,7 +46,7 @@ New-project approval must cover monitoring charges and privacy. Connecting a BYO
 
 ## Human Access and Hosted Instrumentation
 
-Resolve the human/group viewer separately from ingestion/evaluation identities. Reuse inherited access. Confirm component/workspace query permission with a metadata-only query; visibility is insufficient. Missing access requires approval for minimum scoped reader access. Protected tables/content may require privileged monitoring access only when explicitly needed and approved. Contributor does not establish role-assignment authority. Query denial warns; no broad grants.
+Resolve the human/group viewer separately from ingestion/evaluation identities. Reuse inherited access. Confirm component/workspace query permission with a metadata-only query; visibility is insufficient. Missing access requires approval for the minimum scoped grant: Log Analytics Reader for that user on the Application Insights resource (azd does not grant it). Protected tables/content may require Privileged Monitoring Data Reader only when explicitly needed and approved. Contributor does not establish role-assignment authority. Query denial warns; no broad grants.
 
 For hosted code, inspect the selected framework/scaffold's supported instrumentation and export path. A project connection does not instrument arbitrary code. Do not add a competing exporter or enable content capture merely to get evidence.
 
