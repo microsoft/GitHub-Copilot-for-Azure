@@ -49,7 +49,7 @@ Options:
 
 | Warning | Fix applied |
 |---------|-------------|
-| `W-PHP-EOL` | Edit the Dockerfile in place: floating minor tag on a supported branch, keeping the variant suffix (see the PHP security row in [dockerfile-generation.md](../scaffold/references/dockerfile-generation.md)); change `composer.json` `require.php` only if it would exclude the new version. Requires an editable `Dockerfile`. |
+| `W-PHP-EOL` | Edit the Dockerfile in place: floating minor tag on a supported branch, keeping the variant suffix (see the PHP security row in [dockerfile-generation.md](../scaffold/references/dockerfile-generation.md)); never edit `composer.json` or `composer.lock`. Requires an editable `Dockerfile`. |
 
 ## Deploy Approval Gate (Step 8)
 
