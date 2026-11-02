@@ -206,9 +206,9 @@ azd provision --no-state --no-prompt
 
 `--no-state` skips the existing-deployment check; safe here because the golden path starts from a fresh environment (Step 4). Keep it for this quickstart; you can omit it later when re-provisioning the same environment.
 
-⏳ May take time — creates the resource group, Foundry account + project, and model deployment. Supporting native azd builds attempt App Insights/Log Analytics separately when monitoring is enabled; older/custom/Terraform paths must not be assumed to do so. Wait for the prompt to return; do not interrupt.
+⏳ May take time — creates the resource group, Foundry account + project, and model deployment. Supporting native azd builds also create App Insights/Log Analytics and an `AppInsights` connection for a new project by default (not for projects with a `network:` block, which must set `monitoring.enabled: false`); older or custom IaC must not be assumed to do so. Wait for the prompt to return; do not interrupt.
 
-Follow [best-effort tracing setup](../../references/agent-tracing-setup.md) for the actual provisioning path, including an existing-project quickstart that skipped provision. Preserve existing destinations/authentication and opt-outs. Warn and continue on optional setup/access failures; obtain separate approval before repairing an existing project.
+Follow [best-effort tracing setup](../../references/agent-tracing-setup.md) for the actual provisioning path, including an existing-project quickstart that skipped provision. Preserve existing destinations/authentication and opt-outs. Warn and continue on optional access and verification failures; a monitoring failure inside `azd provision` fails that step, so report its cause. For an existing project, connecting a component requires its resource ID and separate approval; azd does not create one.
 
 ### Step 9 — Wire local env vars
 

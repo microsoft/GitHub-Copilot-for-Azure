@@ -124,7 +124,7 @@ After provision completes for a new project, run `azd env get-values` and set mi
 
 ### Step 3 -- Pre-deployment check
 
-For hosted text agents, follow [best-effort tracing setup](../../references/agent-tracing-setup.md), even when Step 2 was skipped for an existing project or redeploy. Reuse effective monitoring and preserve opt-outs/authentication; obtain separate approval for existing-project repairs. Optional failures warn and continue. Native supporting builds attempt monitoring during provision and its connection before agent deployment; older tooling and Terraform must not be assumed to provide that capability.
+For hosted text agents, follow [best-effort tracing setup](../../references/agent-tracing-setup.md), even when Step 2 was skipped for an existing project or redeploy. Reuse effective monitoring and preserve opt-outs/authentication; connecting a component to an existing project needs its resource ID and separate approval (azd does not create one). Optional access and verification failures warn and continue. Native supporting builds set up monitoring as part of `azd provision` for new projects (a monitoring failure there fails the provision); older tooling and custom IaC must not be assumed to provide that capability.
 
 Branch by deploy mode.
 
@@ -366,7 +366,7 @@ Ordinary Prompt Agents are not containerized -- they are a model + instructions 
 
 1. **Collect config** -- resolve endpoint from `azd env get-values` or ask. Then ask for **agent name**, **model deployment** (e.g. `gpt-4o`), and optional **instructions**, **temperature**, **tools**.
 2. **Get schema** -- `agent_definition_schema_get` with `schemaType: "prompt"`.
-   Before deployment, follow [best-effort tracing setup](../../references/agent-tracing-setup.md), including reused projects. Existing-project repair requires separate approval; optional failures warn and continue without changing authentication.
+   Before deployment, follow [best-effort tracing setup](../../references/agent-tracing-setup.md), including reused projects. Connecting a component to an existing project needs its resource ID and separate approval (azd does not create one); optional failures warn and continue without changing authentication.
 3. **Create** -- `agent_update` with `{"kind": "prompt", "model": "<deployment>", "instructions": "...", "temperature": 0.7}`.
 4. **Smoke test** -- follow [invoke](../invoke/invoke.md), capture UTC/identifiers, and [verify this invocation's fresh stored trace](../../references/agent-tracing-verification.md). Do not invoke again for tracing; report optional verification/access warnings separately from deployment/invocation.
 5. **Auto-generate evaluation suite** -- see [Step 5: Auto-Generate Evaluation Suite (Prompt)](#step-5-auto-generate-evaluation-suite-prompt-mandatory--runs-automatically) below.
