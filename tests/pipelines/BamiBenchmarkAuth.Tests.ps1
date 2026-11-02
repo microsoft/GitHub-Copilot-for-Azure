@@ -165,6 +165,13 @@ Describe 'BAMI benchmark credential forwarding' {
                 '--tag', 'org=CoreAI Cloud and Tools', '--no-wait', '--confirm'
             )
         }
+        $uploads = @($state.AzCalls | Where-Object { $_[0] -eq 'storage' -and $_ -notcontains 'ToBeProcessed' })
+        $uploads.Count | Should -Be 2
+        @($state.AzCalls | Where-Object { $_ -contains 'ToBeProcessed' }).Count | Should -Be 2
+        foreach ($upload in $uploads) {
+            $nameIndex = [array]::IndexOf($upload, '--name')
+            $upload[$nameIndex + 1] | Should -Match '^\d{4}-\d{2}-\d{2}/(run_ids\.json|timestamp\.txt)$'
+        }
     }
 
     It 'requires the mapped BAMI secret when forwarding is enabled' {
@@ -230,6 +237,12 @@ Describe 'BAMI benchmark credential forwarding' {
         $json = Get-Content (Join-Path $caseDirectory 'output/run_ids.json') -Raw
         $json.Trim() | Should -Match '^\['
         @($json | ConvertFrom-Json).Count | Should -Be 1
+        $uploads = @($state.AzCalls | Where-Object { $_[0] -eq 'storage' })
+        $uploads.Count | Should -Be 2
+        foreach ($upload in $uploads) {
+            $nameIndex = [array]::IndexOf($upload, '--name')
+            $upload[$nameIndex + 1] | Should -Match '^smoke-tests/1/\d{4}-\d{2}-\d{2}/(run_ids\.json|timestamp\.txt)$'
+        }
     }
 
     It 'rejects a subscription override without a single-instance selector' {

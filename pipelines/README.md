@@ -34,6 +34,8 @@ The original metadata files, image and patch are unchanged. No new benchmark
 metadata JSON or Harbor/Vally conversion is needed. Without the optional
 `InstanceId`/`SubscriptionOverride` arguments, the script retains its full-dataset
 behavior and default model list.
+Single-case report blobs use `smoke-tests/<run-id>/<date>/` so they cannot
+overwrite the nightly `<date>/` reports or update the nightly `ToBeProcessed` queue.
 
 This is a live Function App deployment case, not a read-only access probe.
 The secret forwarding change does not implement the container's Azure login

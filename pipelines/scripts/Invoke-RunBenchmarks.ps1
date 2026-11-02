@@ -295,6 +295,9 @@
     foreach ($file in @($jsonPath, $timestampPath)) {
         $fileName = [System.IO.Path]::GetFileName($file)
         $blobPath = "$timestamp/$fileName"
+        if ($InstanceId) {
+            $blobPath = "smoke-tests/$($runIds[0])/$blobPath"
+        }
         Write-Host "Uploading $fileName -> $ContainerName/$blobPath"
         $azArgs = @(
             "storage", "blob", "upload",
@@ -309,6 +312,11 @@
         if ($LASTEXITCODE -ne 0) {
             Write-Warning "Failed to upload $fileName to blob storage"
         }
+    }
+
+    if ($InstanceId) {
+        Write-Host "Single-case benchmark submitted. Nightly report processing is unchanged."
+        return
     }
 
     # --- Append timestamp to ToBeProcessed file ---
