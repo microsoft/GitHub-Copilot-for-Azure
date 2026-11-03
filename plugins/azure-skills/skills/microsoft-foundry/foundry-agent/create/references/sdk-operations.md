@@ -21,7 +21,11 @@ from azure.ai.projects import AIProjectClient
 from azure.identity import DefaultAzureCredential
 
 endpoint = "https://<resource>.services.ai.azure.com/api/projects/<project>"
-client = AIProjectClient(endpoint=endpoint, credential=DefaultAzureCredential())
+client = AIProjectClient(
+    endpoint=endpoint,
+    credential=DefaultAzureCredential(),
+    allow_preview=True,
+)
 ```
 
 | Operation | SDK Method |
@@ -31,7 +35,20 @@ client = AIProjectClient(endpoint=endpoint, credential=DefaultAzureCredential())
 | Get | `client.agents.get(agent_name)` |
 | Update | `client.agents.create_version(agent_name, definition)` (creates new version) |
 | Delete | `client.agents.delete(agent_name)` |
-| Chat | `client.get_openai_client().responses.create(model=<deployment>, input=<text>, extra_body={"agent": {"name": agent_name, "type": "agent_reference"}})` |
+| Prompt agent chat | `client.get_openai_client().responses.create(input=<text>, extra_body={"agent_reference": {"name": agent_name, "version": agent_version, "type": "agent_reference"}})` |
+
+## Hosted Responses Invocation
+
+For a hosted Responses agent, select its endpoint with `agent_name` on `get_openai_client`, not the project-level model endpoint. With `azure-ai-projects==2.9.0`, this operation requires `allow_preview=True` on `AIProjectClient`, as shown above, not on the OpenAI client. Check the installed SDK contract for other versions.
+
+```python
+with client.get_openai_client(agent_name="<deployed-agent-name>") as hosted:
+    response = hosted.responses.create(input="<original-user-request>")
+```
+
+The client is already bound to the named agent. Record the deployed agent version and response ID. Inspect terminal status/errors and actual tool/file outputs: HTTP 200, initial response creation, and offline transport tests do not establish live completion or runtime authorization.
+
+For later turns, preserve the conversation identity and authenticated caller. When using `previous_response_id` and requiring the same hosted filesystem, also pass the returned `agent_session_id` in the Responses request body with `extra_body={"agent_session_id": session_id}`; it is not a header. A `conversation` automatically associates a stable session. Session continuity is not graph checkpoint persistence. See [Manage hosted agent sessions](https://learn.microsoft.com/azure/foundry/agents/how-to/manage-hosted-sessions) and [invoke](../../invoke/invoke.md).
 
 ## Environment Variables
 
