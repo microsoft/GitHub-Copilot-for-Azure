@@ -887,7 +887,7 @@ stimuli:
         - azure-advisor-cost-optimization
     expected:
       - It preserves the three returned safety buckets and shows all four resources.
-      - It explains that disk-a passed automated checks but still needs manual confirmation, without authorizing deletion.
+      - It titles the safe bucket "Resources that passed automated checks" and explains that disk-a still needs manual confirmation, without authorizing deletion.
       - It keeps disk-b under review because 14 days cannot establish the required 30 days, and preserves unavailable pricing rather than zero.
       - It identifies disk-c as locked and disk-deleted separately as already deleted with its supplied date, without offering lifecycle updates.
       - It explains that no action is needed for disk-deleted and Advisor will remove the recommendation automatically within 72 hours once it refreshes, not 48 hours.
@@ -903,6 +903,12 @@ stimuli:
         config:
           required:
             - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?im)^## Resources that passed automated checks\\s*$"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)Resources\\s+ready\\s+to\\s+delete\\s+now|ready\\s+to\\s+remediate"
       - type: output-matches
         config:
           pattern: "(?i)Retail.*USD|USD.*Retail"
@@ -930,6 +936,59 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?im)^####\\s+disk-"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor_recommendation_(list|summary|prevalidate|update)"
+            - name: "(?i)advisor_remediation_get"
+
+  - name: "Label an empty passing prevalidation bucket without implying deletion readiness"
+    prompt: >-
+      Explain this supplied read-only Advisor Cost IdleResources prevalidation result.
+      Do not query Azure, reclassify resources, generate artifacts, or perform any action.
+      Scope is subscription Demo and resource group rg-demo; minimumUnusedDays is 30
+      and pricing is Retail USD. The safe and blocked arrays are empty. The needsReview
+      array contains disk-a with yearlyPotentialSavings=120, an unverified unused-age
+      check because runtime history is unavailable, and an outstanding manual backup
+      confirmation. The result is not truncated and unmatchedResources is empty.
+    constraints:
+      max_turns: 12
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: prevalidation-evidence
+      parity: response-shape
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    expected:
+      - It uses "Resources that passed automated checks" for the empty safe bucket and writes None.
+      - It reports zero passed automated checks and keeps disk-a under additional review.
+      - It preserves the three bucket headings and the outstanding manual confirmation without authorizing deletion.
+      - It does not query Azure or take an action.
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?im)^## Resources that passed automated checks[ \\t]*\\r?\\n\\s*None\\."
+      - type: output-matches
+        config:
+          pattern: "(?i)\\b0\\*{0,2}\\s+passed automated checks"
+      - type: output-matches
+        config:
+          pattern: "(?im)^## Resources requiring additional review\\s*$"
+      - type: output-matches
+        config:
+          pattern: "(?im)^## Resources blocked for deletion\\s*$"
+      - type: output-matches
+        config:
+          pattern: "(?i)disk-a"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)Resources\\s+ready\\s+to\\s+delete\\s+now|ready\\s+to\\s+remediate"
       - type: tool-calls
         config:
           disallowed:

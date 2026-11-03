@@ -21,9 +21,10 @@ For "safe to delete", "validate before removal", or "is this recommendation stil
    the tool follows discovery pages and processes bounded batches, not only the first 25.
    This tool enforces Cost/IdleResources/New internally; do not pass category or status inputs.
 3. Use the tool's verdicts without reclassification. Render three sections, even if empty:
-   `Resources ready to delete now`, `Resources requiring additional review`, and
+   `Resources that passed automated checks`, `Resources requiring additional review`, and
    `Resources blocked for deletion`, mapped to `safe`, `needsReview`, and `blocked`.
-   Explain that "ready" means automated checks passed, with manual checks still outstanding.
+   Explain that passing automated checks still leaves manual checks outstanding and does not
+   authorize deletion.
    Use the [prevalidation layout](table-format.md#prevalidation-results): compact bucket tables,
    one shared checks-performed table, and outstanding manual confirmations. Keep per-resource
    failures and unverified checks visible; show detailed evidence only when explicitly requested.

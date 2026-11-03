@@ -119,7 +119,7 @@ Use this layout for returned safety checks, not the discovery layout or per-reso
 **Coverage:** <checked/selected counts, truncation and unmatched selections>
 **Pricing basis:** <basis> | **Currency:** <currency> | Advisor estimates, not invoices
 
-## Resources ready to delete now
+## Resources that passed automated checks
 <count and returned known yearly potential savings; outstanding manual checks still apply>
 |Resource|Resource group|Yearly potential savings|
 |---|---|---:|
