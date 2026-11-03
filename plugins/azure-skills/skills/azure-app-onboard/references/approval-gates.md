@@ -24,7 +24,7 @@ Verify file list against target SKU — F1/D1: no Dockerfile (built-in runtime).
 
 > ⛔ **Data-loss warnings at the gate.** If `prereq-output.json.warnings[]` contains any data-loss findings (SQLite on App Service, in-memory sessions, local file storage), surface them prominently with ⛔ formatting ABOVE the approval prompt. The user must see these before approving — do not bury them in a table or omit them.
 
-> ⛔ **Fix offer — fixes that edit the user's own files (asked BEFORE the gate prompt).** Collect `prereq-output.json.warnings[]` with `fixPhase: "scaffold"` whose `fix` edits the user's app files and that have a row in [Known app-file fixes](#known-app-file-fixes) below. IaC-only fixes (e.g. `W-PG-SSL`, `W-BUILDKIT`) are scaffolded automatically and are NOT listed. If none → skip this step. Otherwise: (1) list them numbered — warning, file(s) it would change, and the exact change; (2) `ask_user` with choices exactly `Fix all`, `Fix some`, `Fix none`; (3) `Fix some` → one follow-up `ask_user` for the numbers to fix (e.g. `1,3`), re-ask once on invalid input, then treat as `Fix none`; (4) apply the chosen fixes as static edits only (no build or tests), show the diff, and remove each fixed warning from `warnings[]` and `postDeployRecommendations[]`; (5) set every declined warning's `fixPhase` to `"post-deploy"`. Never edit app files without the user's choice. Then present the gate prompt below unchanged — it is not re-shown.
+> ⛔ **Fix offer — fixes that edit the user's own files (asked BEFORE the gate prompt).** Collect `prereq-output.json.warnings[]` with `fixPhase: "scaffold"` whose `fix` edits the user's app files (IaC-only fixes are scaffolded automatically and are NOT listed). If none → skip this step. Otherwise list them numbered — warning, file(s) it would change, and the exact change — and `ask_user` with choices exactly `Fix all`, `Fix some`, `Fix none` (`Fix some` → ask which numbers). Apply the chosen fixes as static edits only (no build or tests), show the diff, remove each fixed warning from `warnings[]` and `postDeployRecommendations[]`, and update every session artifact that records the changed fact (`stack`, `detectedStack` and verdicts in `context.json` and `prereq-output.json`, `readiness-report.md`, `prepare-plan.json` notes) so none still describes the pre-edit state. Set every declined warning's `fixPhase` to `"post-deploy"`. Never edit app files without the user's choice. Then present the gate prompt below unchanged — it is not re-shown.
 
 > ⛔ **Database network access (when plan includes PostgreSQL/MySQL).** Show a **Database access** line above the approval prompt: the default `AllowAllAzureServicesAndResourcesWithinAzureIps` (`0.0.0.0`) lets the app connect but opens the server to **all** Azure services. ⛔ **Render the exposure as its own bold sentence so a fast "Yes" is still an informed "Yes":** **"Proceeding opens the database to all Azure services — not just this app."** Offer the alternative: *"For private networking (VNet integration + private endpoint), say **'Private access'** — AppOnboard does not build private networking itself, so it will hand off to `azure-enterprise-infra-planner`, which then owns the secure networking design **and** its deployment. AppOnboard stops here — it does not resume afterward."* If the user proceeds (Yes), that counts as consent to the `0.0.0.0` rule.
 
@@ -38,18 +38,10 @@ Verify file list against target SKU — F1/D1: no Dockerfile (built-in runtime).
 
 > ⛔ **RESPONSE BOUNDARY — MANDATORY.** The approval gate MUST be the LAST content in your response. Do NOT generate any files, write any IaC, create any Dockerfiles, or execute any commands in the same response as the gate. Your next action MUST be reading the user's reply. If the user has not yet responded, WAIT — do not proceed.
 
-Options:
+Three options:
 - **Yes** → proceed to Step 7 (scaffold only — NOT deploy)
 - **Edit plan** → ask what to change → write to `context.json.overrides[]` → re-run Step 5 → show updated gate
 - **Cancel** → preserve session artifacts for later resumption, stop
-
-> ⛔ **After ANY edit to the user's app files made at this gate** (an applied fix, or an `Edit plan` change that touches app files): update every session artifact that records the changed fact — `stack`, `detectedStack` and verdicts in `context.json` and `prereq-output.json`, `readiness-report.md`, and notes in `prepare-plan.json` — not only the finding that was resolved. No artifact may still describe the pre-edit state.
-
-### Known app-file fixes
-
-| Warning | Fix applied |
-|---------|-------------|
-| `W-PHP-EOL` | Edit the Dockerfile in place: floating minor tag on a supported branch, keeping the variant suffix (see the PHP security row in [dockerfile-generation.md](../scaffold/references/dockerfile-generation.md)); never edit `composer.json` or `composer.lock`. Requires an editable `Dockerfile`. |
 
 ## Deploy Approval Gate (Step 8)
 
