@@ -2,20 +2,17 @@
 .SYNOPSIS
     Retrieves a BAMI workload client secret and exports a masked task output.
 .DESCRIPTION
-    Run only in the separate BAMI AzureCLI@2 task. Configuration comes from
-    BAMI_KEY_VAULT and BAMI_SECRET_NAME. The service connection handles Azure login.
-    Exit codes: 0 = success; 1 = authentication, configuration or retrieval failure.
+    Run only in the separate BAMI AzureCLI@2 task.
+    The service connection handles Azure login.
+    Exit codes: 0 = success; 1 = authentication or retrieval failure.
 #>
 
 Set-StrictMode -Version Latest
 Set-PSDebug -Off
 
-foreach ($name in @('BAMI_KEY_VAULT', 'BAMI_SECRET_NAME')) {
-    $value = [Environment]::GetEnvironmentVariable($name)
-    if ([string]::IsNullOrWhiteSpace($value) -or $value.Contains('$(')) {
-        throw "BAMI requires $name."
-    }
-}
+$vaultName = 'kv-msbench-eval'
+$secretName = 'msbench-evals-app-secret'
+
 if ($env:TF_BUILD -ne 'True') {
     throw 'Credential export requires an Azure DevOps pipeline task.'
 }
@@ -25,7 +22,7 @@ if ($env:SYSTEM_DEBUG -eq 'true') {
 
 $secret = $null
 try {
-    $secret = az keyvault secret show --vault-name $env:BAMI_KEY_VAULT --name $env:BAMI_SECRET_NAME --query value -o tsv --only-show-errors
+    $secret = az keyvault secret show --vault-name $vaultName --name $secretName --query value -o tsv --only-show-errors
     if ($LASTEXITCODE -ne 0) {
         throw "BAMI Key Vault retrieval failed with exit code $LASTEXITCODE."
     }

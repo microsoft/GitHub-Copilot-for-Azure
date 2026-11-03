@@ -26,21 +26,25 @@ Authorize the existing pipeline to use both connections and keep `System.Debug`
 disabled. The BAMI connection must already have read access to the named secret.
 Do not put secret values in YAML, parameters, logs or artifacts.
 
-The pipeline submits **all tests in the `azure.skill` suite** with `gpt-5.5`.
-It does not pass `InstanceId`, `SubscriptionOverride`, or `DryRun`. Run IDs and
-timestamps use the existing dated report layout and nightly `ToBeProcessed`
-queue in the Microsoft storage account.
+The Microsoft vault and secret names are defined directly in
+[`Invoke-RunBenchmarks.ps1`](scripts/Invoke-RunBenchmarks.ps1), not in pipeline
+variables: `$vaultName` is `kv-msbench-eval-azuremcp`, `$secretNameCAPIID` is
+`azure-mcp-eval-capi-id`, and `$secretNameCAPIHMAC` is `azure-mcp-eval-capi-hmac`.
+Similarly, the BAMI names are defined directly in
+[`Get-BamiBenchmarkCredential.ps1`](scripts/Get-BamiBenchmarkCredential.ps1):
+`$vaultName` is `kv-msbench-eval` and `$secretName` is `msbench-evals-app-secret`.
+Only the retrieved secret value is passed between tasks through an explicitly
+mapped secret output variable.
+
+The pipeline uses the submission script's production defaults: **all tests in
+the `azure.skill` suite for each of the seven default models**. YAML does not
+override the benchmark or model list. Run IDs and timestamps use the existing
+dated report layout and nightly `ToBeProcessed` queue in the Microsoft storage
+account.
 
 Test prompts and deployment subscription targets come from the published
 benchmark images. Updating metadata and rebuilding/publishing those images is
 a separate task; this pipeline does not rewrite their prompts or build images.
-
-The script still supports optional single-instance diagnostics: `InstanceId`
-uses an explicit benchmark selector and a CLI preflight that must resolve exactly
-one instance. `DryRun` submits no CES run and writes no report blobs.
-Single-case report blobs use `smoke-tests/<run-id>/<date>/` rather than updating
-nightly reports. Live `SubscriptionOverride` remains blocked because CSV edits
-do not rewrite the prompt baked into the existing container.
 
 The secret forwarding change does not implement the container's Azure login
 or prove that the workload uses BAMI resources. Check the resulting run for

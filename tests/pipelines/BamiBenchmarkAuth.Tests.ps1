@@ -5,7 +5,7 @@ BeforeAll {
     $secret = "test-only%credential`nsecond-line"
     $envNames = @(
         'TF_BUILD', 'SYSTEM_DEBUG', 'PIP_EXTRA_INDEX_URL',
-        'BAMI_KEY_VAULT', 'BAMI_SECRET_NAME', 'BAMI_CLIENT_SECRET',
+        'BAMI_CLIENT_SECRET',
         'CAPI_INTEGRATION_ID', 'CAPI_HMAC_KEY', 'USE_COPILOT_CLI_VERSION',
         'AZURE_CLIENT_SECRET'
     )
@@ -21,14 +21,9 @@ BeforeAll {
     function Invoke-TestBenchmark {
         param(
             [switch]$UseBamiCredentials,
-            [string[]]$Model = @('test-one', 'test-two'),
-            [string]$InstanceId,
-            [string]$SubscriptionOverride,
-            [switch]$DryRun
+            [string[]]$Model = @('test-one', 'test-two')
         )
         & $runScript -UseBamiCredentials:$UseBamiCredentials -Model $Model `
-            -InstanceId $InstanceId -SubscriptionOverride $SubscriptionOverride `
-            -DryRun:$DryRun `
             -OutputPath (Join-Path $caseDirectory 'output') `
             -StorageAccountName 'test-storage' -ContainerName 'test-container'
     }
@@ -48,32 +43,11 @@ Describe 'BAMI benchmark credential forwarding' {
         $env:TF_BUILD = 'True'
         $env:SYSTEM_DEBUG = 'false'
         $env:PIP_EXTRA_INDEX_URL = 'test-feed'
-        $env:BAMI_KEY_VAULT = 'test-vault'
-        $env:BAMI_SECRET_NAME = 'test-secret'
         $state = @{
             VaultExit = 0
             Secret = $secret
             AzCalls = [System.Collections.Generic.List[object]]::new()
             RunCalls = [System.Collections.Generic.List[object]]::new()
-            PlanCalls = [System.Collections.Generic.List[object]]::new()
-            PlannedInstanceCount = 1
-            PlanExit = 0
-            DatasetRows = @(
-                [pscustomobject]@{
-                    instance_id = 'function_deployment_skill'
-                    problem_statement = 'Deploy to GithubCopilotForAzure-Testing in eastus.'
-                    image_tag = 'test-function-image'
-                    patch = 'test-patch'
-                    msbench_splits = 'skill'
-                },
-                [pscustomobject]@{
-                    instance_id = 'another-instance'
-                    problem_statement = 'Another test.'
-                    image_tag = 'test-other-image'
-                    patch = ''
-                    msbench_splits = 'skill'
-                }
-            )
         }
         $workingDirectory = Get-Location
         $caseDirectory = Join-Path $TestDrive ([guid]::NewGuid().ToString())
@@ -84,7 +58,7 @@ Describe 'BAMI benchmark credential forwarding' {
             $state.AzCalls.Add(@($args))
             $global:LASTEXITCODE = 0
             if ($args[0] -eq 'keyvault') {
-                if ($args -contains 'test-vault') {
+                if ($args -contains 'kv-msbench-eval') {
                     $global:LASTEXITCODE = $state.VaultExit
                     return $state.Secret
                 }
@@ -99,21 +73,10 @@ Describe 'BAMI benchmark credential forwarding' {
             $global:LASTEXITCODE = 0
             $directory = Join-Path $args[-1] 'curation/benchmarks/azure'
             $null = New-Item -ItemType Directory -Path $directory -Force
-            $state.DatasetRows | Export-Csv -Path (Join-Path $directory 'metadata.csv') -NoTypeInformation
         }
         Mock msbench-cli {
             $global:LASTEXITCODE = 0
             if ($args[0] -eq 'run') {
-                if ($args -contains '--dry-run') {
-                    $state.PlanCalls.Add(@($args))
-                    $global:LASTEXITCODE = $state.PlanExit
-                    $eventIndex = [array]::IndexOf($args, '--events')
-                    @{
-                        event = 'run_planned'
-                        data = @{ args_resolved = @{ instance_count = $state.PlannedInstanceCount } }
-                    } | ConvertTo-Json -Depth 5 -Compress | Set-Content $args[$eventIndex + 1]
-                    return
-                }
                 $state.RunCalls.Add(@($args))
                 "run_id=$($state.RunCalls.Count)"
             }
@@ -131,18 +94,10 @@ Describe 'BAMI benchmark credential forwarding' {
         $output | Should -Match ([regex]::Escape("##vso[task.setvariable variable=BAMI_CLIENT_SECRET;issecret=true;isoutput=true]$escaped"))
         $output.Contains($secret) | Should -BeFalse
         $state.AzCalls.Count | Should -Be 1
-        $state.AzCalls[0] | Should -Contain 'test-vault'
-        $state.AzCalls[0] | Should -Contain 'test-secret'
+        $state.AzCalls[0] | Should -Contain 'kv-msbench-eval'
+        $state.AzCalls[0] | Should -Contain 'msbench-evals-app-secret'
         $state.AzCalls[0] | Should -Not -Contain $secret
         @(Get-ChildItem $caseDirectory -Recurse -File).Count | Should -Be 0
-    }
-
-    It 'rejects missing configuration <MissingName> before retrieving a secret' -ForEach @(
-        @{ MissingName = 'BAMI_KEY_VAULT' }, @{ MissingName = 'BAMI_SECRET_NAME' }
-    ) {
-        [Environment]::SetEnvironmentVariable($MissingName, $null)
-        { & $credentialScript 6>$null } | Should -Throw "*$MissingName*"
-        $state.AzCalls.Count | Should -Be 0
     }
 
     It 'requires a pipeline task to export credentials' {
@@ -232,88 +187,41 @@ Describe 'BAMI benchmark credential forwarding' {
         }
     }
 
-    It 'submits only the explicit selected case after a one-instance CLI preflight' {
+    It 'submits the full suite for all seven default models with encrypted BAMI credentials' {
         $env:BAMI_CLIENT_SECRET = $secret
-        $null = Invoke-TestBenchmark -UseBamiCredentials -Model 'gpt-5.5' `
-            -InstanceId 'function_deployment_skill' 6>&1
-        $state.RunCalls.Count | Should -Be 1
-        $state.PlanCalls.Count | Should -Be 1
-        $runArgs = $state.RunCalls[0]
-        $runArgs | Should -Contain 'azure.function_deployment_skill'
-        $runArgs | Should -Not -Contain 'azure.skill'
-        $runArgs | Should -Not -Contain '--confirm'
-        $datasetIndex = [array]::IndexOf($runArgs, '--dataset')
-        $rows = @(Import-Csv $runArgs[$datasetIndex + 1])
-        $rows.Count | Should -Be 1
-        $rows[0].instance_id | Should -Be 'function_deployment_skill'
-        $rows[0].benchmark | Should -Be 'azure'
-        $rows[0].problem_statement | Should -Match 'GithubCopilotForAzure-Testing'
-        $rows[0].image_tag | Should -Be 'test-function-image'
-        $rows[0].patch | Should -Be 'test-patch'
-        $original = @(Import-Csv (Join-Path $caseDirectory 'msbench-benchmarks/curation/benchmarks/azure/metadata.csv'))
-        $original.Count | Should -Be 2
-        $original[0].problem_statement | Should -Match 'GithubCopilotForAzure-Testing'
+        $null = & $runScript -UseBamiCredentials `
+            -OutputPath (Join-Path $caseDirectory 'output') `
+            -StorageAccountName 'test-storage' -ContainerName 'test-container' 6>&1
+        $models = @(
+            'claude-sonnet-4.5-autodev-test',
+            'claude-opus-4.5-autodev-test',
+            'gpt-5.2-codex-autodev-test',
+            'gpt-5.2-autodev-test',
+            'gemini-2.5-pro-autodev-test',
+            'claude-opus-4.7',
+            'gpt-5.5'
+        )
+        $state.RunCalls.Count | Should -Be $models.Count
+        for ($index = 0; $index -lt $models.Count; $index++) {
+            $runArgs = $state.RunCalls[$index]
+            $runArgs | Should -Be @(
+                'run', '--agent', 'github-copilot-cli',
+                '--benchmark', 'azure.skill', '--model', $models[$index],
+                '--encrypted-env', 'CAPI_INTEGRATION_ID', 'CAPI_HMAC_KEY', 'BAMI_CLIENT_SECRET',
+                '--env', 'USE_COPILOT_CLI_VERSION',
+                '--dataset', (Join-Path $caseDirectory 'msbench-benchmarks/curation/benchmarks/azure/metadata.csv'),
+                '--tag', 'org=CoreAI Cloud and Tools', '--no-wait', '--confirm'
+            )
+        }
+        $json = Get-Content (Join-Path $caseDirectory 'output/run_ids.json') -Raw
+        @($json | ConvertFrom-Json).Count | Should -Be $models.Count
+        @($state.AzCalls | Where-Object { $_ -contains 'ToBeProcessed' }).Count | Should -Be 2
+    }
+
+    It 'preserves the run ID array when a caller supplies one model' {
+        $null = Invoke-TestBenchmark -Model 'test-one' 6>&1
         $json = Get-Content (Join-Path $caseDirectory 'output/run_ids.json') -Raw
         $json.Trim() | Should -Match '^\['
-        @($json | ConvertFrom-Json).Count | Should -Be 1
-        $uploads = @($state.AzCalls | Where-Object { $_[0] -eq 'storage' })
-        $uploads.Count | Should -Be 2
-        foreach ($upload in $uploads) {
-            $nameIndex = [array]::IndexOf($upload, '--name')
-            $upload[$nameIndex + 1] | Should -Match '^smoke-tests/1/\d{4}-\d{2}-\d{2}/(run_ids\.json|timestamp\.txt)$'
-        }
-    }
-
-    It 'rejects a subscription override without a single-instance selector' {
-        { Invoke-TestBenchmark -SubscriptionOverride 'Playground' 6>$null } | Should -Throw '*requires InstanceId*'
-        $state.RunCalls.Count | Should -Be 0
-    }
-
-    It 'rejects an unknown instance instead of running the full dataset' {
-        { Invoke-TestBenchmark -InstanceId 'missing-instance' 6>$null } | Should -Throw '*found 0*'
-        $state.RunCalls.Count | Should -Be 0
-    }
-
-    It 'rejects duplicate instances instead of submitting multiple cases' {
-        $state.DatasetRows = @($state.DatasetRows[0], $state.DatasetRows[0])
-        { Invoke-TestBenchmark -InstanceId 'function_deployment_skill' 6>$null } | Should -Throw '*found 2*'
-        $state.RunCalls.Count | Should -Be 0
-    }
-
-    It 'rejects an unexpected original subscription instead of silently skipping the override' {
-        $state.DatasetRows[0].problem_statement = 'Deploy somewhere else.'
-        { Invoke-TestBenchmark -InstanceId 'function_deployment_skill' -SubscriptionOverride 'Playground' -DryRun 6>$null } | Should -Throw '*override was not applied*'
-        $state.RunCalls.Count | Should -Be 0
-    }
-
-    It 'blocks submission when the CLI resolves more than one instance' {
-        $state.PlannedInstanceCount = 16
-        { Invoke-TestBenchmark -InstanceId 'function_deployment_skill' 6>$null } | Should -Throw '*exactly one instance*'
-        $state.RunCalls.Count | Should -Be 0
-    }
-
-    It 'blocks submission when native preflight fails' {
-        $state.PlanExit = 9
-        { Invoke-TestBenchmark -InstanceId 'function_deployment_skill' 6>$null } | Should -Throw '*exit code 9*'
-        $state.RunCalls.Count | Should -Be 0
-    }
-
-    It 'checks the temporary Playground row without submitting or uploading reports' {
-        $null = Invoke-TestBenchmark -InstanceId 'function_deployment_skill' `
-            -SubscriptionOverride 'Playground' -DryRun -Model 'gpt-5.5' 6>&1
-        $state.PlanCalls.Count | Should -Be 1
-        $state.RunCalls.Count | Should -Be 0
-        $planArgs = $state.PlanCalls[0]
-        $datasetIndex = [array]::IndexOf($planArgs, '--dataset')
-        (Import-Csv $planArgs[$datasetIndex + 1]).problem_statement | Should -Be 'Deploy to Playground in eastus.'
-        @($state.AzCalls | Where-Object { $_[0] -eq 'storage' }).Count | Should -Be 0
-        Test-Path (Join-Path $caseDirectory 'output/run_ids.json') | Should -BeFalse
-    }
-
-    It 'blocks live subscription overrides that cannot rewrite the baked container prompt' {
-        { Invoke-TestBenchmark -InstanceId 'function_deployment_skill' -SubscriptionOverride 'Playground' 6>$null } |
-            Should -Throw '*supported container prompt override*'
-        $state.AzCalls.Count | Should -Be 0
-        $state.RunCalls.Count | Should -Be 0
+        @($json | ConvertFrom-Json) | Should -Be @('1')
     }
 }

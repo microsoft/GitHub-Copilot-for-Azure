@@ -32,17 +32,6 @@
     Forwards BAMI_CLIENT_SECRET from the task environment through --encrypted-env.
     Submission remains authenticated with the existing Microsoft service connection.
 
-.PARAMETER InstanceId
-    Optional. Select exactly one existing dataset instance for a smoke test.
-
-.PARAMETER SubscriptionOverride
-    Optional. Replace GithubCopilotForAzure-Testing in the selected dataset row.
-    Requires InstanceId so the override cannot accidentally affect the full dataset.
-    This does not rewrite the prompt baked into the benchmark container.
-
-.PARAMETER DryRun
-    Validate a single-instance CLI plan without submitting a benchmark.
-
 .LINK
     https://github.com/devdiv-microsoft/MicrosoftSweBench/wiki
 #>
@@ -61,10 +50,7 @@
         [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$OutputPath,
         [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$StorageAccountName,
         [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$ContainerName,
-        [switch]$UseBamiCredentials,
-        [string]$InstanceId,
-        [string]$SubscriptionOverride,
-        [switch]$DryRun
+        [switch]$UseBamiCredentials
     )
 
     Set-StrictMode -Version Latest
@@ -76,15 +62,6 @@
 
     if (!$Model -or $Model.Count -eq 0) {
         throw "Model parameter is required."
-    }
-    if ($SubscriptionOverride -and [string]::IsNullOrWhiteSpace($InstanceId)) {
-        throw 'SubscriptionOverride requires InstanceId.'
-    }
-    if ($DryRun -and [string]::IsNullOrWhiteSpace($InstanceId)) {
-        throw 'DryRun requires InstanceId.'
-    }
-    if ($SubscriptionOverride -and -not $DryRun) {
-        throw 'SubscriptionOverride requires DryRun until a supported container prompt override is implemented.'
     }
 
     Write-Host "Benchmark: $Benchmark"
@@ -209,34 +186,6 @@
     Write-Host "Changing directory to $targetDir"
     Set-Location $targetDir
 
-    $datasetPath = Join-Path $targetDir 'metadata.csv'
-    $selectedBenchmark = $Benchmark
-    if ($InstanceId) {
-        $selectedRows = @(Import-Csv -Path $datasetPath -ErrorAction Stop | Where-Object { $_.instance_id -ceq $InstanceId })
-        if ($selectedRows.Count -ne 1) {
-            throw "Expected exactly one dataset row for '$InstanceId'; found $($selectedRows.Count)."
-        }
-        $benchmarkName = $Benchmark.Split('.')[0]
-        $selectedBenchmark = "$benchmarkName.$InstanceId"
-        if ($selectedRows[0].PSObject.Properties['benchmark']) {
-            if ($selectedRows[0].benchmark -cne $benchmarkName) {
-                throw "Selected dataset row belongs to a different benchmark than '$benchmarkName'."
-            }
-        } else {
-            $selectedRows[0] | Add-Member -NotePropertyName benchmark -NotePropertyValue $benchmarkName
-        }
-        if ($SubscriptionOverride) {
-            $originalSubscription = 'GithubCopilotForAzure-Testing'
-            if (-not $selectedRows[0].problem_statement.Contains($originalSubscription)) {
-                throw "Selected prompt does not contain '$originalSubscription'; subscription override was not applied."
-            }
-            $selectedRows[0].problem_statement = $selectedRows[0].problem_statement.Replace($originalSubscription, $SubscriptionOverride)
-        }
-        $datasetPath = Join-Path $targetDir 'metadata.selected.csv'
-        $selectedRows | Export-Csv -Path $datasetPath -NoTypeInformation -Encoding utf8 -ErrorAction Stop
-        Write-Host "Using one existing benchmark instance: $InstanceId"
-    }
-
     $failedModels = @()
     $runIds = @()
 
@@ -246,50 +195,19 @@
         $runArgs = @(
             "run",
             "--agent", "github-copilot-cli",
-            "--benchmark", $selectedBenchmark,
+            "--benchmark", $Benchmark,
             "--model", $m,
             "--encrypted-env"
         ) + $encryptedEnvNames + @(
             "--env", "USE_COPILOT_CLI_VERSION",
-            "--dataset", $datasetPath,
+            "--dataset", (Join-Path $targetDir "metadata.csv"),
             "--tag", "org=CoreAI Cloud and Tools",
-            "--no-wait"
+            "--no-wait",
+            "--confirm"
         )
-        if (-not $InstanceId) {
-            $runArgs += '--confirm'
-        }
 
         if ($env:SYSTEM_DEBUG -eq "true") {
             $runArgs += "--verbose"
-        }
-
-        if ($InstanceId) {
-            $planPath = Join-Path $targetDir 'run-plan.jsonl'
-            try {
-                if (Test-Path $planPath) {
-                    Remove-Item -LiteralPath $planPath -ErrorAction Stop
-                }
-                $planOutput = & 'msbench-cli' @runArgs --dry-run --events $planPath 2>&1
-                $planExitCode = $LASTEXITCODE
-                $planOutput | ForEach-Object { Write-Host $_ }
-                if ($planExitCode -ne 0) {
-                    throw "MSBench single-instance preflight failed with exit code $planExitCode."
-                }
-                $plans = @(Get-Content -LiteralPath $planPath -ErrorAction Stop |
-                    ForEach-Object { $_ | ConvertFrom-Json -ErrorAction Stop } |
-                    Where-Object { $_.event -eq 'run_planned' })
-                if ($plans.Count -ne 1 -or $plans[0].data.args_resolved.instance_count -ne 1) {
-                    throw 'MSBench preflight did not resolve exactly one instance; submission blocked.'
-                }
-                Write-Host "MSBench preflight resolved exactly one instance: $selectedBenchmark"
-            } finally {
-                if (Test-Path $planPath) {
-                    Remove-Item -LiteralPath $planPath -ErrorAction Stop
-                }
-            }
-            if ($DryRun) {
-                continue
-            }
         }
 
         Write-Host "Running: msbench-cli $($runArgs -join ' ')"
@@ -322,10 +240,6 @@
     if ($failedModels.Count -gt 0) {
         throw "msbench-cli run failed for models: $($failedModels -join ', ')"
     }
-    if ($DryRun) {
-        Write-Host 'Single-instance preflight completed. No benchmark was submitted.'
-        return
-    }
 
     # Set pipeline output variable with collected run IDs
     $runIds = @($runIds | Select-Object -Unique)
@@ -351,9 +265,6 @@
     foreach ($file in @($jsonPath, $timestampPath)) {
         $fileName = [System.IO.Path]::GetFileName($file)
         $blobPath = "$timestamp/$fileName"
-        if ($InstanceId) {
-            $blobPath = "smoke-tests/$($runIds[0])/$blobPath"
-        }
         Write-Host "Uploading $fileName -> $ContainerName/$blobPath"
         $azArgs = @(
             "storage", "blob", "upload",
@@ -368,11 +279,6 @@
         if ($LASTEXITCODE -ne 0) {
             Write-Warning "Failed to upload $fileName to blob storage"
         }
-    }
-
-    if ($InstanceId) {
-        Write-Host "Single-case benchmark submitted. Nightly report processing is unchanged."
-        return
     }
 
     # --- Append timestamp to ToBeProcessed file ---

@@ -42,9 +42,6 @@ stages:
         scriptType: 'pscore'
         scriptLocation: 'scriptPath'
         scriptPath: $(Build.SourcesDirectory)/pipelines/scripts/Get-BamiBenchmarkCredential.ps1
-      env:
-        BAMI_KEY_VAULT: 'kv-msbench-eval'
-        BAMI_SECRET_NAME: 'msbench-evals-app-secret'
 
     # Microsoft identity handles repository cloning, MSBench submission, CAPI credentials and report storage.
     - task: AzureCLI@2
@@ -61,16 +58,12 @@ stages:
           -StorageAccountName "msbenchnightlydata"
           -ContainerName "msbench-reports"
           -UseBamiCredentials
-          -Benchmark "azure.skill"
-          -Model "gpt-5.5"
       env:
         BAMI_CLIENT_SECRET: $(BamiCredentials.BAMI_CLIENT_SECRET)
 
     - script: echo "Run IDs - $(RunBenchmarks.RUN_IDS)"
-      condition: and(succeeded(), ne(variables['RunBenchmarks.RUN_IDS'], ''))
       displayName: 'Display Run IDs'
 
     - publish: $(Build.ArtifactStagingDirectory)
-      condition: and(succeeded(), ne(variables['RunBenchmarks.RUN_IDS'], ''))
       artifact: benchmark-run-ids
       displayName: 'Publish benchmark run IDs artifact'
