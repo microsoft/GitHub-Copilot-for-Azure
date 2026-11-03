@@ -25,12 +25,21 @@ describe("getAzureEnvironment", () => {
     expect(getAzureEnvironment(undefined, { CI: ci })).toEqual({});
   });
 
-  test.each([undefined, "", "false", "true"])("selects explicit credentials with TEST_PERMISSION when CI is %j", (ci) => {
-    expect(getAzureEnvironment({ azurePermission: "read" }, { ...env, CI: ci, TEST_PERMISSION: "read" }))
+  test.each([undefined, "", "false"])("preserves credentials outside CI even with TEST_PERMISSION when CI is %j", (ci) => {
+    for (const permission of ["", "read", "none"]) {
+      const parentEnv = { ...env, CI: ci, TEST_PERMISSION: permission, TEST_AZURE_PERMISSION: "none" };
+      for (const tags of [undefined, { azurePermission: "read" }, { azurePermission: "unsupported" }]) {
+        expect(getAzureEnvironment(tags, parentEnv)).toEqual({});
+      }
+    }
+  });
+
+  test("selects explicit credentials with TEST_PERMISSION in CI", () => {
+    expect(getAzureEnvironment({ azurePermission: "read" }, { ...env, TEST_PERMISSION: "read" }))
       .toEqual({ AZURE_CLIENT_ID: "read-client", AZURE_CONFIG_DIR: "/tmp/azure-read" });
-    expect(getAzureEnvironment({ azurePermission: "none" }, { ...env, CI: ci, TEST_PERMISSION: "none" }))
+    expect(getAzureEnvironment({ azurePermission: "none" }, { ...env, TEST_PERMISSION: "none" }))
       .toEqual({ AZURE_CLIENT_ID: "", AZURE_CONFIG_DIR: "/tmp/azure-none" });
-    expect(getAzureEnvironment(undefined, { ...env, CI: ci }))
+    expect(getAzureEnvironment(undefined, env))
       .toEqual({ AZURE_CLIENT_ID: "admin-client", AZURE_CONFIG_DIR: "/tmp/azure-admin" });
   });
 
@@ -92,7 +101,7 @@ describe("getAzureEnvironment", () => {
     })).toEqual({ AZURE_CLIENT_ID: "", AZURE_CONFIG_DIR: "/tmp/azure-none" });
   });
 
-  test.each([env, { TEST_PERMISSION: "none", AZURE_NONE_CONFIG_DIR: "/tmp/azure-none" }])("uses an unauthenticated profile for none: %j", (parentEnv) => {
+  test.each([env, { CI: "true", TEST_PERMISSION: "none", AZURE_NONE_CONFIG_DIR: "/tmp/azure-none" }])("uses an unauthenticated profile for none: %j", (parentEnv) => {
     expect(getAzureEnvironment({ azurePermission: "none" }, parentEnv))
       .toEqual({ AZURE_CLIENT_ID: "", AZURE_CONFIG_DIR: "/tmp/azure-none" });
   });

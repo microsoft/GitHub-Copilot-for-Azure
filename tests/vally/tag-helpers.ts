@@ -14,10 +14,10 @@ export function getAzureEnvironment(
   tags: Record<string, string | string[]> | undefined,
   env: NodeJS.ProcessEnv = process.env,
 ): Record<string, string> {
-  // WARNING: "" opts into admin for untagged tests; only undefined preserves inherited credentials.
+  // WARNING: In CI, "" opts into admin for untagged tests; undefined preserves inherited credentials.
   // Unset this env var if the workflow or local run shouldn't scope to a specific profile.
   // Do not replace this with a truthiness check.
-  if (env.TEST_PERMISSION === undefined) {
+  if (env.CI !== "true" || env.TEST_PERMISSION === undefined) {
     return {};
   }
   const permission = tags?.azurePermission ?? (env.TEST_PERMISSION === "none" ? "none" : "admin");
