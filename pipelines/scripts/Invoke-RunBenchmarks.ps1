@@ -6,8 +6,9 @@
     This script runs in Azure DevOps under an AzureCLI@2 task with federated authentication.
     Feed authentication is handled by a preceding PipAuthenticate@1 task that sets
     PIP_EXTRA_INDEX_URL for the azure-sdk/internal/MicrosoftSweBench feed.
-    The run requires CAPI integration credentials retrieved from KeyVault and submitted to
-    MSBench as encrypted environment variables. The script clones the msbench-benchmarks repo,
+    The run requires CAPI integration credentials retrieved from KeyVault and
+    BAMI_CLIENT_SECRET from the task environment. These are submitted to MSBench as
+    encrypted environment variables. The script clones the msbench-benchmarks repo,
     installs MSBench CLI, and invokes for each model:
     msbench-cli run --agent github-copilot-cli --benchmark <benchmark> --model <model> --no-wait
 
@@ -28,10 +29,6 @@
 .PARAMETER ContainerName
     Required. The blob container name to upload run artifacts to.
 
-.PARAMETER UseBamiCredentials
-    Forwards BAMI_CLIENT_SECRET from the task environment through --encrypted-env.
-    Submission remains authenticated with the existing Microsoft service connection.
-
 .LINK
     https://github.com/devdiv-microsoft/MicrosoftSweBench/wiki
 #>
@@ -49,8 +46,7 @@
         ),
         [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$OutputPath,
         [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$StorageAccountName,
-        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$ContainerName,
-        [switch]$UseBamiCredentials
+        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$ContainerName
     )
 
     Set-StrictMode -Version Latest
@@ -69,25 +65,19 @@
     Write-Host "Output Path: $OutputPath"
     $pipelineRun = $env:TF_BUILD -eq "True"
 
-    $encryptedEnvNames = @('CAPI_INTEGRATION_ID', 'CAPI_HMAC_KEY')
-    if ($UseBamiCredentials) {
-        Set-PSDebug -Off
-        if ($env:SYSTEM_DEBUG -eq 'true') {
-            throw 'Disable System.Debug before submitting BAMI credentials.'
-        }
-        if ([string]::IsNullOrWhiteSpace($env:BAMI_CLIENT_SECRET) -or $env:BAMI_CLIENT_SECRET -match '^\$\([^)]+\)$') {
-            throw 'BAMI credential forwarding requires BAMI_CLIENT_SECRET in the task environment.'
-        }
-        if ($pipelineRun) {
-            $escaped = $env:BAMI_CLIENT_SECRET.Replace('%', '%AZP25').Replace("`r", '%0D').Replace("`n", '%0A')
-            Write-Host "##vso[task.setsecret]$escaped"
-            $escaped = $null
-        }
-        $encryptedEnvNames += 'BAMI_CLIENT_SECRET'
-        Write-Host 'Forwarding BAMI_CLIENT_SECRET as an encrypted environment variable.'
-    } elseif (-not [string]::IsNullOrWhiteSpace($env:BAMI_CLIENT_SECRET)) {
-        throw 'BAMI_CLIENT_SECRET is set without -UseBamiCredentials. Enable forwarding explicitly or remove it.'
+    Set-PSDebug -Off
+    if ($env:SYSTEM_DEBUG -eq 'true') {
+        throw 'Disable System.Debug before submitting BAMI credentials.'
     }
+    if ([string]::IsNullOrWhiteSpace($env:BAMI_CLIENT_SECRET) -or $env:BAMI_CLIENT_SECRET -match '^\$\([^)]+\)$') {
+        throw 'BAMI credential forwarding requires BAMI_CLIENT_SECRET in the task environment.'
+    }
+    if ($pipelineRun) {
+        $escaped = $env:BAMI_CLIENT_SECRET.Replace('%', '%AZP25').Replace("`r", '%0D').Replace("`n", '%0A')
+        Write-Host "##vso[task.setsecret]$escaped"
+        $escaped = $null
+    }
+    Write-Host 'Forwarding BAMI_CLIENT_SECRET as an encrypted environment variable.'
 
     $vaultName = "kv-msbench-eval-azuremcp"
     $secretNameCAPIID = "azure-mcp-eval-capi-id"
@@ -197,8 +187,7 @@
             "--agent", "github-copilot-cli",
             "--benchmark", $Benchmark,
             "--model", $m,
-            "--encrypted-env"
-        ) + $encryptedEnvNames + @(
+            "--encrypted-env", "CAPI_INTEGRATION_ID", "CAPI_HMAC_KEY", "BAMI_CLIENT_SECRET",
             "--env", "USE_COPILOT_CLI_VERSION",
             "--dataset", (Join-Path $targetDir "metadata.csv"),
             "--tag", "org=CoreAI Cloud and Tools",

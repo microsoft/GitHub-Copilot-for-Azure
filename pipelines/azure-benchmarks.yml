@@ -57,7 +57,6 @@ stages:
           -OutputPath "$(Build.ArtifactStagingDirectory)"
           -StorageAccountName "msbenchnightlydata"
           -ContainerName "msbench-reports"
-          -UseBamiCredentials
       env:
         BAMI_CLIENT_SECRET: $(BamiCredentials.BAMI_CLIENT_SECRET)
 
