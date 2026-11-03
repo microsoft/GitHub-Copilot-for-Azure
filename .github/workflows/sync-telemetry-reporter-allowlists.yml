@@ -1,4 +1,4 @@
-name: Sync skill and reference allowlists
+name: Sync telemetry reporter allowlists
 
 on:
   schedule:
@@ -68,23 +68,11 @@ jobs:
     if: github.repository == 'microsoft/GitHub-Copilot-for-Azure'
     needs: generate-allowlists
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - repository: mcp
-            resource-directory: servers/Azure.Mcp.Server/src/Resources
-            branch: sync/azure-skills-references
-            pr-title: Sync skill references from GitHub-Copilot-for-Azure
-          - repository: GitHub-Copilot-for-Azure
-            resource-directory: telemetry-reporter/resources
-            branch: sync/telemetry-reporter-allowlists
-            pr-title: 'chore: sync telemetry reporter allowlists'
     env:
-      TARGET_REPO: microsoft/${{ matrix.repository }}
-      RESOURCE_DIR: ${{ matrix.resource-directory }}
-      BRANCH_NAME: ${{ matrix.branch }}
-      PR_TITLE: ${{ matrix.pr-title }}
+      TARGET_REPO: microsoft/GitHub-Copilot-for-Azure
+      RESOURCE_DIR: telemetry-reporter/resources
+      BRANCH_NAME: sync/telemetry-reporter-allowlists
+      PR_TITLE: 'chore: sync telemetry reporter allowlists'
       SOURCE_URL: ${{ github.server_url }}/${{ github.repository }}
       SOURCE_COMMIT: ${{ github.sha }}
 
@@ -102,7 +90,7 @@ jobs:
           app-id: ${{ secrets.GHCP4A_BOT_APP_ID }}
           private-key: ${{ secrets.GHCP4A_BOT_PRIVATE_KEY }}
           owner: microsoft
-          repositories: ${{ matrix.repository }}
+          repositories: GitHub-Copilot-for-Azure
 
       - name: Clone target repo and create feature branch
         env:
@@ -153,7 +141,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.target-token.outputs.token }}
         run: |
-          PR_BODY="Skill and reference-file allowlists can drift as plugin sources change. This automated PR refreshes \`$RESOURCE_DIR/allowed-skill-names.json\` and \`$RESOURCE_DIR/allowed-plugin-file-references.json\` with the lists generated from [GitHub-Copilot-for-Azure]($SOURCE_URL) at commit \`$SOURCE_COMMIT\`. The Azure MCP and standalone telemetry reporter updates are proposed in separate PRs using the same generated snapshot; reporter builds and releases remain unchanged."
+          PR_BODY="Skill and reference-file allowlists can drift as plugin sources change. This automated PR refreshes the standalone telemetry reporter's \`$RESOURCE_DIR/allowed-skill-names.json\` and \`$RESOURCE_DIR/allowed-plugin-file-references.json\` with the lists generated from [GitHub-Copilot-for-Azure]($SOURCE_URL) at commit \`$SOURCE_COMMIT\`. Reporter builds and releases remain unchanged."
 
           EXISTING_PR=$(gh pr list \
             --repo "$TARGET_REPO" \

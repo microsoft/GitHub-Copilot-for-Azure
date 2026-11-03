@@ -20,6 +20,8 @@
 # Examples:
 #   ./aks-baseline.sh -g my-rg -n my-cluster
 #   ./aks-baseline.sh -g my-rg -n my-cluster --namespace payments
+#
+# Exit codes: 0 = completed, 1 = collection failure, 2 = invalid arguments.
 
 set -uo pipefail
 
@@ -27,17 +29,18 @@ RESOURCE_GROUP=""
 CLUSTER=""
 NAMESPACE=""
 SUBSCRIPTION=""
+COLLECTION_FAILED=0
 
 usage() {
     echo "Usage: $0 -g <resource-group> -n <cluster> [--namespace <ns>] [--subscription <id>]" >&2
-    exit "${1:-1}"
+    exit "${1:-2}"
 }
 
 require_value() {
     # require_value <option-name> <remaining-arg-count>
     if [ "$2" -lt 2 ]; then
         echo "Missing value for $1" >&2
-        usage 1
+        usage 2
     fi
 }
 
@@ -48,12 +51,12 @@ while [ $# -gt 0 ]; do
         --namespace) require_value "$1" "$#"; NAMESPACE="$2"; shift 2 ;;
         --subscription) require_value "$1" "$#"; SUBSCRIPTION="$2"; shift 2 ;;
         -h|--help) usage 0 ;;
-        *) echo "Unknown argument: $1" >&2; usage 1 ;;
+        *) echo "Unknown argument: $1" >&2; usage 2 ;;
     esac
 done
 
-[ -z "$RESOURCE_GROUP" ] && { echo "Missing required -g/--resource-group" >&2; usage 1; }
-[ -z "$CLUSTER" ] && { echo "Missing required -n/--cluster" >&2; usage 1; }
+[ -z "$RESOURCE_GROUP" ] && { echo "Missing required -g/--resource-group" >&2; usage 2; }
+[ -z "$CLUSTER" ] && { echo "Missing required -n/--cluster" >&2; usage 2; }
 
 AZ_SUB_ARGS=()
 [ -n "$SUBSCRIPTION" ] && AZ_SUB_ARGS=(--subscription "$SUBSCRIPTION")
@@ -69,7 +72,8 @@ run() {
     # run "<description>" <command...>
     local desc="$1"; shift
     if ! "$@"; then
-        echo "  [!] Could not gather: $desc (command failed or unavailable)"
+        echo "  [!] Could not gather: $desc (command failed or unavailable)" >&2
+        COLLECTION_FAILED=1
     fi
 }
 
@@ -110,7 +114,11 @@ run "node readiness" kubectl get nodes -o wide
 # "Running" — are caught. Terminal pods (Completed/Succeeded) are excluded so
 # finished jobs are not falsely flagged.
 section "5. Unhealthy pods (CrashLoopBackOff, not Ready, restarting, or bad status)"
-ALL_PODS="$(kubectl get pods -A -o wide 2>/dev/null)"
+if ! ALL_PODS="$(kubectl get pods -A -o wide 2>/dev/null)"; then
+    echo "  [!] Could not gather: pods across namespaces (command failed or unavailable)" >&2
+    COLLECTION_FAILED=1
+    ALL_PODS=""
+fi
 if [ -z "$ALL_PODS" ]; then
     echo "  No pods reported (or cluster unreachable)."
 else
@@ -157,3 +165,4 @@ echo "provisioning state, NotReady nodes, unhealthy or restarting pods, warning 
 echo "before deep-diving with 'kubectl describe' / 'kubectl logs' on a specific pod."
 echo ""
 echo "No changes were made to any resource."
+exit "$COLLECTION_FAILED"

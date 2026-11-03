@@ -33,7 +33,10 @@ public sealed class PluginTelemetryActivityWriterTests
             SkillName = "azure-storage",
             SkillVersion = "2.0.0",
             ToolName = "storage",
-            FileReference = "azure-ai\\references\\auth-best-practices.md"
+            FileReference = "azure-ai\\references\\auth-best-practices.md",
+            AllowedSkills = "local-skills.txt",
+            AllowedReferences = "local-references.txt",
+            AllowedTools = "local-tools.json"
         };
 
         using var activity = writer.Write(options);
@@ -64,6 +67,9 @@ public sealed class PluginTelemetryActivityWriterTests
         Assert.NotNull(activity.GetTagItem("EventId"));
         Assert.NotNull(activity.GetTagItem("Host"));
         Assert.NotNull(activity.GetTagItem("ProcessorArchitecture"));
+        Assert.DoesNotContain(activity.TagObjects, tag =>
+            tag.Key.Contains("Allowed", StringComparison.OrdinalIgnoreCase) ||
+            tag.Value is string value && value.StartsWith("local-", StringComparison.Ordinal));
     }
 
     [Fact]

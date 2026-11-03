@@ -7,15 +7,20 @@ This repository uses [Nerdbank.GitVersioning (NBGV)](https://github.com/dotnet/N
 - **Version Source**: Versions are calculated from the git commit height since `version.json` was introduced, filtered by path
 - **Path-Filtered Heights**: Each component (plugin, individual skills) has its own `version.json` with `pathFilters: ["."]` so only commits touching that directory increment its version
 - **Build-Time Stamping**: The Gulp build (`npm run build`) stamps versions into output files at build time
-- **Consistent Versioning**: All plugin manifest files (`.plugin/plugin.json`, `.claude-plugin/plugin.json`, `.cursor-plugin/plugin.json`) share the same version
+- **Consistent Versioning**: All plugin manifest files (`plugin.json`, `.plugin/plugin.json`, `.claude-plugin/plugin.json`, `.cursor-plugin/plugin.json`) share the same version
 
 ## Files Managed
 
 The following files have their versions automatically stamped at build time:
+- `plugins/<plugin>/plugin.json` (Agent Plugins 1.0 portable manifest)
 - `plugins/<plugin>/.claude-plugin/plugin.json`
 - `plugins/<plugin>/.cursor-plugin/plugin.json`
 - `plugins/<plugin>/.plugin/plugin.json`
 - `plugins/<plugin>/skills/*/SKILL.md` (each skill gets its own version)
+
+All source plugin manifests retain `0.0.0-placeholder`. Source version
+checks cover portable and legacy manifests, and build-output verification
+checks every package under `output/` (or an explicitly supplied package).
 
 ## Changelog Generation
 

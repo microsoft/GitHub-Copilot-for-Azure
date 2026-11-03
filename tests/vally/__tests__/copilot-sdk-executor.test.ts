@@ -1,7 +1,7 @@
 import type { SessionEvent } from "@github/copilot-sdk";
 import { describe, expect, test } from "vitest";
 import type { AgentMetadata } from "../../utils/agent-runner.ts";
-import { convertToTrajectoryEvents } from "../copilot-sdk-executor.ts";
+import { convertToTrajectoryEvents } from "../../utils/agent-runner.ts";
 
 type ToolStart = Extract<SessionEvent, { type: "tool.execution_start" }>;
 
@@ -20,6 +20,26 @@ function metadata(data: ToolStart["data"], success = true): AgentMetadata {
 }
 
 describe("convertToTrajectoryEvents", () => {
+  test("preserves main's user-turn tracking when normalizing namespace commands", () => {
+    const source = metadata({
+      toolName: "Azure.advisor", mcpToolName: "advisor", toolCallId: "call",
+      arguments: { command: "advisor_recommendation_list", parameters: { subscriptions: ["demo"] } },
+    });
+    const userMessage = (id: string): SessionEvent => ({
+      type: "user.message", id, parentId: null, timestamp: "2026-10-30T00:00:00Z",
+      data: { content: id },
+    });
+    source.events.unshift(userMessage("first"));
+    source.events.push(userMessage("second"));
+    const before = structuredClone(source);
+    const events = convertToTrajectoryEvents(source);
+    expect(events.map(event => event.turn)).toEqual([0, 0, 0, 1]);
+    expect(events[1]).toMatchObject({
+      type: "tool_call", data: { toolName: "advisor_recommendation_list" },
+    });
+    expect(source).toEqual(before);
+  });
+
   test.each([true, false])("normalizes namespace calls and results without changing raw events (success=%s)", success => {
     const parameters = { subscriptions: ["demo"], prioritized: true, top: 20 };
     const source = metadata({

@@ -62,7 +62,12 @@ stimuli:
       - type: completed
       - type: output-not-matches
         config:
-          pattern: "(?i)fatal error|unhandled exception|stack trace"
+          pattern: "(?im)^(?:fatal error|unhandled exception)(?:\\s|:)"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)^(bash|powershell|pwsh|shell|terminal|run_in_terminal|run_command|azure|azure_mcp|mcp_azure.*|az)$"
+            - name: "(?i)^(create|create_file|write_file|edit|apply_patch)$"
 
   - name: "Container App returns 503 after target port change"
     prompt: |
@@ -292,5 +297,218 @@ stimuli:
       - Remediation enables bounded automatic lock renewal, shortens or checkpoints processing, or deliberately adjusts lock duration within service limits; it does not rely on blind retries alone.
       - The response addresses at-least-once delivery by recommending idempotent processing or deduplication before replaying affected messages.
       - Verification measures processing and renewal behavior, confirms completion occurs before the effective lock expires, checks lock-lost and redelivery metrics, and validates that duplicate side effects do not occur.
+    tags: *quality-tags
+    graders: *quality-graders
+
+  - name: "Function dependency TLS hostname mismatch"
+    prompt: |
+      Diagnose this synthetic Azure Functions dependency incident using only
+      the supplied evidence. Do not query or modify Azure.
+
+      Evidence:
+      - The Function host is healthy and invocations start normally
+      - Calls to `https://api.internal.contoso.com` fail before an HTTP response
+      - DNS resolves the hostname to the expected private IP `10.20.1.8`
+      - A TCP probe to `10.20.1.8:443` succeeds
+      - The exception is `AuthenticationException:
+        RemoteCertificateNameMismatch`
+      - The server certificate is valid and unexpired, but its SAN contains
+        only `api.private.contoso.com`
+      - The dependency hostname changed in an app setting immediately before
+        the incident
+
+      Identify the root cause, recommend the narrowest safe correction, and
+      explain how to verify recovery.
+    rubric:
+      - The response identifies a TLS hostname-validation failure caused by the requested hostname not matching the certificate SAN and uses successful DNS and TCP probes to rule out basic name-resolution and network-path failures.
+      - The remediation restores the intended hostname or deploys a certificate whose SAN covers the approved hostname, after confirming the dependency contract; it does not disable certificate validation or trust all certificates.
+      - The response treats the app-setting change as the likely trigger, accounts for configuration source-of-truth and rollback safety, and does not recommend unrelated scaling or Function redeployment.
+      - Verification repeats a TLS handshake and representative Function invocation, confirms the hostname validates, and checks that dependency calls succeed without new certificate errors.
+    tags: *quality-tags
+    graders: *quality-graders
+
+  - name: "Function deployment succeeds but no functions are discovered"
+    prompt: |
+      Diagnose this synthetic Azure Functions deployment incident using only the
+      supplied evidence. Do not query or modify Azure.
+
+      Evidence:
+      - Zip deployment reports success and the Function host reaches Running
+      - The portal and management API list zero functions
+      - Host log: `No job functions found`
+      - The app uses the Python v2 programming model
+      - The deployment package contains `src/function_app.py`,
+        `src/requirements.txt`, and `.python_packages`
+      - The package root contains no `function_app.py`
+      - The pipeline recently changed its archive step from the `src`
+        directory to the repository root
+
+      Identify the root cause, propose a safe remediation, and describe how to
+      verify recovery.
+    rubric:
+      - The response identifies the incorrect deployment-package layout as the cause because the Python v2 entry point is nested under src instead of being at the deployed application root, so a successful artifact transfer does not imply function discovery.
+      - The remediation corrects the archive working directory or package contents so function_app.py and required files are at the expected root, while preserving the currently deployed artifact for rollback.
+      - The response does not attribute the incident primarily to trigger configuration, RBAC, scaling, or Application Insights because the host reports no discovered functions.
+      - Verification inspects the corrected package layout, confirms the host discovers and indexes the expected functions, and performs a representative invocation or trigger test.
+    tags: *quality-tags
+    graders: *quality-graders
+
+  - name: "App Service managed identity is unauthorized for Key Vault"
+    prompt: |
+      Diagnose this synthetic App Service authorization incident using only the
+      supplied evidence. Do not query or modify Azure.
+
+      Evidence:
+      - The App Service starts and serves endpoints that do not require secrets
+      - Requests that load a database secret fail with Key Vault HTTP 403
+      - Managed-identity token acquisition succeeds
+      - Key Vault DNS resolution and TCP 443 connectivity succeed
+      - The token object ID matches the App Service system-assigned identity
+      - The vault uses the Azure RBAC permission model
+      - That identity has no Key Vault data-plane role assignment on the vault
+      - The incident began after changing from a user-assigned identity to the
+        system-assigned identity
+
+      Identify the evidence-backed cause, recommend a least-privilege
+      remediation, and explain how to verify recovery.
+    rubric:
+      - The response identifies missing Key Vault data-plane RBAC for the newly selected system-assigned identity as the cause and distinguishes authorization failure from token acquisition, DNS, firewall, and TLS failures.
+      - The remediation grants only the required Key Vault data-plane role, such as Key Vault Secrets User for secret reads, to the confirmed principal at the narrowest appropriate vault or secret scope.
+      - The response verifies the application is intentionally using the system-assigned identity and recommends updating the configuration or infrastructure source of truth rather than adding broad Owner, Contributor, or Key Vault Administrator access.
+      - Verification confirms RBAC propagation, retrieves the required secret through the application identity, exercises the affected endpoint, and ensures unrelated secret access remains restricted.
+    tags: *quality-tags
+    graders: *quality-graders
+
+  - name: "Container App resolves private dependency to public address"
+    prompt: |
+      Diagnose this synthetic Azure Container Apps dependency incident using
+      only the supplied evidence. Do not query or modify Azure.
+
+      Evidence:
+      - The active revision is Running and its readiness probe succeeds
+      - Calls to `orders-db.database.windows.net:1433` time out
+      - The database has a private endpoint at `10.5.2.4` and public network
+        access is disabled
+      - DNS inside the Container App resolves the database hostname to a public
+        IP address
+      - The Container Apps environment is connected to VNet `apps-vnet`
+      - Private DNS zone `privatelink.database.windows.net` contains the correct
+        record but is linked only to `shared-vnet`, not `apps-vnet`
+      - The incident began when public database access was disabled
+
+      Identify the root cause, recommend the narrowest safe remediation, and
+      describe recovery verification.
+    rubric:
+      - The response identifies the missing private-DNS-zone link or equivalent DNS integration for apps-vnet as the root cause, causing the dependency hostname to resolve publicly even though only the private endpoint is allowed.
+      - The remediation links the approved private DNS zone to the Container Apps environment VNet or establishes an equivalent supported DNS-forwarding path; it does not re-enable public database access as the primary fix.
+      - The response distinguishes dependency egress and name resolution from Container App ingress, revision startup, target-port, and readiness failures.
+      - Verification confirms in-revision DNS resolves the hostname to 10.5.2.4, tests TCP and application connectivity through the private endpoint, and confirms public access remains disabled.
+    tags: *quality-tags
+    graders: *quality-graders
+
+  - name: "Diagnostic settings send logs to the wrong workspace"
+    prompt: |
+      Diagnose this synthetic Azure Monitor telemetry incident using only the
+      supplied evidence. Do not query or modify Azure.
+
+      Evidence:
+      - The production App Service remains healthy and serves requests
+      - Platform logs disappeared from the expected production Log Analytics
+        workspace immediately after an infrastructure deployment
+      - The diagnostic setting is enabled and includes the expected categories
+      - Its `workspaceId` now references a test workspace in another resource
+        group
+      - New App Service platform-log records are appearing in that test
+        workspace
+      - The production workspace is healthy and still receives logs from other
+        resources
+
+      Identify the root cause, recommend a safe correction, and explain how to
+      prove telemetry recovery.
+    rubric:
+      - The response identifies diagnostic-setting destination drift to the test workspace as the cause and distinguishes telemetry routing failure from an App Service or production-workspace outage.
+      - The remediation corrects the workspace resource ID in the infrastructure or configuration source of truth and applies the smallest diagnostic-setting change without recreating healthy resources or deleting historical data.
+      - The response accounts for ingestion delay and preserves required categories and retention or routing behavior rather than blindly recreating the complete monitoring stack.
+      - Verification generates a correlated test request, confirms new platform records arrive in the production workspace after the correction, and confirms new production records stop flowing to the unintended test workspace.
+    tags: *quality-tags
+    graders: *quality-graders
+
+  - name: "VM is healthy but guest application service is stopped"
+    prompt: |
+      Diagnose this synthetic Azure VM application incident using only the
+      supplied evidence. Do not query or modify Azure or the guest.
+
+      Evidence:
+      - VM power state is Running and Azure Resource Health is Available
+      - The VM agent is Ready
+      - Network Watcher allows TCP 8443 from the approved client subnet
+      - A TCP connection reaches the VM but returns `connection refused`
+      - `systemctl status orders-api` reports `failed`
+      - The journal reports `Configuration file /etc/orders/api.yaml not found`
+      - Deployment history shows the configuration file was removed in release
+        `2026.10.13.4`
+      - CPU, memory, and disk usage are normal
+
+      Identify the root cause, propose a safe recovery path, and explain how to
+      verify recovery.
+    rubric:
+      - The response identifies guest application startup failure caused by the missing configuration file and distinguishes connection refusal from an NSG, route, VM-health, capacity, or credential problem.
+      - Immediate recovery safely restores the validated configuration or rolls back the faulty release before starting the service, with approval for guest-changing actions and a retained rollback path.
+      - The response recommends correcting the deployment artifact or pipeline so the configuration is installed consistently and does not suggest opening port 8443 more broadly or restarting the VM without evidence.
+      - Verification confirms the service is active and listening on the intended interface and port, the approved client can complete a representative request, and the journal shows no immediate restart failure.
+    tags: *quality-tags
+    graders: *quality-graders
+
+  - name: "AKS rollout fails after dependency port configuration change"
+    prompt: |
+      Diagnose this synthetic AKS rollout incident using only the supplied
+      evidence. Do not query or modify Azure or Kubernetes.
+
+      Evidence:
+      - Deployment `checkout` was healthy before rollout `v42` at 10:02 UTC
+      - Old ReplicaSet pods remain Ready
+      - Every new ReplicaSet pod fails readiness with HTTP 503
+      - New-pod logs show `connect ECONNREFUSED 10.30.4.8:8444`
+      - ConfigMap revision `v42` changed `PAYMENTS_PORT` from `8443` to `8444`
+      - The payments Service has ready endpoints on port 8443
+      - Node readiness, CPU, memory, DNS, and NetworkPolicy events are healthy
+      - The Deployment reaches its progress deadline at 10:12 UTC
+
+      Identify the causal timeline, recommend the narrowest safe remediation,
+      and describe recovery verification.
+    rubric:
+      - The response correlates the v42 ConfigMap change with the new ReplicaSet's refused dependency connections and readiness failures, identifying the incorrect payments port as the rollout blocker.
+      - The response uses healthy old pods, nodes, DNS, capacity, NetworkPolicy evidence, and payments endpoints on 8443 to avoid blaming cluster infrastructure or generic scheduling.
+      - Immediate remediation rolls back or corrects the configuration and performs a controlled rollout while preserving available old replicas; durable remediation validates dependency configuration before deployment.
+      - Verification checks the corrected ReplicaSet becomes Ready, the rollout completes without reducing availability, dependency calls use port 8443, and representative checkout requests succeed without new readiness failures.
+    tags: *quality-tags
+    graders: *quality-graders
+
+  - name: "Event Hubs consumer cannot persist checkpoints after identity change"
+    prompt: |
+      Diagnose this synthetic Event Hubs processing incident using only the
+      supplied evidence. Do not query or modify Azure.
+
+      Evidence:
+      - The consumer connects to Event Hubs and continues receiving events
+      - After each restart, it replays events from an old offset
+      - Checkpoint-store log: `AuthorizationPermissionMismatch` when writing a
+        blob
+      - The checkpoint container and existing checkpoint blobs are present
+      - The consumer recently changed from a user-assigned identity to its
+        system-assigned identity
+      - The system-assigned identity has Azure Event Hubs Data Receiver
+      - It has no Storage Blob Data Contributor assignment on the checkpoint
+        storage account or container
+      - No AMQP disconnect, Event Hubs authorization, or storage-network error
+        is present
+
+      Identify the root cause, recommend a least-privilege remediation, and
+      explain how to verify recovery without creating duplicate side effects.
+    rubric:
+      - The response identifies missing checkpoint-storage data-plane authorization for the new system-assigned identity as the cause of stale checkpoints and replay, while distinguishing it from Event Hubs receive authorization and network failures.
+      - The remediation grants Storage Blob Data Contributor, or the minimum supported checkpoint-write role, to the confirmed identity at the checkpoint container or narrow storage scope and preserves the required Event Hubs receiver role.
+      - The response does not recommend deleting checkpoint blobs or resetting offsets before addressing authorization and accounts for at-least-once delivery with idempotent event processing.
+      - Verification confirms checkpoint blobs advance, restarts resume near the last processed offset, authorization errors stop, and replayed events do not create duplicate business side effects.
     tags: *quality-tags
     graders: *quality-graders

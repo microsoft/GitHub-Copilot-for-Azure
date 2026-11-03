@@ -5,10 +5,11 @@
  * deriveToolUsageFileName (1:1 correlation with the markdown report name).
  */
 
+import fs from "node:fs";
 import * as path from "path";
 import type { SessionEvent } from "@github/copilot-sdk";
-import { describe, expect, test } from "vitest";
-import { computeToolUsage, deriveToolUsageFileName } from "../copilot-sdk-runner.ts";
+import { afterEach, describe, expect, test, vi } from "vitest";
+import { computeToolUsage, createMarkdownReport, deriveToolUsageFileName, type AgentMetadata } from "../agent-runner.ts";
 
 // Minimal event factories. Cast through unknown because we only populate the
 // fields computeToolUsage reads; the full SessionEvent union is much larger.
@@ -158,6 +159,52 @@ describe("computeToolUsage", () => {
 
   test("returns an empty array when there are no tool calls", () => {
     expect(computeToolUsage([otherEvent("assistant.message")])).toEqual([]);
+  });
+});
+
+describe("report artifact filenames", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  test.each([false, true])("matches metadata and tool JSON to the markdown filename (collision=%s)", async (collision) => {
+    vi.spyOn(fs, "existsSync").mockReturnValue(true);
+    vi.spyOn(console, "log").mockImplementation(() => { });
+    const writeFile = vi.spyOn(fs, "writeFileSync").mockImplementation(() => { });
+    if (collision) {
+      writeFile.mockImplementationOnce(() => {
+        throw Object.assign(new Error("File exists"), { code: "EEXIST" });
+      });
+    }
+    const metadata: AgentMetadata = {
+      events: [],
+      testComments: ["Run details"],
+      turnCount: 0,
+      toolCounts: {},
+      skillFiles: {},
+      skillsLoaded: [],
+    };
+
+    await createMarkdownReport("report-filenames", { prompt: "Test prompt", timeout: 30 * 1000 }, metadata);
+
+    const writtenPaths = writeFile.mock.calls.map(([file]) => String(file));
+    const markdownPaths = writtenPaths.filter(file => file.endsWith(".md"));
+    expect(markdownPaths).toHaveLength(collision ? 2 : 1);
+    const markdownPath = markdownPaths.at(-1)!;
+    const jsonPath = markdownPath.replace(/\.md$/, ".json");
+    expect(path.basename(jsonPath)).toMatch(collision
+      ? /^agent-metadata-.+-1\.json$/
+      : /^agent-metadata-.+\.json$/);
+    expect(writeFile).toHaveBeenCalledWith(jsonPath, JSON.stringify({
+      prompt: "Test prompt",
+      events: metadata.events,
+      testComments: metadata.testComments,
+      toolCounts: metadata.toolCounts,
+      skillFiles: metadata.skillFiles,
+      skillsLoaded: metadata.skillsLoaded,
+    }, null, 2), "utf-8");
+    expect(writtenPaths).not.toContain(path.join(path.dirname(markdownPath), "agent-metadata.json"));
+    expect(writtenPaths).toContain(deriveToolUsageFileName(markdownPath));
   });
 });
 

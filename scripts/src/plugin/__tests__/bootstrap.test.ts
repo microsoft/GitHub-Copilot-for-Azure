@@ -73,6 +73,17 @@ describe("plugin and skill bootstrap", () => {
     );
 
     const pluginRoot = path.join(repoRoot, "plugins", "test-plugin");
+    const portableManifest = JSON.parse(fs.readFileSync(path.join(pluginRoot, "plugin.json"), "utf8"));
+    expect(portableManifest.$schema).toBe("https://agent-plugins.org/schemas/1.0.0/plugin.schema.json");
+    expect(portableManifest.name).toBe("test-plugin");
+    expect(portableManifest.version).toBe("0.0.0-placeholder");
+    for (const field of ["skills", "mcpServers", "hooks"]) {
+      expect(portableManifest).not.toHaveProperty(field);
+    }
+    expect(JSON.parse(fs.readFileSync(path.join(pluginRoot, "mcp.json"), "utf8"))).toEqual({
+      $schema: "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+      mcpServers: {},
+    });
     expect(fs.existsSync(path.join(pluginRoot, ".plugin", "plugin.json"))).toBe(true);
     expect(fs.existsSync(path.join(pluginRoot, ".claude-plugin", "plugin.json"))).toBe(true);
     expect(fs.existsSync(path.join(pluginRoot, ".cursor-plugin", "plugin.json"))).toBe(true);

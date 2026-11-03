@@ -4,6 +4,7 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - "plugins/*/plugin.json"
       - "plugins/*/.plugin/plugin.json"
       - "plugins/*/.claude-plugin/plugin.json"
       - "plugins/*/.cursor-plugin/plugin.json"

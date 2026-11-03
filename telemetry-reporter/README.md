@@ -4,21 +4,117 @@
 `server plugin-telemetry` command. It produces an executable named
 `ghcfa-telem` and embeds telemetry allowlist resources from `resources\`.
 
+## File-based allowlists
+
+Use these optional arguments to override the embedded allowlists independently:
+
+| Argument | Allowed telemetry values |
+|---|---|
+| `--allowed-skills <path>` | Skill names in newline-separated text |
+| `--allowed-references <path>` | Reference-file paths in newline-separated text |
+| `--allowed-tools <path>` | Commands, areas, and extension tools in grouped JSON |
+
+Skills and references files are UTF-8 text with one name or reference path per
+line. A UTF-8 BOM, LF or CRLF line endings, duplicate entries, blank lines, and
+`#` comment lines are supported. Surrounding whitespace is trimmed; comments
+must start with `#` after trimming. An empty or comment-only skills or references
+file allows no values in that category.
+
+The tools file is a UTF-8 JSON object with three required top-level sections:
+`commands`, `areas`, and `extensionTools`. Each section maps arbitrary entry
+names (for example, the Azure MCP version that introduced the names) to
+non-empty arrays of command, area, or extension-tool names:
+
+```json
+{
+  "commands": {
+    "Initial": ["subscription_list", "group_resource_list"],
+    "1.0.1": ["custom_command"]
+  },
+  "areas": {
+    "Initial": ["storage", "pricing"],
+    "Next release": ["custom_area"]
+  },
+  "extensionTools": {
+    "Azure extension": ["azure_auth-set_auth_context"]
+  }
+}
+```
+
+Names are combined across all entries within each section; duplicate names are
+allowed. Entry names are descriptive labels only, not versions to compare or
+tool names to allow. The three sections remain distinct. An empty section
+(`{}`) allows no names in that category. All three empty sections deny all tool
+names. Missing, unknown, or duplicate top-level sections, invalid JSON, empty
+entry arrays, and non-string or blank names are rejected. The tools file does
+not accept the newline-separated format or `#` comments.
+
+Supplied files **replace**, rather than extend, the corresponding embedded
+lists. Omitted arguments retain the embedded lists for those categories.
+The tools file replaces all three built-in tool categories together. Every
+supplied file is read before event validation, even if the event has no value
+for that category. A missing or unreadable file, invalid file path, or malformed
+tools file produces a JSON error response with status `400` and process exit
+code `1`; no telemetry is published and no embedded fallback is used.
+
+Matching remains case-sensitive. Reference entries and reported reference paths
+are normalized for comparison so `/` and `\` separators are interchangeable,
+including mixed separators, regardless of the host operating system. No other
+path resolution is performed, and the reported path is unchanged in telemetry.
+List canonical MCP command and area names without client prefixes (for example,
+`subscription_list` in `commands` or `storage` in `areas`);
+the reporter continues stripping `azure-`, `mcp_azure_mcp_`, and
+`mcp__plugin_azure_azure__` from incoming tool names. Exact tool names such as
+`azure_auth-set_auth_context` belong in `extensionTools` and are matched verbatim.
+
+Paths to the allowlist files can be absolute or relative to the current working
+directory. Both `--option <path>` and `--option=<path>` are accepted. Paths to
+these configuration files are not included in telemetry properties.
+
+From a directory containing the executable and the list files, in PowerShell:
+
+```powershell
+.\ghcfa-telem.exe --timestamp "2026-10-27T00:00:00Z" `
+  --event-type skill_invocation --session-id "session-1" `
+  --skill-name "custom-skill" `
+  --allowed-skills ".\allowed-skills.txt" `
+  --allowed-references ".\allowed-references.txt" `
+  --allowed-tools ".\allowed-tools.json"
+```
+
+In Bash:
+
+```bash
+./ghcfa-telem --timestamp "2026-10-27T00:00:00Z" \
+  --event-type skill_invocation --session-id "session-1" \
+  --skill-name "custom-skill" \
+  --allowed-skills "./allowed-skills.txt" \
+  --allowed-references "./allowed-references.txt" \
+  --allowed-tools "./allowed-tools.json"
+```
+
+The skills file in this example must contain `custom-skill`. Generating and
+passing plugin-specific lists from the build and hooks is separate work;
+existing callers continue using embedded lists until they supply these flags.
+
 ## Allowlist maintenance
 
-The [allowlist synchronization workflow](../.github/workflows/sync-to-azure-mcp.yml)
+The [allowlist synchronization workflow](../.github/workflows/sync-telemetry-reporter-allowlists.yml)
 runs on weekdays or by manual dispatch. It generates `allowed-skill-names.json`
 and `allowed-plugin-file-references.json` once from this repository's plugin
-sources, then proposes separate PRs in `microsoft/mcp` and this repository.
-Here, those PRs update only the two files under `telemetry-reporter/resources/`.
+sources, then proposes a PR in this repository that updates only the two files
+under `telemetry-reporter/resources/`.
 Unchanged lists produce no commit or PR; subsequent changes reuse the open PR
-on the destination's stable bot-owned branch. Either destination can succeed
-independently of the other.
+on the stable bot-owned `sync/telemetry-reporter-allowlists` branch.
+
+The workflow no longer updates Azure MCP's lists. Only older plugin versions
+still use Azure MCP for telemetry, and current plugin sources no longer
+represent those versions.
 
 The workflow uses `GHCP4A_BOT_APP_ID` and `GHCP4A_BOT_PRIVATE_KEY`. The GitHub
-App must be installed on both repositories with Contents and Pull requests
-write access; each job requests a token scoped to its destination. App tokens
-allow the resulting PRs to trigger normal validation workflows.
+App must be installed on this repository with Contents and Pull requests
+write access; the publication job requests a token scoped to this repository.
+App tokens allow the resulting PRs to trigger normal validation workflows.
 
 `allowed-tool-names.json` remains a pinned Azure MCP snapshot, as do the runtime
 compatibility values in `CompatibilityConstants`. Generating the skill and

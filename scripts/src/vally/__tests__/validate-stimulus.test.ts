@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { validateEarlyTerminatePatterns } from "../validate-stimulus.js";
+import {
+  validateEarlyTerminatePatterns,
+  validateRubric,
+} from "../validate-stimulus.js";
 
 describe("validateEarlyTerminatePatterns", () => {
   it("accepts JavaScript-compatible regular expressions", () => {
@@ -10,6 +13,27 @@ describe("validateEarlyTerminatePatterns", () => {
     }]);
 
     expect(validateEarlyTerminatePatterns(value)).toBeUndefined();
+  });
+
+  describe("validateRubric", () => {
+    it("accepts non-empty string criteria", () => {
+      expect(validateRubric([
+        "Identify the evidence-backed cause.",
+        "Recommend a safe remediation.",
+      ])).toBeUndefined();
+    });
+
+    it("rejects YAML mappings created by unquoted colons", () => {
+      expect(validateRubric([
+        { "Identify the cause": "the package layout is incorrect" },
+      ])).toBe("rubric must be a non-empty array of non-empty strings");
+    });
+
+    it("rejects empty criteria", () => {
+      expect(validateRubric([""])).toBe(
+        "rubric must be a non-empty array of non-empty strings",
+      );
+    });
   });
 
   it("accepts supported leading inline regular expression flags", () => {

@@ -19,10 +19,13 @@ import {
 import { isDeepStrictEqual } from "util";
 import Vinyl = require("vinyl");
 
+const { writePluginAllowlists }: typeof import("./scripts/src/plugin-allowlists.cjs") =
+  require("./scripts/src/plugin-allowlists.cts");
+
 // Matches top-level skill files like skills/azure-deploy/SKILL.md but not nested ones.
 const TOP_LEVEL_SKILL_RE = /^skills[\\/][^\\/]+[\\/]SKILL\.md$/;
-// Matches plugin.json in the .plugin/, .cursor-plugin/, and .claude-plugin/ directories.
-const PLUGIN_JSON_RE = /^\.(?:plugin|cursor-plugin|claude-plugin)[\\/]plugin\.json$/;
+// Matches the portable manifest and retained client-specific manifests.
+const PLUGIN_JSON_RE = /^(?:\.(?:plugin|cursor-plugin|claude-plugin)[\\/])?plugin\.json$/;
 const HOOK_MANIFESTS = [
   "claude-hooks.json",
   "copilot-hooks.json",
@@ -31,6 +34,12 @@ const HOOK_MANIFESTS = [
 const REQUIRED_PLUGIN_HOOK_FILES = [
   "scripts/pluginPathAllowPattern.ps1",
   "scripts/pluginPathAllowPattern.sh",
+] as const;
+const PLUGIN_METADATA_CLIENTS = [
+  { clientName: "agent-plugins", manifestDirectory: ".", hookManifest: null },
+  { clientName: "copilot", manifestDirectory: ".plugin", hookManifest: "copilot-hooks.json" },
+  { clientName: "cursor", manifestDirectory: ".cursor-plugin", hookManifest: "cursor-hooks.json" },
+  { clientName: "claude-code", manifestDirectory: ".claude-plugin", hookManifest: "claude-hooks.json" },
 ] as const;
 
 type HookManifest = {
@@ -89,7 +98,7 @@ function stampSkillVersions(plugin: string) {
 }
 
 /**
- * Stamps the plugin.json files in `.plugin/`, `.cursor-plugin/`, and
+ * Stamps the root plugin.json and files in `.plugin/`, `.cursor-plugin/`, and
  * `.claude-plugin/` with using git commit height.
  */
 function stampPluginVersions(plugin: string, legacyChangelog?: LegacyChangelog) {
@@ -260,6 +269,169 @@ function copyHookFile(sourcePath: string, destinationPath: string): void {
   chmodSync(destinationPath, statSync(sourcePath).mode);
 }
 
+function readJsonObject(filePath: string, description: string): Record<string, unknown> {
+  let value: unknown;
+  try {
+    value = JSON.parse(readFileSync(filePath, "utf8"));
+  } catch (error) {
+    throw new Error(
+      `Invalid JSON in ${description}: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error(`${description} must contain a JSON object.`);
+  }
+
+  return value as Record<string, unknown>;
+}
+
+function requireMetadataString(
+  value: unknown,
+  fieldName: string,
+  description: string
+): string {
+  if (
+    typeof value !== "string" ||
+    value.length === 0 ||
+    /[\u0000-\u001f\u007f]/.test(value)
+  ) {
+    throw new Error(
+      `${description} field "${fieldName}" must contain a non-empty string without control characters.`
+    );
+  }
+  return value;
+}
+
+function readMcpServers(filePath: string): Record<string, unknown> {
+  if (!existsSync(filePath)) {
+    return {};
+  }
+  const description = `built MCP configuration ${filePath}`;
+  const config = readJsonObject(filePath, description);
+  if (
+    typeof config.mcpServers !== "object" ||
+    config.mcpServers === null ||
+    Array.isArray(config.mcpServers)
+  ) {
+    throw new Error(`${description} field "mcpServers" must contain a JSON object.`);
+  }
+  return config.mcpServers as Record<string, unknown>;
+}
+
+function normalizeLegacyMcpServers(
+  servers: Record<string, unknown>,
+): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(servers).map(([name, value]) => {
+    if (typeof value !== "object" || value === null || Array.isArray(value)) {
+      throw new Error(`Legacy MCP server "${name}" must contain a JSON object.`);
+    }
+    const server = value as Record<string, unknown>;
+    const type = server.type === "http"
+      ? "streamable-http"
+      : server.type ?? ("command" in server ? "stdio" : undefined);
+    return [name, { ...server, type }];
+  }));
+}
+
+function writePluginHookMetadata(
+  pluginDirname: string,
+  outputRoot: string,
+  destinationRoot: string
+): void {
+  const pluginOutputRoot = path.join(outputRoot, pluginDirname);
+  let pluginName: string | undefined;
+  let pluginVersion: string | undefined;
+  let portableManifest: Record<string, unknown> | undefined;
+
+  for (const client of PLUGIN_METADATA_CLIENTS) {
+    const manifestPath = path.join(
+      pluginOutputRoot,
+      client.manifestDirectory,
+      "plugin.json"
+    );
+    if (!existsSync(manifestPath)) {
+      throw new Error(
+        `Missing built plugin manifest output/${pluginDirname}/${client.manifestDirectory}/plugin.json.`
+      );
+    }
+
+    const description =
+      `built plugin manifest output/${pluginDirname}/${client.manifestDirectory}/plugin.json`;
+    const manifest = readJsonObject(manifestPath, description);
+    const clientPluginName = requireMetadataString(manifest.name, "name", description);
+    const clientPluginVersion = requireMetadataString(
+      manifest.version,
+      "version",
+      description
+    );
+
+    pluginName ??= clientPluginName;
+    pluginVersion ??= clientPluginVersion;
+    if (clientPluginName !== pluginName || clientPluginVersion !== pluginVersion) {
+      throw new Error(
+        `Built plugin manifests for ${pluginDirname} must use the same name and version; ` +
+        `${client.clientName} has "${clientPluginName}" version "${clientPluginVersion}", ` +
+        `expected "${pluginName}" version "${pluginVersion}".`
+      );
+    }
+
+    portableManifest ??= manifest;
+    if (client.hookManifest !== null) {
+      const expectedFields: Record<string, unknown> = {
+        author: portableManifest.author,
+        homepage: portableManifest.homepage,
+        repository: portableManifest.repository,
+        license: portableManifest.license,
+        keywords: portableManifest.keywords,
+        skills: "./skills/",
+        mcpServers: "./.mcp.json",
+        hooks: `./hooks/${client.hookManifest}`,
+      };
+      // Claude and Cursor descriptions intentionally include their client names.
+      if (client.clientName === "copilot") {
+        expectedFields.description = portableManifest.description;
+      }
+
+      for (const [field, expected] of Object.entries(expectedFields)) {
+        if (!isDeepStrictEqual(manifest[field], expected)) {
+          throw new Error(
+            `${description} field "${field}" is out of sync: ` +
+            `expected ${JSON.stringify(expected) ?? "a missing field"}, ` +
+            `found ${JSON.stringify(manifest[field]) ?? "a missing field"}.`
+          );
+        }
+      }
+    }
+  }
+
+  if (!pluginName || !pluginVersion) {
+    throw new Error(`No built plugin manifests were found for ${pluginDirname}.`);
+  }
+
+  const portableMcpServers = readMcpServers(path.join(pluginOutputRoot, "mcp.json"));
+  const legacyMcpServers = readMcpServers(path.join(pluginOutputRoot, ".mcp.json"));
+  if (!isDeepStrictEqual(portableMcpServers, normalizeLegacyMcpServers(legacyMcpServers))) {
+    throw new Error(
+      `Built MCP configurations for ${pluginDirname} must declare equivalent servers in mcp.json and .mcp.json.`
+    );
+  }
+  const mcpServerNames = Object.keys(portableMcpServers).sort();
+  for (const serverName of mcpServerNames) {
+    requireMetadataString(serverName, "mcpServers key", `built MCP configuration for ${pluginDirname}`);
+  }
+
+  const metadataLines = [
+    `plugin-name=${pluginName}`,
+    `plugin-version=${pluginVersion}`,
+    ...mcpServerNames.map(serverName => `mcp-server=${serverName}`),
+  ];
+  writeFileSync(
+    path.join(destinationRoot, "metadata.txt"),
+    `${metadataLines.join("\n")}\n`
+  );
+}
+
 export function assemblePluginHooks(
   pluginDirname: string,
   options: HookAssemblyOptions = {},
@@ -338,7 +510,19 @@ export function assemblePluginHooks(
       path.join(destinationRoot, manifestName),
       `${JSON.stringify(compiledManifest, null, 2)}\n`,
     );
+    if (manifestName === "copilot-hooks.json") {
+      const copilotHooksRoot = path.join(
+        outputRoot, pluginDirname, "com.github.copilot", "hooks"
+      );
+      mkdirSync(copilotHooksRoot, { recursive: true });
+      copyFileSync(
+        path.join(destinationRoot, manifestName),
+        path.join(copilotHooksRoot, "hooks.json"),
+      );
+    }
   }
+
+  writePluginHookMetadata(pluginDirname, outputRoot, destinationRoot);
 }
 
 function buildPlugin(pluginDirname: string): Promise<void> {
@@ -366,6 +550,7 @@ function buildPlugin(pluginDirname: string): Promise<void> {
     pipeline.on("end", () => {
       try {
         assemblePluginHooks(pluginDirname);
+        writePluginAllowlists(pluginOutputDir);
         generateChangelog(pluginDirname, legacyChangelog);
         resolve();
       } catch (err) {

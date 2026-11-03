@@ -132,6 +132,15 @@ For more details, see [Connect to sovereign clouds](https://learn.microsoft.com/
 
 ## Client Support Matrix
 
+Built packages also conform to [Agent Plugins 1.0.0](https://agent-plugins.org/):
+root `plugin.json` provides metadata, `mcp.json` provides portable MCP
+configuration, and `skills/` provides skills. Copilot's namespaced hooks at
+`com.github.copilot/hooks/hooks.json` are generated from `hooks/copilot-hooks.json`.
+Existing client manifests, `.mcp.json`, and hook paths remain for backwards
+compatibility. The matrix below describes existing client integrations;
+format conformance does not imply every client supports the new layout.
+See [plugin manifests](./docs/plugin-manifest.md) for details.
+
 | Client | Skills | MCP Servers | Hooks | Marketplace | Manifest | Status |
 |--------|:------:|:-----------:|:-----:|:-----------:|----------|--------|
 | **Copilot CLI** | ✅ | ✅ | ✅ (`hooks/copilot-hooks.json`) | ✅ `.plugin/` | `.plugin/plugin.json` | ✅ Onboarded |

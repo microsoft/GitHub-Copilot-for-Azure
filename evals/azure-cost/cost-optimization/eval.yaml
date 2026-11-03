@@ -193,6 +193,35 @@ stimuli:
           disallowed:
             - name: "(?i)^(bash|powershell|shell|python|web_fetch|fetch|curl|http|rest)$"
 
+  - name: "NAP node count is not stable commitment demand"
+    prompt: "My NAP-enabled AKS cluster averaged 12 nodes over the last 45 days, but NAP changed VM SKUs and zones during that period and between 35 and 60 percent of the nodes were Spot. Based only on that average node count, can I buy a Reservation or Savings Plan for 12 nodes? Do not purchase anything."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: coexistence
+      regression: aks-nap-commitment-demand
+      requiredSkills:
+        - cost-optimization
+        - aks-cost-optimization
+    rubric:
+      - "The response rejects the 12-node average as sufficient evidence for commitment sizing because VM SKUs and Spot mix varied. It requires representative, time-aligned demand for compatible non-Spot compute rather than total node counts, excludes Spot from the commitment baseline, and leaves stable demand unverified without that evidence. It does not recommend a commitment quantity or make a purchase based on the supplied average. If it discusses possible future changes, it does not treat unapproved changes as an established future-demand baseline."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-optimization
+            - aks-cost-optimization
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
   - name: "Optimization resolves policy and commitment conflicts"
     prompt: "An Advisor recommendation reports savings for downsizing a resource, but policy may block the target SKU and an existing reservation may be stranded. Explain how to prioritize the recommendation without running tools."
     config:

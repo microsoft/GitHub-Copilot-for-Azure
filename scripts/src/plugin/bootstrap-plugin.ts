@@ -99,20 +99,27 @@ async function main(): Promise<void> {
     keywords: [
       "azure",
       "cloud"
-    ],
+    ]
+  };
+  const portablePluginManifest = {
+    $schema: "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+    ...pluginManifestBase
+  };
+  const legacyPluginManifestBase = {
+    ...pluginManifestBase,
     skills: "./skills/",
     mcpServers: "./.mcp.json"
   };
   const copilotPluginManifest = {
-    ...pluginManifestBase,
+    ...legacyPluginManifestBase,
     hooks: "./hooks/copilot-hooks.json"
   };
   const claudeCodePluginManifest = {
-    ...pluginManifestBase,
+    ...legacyPluginManifestBase,
     hooks: "./hooks/claude-hooks.json"
   };
   const cursorPluginManifest = {
-    ...pluginManifestBase,
+    ...legacyPluginManifestBase,
     hooks: "./hooks/cursor-hooks.json"
   };
   const repoRoot = path.resolve(__dirname, "../../..");
@@ -123,6 +130,7 @@ async function main(): Promise<void> {
   fs.mkdirSync(pluginRoot);
 
   // Plugin manifests
+  fs.writeFileSync(path.join(pluginRoot, "plugin.json"), JSON.stringify(portablePluginManifest, null, 2));
   fs.mkdirSync(path.join(pluginRoot, ".plugin"));
   fs.writeFileSync(path.join(pluginRoot, ".plugin/plugin.json"), JSON.stringify(copilotPluginManifest, null, 2));
   fs.mkdirSync(path.join(pluginRoot, ".claude-plugin"));
@@ -134,6 +142,10 @@ async function main(): Promise<void> {
   fs.mkdirSync(path.join(pluginRoot, "skills"));
 
   // MCP server declaration
+  fs.writeFileSync(path.join(pluginRoot, "mcp.json"), JSON.stringify({
+    $schema: "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+    mcpServers: {}
+  }, null, 2));
   fs.writeFileSync(path.join(pluginRoot, ".mcp.json"), JSON.stringify({ mcpServers: {} }, null, 2));
 
   // License
