@@ -23,10 +23,12 @@ BeforeAll {
             [switch]$UseBamiCredentials,
             [string[]]$Model = @('test-one', 'test-two'),
             [string]$InstanceId,
-            [string]$SubscriptionOverride
+            [string]$SubscriptionOverride,
+            [switch]$DryRun
         )
         & $runScript -UseBamiCredentials:$UseBamiCredentials -Model $Model `
             -InstanceId $InstanceId -SubscriptionOverride $SubscriptionOverride `
+            -DryRun:$DryRun `
             -OutputPath (Join-Path $caseDirectory 'output') `
             -StorageAccountName 'test-storage' -ContainerName 'test-container'
     }
@@ -53,6 +55,9 @@ Describe 'BAMI benchmark credential forwarding' {
             Secret = $secret
             AzCalls = [System.Collections.Generic.List[object]]::new()
             RunCalls = [System.Collections.Generic.List[object]]::new()
+            PlanCalls = [System.Collections.Generic.List[object]]::new()
+            PlannedInstanceCount = 1
+            PlanExit = 0
             DatasetRows = @(
                 [pscustomobject]@{
                     instance_id = 'function_deployment_skill'
@@ -99,6 +104,16 @@ Describe 'BAMI benchmark credential forwarding' {
         Mock msbench-cli {
             $global:LASTEXITCODE = 0
             if ($args[0] -eq 'run') {
+                if ($args -contains '--dry-run') {
+                    $state.PlanCalls.Add(@($args))
+                    $global:LASTEXITCODE = $state.PlanExit
+                    $eventIndex = [array]::IndexOf($args, '--events')
+                    @{
+                        event = 'run_planned'
+                        data = @{ args_resolved = @{ instance_count = $state.PlannedInstanceCount } }
+                    } | ConvertTo-Json -Depth 5 -Compress | Set-Content $args[$eventIndex + 1]
+                    return
+                }
                 $state.RunCalls.Add(@($args))
                 "run_id=$($state.RunCalls.Count)"
             }
@@ -217,18 +232,22 @@ Describe 'BAMI benchmark credential forwarding' {
         }
     }
 
-    It 'submits only the selected case with the Playground prompt and preserves its assets' {
+    It 'submits only the explicit selected case after a one-instance CLI preflight' {
         $env:BAMI_CLIENT_SECRET = $secret
-        $subscription = 'Azure Skills Evaluation Playground (subscription ID 12687fa6-5767-4fa6-8c97-7a4bb7a7427d)'
         $null = Invoke-TestBenchmark -UseBamiCredentials -Model 'gpt-5.5' `
-            -InstanceId 'function_deployment_skill' -SubscriptionOverride $subscription 6>&1
+            -InstanceId 'function_deployment_skill' 6>&1
         $state.RunCalls.Count | Should -Be 1
+        $state.PlanCalls.Count | Should -Be 1
         $runArgs = $state.RunCalls[0]
+        $runArgs | Should -Contain 'azure.function_deployment_skill'
+        $runArgs | Should -Not -Contain 'azure.skill'
+        $runArgs | Should -Not -Contain '--confirm'
         $datasetIndex = [array]::IndexOf($runArgs, '--dataset')
         $rows = @(Import-Csv $runArgs[$datasetIndex + 1])
         $rows.Count | Should -Be 1
         $rows[0].instance_id | Should -Be 'function_deployment_skill'
-        $rows[0].problem_statement | Should -Be "Deploy to $subscription in eastus."
+        $rows[0].benchmark | Should -Be 'azure'
+        $rows[0].problem_statement | Should -Match 'GithubCopilotForAzure-Testing'
         $rows[0].image_tag | Should -Be 'test-function-image'
         $rows[0].patch | Should -Be 'test-patch'
         $original = @(Import-Csv (Join-Path $caseDirectory 'msbench-benchmarks/curation/benchmarks/azure/metadata.csv'))
@@ -263,7 +282,38 @@ Describe 'BAMI benchmark credential forwarding' {
 
     It 'rejects an unexpected original subscription instead of silently skipping the override' {
         $state.DatasetRows[0].problem_statement = 'Deploy somewhere else.'
-        { Invoke-TestBenchmark -InstanceId 'function_deployment_skill' -SubscriptionOverride 'Playground' 6>$null } | Should -Throw '*override was not applied*'
+        { Invoke-TestBenchmark -InstanceId 'function_deployment_skill' -SubscriptionOverride 'Playground' -DryRun 6>$null } | Should -Throw '*override was not applied*'
+        $state.RunCalls.Count | Should -Be 0
+    }
+
+    It 'blocks submission when the CLI resolves more than one instance' {
+        $state.PlannedInstanceCount = 16
+        { Invoke-TestBenchmark -InstanceId 'function_deployment_skill' 6>$null } | Should -Throw '*exactly one instance*'
+        $state.RunCalls.Count | Should -Be 0
+    }
+
+    It 'blocks submission when native preflight fails' {
+        $state.PlanExit = 9
+        { Invoke-TestBenchmark -InstanceId 'function_deployment_skill' 6>$null } | Should -Throw '*exit code 9*'
+        $state.RunCalls.Count | Should -Be 0
+    }
+
+    It 'checks the temporary Playground row without submitting or uploading reports' {
+        $null = Invoke-TestBenchmark -InstanceId 'function_deployment_skill' `
+            -SubscriptionOverride 'Playground' -DryRun -Model 'gpt-5.5' 6>&1
+        $state.PlanCalls.Count | Should -Be 1
+        $state.RunCalls.Count | Should -Be 0
+        $planArgs = $state.PlanCalls[0]
+        $datasetIndex = [array]::IndexOf($planArgs, '--dataset')
+        (Import-Csv $planArgs[$datasetIndex + 1]).problem_statement | Should -Be 'Deploy to Playground in eastus.'
+        @($state.AzCalls | Where-Object { $_[0] -eq 'storage' }).Count | Should -Be 0
+        Test-Path (Join-Path $caseDirectory 'output/run_ids.json') | Should -BeFalse
+    }
+
+    It 'blocks live subscription overrides that cannot rewrite the baked container prompt' {
+        { Invoke-TestBenchmark -InstanceId 'function_deployment_skill' -SubscriptionOverride 'Playground' 6>$null } |
+            Should -Throw '*supported container prompt override*'
+        $state.AzCalls.Count | Should -Be 0
         $state.RunCalls.Count | Should -Be 0
     }
 }

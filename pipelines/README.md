@@ -26,10 +26,14 @@ Authorize the existing pipeline to use both connections and keep `System.Debug`
 disabled. The BAMI connection must already have read access to the named secret.
 Do not put secret values in YAML, parameters, logs or artifacts.
 
-On this test branch, the pipeline runs only `function_deployment_skill` with
-`gpt-5.5`. After cloning, the script creates a temporary single-row
+On this test branch, the pipeline performs a **dry-run preflight only** for
+`azure.function_deployment_skill` with `gpt-5.5`. After cloning, the script creates a temporary single-row
 `metadata.selected.csv` and replaces the prompt's testing subscription with
 Azure Skills Evaluation Playground (`12687fa6-5767-4fa6-8c97-7a4bb7a7427d`).
+The CSV explicitly declares `benchmark: azure`; without this column, MSBench
+infers the CSV filename as the benchmark and can fall back to the full Azure split.
+The script requires the CLI's `run_planned` event to report exactly one instance
+before any live single-case submission. Single-case runs do not use `--confirm`.
 The original metadata files, image and patch are unchanged. No new benchmark
 metadata JSON or Harbor/Vally conversion is needed. Without the optional
 `InstanceId`/`SubscriptionOverride` arguments, the script retains its full-dataset
@@ -37,7 +41,10 @@ behavior and default model list.
 Single-case report blobs use `smoke-tests/<run-id>/<date>/` so they cannot
 overwrite the nightly `<date>/` reports or update the nightly `ToBeProcessed` queue.
 
-This is a live Function App deployment case, not a read-only access probe.
+Changing the CSV's `problem_statement` does **not** rewrite the prompt baked into
+the existing benchmark container. Live `SubscriptionOverride` is blocked until
+a supported container prompt override is implemented. `-DryRun` submits no CES
+run and writes no report blobs.
 The secret forwarding change does not implement the container's Azure login
 or prove that the workload uses BAMI resources. Check the resulting run for
 credential consumption and the actual subscription used. Do not merge this

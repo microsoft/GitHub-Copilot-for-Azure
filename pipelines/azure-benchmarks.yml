@@ -64,12 +64,15 @@ stages:
           -Model "gpt-5.5"
           -InstanceId "function_deployment_skill"
           -SubscriptionOverride "Azure Skills Evaluation Playground (subscription ID 12687fa6-5767-4fa6-8c97-7a4bb7a7427d)"
+          -DryRun
       env:
         BAMI_CLIENT_SECRET: $(BamiCredentials.BAMI_CLIENT_SECRET)
 
     - script: echo "Run IDs - $(RunBenchmarks.RUN_IDS)"
+      condition: and(succeeded(), ne(variables['RunBenchmarks.RUN_IDS'], ''))
       displayName: 'Display Run IDs'
 
     - publish: $(Build.ArtifactStagingDirectory)
+      condition: and(succeeded(), ne(variables['RunBenchmarks.RUN_IDS'], ''))
       artifact: benchmark-run-ids
       displayName: 'Publish benchmark run IDs artifact'
