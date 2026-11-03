@@ -84,9 +84,6 @@ export type AgentRunConfig = {
   /** Opt-in SDK user-input handling for question-only evaluations. */
   onUserInputRequest?: SessionConfig["onUserInputRequest"];
 
-  /** Expose individual MCP tools when an eval asserts their names and arguments. */
-  mcpMode?: "all";
-
   /**
    * An optional function to configure the test workspace.
    * The test runner will create an empty workspace, initialize it following the environment config

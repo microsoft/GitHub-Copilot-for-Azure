@@ -1,6 +1,6 @@
 # Reference index
 
-Load only the scenario references needed; entry-file mandatory reads still apply.
+Apply the shared rules in [SKILL.md](../SKILL.md) and load the matching scenario references.
 
 | Scenario | Reference |
 |---|---|

@@ -22,7 +22,6 @@ stimuli:
       tier: full
       cost: llm
       area: cost-routing
-      mcpMode: all
       requiredSkills:
         - azure-advisor
     constraints:

@@ -18,10 +18,12 @@ expandable exact-target table before confirmation; reuse an unchanged identifier
 already shown instead of repeating it. Never confuse the two identifiers.
 
 - Postpone: after resource selection, ask which future return date to use unless the user
-  already supplied one. Offer exactly 30 calendar days from now as the proposed date, with
-  its timezone and a Cancel choice; accept a different date. This is a date-selection
-  question, not approval to update. Resolve the exact future ISO 8601 date/time and timezone
-  before displaying the final batch proposal.
+  already supplied one. Offer One week (7 calendar days), One month (one calendar month),
+  Choose a date and time, and Cancel. Show each preset's concrete return date/time and
+  timezone, preserving local clock time; clamp an invalid month-end day to the month's
+  last day. Do not select a preset implicitly. For the custom choice, ask for the date/time
+  and any missing timezone. This is date selection, not approval to update. Resolve the exact
+  future ISO 8601 date/time and timezone before displaying the final batch proposal.
 - Dismiss: reuse a supplied shared reason, otherwise ask once. Supported reasons:
   `ExcessiveCostInvestmentRequired`, `ImplementationStepsAreUnclear`,
   `IncompatibleWithTheCurrentConfiguration`, `RiskIsAcceptable`,
@@ -44,8 +46,8 @@ date/reason. Never silently split one approved batch into per-record calls or cr
 batches. For a multi-subscription list without a common selected Service Group, resolve one
 eligible batch scope with the user before the date question. The existing scalar
 `recommendation-id` remains valid for a single record; never supply both ID options.
-Inspect the connected tool contract for batch support. If unavailable, explain that the
-server must be updated for one batch approval; do not substitute a shell loop or disable consent.
+Inspect the connected tool contract for batch support. If unavailable, report the limitation;
+do not substitute a shell loop, per-record calls or disable consent.
 
 Use stable `name` as the update ID, never the affected-resource ARM ID/type GUID. Preserve
 the chosen scope/tenant/action/date/reason in the single call. Server approval is specific to

@@ -4,7 +4,6 @@ description: "Validates scope resolution, idle-resource analysis, full retail US
 tags:
   type: integration
   skill: azure-advisor-cost-optimization
-  mcpMode: all
 
 defaults:
   runs: 1
@@ -17,6 +16,40 @@ scoring:
   threshold: 0.8
 
 stimuli:
+  - name: "Use plural arrays for a single read selection"
+    prompt: |
+      List up to 5 New Cost/IdleResources records in subscription
+      00000000-0000-0000-0000-000000000001 for the already-selected recommendation type
+      11111111-1111-1111-1111-111111111111 and resource type Microsoft.Compute/disks.
+      The connected list schema exposes subscriptions, recommendation-type-ids and
+      resource-types as arrays. Do not summarize, discover subscriptions or change state.
+    constraints:
+      max_turns: 20
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: plural-read-inputs
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: tool-calls
+        config:
+          required:
+            - name: (?i)advisor_recommendation_list
+              args:
+                category: ^Cost$
+                sub-category: ^IdleResources$
+                status: ^New$
+              pattern: (?i)^(?=.*"subscriptions":\["00000000-0000-0000-0000-000000000001"\])(?=.*"recommendation-type-ids":\["11111111-1111-1111-1111-111111111111"\])(?=.*"resource-types":\["Microsoft\.Compute/disks"\])(?=.*"top":5[,}])
+          disallowed:
+            - name: (?i)advisor_recommendation_(summary|update)$
+            - name: (?i)subscription_list$
+
   - name: "Ask the three supported scope choices"
     prompt: "Find my unused Azure resources."
     tags:
@@ -481,11 +514,8 @@ stimuli:
     constraints:
       max_turns: 40
     graders:
-      - type: tool-calls
+      - type: pending-question
         config:
-          # Stop with the question pending; assert invocation, not a fabricated answer.
-          sequence:
-            - name: "(?i)(^|[._])ask_user$"
           disallowed:
             - name: "(?i)advisor_recommendation_(summary|list|update)"
       - type: prompt
@@ -504,11 +534,11 @@ stimuli:
       The list returned all 3 records without truncation. All are in subscription Demo,
       resource group rg-demo:
       disk-deleted-a has realizedSavings=100, cost=1000, completionType=SystemVerified,
-      platformStateUpdatedAt=2026-10-24T12:26:00Z, resourceDeletedOn=2026-10-24T00:00:00Z.
+      lastUpdated=2026-10-24T12:26:00Z, resourceDeletedOn=2026-10-24T00:00:00Z.
       disk-deleted-b has realizedSavings=8.90, cost=26.39, completionType=SystemVerified,
-      platformStateUpdatedAt=2026-10-25T12:26:00Z, resourceDeletedOn=2026-10-25T00:00:00Z.
+      lastUpdated=2026-10-25T12:26:00Z, resourceDeletedOn=2026-10-25T00:00:00Z.
       disk-verified has no pricing or deletion date, completionType=SystemVerified,
-      platformStateUpdatedAt=2026-10-14T03:00:00Z.
+      lastUpdated=2026-10-14T03:00:00Z.
       Show the totals and resources using these supplied results only.
       Do not query Azure, ask another question, or change anything.
     rubric:
@@ -590,17 +620,17 @@ stimuli:
       Summary: 4 Completed records, realized savings 108.90 USD, Cost 1026.39 USD,
       pricing basis Retail; 3 records have pricing and 1 is unavailable.
       Each resource is in rg-demo, has completionType=SystemVerified, and has
-      platformStateUpdatedAt=2026-10-24T12:26:00Z.
+      lastUpdated=2026-10-24T12:26:00Z.
       disk-deleted-a has realizedSavings=91.42, cost=91.42, and resourceDeletedOn=2026-10-24T00:00:00Z.
       disk-deleted-b has realizedSavings=8.74, cost=486.42, and resourceDeletedOn=2026-10-24T00:00:00Z.
       disk-deleted-c has realizedSavings=8.74, cost=448.55, and resourceDeletedOn=2026-10-24T00:00:00Z.
-      disk-verified has no savings or deletion date. Its platformStateUpdatedAt is
+      disk-verified has no savings or deletion date. Its lastUpdated is
       2026-10-14T03:00:00Z. Do not query Azure or ask a follow-up question.
     rubric:
       - All four exact resource names appear in resource rows, including disk-verified with Unavailable money and deletion date, not zero.
       - The response shows 108.90 USD realized savings and 1026.39 USD Cost separately, with Retail basis and pricing coverage of three out of four.
-      - Completed tables use Realized savings, Cost, Completed on, Completion details and Deletion date; no annual potential savings is presented as realized savings.
-      - The three deleted rows say Resource deleted; disk-verified says Verified completed, with its platform update timestamp rather than a fabricated deletion timestamp.
+      - Completed tables use Realized savings, Cost, State last changed, Completion details and Deletion date; no annual potential savings is presented as realized savings.
+      - The three deleted rows say Resource deleted; disk-verified says Verified completed, with its lastUpdated timestamp labeled State last changed rather than a fabricated completion or deletion timestamp.
     tags:
       type: integration
       tier: smoke
@@ -620,7 +650,7 @@ stimuli:
           pattern: "(?im)^## Completed cleanup\\s*$"
       - type: output-matches
         config:
-          pattern: "(?i)\\|Resource\\|Resource<br>group\\|Realized<br>savings\\|Cost\\|Completed<br>on\\|Completion<br>details\\|Deletion<br>date\\|"
+          pattern: "(?i)\\|Resource\\|Resource<br>group\\|Realized<br>savings\\|Cost\\|State last<br>changed\\|Completion<br>details\\|Deletion<br>date\\|"
       - type: output-matches
         config:
           pattern: "(?i)\\|disk-deleted-b\\|rg-demo\\|\\$8\\.74\\|\\$486\\.42\\|"
@@ -739,8 +769,8 @@ stimuli:
                 category: "^Cost$"
                 sub-category: "^IdleResources$"
                 service-group: "^finance-prod$"
-                recommendation-type-id: "^11111111-1111-1111-1111-111111111111$"
                 status: "^Completed$"
+              pattern: '"recommendation-type-ids":\["11111111-1111-1111-1111-111111111111"\]'
           disallowed:
             - name: "(?i)advisor_recommendation_(summary|update)"
 
@@ -767,8 +797,8 @@ stimuli:
               args:
                 category: "^Cost$"
                 sub-category: "^IdleResources$"
-                recommendation-type-id: "^11111111-1111-1111-1111-111111111111$"
                 status: "^Dismissed$"
+              pattern: '"recommendation-type-ids":\["11111111-1111-1111-1111-111111111111"\]'
           disallowed:
             - name: "(?i)advisor_recommendation_update"
 
@@ -824,8 +854,7 @@ stimuli:
             - name: "(?i)advisor_recommendation_prevalidate"
               args:
                 recommendation-type-id: "^48eda464-1485-4dcf-a674-d0905df5054a$"
-                minimum-unused-days: "^45$"
-                resources: "(?i)Microsoft.Compute/disks/disk-a"
+              pattern: '(?i)^(?=.*"minimum-unused-days":45[,}])(?=.*"resources":\[[^\]]*"[^"]*Microsoft\.Compute/disks/disk-a[^"]*"[^\]]*\])'
           disallowed:
             - name: "(?i)advisor_recommendation_(list|summary|update)"
             - name: "(?i)advisor_remediation_get"
@@ -1637,14 +1666,145 @@ stimuli:
           disallowed:
             - name: "(?i)advisor_recommendation_(summary|list|update)|(^|[._])ask_user$"
 
-  - name: "Preserve a future returned Contractual calculation basis"
+  - name: "Retrieve the next page without changing selected scope or filters"
+    prompt: |
+      Show more New Cost/IdleResources records for my already-selected recommendation type
+      11111111-1111-1111-1111-111111111111 in Service Group finance-prod, tenant tenant-a.
+      The previous list used top=20, prioritized=true, product-family=Storage and returned
+      continuationToken=opaque+/=page2 and areResultsTruncated=true.
+      The connected list schema supports continuation-token. Reuse that cursor and settings;
+      this is a read-only request, not permission to change state.
+    constraints:
+      max_turns: 20
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: retrieval-continuation
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: tool-calls
+        config:
+          required:
+            - name: (?i)advisor_recommendation_list
+              args:
+                service-group: ^finance-prod$
+                tenant: ^tenant-a$
+                category: ^Cost$
+                sub-category: ^IdleResources$
+                status: ^New$
+                product-family: ^Storage$
+                continuation-token: ^opaque\+/=page2$
+              pattern: (?i)^(?=.*"recommendation-type-ids":\["11111111-1111-1111-1111-111111111111"\])(?=.*"top":20[,}])(?=.*"prioritized":true[,}])
+          disallowed:
+            - name: (?i)advisor_recommendation_(summary|update)$
+            - name: (?i)(^|[._])ask_user$
+
+  - name: "Expand each selected type with an independent resource allowance"
+    prompt: |
+      Expand both already-selected Cost/IdleResources recommendation types in Service Group
+      finance-prod: Unattached disks (11111111-1111-1111-1111-111111111111) and Unused plans
+      (22222222-2222-2222-2222-222222222222). Show up to 20 New records for each type,
+      not 20 shared between them. Do not summarize again, change state or ask for selection.
+    constraints:
+      max_turns: 20
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: per-type-expansion
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: tool-calls
+        config:
+          required:
+            - name: (?i)advisor_recommendation_list
+              args:
+                service-group: ^finance-prod$
+              pattern: (?i)^(?=.*"recommendation-type-ids":\["11111111-1111-1111-1111-111111111111"\])(?=.*"top":20[,}])
+            - name: (?i)advisor_recommendation_list
+              args:
+                service-group: ^finance-prod$
+              pattern: (?i)^(?=.*"recommendation-type-ids":\["22222222-2222-2222-2222-222222222222"\])(?=.*"top":20[,}])
+          disallowed:
+            - name: (?i)advisor_recommendation_(summary|update)$
+            - name: (?i)(^|[._])ask_user$
+
+  - name: "An empty filtered historical page is not source exhaustion"
+    prompt: |
+      Explain the next read-only retrieval step, without calling Azure.
+      I requested all Completed Cost/IdleResources details for September 2026 in Service Group
+      finance-prod and selected type 11111111-1111-1111-1111-111111111111.
+      Summary already returned matching period totals. The first Completed list page has no
+      September resourceDeletedOn values, but returns continuationToken=history-page2.
+      List has no from/to/as-of inputs. What should happen before claiming no matching details?
+    rubric:
+      - Follow the continuation token with unchanged Completed status, type and scope.
+      - Filter each retrieved page by resourceDeletedOn and continue until source exhaustion or an explicit matching-row limit.
+      - Do not claim no September matches from this first page, pass unsupported dates to list, or reconstruct historical money from current list values.
+    constraints:
+      max_turns: 20
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: historical-continuation
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: (?i)advisor|subscription|(^|[._])ask_user$
+
+  - name: "A truncated terminal page cannot establish an all-resources target"
+    prompt: |
+      Explain the coverage and selection rule only; do not query or update anything.
+      I asked for all resources of an already-selected Cost/IdleResources type in Service Group
+      finance-prod. The list returned 50 records, areResultsTruncated=true and no continuationToken.
+      I previously selected only disk-a for dismissal. Can the 50 returned records be called
+      every match, and can they be added automatically to the earlier dismissal selection?
+    rubric:
+      - Explicitly report incomplete coverage; a missing token does not override terminal truncation.
+      - Do not call the returned 50 all matching resources, or add records to the earlier disk-a selection.
+      - A partial all-resources action requires explicit acceptance of the partial set and the normal destructive confirmation.
+    constraints:
+      max_turns: 20
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: incomplete-page-safety
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: (?i)advisor|subscription|(^|[._])ask_user$
+
+  - name: "Do not replace missing structured savings with legacy money"
     constraints:
       max_turns: 40
     prompt: |
-      A future supported Advisor summary returned summary.cost.pricingBasis=Contractual
-      and currencyTotals with potentialSavings=1200 and accumulatedWaste=75 USD,
-      calculated from properties.savings.contractual. Present only these returned
-      measures and their basis, without querying Azure or recalculating anything.
+      A current Advisor Cost/IdleResources detail has no structured retail yearlyPotentialSavings,
+      cost, or realizedSavings, but legacy extendedProperties.annualSavingsAmount=1200
+      and savingsAmount=75. Present its yearly potential savings and Cost using the
+      current Retail USD contract. Do not query Azure, reconstruct money, or show raw legacy
+      amounts as calculated savings.
+    rubric:
+      - Yearly potential savings and Cost are Unavailable, not the legacy amounts.
+      - Pricing basis remains Retail USD; no contractual calculation is claimed.
     tags:
       type: integration
       tier: full
@@ -1655,14 +1815,17 @@ stimuli:
     graders:
       - type: output-matches
         config:
-          pattern: "(?i)pricing basis[^\\r\\n]*Contractual"
+          pattern: "(?i)pricing basis[^\\r\\n]*Retail"
+      - type: output-matches
+        config:
+          pattern: "(?i)Unavailable"
       - type: output-not-matches
         config:
-          pattern: "(?i)pricing basis[^\\r\\n]*Retail|Contractual pricing: Unavailable"
+          pattern: "(?i)pricing basis[^\\r\\n]*Contractual|\\$1,?200(?:\\.00)?|\\$75(?:\\.00)?"
       - type: tool-calls
         config:
           disallowed:
-            - name: "(?i)advisor_recommendation_(summary|list|update)"
+            - name: (?i)advisor_recommendation_(summary|list|update)$
 
   - name: "Carry the historical default into list expansion"
     constraints:
@@ -1689,7 +1852,7 @@ stimuli:
                 category: "^Cost$"
                 sub-category: "^IdleResources$"
                 status: "^Completed$"
-                recommendation-type-id: "^11111111-1111-1111-1111-111111111111$"
+              pattern: '"recommendation-type-ids":\["11111111-1111-1111-1111-111111111111"\]'
           disallowed:
             - name: "(?i)advisor_recommendation_(summary|update)"
 
@@ -1858,10 +2021,10 @@ stimuli:
         config:
           pattern: "(?i)not.*(proof|prove)|cannot.*(prove|confirm)|does not"
 
-  - name: "Use completion timestamp independently of deletion"
+  - name: "Use supported state-last-changed timestamp independently of deletion"
     constraints:
       max_turns: 40
-    prompt: "A Completed Advisor idle-resource row has completionType SystemVerified, platformStateUpdatedAt 2026-09-20T12:00:00Z, customerStateUpdatedAt 2026-09-10T12:00:00Z, and savings.resourceDeletedOn 2026-09-15T12:00:00Z. Which is Completed on? Do not query again."
+    prompt: "A Completed Advisor Cost/IdleResources row has completionType SystemVerified, lastUpdated 2026-09-20T12:00:00Z and savings.resourceDeletedOn 2026-09-15T12:00:00Z. Show State last changed separately from Deletion date. Do not infer a customer/platform-specific completion time or query again."
     tags:
       type: integration
       tier: full
@@ -1877,6 +2040,9 @@ stimuli:
       - type: output-matches
         config:
           pattern: "2026-09-20"
+      - type: output-matches
+        config:
+          pattern: "(?i)State last(?:\\s|<br\\s*/?>)+changed"
 
   - name: "Ask the postpone date after selecting the review batch"
     prompt: &selected-review-postpone |
@@ -1897,7 +2063,9 @@ stimuli:
       Prepare the proposal and confirmation only; do not query or update Azure.
     rubric:
       - It reuses only disk-a and disk-b from needsReview without a new list or selection question; disk-safe and disk-deleted are excluded.
-      - The first question asks the return date, offering exactly 30 calendar days after the supplied current time with a timezone and a Cancel choice; it does not assume the proposed date is already chosen.
+      - The first question offers One week, One month, Choose a date and time, and Cancel without selecting a preset implicitly.
+      - The week and month options show November 3 and November 27, 2026 respectively, both at 13:35 UTC; one month is a calendar month, not 30 days.
+      - Choosing a custom date/time requires resolving the exact future date/time and timezone before the final proposal.
       - It does not repeat resource selection or ask Confirm these changes; a date answer is not server destructive consent.
       - No Azure query, update or server approval request occurs before a return date is chosen; eventual execution uses one selected recommendation-ids batch.
     tags:
@@ -1921,15 +2089,13 @@ stimuli:
         config:
           scoring: scale_1_5
           threshold: 0.8
-      - type: tool-calls
+      - type: pending-question
         config:
-          sequence:
-            - name: "(?i)(^|[._])ask_user$"
-              pattern: '(?is)(date|when|return|postpon).*(30|2026-11-26|November|Cancel)'
+          pattern: "(?is)^(?=.*(?:one|1) week)(?=.*(?:one|1) month)(?=.*choose a (?:specific )?date and time)(?=.*cancel).*$"
           disallowed:
             - name: "(?i)advisor_recommendation_(summary|list|prevalidate|update)"
 
-  - name: "Cancel the default-date postpone batch without updates"
+  - name: "Cancel the postpone date selection without updates"
     turns:
       - *selected-review-postpone
       - "Cancel. Do not query or update Azure."
@@ -1951,11 +2117,114 @@ stimuli:
       - type: tool-calls
         config:
           disallowed:
-            - name: "(?i)advisor_recommendation_(summary|list|prevalidate|update)"
+            - name: (?i)advisor_recommendation_(summary|list|prevalidate|update)$
+
       - type: prompt
         config:
           scoring: scale_1_5
           threshold: 0.8
+
+  - name: "Resolve the one-week postpone preset without treating it as approval"
+    prompt: |
+      Current time is 2026-10-27T13:35:00Z. The user already selected the New
+      Advisor Cost/IdleResources record disk-a, stable recommendation ID rec-a,
+      type 11111111-1111-1111-1111-111111111111, in subscription
+      00000000-0000-0000-0000-000000000000. Its resource ID is
+      /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-demo/providers/Microsoft.Compute/disks/disk-a.
+      Its returned Yearly potential savings is 1111.70 and Cost is 6.09, Retail USD.
+      The user chose One week from the return-date question. Prepare the final
+      postponement proposal only; do not query or update Azure.
+    rubric:
+      - It resolves One week to November 3, 2026 at 13:35 UTC (2026-11-03T13:35:00Z), not 30 days.
+      - It preserves the exact selected record, scope and returned estimates, and proposes Postponed with that deadline.
+      - It does not repeat date or resource selection, request assistant confirmation, call Azure, or claim that selecting the date approved or performed an update.
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: batch-postpone-confirmation
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 20
+    graders: &postpone-preset-preview-graders
+      - type: completed
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: (?i)(^|[._])ask_user$
+            - name: (?i)advisor_recommendation_(summary|list|prevalidate|update)$
+
+  - name: "Resolve the one-month postpone preset at month end"
+    prompt: |
+      Current local time is 2027-01-31T13:35:00+05:30. The user already selected
+      the New Advisor Cost/IdleResources record disk-a, stable recommendation ID
+      rec-a, type 11111111-1111-1111-1111-111111111111, in subscription
+      00000000-0000-0000-0000-000000000000. Its resource ID is
+      /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-demo/providers/Microsoft.Compute/disks/disk-a.
+      Its returned Yearly potential savings is 1111.70 and Cost is 6.09, Retail USD.
+      The user chose One month from the return-date question. Prepare the final
+      postponement proposal only; do not query or update Azure.
+    rubric:
+      - It resolves One month to February 28, 2027 at 13:35 UTC+05:30 (2027-02-28T13:35:00+05:30), preserving local clock time and using the last valid day, not 30 days or March 2.
+      - It preserves the exact selected record, scope and returned estimates, and proposes Postponed with that deadline.
+      - It does not repeat date or resource selection, request assistant confirmation, call Azure, or claim that selecting the date approved or performed an update.
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: batch-postpone-confirmation
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 20
+    graders: *postpone-preset-preview-graders
+
+  - name: "Ask for the custom postpone date and time before a proposal"
+    prompt: |
+      Current time is 2026-10-27T13:35:00Z. The New Advisor Cost/IdleResources
+      record disk-a with stable recommendation ID rec-a has already been selected
+      in subscription 00000000-0000-0000-0000-000000000000, for type
+      11111111-1111-1111-1111-111111111111. The user chose Choose a date and time
+      from the return-date question but has not supplied a date, time or timezone.
+      Ask for the missing return date/time. Do not query or update Azure.
+    rubric:
+      - It asks for the custom future return date/time and timezone, without selecting a preset or inventing a deadline.
+      - It preserves disk-a as the selection and does not repeat the preset menu or ask for resource selection or approval.
+      - It does not query Azure, update anything, or show a final proposal before the exact future date/time and timezone are resolved.
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: batch-postpone-confirmation
+      questionOnly: "true"
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"(?i)(^|[._])ask_user$","argsPattern":".*"}]'
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 20
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+      - type: pending-question
+        config:
+          pattern: "(?is)^(?=.*date)(?=.*time)(?=.*(?:timezone|time zone|UTC)).*$"
+          disallowed:
+            - name: "(?i)advisor_recommendation_(summary|list|prevalidate|update)"
 
   - name: "Plan one batch update without per-record tool calls"
     prompt: |
@@ -2021,11 +2290,9 @@ stimuli:
     constraints:
       max_turns: 40
     graders:
-      - type: tool-calls
+      - type: pending-question
         config:
-          sequence:
-            - name: "(?i)(^|[._])ask_user$"
-              pattern: "(?is)(which|select|resource)"
+          pattern: "(?is)(which|select|resource)"
           disallowed:
             - name: "(?i)advisor_recommendation_(summary|list|prevalidate|update)"
       - type: prompt

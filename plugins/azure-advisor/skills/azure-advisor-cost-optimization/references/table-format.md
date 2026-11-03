@@ -195,12 +195,10 @@ The postpone date question comes before this proposal; do not add another assist
 confirmation question between the proposal and the one batch update call.
 Explicitly identify excluded rows when selecting a prevalidation bucket. Show both measures,
 savings first: use `properties.savings.retail.yearlyPotentialSavings` and `.cost` from the
-selected list rows, or `yearlyPotentialSavings` and `cost` from prevalidation. Cost is
-accumulated Advisor cost, not monthly spend or yearly savings. Never substitute one measure
-for the other or calculate either in the skill. Preserve each missing value independently
-as Unavailable and numeric zero as zero. Reuse previously returned values with that
-qualification; do not query Azure merely to fill the columns. Totals, basis and currency
-follow [money rules](output-and-savings.md).
+selected list rows, or `yearlyPotentialSavings` and `cost` from prevalidation.
+Reuse previously returned values; do not query Azure merely to fill the columns.
+Apply the [shared rules](../SKILL.md#shared-rules); read
+[Output and savings](output-and-savings.md) when interpreting totals or pricing sources.
 
 After updates, use one result summary and table, not a second proposal or a name-only list:
 

@@ -2,8 +2,9 @@
 
 ## Reuse first
 
-Reuse conversation scope/IDs. Pass known subscription names/IDs directly as `subscription`;
-tools resolve them. `<name> SG` or `<name> Service Group` selects SG scope: pass the name,
+Reuse conversation scope/IDs. Pass known subscription names/IDs to list, summary and
+prevalidation as `subscriptions`, including a one-element array for one subscription;
+tools resolve them. Updates keep scalar `subscription`. `<name> SG` or `<name> Service Group` selects SG scope: pass the name,
 identifier or full `/providers/Microsoft.Management/serviceGroups/<identifier>` unchanged as
 scalar `service-group`. Never require a subscription for SG or invent mappings/discover all SGs.
 
@@ -14,9 +15,7 @@ family before queries. For multiple/all SGs explain the single-SG contract and a
 
 ## Service Group resolution
 
-Existing Advisor list/summary/update internally resolve supplied SG scope using a targeted
-tenant-wide ARG query over accessible direct children of the tenant-root SG. Keep supplied
-tenant; without one disclose current authenticated tenant context.
+Keep supplied tenant; without one disclose current authenticated tenant context.
 No separate scope tool, ARM/ARG/CLI lookup or runtime KQL.
 Matching is case-insensitive/exact: preserve punctuation/internal spaces, no partial matches
 or name rewriting (`abc-def` differs from `abc def`).
@@ -50,7 +49,7 @@ limitations. Scope resolution is this skill's first phase, not a separate skill/
 
 | Scope | Read | Update |
 |---|---|---|
-| One subscription | Scalar `subscription` name/ID | Selected record's subscription |
+| One subscription | One-element `subscriptions` array with name/ID | Selected record's scalar `subscription` |
 | Same-tenant subscriptions | Non-empty `subscriptions` names/IDs | One record's subscription per update |
 | One SG | Scalar `service-group` name/ID/ARM ID | Same scope, resolved ID when available |
 

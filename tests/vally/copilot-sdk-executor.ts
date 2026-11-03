@@ -79,13 +79,8 @@ export class CopilotSdkAgentRunner implements Executor {
       followUps = stimulus.turns.slice(1);
     }
 
-    const mcpMode = tags?.mcpMode;
-    if (mcpMode !== undefined && mcpMode !== "all") {
-      throw new Error("mcpMode must be 'all' when specified.");
-    }
     const runConfig: AgentRunConfig = {
       onUserInputRequest: getQuestionOnlyInputHandler(tags),
-      mcpMode,
       workspace: workDir,
       env: {
         UV_CACHE_DIR: path.join(workDir, ".uv-cache"),
@@ -206,16 +201,26 @@ export class CopilotSdkAgentRunner implements Executor {
   }
 }
 
-function convertToTrajectoryEvents(agentMetadata: AgentMetadata): TrajectoryEvent[] {
+export function convertToTrajectoryEvents(agentMetadata: AgentMetadata): TrajectoryEvent[] {
   const result: TrajectoryEvent[] = [];
 
-  // tool.execution_complete only carries `toolCallId`, not `toolName`. Build
-  // a lookup so we can populate `tool_result.data.toolName` from the matching
-  // tool.execution_start event.
-  const toolNameByCallId = new Map<string, string>();
+  // Grade logical MCP commands while keeping the original SDK events unchanged.
+  const toolCallsById = new Map<string, Extract<TrajectoryEvent, { type: "tool_call" }>["data"]>();
   for (const e of agentMetadata.events) {
     if (e.type === "tool.execution_start") {
-      toolNameByCallId.set(e.data.toolCallId, e.data.toolName);
+      const args = e.data.arguments;
+      const namespace = e.data.mcpToolName;
+      const call = {
+        toolName: e.data.toolName, toolCallId: e.data.toolCallId, arguments: args,
+      };
+      if (namespace
+        && args !== null && typeof args === "object" && !Array.isArray(args)
+        && args.learn !== true && typeof args.command === "string"
+        && args.command.toLowerCase().startsWith(`${namespace.toLowerCase()}_`)) {
+        call.toolName = args.command;
+        call.arguments = args.parameters ?? {};
+      }
+      toolCallsById.set(e.data.toolCallId, call);
     }
   }
 
@@ -286,14 +291,10 @@ function convertToTrajectoryEvents(agentMetadata: AgentMetadata): TrajectoryEven
       result.push({
         type: "tool_call",
         timestamp,
-        data: {
-          toolName: e.data.toolName,
-          toolCallId: e.data.toolCallId,
-          arguments: e.data.arguments,
-        },
+        data: toolCallsById.get(e.data.toolCallId)!,
       });
     } else if (e.type === "tool.execution_complete") {
-      const toolName = toolNameByCallId.get(e.data.toolCallId) ?? "unknown";
+      const toolName = toolCallsById.get(e.data.toolCallId)?.toolName ?? "unknown";
       result.push({
         type: "tool_result",
         timestamp,

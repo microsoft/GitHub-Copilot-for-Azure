@@ -21,10 +21,11 @@ subcategories, cross-category, and non-Cost requests stay on `azure-advisor`.
 | What did we save last quarter? | Resolve period; Completed summary with from/to; use full realized-savings totals, not a capped list |
 | Summarize idle findings as of a supplied date | Completed summary unless another state is explicit; preserve that effective state in list expansion |
 | Summarize active/New idle findings as of a supplied date | Explicit New summary overrides the historical default |
-| Show completed resources | Completed list details; show authoritative completion/deletion timestamps distinctly |
+| Show completed resources | Completed list details; show lastUpdated as State last changed, separately from deletion dates |
+| Prevalidate all 125 resources of this type | Reuse scope/type; omit resources and top for complete paged discovery and bounded processing; disclose incomplete coverage |
 | Show postponed/dismissed resources | Requested-status list; keep states, reasons, dates and savings measures separate |
 | Postpone this one | Select exact record; ask the return date unless supplied; show the proposal, then let the server request destructive approval |
-| Postpone those requiring more work after prevalidation | Reuse only the exact needsReview rows and stable IDs; ask the date with a 30-day option; one recommendation-ids batch call and one server approval, no per-record calls |
+| Postpone those requiring more work after prevalidation | Reuse only the exact needsReview rows and stable IDs; offer one week, one month, a custom date/time, or cancel; one recommendation-ids batch call and one server approval, no per-record calls |
 | Dismiss all of these | Limit to selected type/scope and eligible shown targets, reuse/ask reason, show the proposal, then one batch call with server approval |
 | Show my bill's increase | Billing workflow, not Advisor idle-resource analysis |
 

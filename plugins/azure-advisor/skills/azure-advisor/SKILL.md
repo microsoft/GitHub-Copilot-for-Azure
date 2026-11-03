@@ -16,11 +16,12 @@ Reuse supplied scope and identifiers; ask only for missing input.
 
 | Intent | Existing tool |
 |---|---|
-| Counts, breakdowns, rankings | `advisor_recommendation_summary` |
-| Individual findings/resources | `advisor_recommendation_list` |
-| Recommendation-state changes | `advisor_recommendation_update` |
-| Browse/get recommendation types | `advisor_metadata_list` / `advisor_metadata_get` |
-| Remediation guidance | `advisor_remediation_get` via actionability |
+| Counts, breakdowns, rankings, or top types | `advisor_recommendation_summary` |
+| Individual recommendations or affected resources | `advisor_recommendation_list` |
+| Complete, dismiss, postpone, or reactivate | `advisor_recommendation_update` |
+| Browse recommendation types | `advisor_metadata_list` |
+| Get one type by ID | `advisor_metadata_get` |
+| Retrieve remediation | `advisor_remediation_get`, then `azure-advisor-actionability` |
 
 ## Workflow
 

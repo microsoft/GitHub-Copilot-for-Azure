@@ -28,8 +28,11 @@ Never send future as-of. Show returned cutoffs/coverage and `summary.cost`, not 
 ## Current versus historical details
 
 As-of controls money, not historical lifecycle/inventory reconstruction. From/to bound
-Completed deletion dates. List has no historical inputs: filter returned Completed details
-by `properties.savings.resourceDeletedOn`. Show undated rows separately as unverified for
+Completed deletion dates. List has no historical inputs: follow list continuation and filter
+Completed details by `properties.savings.resourceDeletedOn` before counting a requested
+matching-row limit. Stop at that limit or source exhaustion; an empty filtered page is not
+proof that the period has no matches. Explicit All Completed retrieves all remaining pages.
+Show undated rows separately as unverified for
 the window, not counted in its totals or silently dropped. Without a window retain all rows,
 including missing prices/deletion dates. Truncated details remain partial.
 List money is current, not recalculated at historical as-of: separate/disclose that limitation.
@@ -53,14 +56,15 @@ Use returned record/resource count semantics, not invented uniqueness; distingui
 from capped details. Read [Table format](table-format.md); Completed columns are:
 
 ```text
-|Resource|Resource<br>group|Realized<br>savings|Cost|Completed<br>on|Completion<br>details|Deletion<br>date|
+|Resource|Resource<br>group|Realized<br>savings|Cost|State last<br>changed|Completion<br>details|Deletion<br>date|
 |---|---|---:|---:|---|---|---|
 ```
 
 Insert Subscription after Resource for SG/multi-sub scope. Postponed appends Postponed until;
-Dismissed appends Dismissed on and Dismiss reason.
-Completed on uses `properties.platformStateUpdatedAt` for `completionType=SystemVerified`,
-otherwise `properties.customerStateUpdatedAt`. Details: SystemVerified with deletion date =
+Dismissed appends State last changed and Dismiss reason.
+State last changed uses supported `properties.lastUpdated` for every lifecycle state; it is
+not a customer-specific/platform-specific completion time or deletion date.
+Details: SystemVerified with deletion date =
 Resource deleted; without = Verified completed; MarkedByUser = Completed by user; else Unavailable.
-Deletion date is separate. Dismissed on uses customerStateUpdatedAt. Preserve postponed dates/
+Deletion date is separate. Preserve postponed dates/
 reasons. Missing fields are Unavailable; never substitute refreshed/local/deletion timestamps.

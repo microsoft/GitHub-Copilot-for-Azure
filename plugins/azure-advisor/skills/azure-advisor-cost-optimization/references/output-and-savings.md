@@ -2,8 +2,7 @@
 
 Read [Table format](table-format.md) before rendering tables.
 Focused answers start with the requested result, not discovery; selected resources and
-lifecycle reports use their scenario templates. Completed uses Realized savings, never
-current recoverable potential.
+lifecycle reports use their scenario templates.
 
 ## Resource ownership
 
@@ -44,28 +43,21 @@ Current `currencyTotals` calculations are Retail USD; an empty array is not zero
 not extra opportunities. Disclose missing pricing and partial monetary coverage.
 
 List money comes directly from `properties.savings.retail.yearlyPotentialSavings`, `.cost`,
-`.realizedSavings`. MCP owns annualization/calculation: never convert daily/monthly rates,
-reconstruct amounts from dates, or derive post-dismissal costs. Use only returned type totals
+`.realizedSavings`. Use only returned type totals
 in detail introductions; omit unavailable totals rather than summing capped rows.
 
 ## Pricing basis and unknowns
 
-Every savings answer, including focused follow-ups, visibly shows `Pricing basis: <basis>`
-and Currency. Preserve the calculated measure's currency or documented tool contract.
-
 | Calculation source | Basis |
 |---|---|
 | `summary.cost.pricingBasis`, matching `typeTotals[].pricingBasis`, `prioritizationSignals.pricingBasis` | Returned basis |
-| Documented retail-only summary, including older missing basis metadata | Retail |
+| Documented retail-only summary | Retail |
 | `properties.savings.retail` | Retail |
-| Supported future calculations from `properties.savings.contractual` | Contractual |
 | Unidentified source without a documented contract | Unavailable |
 
-Missing money does not erase a known basis. Never relabel returned Contractual as Retail.
+Calculated savings use Retail USD.
 State counts or unrelated raw pricing do not establish basis/currency. Raw contractual input
 alongside retail calculations is not a contractual estimate.
-One basis line covers shared-basis amounts; separate differing calculated bases/currencies,
-never sum or convert them. Do not invent discounts or contractual availability/calculations.
-Missing values are Unavailable; numeric zero stays zero. Failed/empty queries are not zero.
-Label savings conditional on eligible resources later being validated/deleted, not proof of
-safe deletion or inactivity. Estimates never authorize remediation.
+One basis line covers shared-basis amounts; never infer or convert contractual calculations
+from raw provider data. Do not invent discounts or contractual availability/calculations.
+Failed/empty queries are not zero.

@@ -13,9 +13,12 @@ For "safe to delete", "validate before removal", or "is this recommendation stil
    already selected by the user. If the type is unknown, use existing Cost/IdleResources
    summary or metadata resolution, visibly show the returned types, and ask for one type.
    Never invent a type GUID or ask for an ID that Advisor results can supply.
-2. Call `advisor_recommendation_prevalidate` for that type. Prefer full ARM IDs for selected
-   resources; names are allowed only when unambiguous. Do not silently include unselected
-   rows or change scope. Do not list the type again just to prevalidate it.
+2. Call `advisor_recommendation_prevalidate` for that type. Explicit `resources` selections
+   accept exact full affected-resource ARM IDs only. Reuse IDs already returned; if only names
+   are known, resolve them through existing list and ask about ambiguous matches before
+   prevalidating. Do not silently include unselected rows or change scope. Do not list the
+   type again when the required IDs are already known. Omit resources for type-wide validation;
+   the tool follows discovery pages and processes bounded batches, not only the first 25.
    This tool enforces Cost/IdleResources/New internally; do not pass category or status inputs.
 3. Use the tool's verdicts without reclassification. Render three sections, even if empty:
    `Resources ready to delete now`, `Resources requiring additional review`, and
@@ -27,7 +30,10 @@ For "safe to delete", "validate before removal", or "is this recommendation stil
    Do not repeat the same checklist/manual guidance for every resource.
 4. Show bucket counts and returned Safe/NeedsReview known savings as Retail USD; omit the
    Blocked aggregate savings line. Preserve unavailable amounts and missing-value counts.
-   Disclose truncation and unmatched selections; never call a capped subset the entire scope.
+   Preserve an explicitly requested top/subset. Disclose truncation and unmatched selections;
+   never call a capped subset the entire scope. With incomplete discovery, unmatched means
+   not found in the returned portion, not confirmed absent. Show returned checkedResourceCount
+   and remainingResourceCount; an unavailable remaining count is unknown, not zero.
    Recent activity, unknown signals, or insufficient history are investigation requirements,
    not proof of inactivity. Do not infer metrics, ownership, or dependency coverage.
 5. In the blocked section, separately identify resources with a returned `resourceDeletedOn`
@@ -48,7 +54,7 @@ For "safe to delete", "validate before removal", or "is this recommendation stil
    never become a safe verdict; dependency scans cover only visible control-plane evidence.
 
 Inspect the connected [tool contract](tools-and-recovery.md). If prevalidation is unavailable,
-report that an updated MCP server is needed; do not substitute ad hoc ARM, CLI, or KQL checks.
+report the limitation; do not substitute ad hoc ARM, CLI, or KQL checks.
 
 ## Resource selection
 
@@ -73,9 +79,11 @@ Do not require an opening summary unless the user separately requested grouped d
    `needsReview` resources only, not passing or confirmed-deleted resources; reuse their returned
    stable recommendation IDs without another list/selection question. Ask if the referenced
    result or bucket is ambiguous, or the exact update IDs are missing.
-4. An all-resources choice is limited to that type and scope. If the list is capped/truncated,
-   disclose the partial target set and obtain explicit acceptance of only the shown resources;
-   never call them every matching resource.
+4. An all-resources choice is limited to that type, source state and scope. Follow its list
+   continuation to enumerate that requested set, visibly show the resulting resources, then
+   obtain the required action confirmation. Never add later pages to a prior selection of
+   specific/shown resources. If retrieval remains incomplete, disclose the partial target set
+   and obtain explicit acceptance of only those resources; never call them every match.
 
 For "this", "it", or "this one" after several rows, ask which exact resource. Never choose
 the first, highest-savings, or most recently mentioned row. Ordinary read-only expansion does

@@ -13,6 +13,15 @@ the tool-returned pricing basis and measure currency, currently Retail USD, rath
 the label or inventing contractual figures or availability lines. Advisor findings do not prove
 deletion safety. Explicit safety requests use the connected Advisor read-only prevalidation
 operation when available; passing automated checks never authorizes deletion.
+Explicit prevalidation selections use full affected-resource ARM IDs only, reusing already
+returned IDs or resolving names through list when needed. Type-wide prevalidation follows
+discovery pages and processes bounded batches instead of stopping at 25 or 100 resources;
+requested subsets and incomplete coverage remain visible.
+New summary status overrides, historical dates and minimum-savings require both Cost and
+IdleResources; generic list status and summary status grouping retain their existing behavior.
+Lifecycle tables label supported `lastUpdated` as **State last changed**, separately from
+resource deletion dates. Cost/IdleResources never substitutes legacy money for missing
+structured savings. Generic Advisor does not inherit the specialized 15-row HTML layout.
 
 ## Response parity checks
 
@@ -64,8 +73,8 @@ The `batch-postpone-confirmation` cases additionally cover date selection and ca
 `batch-approval-reuse` is a no-write planning check of one selected batch call. These cases prohibit
 updates; they do not verify post-confirmation batch execution. That flow requires separate
 validation against dedicated test recommendations,
-with approval before writes. Cases asserting individual MCP calls opt into `mcpMode: all`;
-other evals retain the runner's existing mode.
+with approval before writes. Tool-call assertions use the default namespace routers,
+checking the requested operation and its parameters rather than forcing individual-tool mode.
 
 ## Security
 
