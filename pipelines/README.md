@@ -2,61 +2,32 @@
 
 ## Azure benchmarks with a BAMI workload secret
 
-[`azure-benchmarks.yml`](azure-benchmarks.yml) uses two fixed service connections,
-with no YAML parameters:
+[`azure-benchmarks.yml`](azure-benchmarks.yml) runs the full `azure.skill` suite
+for the seven default models in
+[`Invoke-RunBenchmarks.ps1`](scripts/Invoke-RunBenchmarks.ps1).
 
-1. `azure_msbench_eval_bami` reads `msbench-evals-app-secret` from
-   `kv-msbench-eval` using
-   [`Get-BamiBenchmarkCredential.ps1`](scripts/Get-BamiBenchmarkCredential.ps1).
-   It exports a masked secret task output.
-2. `azure_msbench_eval` runs
-   [`Invoke-RunBenchmarks.ps1`](scripts/Invoke-RunBenchmarks.ps1).
-   Microsoft authentication handles repository cloning, MSBench submission,
-   CAPI credentials and report storage. The BAMI task output is explicitly mapped
-   into this task as `BAMI_CLIENT_SECRET`.
+| Service connection | Purpose |
+|---|---|
+| `azure_msbench_eval_bami` | Run [`Get-BamiBenchmarkCredential.ps1`](scripts/Get-BamiBenchmarkCredential.ps1) to read `msbench-evals-app-secret` from `kv-msbench-eval`. |
+| `azure_msbench_eval` | Clone the benchmark repository, retrieve CAPI credentials, submit MSBench runs and store reports. |
 
-The submission script adds `BAMI_CLIENT_SECRET` alongside `CAPI_INTEGRATION_ID`
-and `CAPI_HMAC_KEY` in `--encrypted-env`. Only variable names appear in CLI
-arguments; the secret stays in memory. Missing secrets or failed BAMI Key Vault
-calls fail the run. Existing Microsoft/CAPI authentication variables are not
-overwritten. No tenant, subscription or workload client ID is needed just to
-retrieve and forward the secret.
+Vault and secret names are defined in the scripts, not YAML. The Microsoft
+script uses `kv-msbench-eval-azuremcp` with `azure-mcp-eval-capi-id` and
+`azure-mcp-eval-capi-hmac`.
 
-Authorize the existing pipeline to use both connections and keep `System.Debug`
-disabled. The BAMI connection must already have read access to the named secret.
-Do not put secret values in YAML, parameters, logs or artifacts.
+The BAMI helper uses Azure Pipelines logging commands to create a masked secret
+output, explicitly mapped into the Microsoft task as `BAMI_CLIENT_SECRET`.
+MSBench receives it alongside the CAPI credentials through `--encrypted-env`;
+arguments contain variable names, not values. Microsoft authentication is unchanged.
 
-The Microsoft vault and secret names are defined directly in
-[`Invoke-RunBenchmarks.ps1`](scripts/Invoke-RunBenchmarks.ps1), not in pipeline
-variables: `$vaultName` is `kv-msbench-eval-azuremcp`, `$secretNameCAPIID` is
-`azure-mcp-eval-capi-id`, and `$secretNameCAPIHMAC` is `azure-mcp-eval-capi-hmac`.
-Similarly, the BAMI names are defined directly in
-[`Get-BamiBenchmarkCredential.ps1`](scripts/Get-BamiBenchmarkCredential.ps1):
-`$vaultName` is `kv-msbench-eval` and `$secretName` is `msbench-evals-app-secret`.
-Only the retrieved secret value is passed between tasks through an explicitly
-mapped secret output variable.
+Authorize both connections and grant the BAMI connection secret-read access
+(for example, **Key Vault Secrets User**). Keep `System.Debug` disabled and do not
+print secret values or save them in artifacts.
 
-The pipeline uses the submission script's production defaults: **all tests in
-the `azure.skill` suite for each of the seven default models**. YAML does not
-override the benchmark or model list. Run IDs and timestamps use the existing
-dated report layout and nightly `ToBeProcessed` queue in the Microsoft storage
-account.
-
-Test prompts and deployment subscription targets come from the published
-benchmark images. Updating metadata and rebuilding/publishing those images is
-a separate task; this pipeline does not rewrite their prompts or build images.
-
-The secret forwarding change does not implement the container's Azure login
-or prove that the workload uses BAMI resources. Check the resulting run for
-credential consumption and the actual subscription used.
-
-Mocked local checks require PowerShell 7 and Pester 5:
-
-```powershell
-pwsh -NoProfile -Command "Invoke-Pester -Path './tests/pipelines/BamiBenchmarkAuth.Tests.ps1' -Output Detailed -CI"
-```
-
-These checks do not retrieve real secrets, submit benchmarks or deploy resources.
+Reports use the existing Microsoft storage account, dated blob paths and
+`ToBeProcessed` queue. Benchmark prompts come from published images; this pipeline
+does not build images or implement workload BAMI login. Secret forwarding alone
+does not prove the workload uses BAMI resources.
 
 ## Telemetry reporter nightly build
 
