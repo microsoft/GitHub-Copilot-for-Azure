@@ -29,12 +29,14 @@ into the agent workspace.
 
 ## Configuration and execution
 
-Set `AZURE_FIXTURE_COORDINATION_STORAGE_ACCOUNT` and
-`AZURE_FIXTURE_COORDINATION_CONTAINER` in the `skill-improvement-evals` and
-`cideploytest` GitHub environments, or as repository variables shared by both.
-The container must already exist and the execution identity needs Storage Blob
-Data Contributor access to it, plus permission to provision and read the fixture
-resources in the selected Azure CLI subscription.
+The workflows prefer `AZURE_FIXTURE_COORDINATION_STORAGE_ACCOUNT` and
+`AZURE_FIXTURE_COORDINATION_CONTAINER` when those variables are configured.
+Otherwise, Skill Improvement reuses `REPORT_STORAGE_ACCOUNT` and
+`SKILL_IMPROVEMENT_STORAGE_CONTAINER`, while integration tests reuse
+`REPORT_STORAGE_ACCOUNT` and `REPORT_STORAGE_CONTAINER`. The selected container
+must already exist and the execution identity needs Storage Blob Data Contributor
+access to it, plus permission to provision and read the fixture resources in the
+selected Azure CLI subscription.
 
 For local runs, select the test subscription and export the same two variables.
 From the repository root, build with `npm run build`. Then, from `tests/`, run
