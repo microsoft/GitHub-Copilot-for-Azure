@@ -53,7 +53,7 @@ output principalId string = appService.identity.principalId
 
 > ⛔ **Every App Service module MUST include:** (1) `identity: { type: 'SystemAssigned' }`, (2) `scm` basicPublishingCredentialsPolicies with `allow: true` (IaC sets enabled for deploy convenience — deploy phase re-disables via REST API after code upload), (3) `ftp` basicPublishingCredentialsPolicies with `allow: false`. Missing any of these → self-review L1 `FLAGGED`.
 
-> ⛔ **PHP runtime:** set `linuxFxVersion` to a supported PHP branch (e.g. `PHP|8.3`) unless the app's `composer.json`/`composer.lock` PHP constraints exclude it — then use the newest branch they allow and add an `assumptions[]` note. Branches 8.1 and older no longer receive the PHP2Shell security fixes.
+> ⛔ **PHP runtime:** set `linuxFxVersion` by the PHP security row in [dockerfile-generation.md](dockerfile-generation.md) (e.g. `PHP|8.3` when the app's constraints allow 8.3). Branches 8.1 and older no longer receive the PHP2Shell security fixes.
 
 ## Native Module Deploy Strategy
 
