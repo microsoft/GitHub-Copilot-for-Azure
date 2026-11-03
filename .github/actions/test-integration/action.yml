@@ -1,0 +1,140 @@
+name: Run skill integration tests
+description: Run all selected stimuli with per-stimulus Azure profiles and publish local reports directly.
+inputs:
+  skill:
+    required: true
+    description: Plugin/skill reference
+  test-tag:
+    default: ""
+    description: Optional Vally tag filter for a deployment category
+  report-group:
+    default: ""
+    description: Deployment category used in the report storage prefix
+  model-override:
+    default: ""
+    description: Model override
+  no-skills:
+    default: "false"
+    description: Disable skill loading
+  playwright:
+    default: "false"
+    description: Install Playwright and Chromium for deployment tests
+runs:
+  using: composite
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      with:
+        node-version: "22"
+        cache: npm
+        cache-dependency-path: tests/package-lock.json
+    - name: Install dependencies
+      shell: bash
+      working-directory: tests
+      run: npm ci
+    - name: Install Playwright Browsers
+      if: inputs.playwright == 'true'
+      shell: bash
+      working-directory: tests
+      run: |
+        npm install --no-save @playwright/mcp@0.0.71
+        npx playwright install --with-deps chromium
+    - name: Install azd
+      uses: Azure/setup-azd@0b7e3a35ab00f2eee7080c845eb39c3f0ebfa553 # v2
+    - name: Discover required identities
+      id: identities
+      shell: bash
+      working-directory: tests
+      env:
+        SKILL: ${{ inputs.skill }}
+        TEST_TAG: ${{ inputs.test-tag }}
+      run: npx tsx discover-azure-permissions.ts
+    - name: Authenticate test profiles
+      uses: ./.github/actions/azure-profiles
+      with:
+        permissions: ${{ steps.identities.outputs.permissions }}
+        fixtures: ${{ steps.identities.outputs.fixtures }}
+        refresh: "true"
+    - name: Build plugin output
+      shell: bash
+      run: |
+        npm ci --ignore-scripts
+        npm run build
+    - name: Setup Copilot CLI
+      uses: mvkaran/setup-copilot-cli@d05a47209e6b3185c9c55702bef49f28e6eebef7 # v1
+      with:
+        token: ${{ github.token }}
+    - name: Run integration tests
+      id: tests
+      shell: bash
+      working-directory: tests
+      env:
+        SKILL: ${{ inputs.skill }}
+        TEST_TAG: ${{ inputs.test-tag }}
+        TEST_RUN_ID: all-integration
+        GH_HEAD_SHA: ${{ github.sha }}
+        NO_SKILLS: ${{ inputs.no-skills == 'true' && 'true' || '' }}
+        MODEL_OVERRIDE: ${{ inputs.model-override }}
+      run: |
+        tag_args=()
+        if [ -n "$TEST_TAG" ]; then
+          tag_args=(--tag "$TEST_TAG")
+        fi
+        npm run test:vally -- --plugin "${SKILL%%/*}" --skill "${SKILL##*/}" --workers 2 "${tag_args[@]}"
+    - name: Stop test profile refresh
+      if: always()
+      uses: ./.github/actions/stop-azure-profiles
+    - name: Generate skill report
+      if: always() && steps.tests.outcome != 'skipped'
+      shell: bash
+      working-directory: tests
+      env:
+        SKILL: ${{ inputs.skill }}
+        MODEL_OVERRIDE: ${{ inputs.model-override }}
+      run: npm run report -- --skill "${SKILL##*/}"
+    - name: Show skill report
+      if: always() && steps.tests.outcome != 'skipped'
+      shell: bash
+      working-directory: tests
+      run: |
+        if [ -d reports/test-run-all-integration ]; then
+          find reports/test-run-all-integration -name '*-SKILL-REPORT.md' -type f \
+            -exec cat {} \; >> "$GITHUB_STEP_SUMMARY"
+        fi
+    - name: Authenticate report storage
+      id: storage
+      if: always() && steps.tests.outcome != 'skipped'
+      uses: ./.github/actions/azure-profiles
+      with:
+        storage: "true"
+    - name: Publish reports
+      if: always() && steps.storage.outcome == 'success'
+      shell: bash
+      working-directory: tests
+      env:
+        SKILL: ${{ inputs.skill }}
+        REPORT_GROUP: ${{ inputs.report-group }}
+        RUN_ID: ${{ github.run_id }}
+      run: npx tsx report-storage.ts
+    - name: Upload token usage to table
+      if: always() && steps.storage.outcome == 'success'
+      shell: bash
+      working-directory: tests
+      env:
+        SKILL: ${{ inputs.skill }}
+        RUN_ID: ${{ github.run_id }}
+        BRANCH: ${{ github.ref_name }}
+      run: |
+        export SKILL="${SKILL##*/}"
+        npm run upload:token-usage
+    - name: Upload tool usage to table
+      if: always() && steps.storage.outcome == 'success'
+      shell: bash
+      working-directory: tests
+      env:
+        SKILL: ${{ inputs.skill }}
+        RUN_ID: ${{ github.run_id }}
+        BRANCH: ${{ github.ref_name }}
+      run: |
+        export SKILL="${SKILL##*/}"
+        npm run upload:tool-usage

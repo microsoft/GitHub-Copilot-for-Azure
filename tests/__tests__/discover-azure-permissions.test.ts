@@ -1,131 +1,82 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { buildPermissionMatrices, discoverAzurePermissions } from "../discover-azure-permissions.ts";
+import { stringify } from "yaml";
+import { discoverAzurePermissions, readEvalSuites } from "../discover-azure-permissions.ts";
 
 describe("discoverAzurePermissions", () => {
   let directory: string;
-
+  function suite(file: string, stimuli: unknown[], tags?: Record<string, string>) {
+    const target = path.join(directory, file);
+    mkdirSync(path.dirname(target), { recursive: true });
+    writeFileSync(target, stringify({ name: file, tags, stimuli }));
+  }
   beforeEach(() => {
     directory = mkdtempSync(path.join(tmpdir(), "azure-permissions-"));
   });
-
   afterEach(() => {
-    vi.restoreAllMocks();
     rmSync(directory, { recursive: true, force: true });
   });
 
-  test("collects unique permissions recursively, including missing tags", () => {
-    writeFileSync(path.join(directory, "a.yaml"), "stimuli:\n  - tags: {azurePermission: read}\n  - name: default\n");
-    mkdirSync(path.join(directory, "nested"));
-    writeFileSync(path.join(directory, "nested/b.yaml"), "stimuli:\n  - tags: {azurePermission: read}\n  - tags: {azurePermission: none}\n");
-    writeFileSync(path.join(directory, "ignored.yml"), "stimuli:\n  - tags: {azurePermission: ignored}\n");
-
-    expect(discoverAzurePermissions(directory)).toEqual(["read", "", "none"]);
-  });
-
-  test("discards entire files with invalid YAML or stimuli shapes", () => {
-    const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const invalidSuites = [
-      "stimuli: [",
-      "resources: []",
-      "stimuli: {}",
-      "stimuli: [null]",
-      "stimuli:\n  - tags: {azurePermission: discarded}\n  - tags: {azurePermission: 123}\n",
-      "stimuli:\n  - tags: null\n",
-    ];
-    invalidSuites.forEach((suite, index) => {
-      writeFileSync(path.join(directory, `${index}.yaml`), suite);
-    });
-
-    expect(discoverAzurePermissions(directory)).toEqual([]);
-    expect(warning).toHaveBeenCalledTimes(invalidSuites.length);
-  });
-
-  test("returns an empty array when no stimuli exist", () => {
-    expect(discoverAzurePermissions(directory)).toEqual([]);
-    writeFileSync(path.join(directory, "empty.yaml"), "stimuli: []");
-    expect(discoverAzurePermissions(directory)).toEqual([]);
-  });
-
-  test("fails when the eval directory is missing", () => {
-    expect(() => discoverAzurePermissions(path.join(directory, "missing"))).toThrow();
-  });
-
-  test("builds only discovered permission jobs and skips azure-deploy", () => {
-    const evalDir = path.join(directory, "evals/plugin/skill");
-    mkdirSync(evalDir, { recursive: true });
-    writeFileSync(path.join(evalDir, "eval.yaml"), "stimuli:\n  - tags: {azurePermission: read}\n  - tags: {azurePermission: write}\n  - tags: {azurePermission: admin}\n  - name: default\n");
-    expect(buildPermissionMatrices(directory, ["plugin/skill", "plugin/skill", "azure-skills/azure-deploy"]))
-      .toEqual({
-        read: ["plugin/skill"],
-        write: ["plugin/skill"],
-        admin: ["plugin/skill"],
-        none: [],
-        default: ["plugin/skill"],
-        report: [{ skill: "plugin/skill", permissions: ["read", "write", "admin", ""] }],
-      });
-    expect(() => buildPermissionMatrices(directory, ["../skill"])).toThrow("Invalid plugin/skill");
-    writeFileSync(path.join(evalDir, "eval.yaml"), "stimuli:\n  - tags: {azurePermission: unsupported}\n");
-    expect(() => buildPermissionMatrices(directory, ["plugin/skill"])).toThrow("Unsupported Azure permission");
-  });
-
-  test("writes the JSON permissions step output", () => {
-    const evalDir = path.join(directory, "evals/plugin/skill");
-    mkdirSync(evalDir, { recursive: true });
-    writeFileSync(path.join(evalDir, "eval.yaml"), "stimuli:\n  - tags: {azurePermission: read}\n  - name: default\n");
-    const output = path.join(directory, "output");
-    const result = spawnSync(process.execPath, [
-      "--import", "tsx", fileURLToPath(new URL("../discover-azure-permissions.ts", import.meta.url)),
-    ], {
-      cwd: fileURLToPath(new URL("..", import.meta.url)),
-      env: {
-        ...process.env,
-        GITHUB_WORKSPACE: directory,
-        PLUGIN_DIR: "plugin",
-        SKILL_NAME: "skill",
-        GITHUB_OUTPUT: output,
-      },
-      encoding: "utf8",
-    });
-
-    expect(result.stderr).toBe("");
-    expect(result.status).toBe(0);
-    expect(readFileSync(output, "utf8")).toBe('permissions=["read",""]\n');
-  });
-
-  test("writes write and admin matrix outputs only for skills needing them", () => {
-    for (const permission of ["write", "admin"]) {
-      const evalDir = path.join(directory, `evals/plugin/${permission}-skill`);
-      mkdirSync(evalDir, { recursive: true });
-      writeFileSync(path.join(evalDir, "eval.yaml"), `stimuli:\n  - tags: {azurePermission: ${permission}}\n`);
-    }
-    const output = path.join(directory, "output");
-    const result = spawnSync(process.execPath, [
-      "--import", "tsx", fileURLToPath(new URL("../discover-azure-permissions.ts", import.meta.url)),
-    ], {
-      env: {
-        ...process.env,
-        GITHUB_WORKSPACE: directory,
-        SKILLS_INPUT: "plugin/write-skill,plugin/admin-skill",
-        GITHUB_OUTPUT: output,
-      },
-      encoding: "utf8",
-    });
-
-    expect(result.stderr).toBe("");
-    expect(result.status).toBe(0);
-    expect(readFileSync(output, "utf8").split("\n")).toEqual([
-      "read-matrix=[]",
-      'write-matrix=["plugin/write-skill"]',
-      'admin-matrix=["plugin/admin-skill"]',
-      "none-matrix=[]",
-      "default-matrix=[]",
-      'report-matrix=[{"skill":"plugin/write-skill","permissions":["write"]},{"skill":"plugin/admin-skill","permissions":["admin"]}]',
-      "",
+  test("scans the same nested suites as the runner, excluding fixture directories", async () => {
+    suite("a.yaml", [{ name: "read", prompt: "read", tags: { azurePermission: "read" } }]);
+    suite("nested/b.yaml", [
+      { name: "default", prompt: "default" },
+      { name: "none", prompt: "none", tags: { azurePermission: "none" } },
     ]);
+    writeFileSync(path.join(directory, "ignored.yml"), "invalid: [");
+    suite("fixture/ignored.yaml", [{ tags: { azurePermission: "ignored" } }]);
+    suite("nested/fixture/ignored.yaml", [{ tags: { azurePermission: "ignored" } }]);
+    expect(await discoverAzurePermissions(directory)).toEqual({ permissions: ["read", "admin", "none"], fixtures: false });
+    expect((await readEvalSuites(directory)).map(({ file }) => path.relative(directory, file)))
+      .toEqual(["a.yaml", "nested/b.yaml"]);
+  });
+
+  test("honors inherited tags, stimulus overrides and the exact category filter", async () => {
+    suite("a.yaml", [
+      { name: "inherited", prompt: "read" },
+      { name: "override", prompt: "write", tags: { azurePermission: "write", azureFixture: "fixture/manifest.yaml" } },
+      { name: "excluded", prompt: "admin", tags: { azurePermission: "admin", category: "other" } },
+    ], { azurePermission: "read", category: "selected" });
+    expect(await discoverAzurePermissions(directory, ["category=selected"]))
+      .toEqual({ permissions: ["read", "write"], fixtures: true });
+    expect(await discoverAzurePermissions(directory, ["category=missing"]))
+      .toEqual({ permissions: [], fixtures: false });
+  });
+
+  test.each(["unsupported", "", ["read"]])("rejects malformed permission %j", async (permission) => {
+    suite("a.yaml", [{ name: "invalid", prompt: "invalid", tags: { azurePermission: permission } }]);
+    await expect(discoverAzurePermissions(directory)).rejects.toThrow("Unsupported Azure permission");
+  });
+
+  test("fails on invalid YAML, malformed stimuli and missing directories", async () => {
+    writeFileSync(path.join(directory, "a.yaml"), "stimuli: [");
+    await expect(discoverAzurePermissions(directory)).rejects.toThrow();
+    writeFileSync(path.join(directory, "a.yaml"), "stimuli: [null]");
+    await expect(discoverAzurePermissions(directory)).rejects.toThrow();
+    await expect(discoverAzurePermissions(path.join(directory, "missing"))).rejects.toThrow();
+  });
+
+  test("writes only the identities needed by the selected run", () => {
+    suite("evals/plugin/skill/eval.yaml", [
+      { name: "none", prompt: "none", tags: { azurePermission: "none", category: "selected" } },
+      { name: "admin", prompt: "admin", tags: { azurePermission: "admin", category: "other" } },
+    ]);
+    const output = path.join(directory, "output");
+    const result = spawnSync(process.execPath, [
+      "--import", "tsx", fileURLToPath(new URL("../discover-azure-permissions.ts", import.meta.url)),
+    ], {
+      env: {
+        ...process.env, GITHUB_WORKSPACE: directory, SKILL: "plugin/skill",
+        TEST_TAG: "category=selected", GITHUB_OUTPUT: output,
+      },
+      encoding: "utf8",
+    });
+    expect(result.stderr).toBe("");
+    expect(result.status).toBe(0);
+    expect(readFileSync(output, "utf8")).toBe('permissions=["none"]\nfixtures=false\n');
   });
 });

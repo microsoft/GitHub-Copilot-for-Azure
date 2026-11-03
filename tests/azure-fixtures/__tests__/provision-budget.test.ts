@@ -107,7 +107,7 @@ describe("per-invocation provisioning budgets", () => {
         ...config, parameters: [{ key: "testPrincipalId" }],
       })),
     };
-    const result = await provision(manifestPath, config);
+    const result = await provision(manifestPath, config, { ...process.env, AZURE_CLIENT_ID: clientId });
     runPostTestScript(result.context, config, "/fixtures/budget");
     for (const [, , options] of execFileSync.mock.calls) {
       expect(options.env).toMatchObject({ AZURE_CONFIG_DIR: "/tmp/write", AZURE_CLIENT_ID: "write-client" });

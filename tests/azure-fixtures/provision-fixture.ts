@@ -124,7 +124,7 @@ export type ProvisioningDependencies = {
   readyRetentionMs: number;
 };
 
-function defaultProvisioningDependencies(): ProvisioningDependencies {
+function defaultProvisioningDependencies(environment: NodeJS.ProcessEnv = process.env): ProvisioningDependencies {
   const budget = createBudget();
   return {
     now: Date.now,
@@ -137,7 +137,7 @@ function defaultProvisioningDependencies(): ProvisioningDependencies {
     createResourceLock: (account, container, blob, acquisitionDeadline) => new ResourceLock(account, container, blob, acquisitionDeadline),
     log: console,
     budget,
-    environment: process.env,
+    environment,
     processId: process.pid,
     leaseAcquisitionBudgetMs: LEASE_ACQUISITION_BUDGET_MS,
     totalBudgetMs: TOTAL_BUDGET_MS,
@@ -195,12 +195,11 @@ type AzureAccount = {
 /**
  * Get the test principal ID using AZ CLI.
  */
-function getTestPrincipalId(account: AzureAccount, runCommand: ProvisioningDependencies["runAz"] = runAz): string {
-  const permission = process.env.TEST_PERMISSION === "" ? "admin" : process.env.TEST_PERMISSION;
-  if (process.env.CI === "true" && (permission === "read" || permission === "write" || permission === "admin")) {
-    const clientId = process.env[`AZURE_${permission.toUpperCase()}_CLIENT_ID`]?.trim();
+function getTestPrincipalId(account: AzureAccount, runCommand: ProvisioningDependencies["runAz"], environment: NodeJS.ProcessEnv): string {
+  if (environment.CI === "true" && environment.TEST_PERMISSION !== undefined) {
+    const clientId = environment.AZURE_CLIENT_ID?.trim();
     if (!clientId) {
-      throw new Error(`Missing ${permission} test identity for fixture principal resolution`);
+      throw new Error("Missing test identity for fixture principal resolution");
     }
     return runCommand(["ad", "sp", "show", "--id", clientId, "--query", "id", "-o", "tsv"]);
   }
@@ -214,7 +213,7 @@ function getTestPrincipalId(account: AzureAccount, runCommand: ProvisioningDepen
 
 function computeRunContext(
   manifest: FixtureManifest,
-  dependencies?: Pick<ProvisioningDependencies, "runAz" | "randomSuffix" | "randomUUID">,
+  dependencies?: Pick<ProvisioningDependencies, "runAz" | "randomSuffix" | "randomUUID" | "environment">,
 ): FixtureRunContext {
   const runCommand = dependencies?.runAz ?? runAz;
   const account = JSON.parse(runCommand(["account", "show", "-o", "json"])) as AzureAccount;
@@ -233,7 +232,7 @@ function computeRunContext(
     resourceGroupNames,
     testPrincipalId: manifest.bicepConfigs.some(config =>
       config.parameters?.some(parameter => parameter.key === "testPrincipalId" && parameter.value === undefined),
-    ) ? getTestPrincipalId(account, runCommand) : undefined,
+    ) ? getTestPrincipalId(account, runCommand, dependencies?.environment ?? process.env) : undefined,
   };
 }
 
@@ -661,8 +660,9 @@ function workflowOutput(
 export function provision(
   manifestPath: string,
   manifest: FixtureManifest,
+  environment: NodeJS.ProcessEnv = process.env,
 ): Promise<ProvisionManifestOutput> {
-  return provisionWithDependencies(manifestPath, manifest, defaultProvisioningDependencies());
+  return provisionWithDependencies(manifestPath, manifest, defaultProvisioningDependencies(environment));
 }
 
 export async function provisionWithDependencies(

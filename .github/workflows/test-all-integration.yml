@@ -50,11 +50,6 @@ jobs:
   resolve-inputs:
     name: Resolve workflow inputs
     runs-on: ubuntu-latest
-    environment: cideploytest
-    env:
-      AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
-      AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
-      AZURE_STAGE_SUBSCRIPTION_ID: ${{ vars.AZURE_STAGE_SUBSCRIPTION_ID }}
     if: github.repository == 'microsoft/GitHub-Copilot-for-Azure'
     outputs:
       skills: ${{ steps.resolve.outputs.skills }}
@@ -62,9 +57,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
-
-      - name: Authenticate stage storage
-        uses: ./.github/actions/azure-profiles
 
       - name: Resolve inputs based on trigger type
         id: resolve
@@ -111,37 +103,12 @@ jobs:
     name: Build skill matrix
     needs: resolve-inputs
     runs-on: ubuntu-latest
-    environment: cideploytest
-    env:
-      AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
-      AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
-      AZURE_STAGE_SUBSCRIPTION_ID: ${{ vars.AZURE_STAGE_SUBSCRIPTION_ID }}
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
       has_azure_deploy: ${{ steps.set-matrix.outputs.has_azure_deploy }}
-      read-matrix: ${{ steps.azure-permissions.outputs.read-matrix }}
-      write-matrix: ${{ steps.azure-permissions.outputs.write-matrix }}
-      admin-matrix: ${{ steps.azure-permissions.outputs.admin-matrix }}
-      none-matrix: ${{ steps.azure-permissions.outputs.none-matrix }}
-      default-matrix: ${{ steps.azure-permissions.outputs.default-matrix }}
-      report-matrix: ${{ steps.azure-permissions.outputs.report-matrix }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
-
-      - name: Authenticate stage storage
-        uses: ./.github/actions/azure-profiles
-
-      - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: "22"
-          cache: npm
-          cache-dependency-path: tests/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-        working-directory: tests
 
       - name: Parse skills input into matrix
         id: set-matrix
@@ -154,7 +121,10 @@ jobs:
             // Each item is in the form of "<plugin-dirname>/<skill-name>"
             // Filter out azure-deploy (it runs via a separate reusable workflow)
             const skillsInput = process.env.SKILLS_INPUT || "";
-            const skills = skillsInput.split(",").map(s => s.trim());
+            const skills = [...new Set(skillsInput.split(",").map(s => s.trim()).filter(Boolean))];
+            if (skills.some(skill => !/^[a-z0-9-]+\/[a-z0-9-]+$/.test(skill))) {
+              throw new Error("Skills must be plugin/skill references");
+            }
 
             // Check if azure-deploy is in the list
             const hasAzureDeploy = skills.includes("azure-skills/azure-deploy");
@@ -163,13 +133,6 @@ jobs:
             // Build matrix excluding azure-deploy
             const matrix = skills.filter(s => s !== "azure-skills/azure-deploy");
             core.setOutput("matrix", JSON.stringify(matrix));
-
-      - name: Discover required Azure permissions
-        id: azure-permissions
-        working-directory: tests
-        env:
-          SKILLS_INPUT: ${{ needs.resolve-inputs.outputs.skills }}
-        run: npx tsx discover-azure-permissions.ts
 
   # Call the azure-deploy workflow when azure-deploy is in the skills list
   azure-deploy:
@@ -182,92 +145,41 @@ jobs:
       test-pattern: ${{ needs.resolve-inputs.outputs.deploy-test-pattern }}
       no-skills: ${{ inputs.no-skills || false }}
 
-  test-read:
-    name: Integration read – ${{ matrix.skill }}
+  test:
+    name: Integration – ${{ matrix.skill }}
     needs: setup
-    if: needs.setup.outputs.read-matrix != '[]'
+    if: needs.setup.outputs.matrix != '[]'
+    runs-on: ubuntu-latest
+    environment: cideploytest
+    env:
+      AZURE_STAGE_CLIENT_ID: ${{ vars.AZURE_STAGE_CLIENT_ID }}
+      AZURE_READ_CLIENT_ID: ${{ vars.AZURE_READ_CLIENT_ID }}
+      AZURE_WRITE_CLIENT_ID: ${{ vars.AZURE_WRITE_CLIENT_ID }}
+      AZURE_ADMIN_CLIENT_ID: ${{ vars.AZURE_ADMIN_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      AZURE_STAGE_SUBSCRIPTION_ID: ${{ vars.AZURE_STAGE_SUBSCRIPTION_ID }}
+      AZURE_FIXTURE_COORDINATION_STORAGE_ACCOUNT: ${{ vars.AZURE_FIXTURE_COORDINATION_STORAGE_ACCOUNT }}
+      AZURE_FIXTURE_COORDINATION_CONTAINER: ${{ vars.AZURE_FIXTURE_COORDINATION_CONTAINER }}
+      REPORT_STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
+      REPORT_STORAGE_CONTAINER: ${{ github.event_name == 'schedule' && (vars.REPORT_STORAGE_CONTAINER || 'integration-reports') || (vars.MANUAL_REPORT_STORAGE_CONTAINER || 'manual-integration-reports') }}
+      TOKEN_USAGE_STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
+      TOKEN_USAGE_TABLE_NAME: ${{ vars.TOKEN_USAGE_TABLE || 'integrationtokenusage' }}
+      TOOL_USAGE_STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
+      TOOL_USAGE_TABLE_NAME: ${{ vars.TOOL_USAGE_TABLE || 'integrationtoolusage' }}
     strategy:
       fail-fast: false
       max-parallel: 5
       matrix:
-        skill: ${{ fromJson(needs.setup.outputs.read-matrix) }}
-    uses: ./.github/workflows/test-integration-read.yml
-    with:
-      skill: ${{ matrix.skill }}
-      model-override: ${{ inputs.model-override || '' }}
-      no-skills: ${{ inputs.no-skills || false }}
-
-  test-write:
-    name: Integration write – ${{ matrix.skill }}
-    needs: setup
-    if: needs.setup.outputs.write-matrix != '[]'
-    strategy:
-      fail-fast: false
-      max-parallel: 5
-      matrix:
-        skill: ${{ fromJson(needs.setup.outputs.write-matrix) }}
-    uses: ./.github/workflows/test-integration-write.yml
-    with:
-      skill: ${{ matrix.skill }}
-      model-override: ${{ inputs.model-override || '' }}
-      no-skills: ${{ inputs.no-skills || false }}
-
-  test-admin:
-    name: Integration admin – ${{ matrix.skill }}
-    needs: setup
-    if: needs.setup.outputs.admin-matrix != '[]'
-    strategy:
-      fail-fast: false
-      max-parallel: 5
-      matrix:
-        skill: ${{ fromJson(needs.setup.outputs.admin-matrix) }}
-    uses: ./.github/workflows/test-integration-admin.yml
-    with:
-      skill: ${{ matrix.skill }}
-      model-override: ${{ inputs.model-override || '' }}
-      no-skills: ${{ inputs.no-skills || false }}
-
-  test-none:
-    name: Integration none – ${{ matrix.skill }}
-    needs: setup
-    if: needs.setup.outputs.none-matrix != '[]'
-    strategy:
-      fail-fast: false
-      max-parallel: 5
-      matrix:
-        skill: ${{ fromJson(needs.setup.outputs.none-matrix) }}
-    uses: ./.github/workflows/test-integration-none.yml
-    with:
-      skill: ${{ matrix.skill }}
-      model-override: ${{ inputs.model-override || '' }}
-      no-skills: ${{ inputs.no-skills || false }}
-
-  test-default:
-    name: Integration default – ${{ matrix.skill }}
-    needs: setup
-    if: needs.setup.outputs.default-matrix != '[]'
-    strategy:
-      fail-fast: false
-      max-parallel: 5
-      matrix:
-        skill: ${{ fromJson(needs.setup.outputs.default-matrix) }}
-    uses: ./.github/workflows/test-integration-default.yml
-    with:
-      skill: ${{ matrix.skill }}
-      model-override: ${{ inputs.model-override || '' }}
-      no-skills: ${{ inputs.no-skills || false }}
-
-  report:
-    name: Aggregate and report – ${{ matrix.skill }}
-    needs: [setup, test-read, test-write, test-admin, test-none, test-default]
-    if: always() && !cancelled() && needs.setup.result == 'success' && needs.setup.outputs.report-matrix != '[]'
-    strategy:
-      fail-fast: false
-      max-parallel: 5
-      matrix:
-        include: ${{ fromJson(needs.setup.outputs.report-matrix) }}
-
-    uses: ./.github/workflows/report-integration-skill.yml
-    with:
-      skill: ${{ matrix.skill }}
-      permissions: ${{ toJson(matrix.permissions) }}
+        skill: ${{ fromJson(needs.setup.outputs.matrix) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          fetch-depth: 0
+      - name: Run skill tests and publish reports
+        uses: ./.github/actions/test-integration
+        with:
+          skill: ${{ matrix.skill }}
+          model-override: ${{ inputs.model-override || '' }}
+          no-skills: ${{ inputs.no-skills || false }}

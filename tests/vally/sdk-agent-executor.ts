@@ -152,7 +152,7 @@ export abstract class SdkAgentExecutor implements Executor {
 
         manifest = readManifest(absoluteManifestPath);
 
-        provisionOutput = await provision(absoluteManifestPath, manifest);
+        provisionOutput = await provision(absoluteManifestPath, manifest, { ...process.env, ...runConfig.env });
         const parsedProvisionOutput: ProvisionScriptOutput = JSON.parse(
           provisionOutput.output,
         );

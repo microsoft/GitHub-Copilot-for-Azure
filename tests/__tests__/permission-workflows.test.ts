@@ -6,7 +6,6 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { runInNewContext } from "node:vm";
 import { parse } from "yaml";
-import { matchesSuiteFilter, parseSuiteFilter } from "@microsoft/vally";
 
 type Step = {
   id?: string;
@@ -14,24 +13,19 @@ type Step = {
   uses?: string;
   run?: string;
   if?: string;
-  shell?: string;
-  "continue-on-error"?: boolean;
   env?: Record<string, string>;
   with?: Record<string, unknown>;
 };
 type Job = {
   env?: Record<string, string>;
   outputs?: Record<string, string>;
-  uses?: string;
-  with?: Record<string, string>;
   needs?: string | string[];
   if?: string;
   environment?: string;
   strategy?: { matrix: Record<string, string> };
   steps?: Step[];
 };
-type Workflow = { permissions: Record<string, string>; jobs: Record<string, Job> };
-
+type Workflow = { jobs: Record<string, Job> };
 function readWorkflow(file: string): Workflow {
   return parse(readFileSync(fileURLToPath(new URL(`../../.github/workflows/${file}`, import.meta.url)), "utf8"));
 }
@@ -41,247 +35,203 @@ function readAction(name: string): Step[] {
   )).runs.steps;
 }
 
-describe("permission integration workflows", () => {
+describe("per-stimulus integration workflows", () => {
   const workflow = readWorkflow("test-all-integration.yml");
   const deploy = readWorkflow("test-azure-deploy.yml");
   const profiles = readAction("azure-profiles");
-  const action = readAction("test-permission");
-  const report = readWorkflow("report-integration-skill.yml").jobs.report;
-  const stageVariables = ["AZURE_CLIENT_ID", "AZURE_TENANT_ID", "AZURE_STAGE_SUBSCRIPTION_ID"];
-  const testVariables = [
-    ...stageVariables, "AZURE_READ_CLIENT_ID", "AZURE_WRITE_CLIENT_ID", "AZURE_ADMIN_CLIENT_ID",
-    "AZURE_SUBSCRIPTION_ID", "AZURE_FIXTURE_COORDINATION_STORAGE_ACCOUNT", "AZURE_FIXTURE_COORDINATION_CONTAINER",
-  ];
+  const action = readAction("test-integration");
 
-  test.each(["azure-profiles", "test-permission", "stop-azure-profiles"])(
-    "%s composite action does not reference the unavailable vars context",
-    (name) => {
-      expect(JSON.stringify(readAction(name))).not.toMatch(/\$\{\{[^}]*\bvars\s*(?:\.|\[)/);
-    },
-  );
-
-  test("profile action reads configuration exclusively from caller environment", () => {
-    expect(profiles[0].env).toMatchObject({
-      STAGE_CLIENT_ID: "${{ env.AZURE_CLIENT_ID }}",
-      READ_CLIENT_ID: "${{ env.AZURE_READ_CLIENT_ID }}",
-      WRITE_CLIENT_ID: "${{ env.AZURE_WRITE_CLIENT_ID }}",
-      ADMIN_CLIENT_ID: "${{ env.AZURE_ADMIN_CLIENT_ID }}",
-      TENANT_ID: "${{ env.AZURE_TENANT_ID }}",
-      TEST_SUBSCRIPTION_ID: "${{ env.AZURE_SUBSCRIPTION_ID }}",
-      STAGE_SUBSCRIPTION_ID: "${{ env.AZURE_STAGE_SUBSCRIPTION_ID }}",
-      FIXTURE_STORAGE_ACCOUNT: "${{ env.AZURE_FIXTURE_COORDINATION_STORAGE_ACCOUNT }}",
-      FIXTURE_STORAGE_CONTAINER: "${{ env.AZURE_FIXTURE_COORDINATION_CONTAINER }}",
+  test("uses one skill matrix and one deployment-category matrix, never permission jobs", () => {
+    expect(Object.keys(workflow.jobs)).toEqual(["resolve-inputs", "setup", "azure-deploy", "test"]);
+    expect(Object.keys(deploy.jobs)).toEqual(["setup", "test"]);
+    expect(workflow.jobs.test.strategy?.matrix.skill).toBe("${{ fromJson(needs.setup.outputs.matrix) }}");
+    expect(deploy.jobs.test.strategy?.matrix["test-group"]).toBe("${{ fromJson(needs.setup.outputs.matrix) }}");
+    expect(workflow.jobs.test.steps?.at(-1)?.with?.skill).toBe("${{ matrix.skill }}");
+    expect(deploy.jobs.test.steps?.at(-1)?.with).toMatchObject({
+      skill: "azure-skills/azure-deploy", "test-tag": "category=${{ matrix.test-group }}",
+      "report-group": "${{ matrix.test-group }}",
     });
-  });
-
-  test("all stage-only callers supply their authentication configuration", () => {
-    for (const job of [workflow.jobs["resolve-inputs"], workflow.jobs.setup, deploy.jobs.setup, report]) {
-      expect(job.steps?.some(step => step.uses === "./.github/actions/azure-profiles")).toBe(true);
-      for (const variable of stageVariables) {
+    for (const job of [workflow.jobs.test, deploy.jobs.test]) {
+      expect(job.environment).toBe("cideploytest");
+      expect(job.env?.AZURE_STAGE_CLIENT_ID).toBe("${{ vars.AZURE_STAGE_CLIENT_ID }}");
+      for (const variable of ["AZURE_READ_CLIENT_ID", "AZURE_WRITE_CLIENT_ID", "AZURE_ADMIN_CLIENT_ID",
+        "AZURE_TENANT_ID", "AZURE_SUBSCRIPTION_ID", "AZURE_STAGE_SUBSCRIPTION_ID",
+        "AZURE_FIXTURE_COORDINATION_STORAGE_ACCOUNT", "AZURE_FIXTURE_COORDINATION_CONTAINER", "REPORT_STORAGE_ACCOUNT"]) {
         expect(job.env?.[variable]).toBe(`\${{ vars.${variable} }}`);
       }
+      expect(job.env?.REPORT_STORAGE_CONTAINER).toContain("MANUAL_REPORT_STORAGE_CONTAINER");
+      expect(job.env?.TOKEN_USAGE_STORAGE_ACCOUNT).toBe("${{ vars.REPORT_STORAGE_ACCOUNT }}");
+      expect(job.env?.TOOL_USAGE_STORAGE_ACCOUNT).toBe("${{ vars.REPORT_STORAGE_ACCOUNT }}");
     }
-  });
-
-  test.each(["read", "write", "admin", "none", "default"])("dispatches the %s matrix to its reusable workflow", (group) => {
-    expect(workflow.jobs.setup.outputs?.[`${group}-matrix`])
-      .toBe(`\${{ steps.azure-permissions.outputs.${group}-matrix }}`);
-    const caller = workflow.jobs[`test-${group}`];
-    expect(caller.uses).toBe(`./.github/workflows/test-integration-${group}.yml`);
-    expect(caller.if).toContain(`needs.setup.outputs.${group}-matrix != '[]'`);
-    expect(caller.strategy?.matrix.skill).toContain(`needs.setup.outputs.${group}-matrix`);
-    const callee = readWorkflow(`test-integration-${group}.yml`);
-    expect(callee.permissions["id-token"]).toBe("write");
-    expect(callee.jobs.test.environment).toBe("cideploytest");
-    for (const variable of [...testVariables, "REPORT_STORAGE_ACCOUNT"]) {
-      expect(callee.jobs.test.env?.[variable]).toBe(`\${{ vars.${variable} }}`);
+    for (const job of [workflow.jobs["resolve-inputs"], workflow.jobs.setup, deploy.jobs.setup]) {
+      expect(job.steps?.some(step => step.uses === "./.github/actions/azure-profiles")).toBeFalsy();
     }
-    expect(callee.jobs.test.env?.REPORT_STORAGE_CONTAINER).toBe(
-      "${{ github.event_name == 'schedule' && (vars.REPORT_STORAGE_CONTAINER || 'integration-reports') || (vars.MANUAL_REPORT_STORAGE_CONTAINER || 'manual-integration-reports') }}",
-    );
-    const upload = action.find(step => step.name === "Upload private reports");
-    expect(upload?.env).not.toHaveProperty("REPORT_STORAGE_ACCOUNT");
-    expect(upload?.env).not.toHaveProperty("REPORT_STORAGE_CONTAINER");
-    const invocation = callee.jobs.test.steps?.find(step => step.uses === "./.github/actions/test-permission");
-    expect(invocation?.with?.permission).toBe(group === "default" ? "" : group);
-    expect(action.find(step => step.id === "tests")?.env?.TEST_PERMISSION).toBe("${{ inputs.permission }}");
+    expect(JSON.stringify([workflow, deploy, action, profiles])).not.toContain("vars.AZURE_CLIENT_ID");
   });
 
   test.each([
-    { input: "", none: ["skill-invocation"], adminCount: 11 },
-    { input: "skill-invocation", none: ["skill-invocation"], adminCount: 0 },
-    { input: "vanilla-app-service-deploy", none: [], adminCount: 1 },
-    { input: " skill-invocation, vanilla-app-service-deploy, ", none: ["skill-invocation"], adminCount: 1 },
-    { input: " , ", none: [], adminCount: 0 },
-  ])("splits azure-deploy groups for input '$input'", ({ input, none, adminCount }) => {
+    { input: "", count: 12 },
+    { input: "skill-invocation", count: 1 },
+    { input: "skill-invocation,vanilla-app-service-deploy,skill-invocation", count: 2 },
+    { input: " , ", count: 0 },
+  ])("retains deployment categories without classifying permissions for '$input'", ({ input, count }) => {
     const script = deploy.jobs.setup.steps?.find(step => step.id === "set-matrix")?.with?.script;
     if (typeof script !== "string") {
-      throw new Error("Missing azure-deploy matrix script");
+      throw new Error("Missing deployment matrix script");
     }
     const outputs: Record<string, string> = {};
     runInNewContext(script, {
       process: { env: { INPUT: input } },
       core: { setOutput: (name: string, value: string) => { outputs[name] = value; } },
     }, { timeout: 1000 });
-    expect(JSON.parse(outputs["none-matrix"])).toEqual(none);
-    const admin: string[] = JSON.parse(outputs["admin-matrix"]);
-    expect(admin).toHaveLength(adminCount);
-    expect(admin).not.toContain("skill-invocation");
-    expect(JSON.parse(outputs["report-groups"])).toEqual([...none, ...admin]);
+    expect(Object.keys(outputs)).toEqual(["matrix"]);
+    expect(JSON.parse(outputs.matrix)).toHaveLength(count);
   });
 
-  test.each(["none", "admin"])("dispatches azure-deploy %s groups independently", (group) => {
-    const job = deploy.jobs[`test-${group}`];
-    expect(job.needs).toBe("setup");
-    expect(job.if).toBe(`needs.setup.outputs.${group}-matrix != '[]'`);
-    expect(job.strategy?.matrix["test-group"])
-      .toBe(`\${{ fromJson(needs.setup.outputs.${group}-matrix) }}`);
-    expect(job.uses).toBe("./.github/workflows/test-azure-deploy-group.yml");
-    expect(job.with?.permission).toBe(group);
-    const callee = readWorkflow("test-azure-deploy-group.yml").jobs.test;
-    for (const variable of testVariables) {
-      expect(callee.env?.[variable]).toBe(`\${{ vars.${variable} }}`);
+  test("discovery and execution use the same filter, without azurePermission expressions", () => {
+    const discovery = action.find(step => step.id === "identities");
+    const execution = action.find(step => step.id === "tests");
+    expect(discovery?.env?.TEST_TAG).toBe("${{ inputs.test-tag }}");
+    expect(execution?.env?.TEST_TAG).toBe(discovery?.env?.TEST_TAG);
+    expect(execution?.run).not.toContain("azurePermission");
+    expect(execution?.env?.TEST_RUN_ID).toBe("all-integration");
+    expect(action.find(step => step.name === "Authenticate test profiles")?.with).toMatchObject({
+      permissions: "${{ steps.identities.outputs.permissions }}",
+      fixtures: "${{ steps.identities.outputs.fixtures }}",
+    });
+  });
+
+  test("report authentication occurs after tests, immediately before direct publication", () => {
+    const login = action.findIndex(step => step.id === "storage");
+    expect(login).toBeGreaterThan(action.findIndex(step => step.id === "tests"));
+    expect(action[login].if).toContain("always()");
+    expect(action[login].with).toEqual({ storage: "true" });
+    expect(action[login + 1].run).toBe("npx tsx report-storage.ts");
+    expect(action[login + 1].if).toBe("always() && steps.storage.outcome == 'success'");
+    expect(action.some(step => /download|aggregate|cleanup/.test(step.run ?? ""))).toBe(false);
+    for (const step of action.filter(step => step.run?.includes("upload:"))) {
+      expect(step.if).toContain("steps.storage.outcome == 'success'");
     }
-    const steps = callee.steps ?? [];
-    expect(steps.find(step => step.uses === "./.github/actions/azure-profiles")?.with?.permission)
-      .toBe("${{ inputs.permission }}");
-    expect(steps.find(step => step.id === "tests")?.run).toContain('--tag "category=$TEST_GROUP"');
-    expect(steps.find(step => step.id === "tests")?.env?.TEST_PERMISSION).toBe("${{ inputs.permission }}");
   });
 
-  test.each(["storage", "none", "read", "write", "admin"])("logs in only the needed explicit CLI profiles for %s", (permission) => {
+  test.each(["", "category=selected"])("executes every selected stimulus without permission filters: '%s'", (tag) => {
+    const directory = mkdtempSync(path.join(tmpdir(), "integration-command-"));
+    try {
+      const capture = path.join(directory, "arguments.json");
+      writeFileSync(path.join(directory, "npm"), `#!${process.execPath}
+require("node:fs").writeFileSync(process.env.CAPTURE, JSON.stringify(process.argv.slice(2)));
+`, { mode: 0o755 });
+      const result = spawnSync("bash", ["-e", "-o", "pipefail", "-c",
+        action.find(step => step.id === "tests")?.run ?? ""], {
+        env: { ...process.env, PATH: `${directory}${path.delimiter}${process.env.PATH}`,
+          CAPTURE: capture, SKILL: "plugin/skill", TEST_TAG: tag },
+        encoding: "utf8",
+      });
+      expect(result.stderr).toBe("");
+      expect(result.status).toBe(0);
+      expect(JSON.parse(readFileSync(capture, "utf8"))).toEqual([
+        "run", "test:vally", "--", "--plugin", "plugin", "--skill", "skill", "--workers", "2",
+        ...(tag ? ["--tag", tag] : []),
+      ]);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  test.each([
+    { permissions: '["unsupported"]', client: "read-client", message: "Invalid Azure permissions" },
+    { permissions: '["read"]', client: "", message: "Managed identity client ID is required" },
+  ])("fails explicitly rather than falling back to default profiles: %j", (scenario) => {
+    const directory = mkdtempSync(path.join(tmpdir(), "azure-profile-failure-"));
+    try {
+      writeFileSync(path.join(directory, "curl"), "#!/bin/sh\nprintf '%s' '{\"value\":\"fake-token\"}'\n", { mode: 0o755 });
+      const result = spawnSync("bash", ["-e", "-o", "pipefail", "-c", profiles[0].run ?? ""], {
+        env: {
+          ...process.env, PATH: `${directory}${path.delimiter}${process.env.PATH}`,
+          RUNNER_TEMP: directory, GITHUB_ENV: path.join(directory, "environment"),
+          PERMISSIONS: scenario.permissions, FIXTURES: "false", STORAGE: "false", REFRESH: "false",
+          READ_CLIENT_ID: scenario.client, TENANT_ID: "tenant", TEST_SUBSCRIPTION_ID: "test-sub",
+          ACTIONS_ID_TOKEN_REQUEST_TOKEN: "fake-request-token", ACTIONS_ID_TOKEN_REQUEST_URL: "https://example.invalid/oidc",
+        },
+        encoding: "utf8",
+      });
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain(scenario.message);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  test.each([
+    { permissions: ["none"], fixtures: false, az: [], azd: [] },
+    { permissions: ["none"], fixtures: true, az: ["write"], azd: [] },
+    { permissions: ["read"], fixtures: true, az: ["read", "write"], azd: ["read"] },
+    { permissions: ["read", "write", "admin", "none"], fixtures: true,
+      az: ["admin", "read", "write"], azd: ["admin", "read", "write"] },
+    { permissions: ["write"], fixtures: true, az: ["write"], azd: ["write"] },
+    { permissions: [], fixtures: false, storage: true, az: ["stage"], azd: [] },
+  ])("authenticates only required explicit az/azd profiles: %j", (scenario) => {
     const directory = mkdtempSync(path.join(tmpdir(), "azure-profile-command-"));
     try {
       const capture = path.join(directory, "commands.jsonl");
-      writeFileSync(path.join(directory, "az"), `#!/usr/bin/env node
+      for (const command of ["az", "azd"]) {
+        writeFileSync(path.join(directory, command), `#!${process.execPath}
 require("node:fs").appendFileSync(process.env.CAPTURE, JSON.stringify({
-  args: process.argv.slice(2), profile: process.env.AZURE_CONFIG_DIR
+  command: "${command}", args: process.argv.slice(2),
+  az: process.env.AZURE_CONFIG_DIR, azd: process.env.AZD_CONFIG_DIR
 }) + "\\n");
 `, { mode: 0o755 });
+      }
       writeFileSync(path.join(directory, "curl"), "#!/bin/sh\nprintf '%s' '{\"value\":\"fake-token\"}'\n", { mode: 0o755 });
-      writeFileSync(path.join(directory, "jq"), "#!/bin/sh\ncat >/dev/null\nprintf '%s' fake-token\n", { mode: 0o755 });
       const result = spawnSync("bash", ["-e", "-o", "pipefail", "-c", profiles[0].run ?? ""], {
         env: {
-          ...process.env,
-          PATH: `${directory}${path.delimiter}${process.env.PATH}`,
-          RUNNER_TEMP: directory,
-          GITHUB_ENV: path.join(directory, "environment"),
-          CAPTURE: capture,
-          TEST_PERMISSION: permission,
-          REFRESH: "false",
-          STAGE_CLIENT_ID: "stage-client",
-          WRITE_CLIENT_ID: "write-client",
-          READ_CLIENT_ID: "read-client",
-          ADMIN_CLIENT_ID: "admin-client",
-          TENANT_ID: "tenant",
-          STAGE_SUBSCRIPTION_ID: "stage-sub",
-          TEST_SUBSCRIPTION_ID: "test-sub",
-          FIXTURE_STORAGE_ACCOUNT: "fixture-storage",
-          FIXTURE_STORAGE_CONTAINER: "fixtures",
-          ACTIONS_ID_TOKEN_REQUEST_TOKEN: "fake-request-token",
-          ACTIONS_ID_TOKEN_REQUEST_URL: "https://example.invalid/oidc",
+          ...process.env, PATH: `${directory}${path.delimiter}${process.env.PATH}`,
+          RUNNER_TEMP: directory, GITHUB_ENV: path.join(directory, "environment"), CAPTURE: capture,
+          PERMISSIONS: JSON.stringify(scenario.permissions), FIXTURES: String(scenario.fixtures),
+          STORAGE: String(scenario.storage ?? false), REFRESH: "false",
+          STAGE_CLIENT_ID: "stage-client", WRITE_CLIENT_ID: "write-client",
+          READ_CLIENT_ID: "read-client", ADMIN_CLIENT_ID: "admin-client",
+          TENANT_ID: "tenant", STAGE_SUBSCRIPTION_ID: "stage-sub", TEST_SUBSCRIPTION_ID: "test-sub",
+          ACTIONS_ID_TOKEN_REQUEST_TOKEN: "fake-request-token", ACTIONS_ID_TOKEN_REQUEST_URL: "https://example.invalid/oidc",
         },
         encoding: "utf8",
       });
       expect(result.stderr).toBe("");
       expect(result.status).toBe(0);
-      expect(readFileSync(path.join(directory, "environment"), "utf8").split("\n"))
-        .toContain(`TEST_PERMISSION=${permission}`);
-      const commands: { args: string[]; profile: string }[] = readFileSync(capture, "utf8").trim().split("\n").map(line => JSON.parse(line));
-      const expected = ["stage", ...(permission === "storage" ? [] : ["write"]),
-        ...(permission === "read" || permission === "admin" ? [permission] : [])];
-      expect(commands.filter(command => command.args[0] === "login").map(command => path.basename(command.profile)))
-        .toEqual(expected.map(profile => `azure-${profile}`));
-      for (const [index, profile] of expected.entries()) {
-        expect(commands[index * 2].args).toContain(`${profile}-client`);
-        expect(commands[index * 2 + 1].args).toEqual([
-          "account", "set", "--subscription", profile === "stage" ? "stage-sub" : "test-sub",
-        ]);
+      type Command = { command: string; args: string[]; az: string; azd: string };
+      const commands: Command[] = scenario.az.length
+        ? readFileSync(capture, "utf8").trim().split("\n").map(line => JSON.parse(line)) : [];
+      const logins = commands.filter(command => command.command === "az" && command.args[0] === "login");
+      expect(logins.map(command => path.basename(command.az))).toEqual(scenario.az.map(p => `azure-${p}`));
+      const azdLogins = commands.filter(command => command.command === "azd");
+      expect(azdLogins.map(command => path.basename(command.azd))).toEqual(scenario.azd.map(p => `azd-${p}`));
+      for (const profile of scenario.az) {
+        expect(logins.find(command => command.az.endsWith(`azure-${profile}`))?.args).toContain(`${profile}-client`);
+        expect(commands.find(command => command.az.endsWith(`azure-${profile}`) && command.args[0] === "account")?.args)
+          .toEqual(["account", "set", "--subscription", profile === "stage" ? "stage-sub" : "test-sub"]);
+      }
+      for (const command of azdLogins) {
+        const permission = path.basename(command.azd).slice(4);
+        expect(command.az).toBe(path.join(directory, `azure-${permission}`));
+        expect(command.args).toContain(`${permission}-client`);
+      }
+      const exported = readFileSync(path.join(directory, "environment"), "utf8");
+      expect(exported).toContain(`AZD_NONE_CONFIG_DIR=${directory}/azd-none`);
+      if (!scenario.storage) {
+        expect(exported).toContain(`AZURE_CONFIG_DIR=${directory}/azure-none`);
+        expect(exported).toContain(`AZD_CONFIG_DIR=${directory}/azd-none`);
       }
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }
   });
 
-  test("azd logs in only with the selected test identity", () => {
-    const azd = profiles.find(step => step.name === "Authenticate azd with only the test identity");
-    expect(azd?.if).toBe("inputs.permission != 'storage' && inputs.permission != 'none'");
-    expect(azd?.run).toContain('AZURE_CONFIG_DIR="$profile" azd auth login');
-    expect(azd?.run).not.toContain("STAGE_CLIENT_ID");
-    expect(azd?.run).toContain('write) client_id="$AZURE_WRITE_CLIENT_ID"; profile="$AZURE_WRITE_CONFIG_DIR"');
-  });
-
-  test.each(["read", "write", "admin", "none", ""])("filters only permission %j", (permission) => {
-    const directory = mkdtempSync(path.join(tmpdir(), "permission-command-"));
-    try {
-      const capture = path.join(directory, "arguments.json");
-      writeFileSync(path.join(directory, "npm"), `#!/usr/bin/env node
-require("node:fs").writeFileSync(process.env.CAPTURE, JSON.stringify(process.argv.slice(2)));
-`, { mode: 0o755 });
-      const result = spawnSync("bash", ["-e", "-o", "pipefail", "-c", action.find(step => step.id === "tests")?.run ?? ""], {
-        env: { ...process.env, PATH: `${directory}${path.delimiter}${process.env.PATH}`, CAPTURE: capture,
-          SKILL: "plugin/skill", TEST_AZURE_PERMISSION: permission },
-        encoding: "utf8",
-      });
-      expect(result.stderr).toBe("");
-      expect(result.status).toBe(0);
-      const args: string[] = JSON.parse(readFileSync(capture, "utf8"));
-      const filter = parseSuiteFilter(args.flatMap((arg, index) => arg === "--tag" ? [args[index + 1]] : []));
-      for (const candidate of ["read", "write", "admin", "none", ""]) {
-        expect(matchesSuiteFilter(candidate ? { azurePermission: [candidate] } : {}, filter.include, filter.exclude))
-          .toBe(candidate === permission);
-      }
-    } finally {
-      rmSync(directory, { recursive: true, force: true });
-    }
-  });
-
-  test("both workflows consolidate every selected group through private storage", () => {
-    expect(workflow.jobs.report.needs).toEqual(["setup", "test-read", "test-write", "test-admin", "test-none", "test-default"]);
-    expect(deploy.jobs.report.needs).toEqual(["setup", "test-none", "test-admin"]);
-    for (const caller of [workflow.jobs.report, deploy.jobs.report]) {
-      expect(caller.uses).toBe("./.github/workflows/report-integration-skill.yml");
-      expect(caller.if).toContain("always()");
-    }
-    const steps = report.steps ?? [];
-    expect(steps.find(step => step.id === "download")?.run).toBe("npx tsx report-storage.ts download");
-    expect(steps.findIndex(step => step.id === "aggregate"))
-      .toBeLessThan(steps.findIndex(step => step.name === "Generate skill report"));
-    expect(steps.find(step => step.name === "Publish consolidated reports privately")?.run)
-      .toBe("npx tsx report-storage.ts publish");
-  });
-
-  test("cleanup is best-effort and runs only after every report publication step succeeds", () => {
-    const steps = report.steps ?? [];
-    const cleanupIndex = steps.findIndex(step => step.run === "npx tsx report-storage.ts cleanup");
-    const cleanup = steps[cleanupIndex];
-    expect(cleanup?.["continue-on-error"]).toBe(true);
-    expect(cleanupIndex).toBeLessThan(steps.findIndex(step => step.name === "Stop profile refresh"));
-    const prerequisites = ["download", "aggregate", "generate", "publish", "token-usage", "tool-usage"];
-    const outcomes = Object.fromEntries(prerequisites.map(id => [id, { outcome: "success" }]));
-    const condition = cleanup?.if?.replace(/steps\.([a-z-]+)\.outcome/g, 'steps["$1"].outcome');
-    if (!condition) {
-      throw new Error("Missing cleanup success condition");
-    }
-    expect(runInNewContext(condition, { steps: outcomes, success: () => true }, { timeout: 1000 })).toBe(true);
-    expect(runInNewContext(condition, { steps: outcomes, success: () => false }, { timeout: 1000 })).toBe(false);
-    for (const id of prerequisites) {
-      const prerequisiteIndex = steps.findIndex(step => step.id === id);
-      expect(prerequisiteIndex).toBeGreaterThanOrEqual(0);
-      expect(prerequisiteIndex).toBeLessThan(cleanupIndex);
-      for (const outcome of ["failure", "skipped", "cancelled"]) {
-        expect(runInNewContext(condition, {
-          steps: { ...outcomes, [id]: { outcome } }, success: () => true,
-        }, { timeout: 1000 })).toBe(false);
-      }
-    }
-  });
-
-  test("never transfers artifacts through GitHub and all embedded Bash is valid", () => {
+  test("composites use caller env, no GitHub report transfers, and valid Bash", () => {
+    const composites = [...action, ...profiles, ...readAction("stop-azure-profiles")];
+    expect(JSON.stringify(composites)).not.toMatch(/\$\{\{[^}]*\bvars\s*(?:\.|\[)/);
     const steps = [
-      ...[workflow, deploy, readWorkflow("test-azure-deploy-group.yml"), readWorkflow("report-integration-skill.yml")]
-        .flatMap(file => Object.values(file.jobs).flatMap(job => job.steps ?? [])),
-      ...action, ...profiles, ...readAction("stop-azure-profiles"),
+      ...[workflow, deploy].flatMap(file => Object.values(file.jobs).flatMap(job => job.steps ?? [])),
+      ...composites,
     ];
     expect(steps.some(step => /actions\/(?:upload|download)-artifact@/.test(step.uses ?? ""))).toBe(false);
     for (const step of steps.filter(step => step.run)) {

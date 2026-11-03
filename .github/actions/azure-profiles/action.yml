@@ -1,85 +1,100 @@
 name: Authenticate isolated Azure profiles
-description: Separate stage storage, fixture write, and test identities without logging into the default CLI profile.
+description: Authenticate only the required test identities, or the report identity, without using default profiles.
 inputs:
-  permission:
-    description: Test identity (read, write, admin, none), or storage for a job that does not run tests
-    default: storage
+  permissions:
+    description: JSON array of required test permissions
+    default: "[]"
+  fixtures:
+    description: Authenticate the write profile for fixture provisioning
+    default: "false"
+  storage:
+    description: Authenticate the dedicated report storage identity instead of test identities
+    default: "false"
   refresh:
     description: Refresh CLI tokens until stop-azure-profiles is called
     default: "false"
 runs:
   using: composite
   steps:
-    - name: Authenticate Azure CLI profiles
+    - name: Authenticate required profiles
       shell: bash
       env:
-        TEST_PERMISSION: ${{ inputs.permission }}
+        PERMISSIONS: ${{ inputs.permissions }}
+        FIXTURES: ${{ inputs.fixtures }}
+        STORAGE: ${{ inputs.storage }}
         REFRESH: ${{ inputs.refresh }}
-        STAGE_CLIENT_ID: ${{ env.AZURE_CLIENT_ID }}
+        STAGE_CLIENT_ID: ${{ env.AZURE_STAGE_CLIENT_ID }}
         READ_CLIENT_ID: ${{ env.AZURE_READ_CLIENT_ID }}
         WRITE_CLIENT_ID: ${{ env.AZURE_WRITE_CLIENT_ID }}
         ADMIN_CLIENT_ID: ${{ env.AZURE_ADMIN_CLIENT_ID }}
         TENANT_ID: ${{ env.AZURE_TENANT_ID }}
         TEST_SUBSCRIPTION_ID: ${{ env.AZURE_SUBSCRIPTION_ID }}
         STAGE_SUBSCRIPTION_ID: ${{ env.AZURE_STAGE_SUBSCRIPTION_ID }}
-        FIXTURE_STORAGE_ACCOUNT: ${{ env.AZURE_FIXTURE_COORDINATION_STORAGE_ACCOUNT }}
-        FIXTURE_STORAGE_CONTAINER: ${{ env.AZURE_FIXTURE_COORDINATION_CONTAINER }}
       run: |
         set -euo pipefail
-        case "$TEST_PERMISSION" in
-          storage|read|write|admin|none) ;;
-          *) echo "::error::Unsupported test permission: $TEST_PERMISSION"; exit 1 ;;
-        esac
-        : "${STAGE_CLIENT_ID:?AZURE_CLIENT_ID is required}"
         : "${TENANT_ID:?AZURE_TENANT_ID is required}"
-        : "${STAGE_SUBSCRIPTION_ID:?AZURE_STAGE_SUBSCRIPTION_ID is required}"
-        mkdir -p "$RUNNER_TEMP/azure-stage" "$RUNNER_TEMP/azure-none"
-        {
-          echo "AZURE_CONFIG_DIR=$RUNNER_TEMP/azure-stage"
-          echo "AZURE_STAGE_CONFIG_DIR=$RUNNER_TEMP/azure-stage"
-          echo "AZURE_WRITE_CONFIG_DIR=$RUNNER_TEMP/azure-write"
-          echo "AZURE_READ_CONFIG_DIR=$RUNNER_TEMP/azure-read"
-          echo "AZURE_ADMIN_CONFIG_DIR=$RUNNER_TEMP/azure-admin"
-          echo "AZURE_NONE_CONFIG_DIR=$RUNNER_TEMP/azure-none"
-          echo "AZD_CONFIG_DIR=$RUNNER_TEMP/azd-test"
-          echo "AZURE_CLIENT_ID=$STAGE_CLIENT_ID"
-          echo "AZURE_STAGE_CLIENT_ID=$STAGE_CLIENT_ID"
-          echo "AZURE_READ_CLIENT_ID=$READ_CLIENT_ID"
-          echo "AZURE_WRITE_CLIENT_ID=$WRITE_CLIENT_ID"
-          echo "AZURE_ADMIN_CLIENT_ID=$ADMIN_CLIENT_ID"
-          echo "AZURE_TENANT_ID=$TENANT_ID"
-          echo "AZURE_SUBSCRIPTION_ID=$TEST_SUBSCRIPTION_ID"
-          echo "TEST_PERMISSION=$TEST_PERMISSION"
-          echo "AZURE_FIXTURE_COORDINATION_STORAGE_ACCOUNT=$FIXTURE_STORAGE_ACCOUNT"
-          echo "AZURE_FIXTURE_COORDINATION_CONTAINER=$FIXTURE_STORAGE_CONTAINER"
-        } >> "$GITHUB_ENV"
+        permissions=$(printf '%s' "$PERMISSIONS" | jq -er '
+          if type == "array" and all(.[]; . == "read" or . == "write" or . == "admin" or . == "none")
+          then unique | join(" ") else error("Invalid Azure permissions") end')
+        profiles=""
+        if [ "$STORAGE" = true ]; then
+          profiles=stage
+        else
+          for permission in $permissions; do
+            [ "$permission" = none ] || profiles="$profiles $permission"
+          done
+          if [ "$FIXTURES" = true ] && [[ " $profiles " != *" write "* ]]; then
+            profiles="$profiles write"
+          fi
+          mkdir -p "$RUNNER_TEMP/azure-none" "$RUNNER_TEMP/azd-none"
+          {
+            echo "TEST_PERMISSION="
+            echo "AZURE_CONFIG_DIR=$RUNNER_TEMP/azure-none"
+            echo "AZD_CONFIG_DIR=$RUNNER_TEMP/azd-none"
+            echo "AZURE_CLIENT_ID="
+          } >> "$GITHUB_ENV"
+        fi
+        for profile in stage read write admin none; do
+          upper=$(printf '%s' "$profile" | tr '[:lower:]' '[:upper:]')
+          echo "AZURE_${upper}_CONFIG_DIR=$RUNNER_TEMP/azure-$profile" >> "$GITHUB_ENV"
+          echo "AZD_${upper}_CONFIG_DIR=$RUNNER_TEMP/azd-$profile" >> "$GITHUB_ENV"
+        done
 
-        login_profile() {
-          local profile="$1" client="$2" subscription="$3"
-          : "${client:?Managed identity client ID is required}"
-          : "${subscription:?Subscription ID is required}"
-          mkdir -p "$RUNNER_TEMP/azure-$profile"
-          AZURE_CONFIG_DIR="$RUNNER_TEMP/azure-$profile" az login --service-principal \
-            --username "$client" --tenant "$TENANT_ID" \
-            --federated-token "$token" --output none
-          AZURE_CONFIG_DIR="$RUNNER_TEMP/azure-$profile" az account set --subscription "$subscription"
-        }
         authenticate_profiles() {
+          [ -n "${profiles// /}" ] || return 0
           token=$(curl --fail --silent --show-error \
             -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
             "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange" | jq -er .value)
           echo "::add-mask::$token"
-          login_profile stage "$STAGE_CLIENT_ID" "$STAGE_SUBSCRIPTION_ID"
-          if [ "$TEST_PERMISSION" != storage ]; then
-            login_profile write "$WRITE_CLIENT_ID" "$TEST_SUBSCRIPTION_ID"
-            case "$TEST_PERMISSION" in
-              read) login_profile read "$READ_CLIENT_ID" "$TEST_SUBSCRIPTION_ID" ;;
-              admin) login_profile admin "$ADMIN_CLIENT_ID" "$TEST_SUBSCRIPTION_ID" ;;
+          for profile in $profiles; do
+            case "$profile" in
+              stage) client="$STAGE_CLIENT_ID"; subscription="$STAGE_SUBSCRIPTION_ID" ;;
+              read) client="$READ_CLIENT_ID"; subscription="$TEST_SUBSCRIPTION_ID" ;;
+              write) client="$WRITE_CLIENT_ID"; subscription="$TEST_SUBSCRIPTION_ID" ;;
+              admin) client="$ADMIN_CLIENT_ID"; subscription="$TEST_SUBSCRIPTION_ID" ;;
             esac
-          fi
+            : "${client:?Managed identity client ID is required}"
+            : "${subscription:?Subscription ID is required}"
+            mkdir -p "$RUNNER_TEMP/azure-$profile"
+            AZURE_CONFIG_DIR="$RUNNER_TEMP/azure-$profile" az login --service-principal \
+              --username "$client" --tenant "$TENANT_ID" --federated-token "$token" --output none
+            AZURE_CONFIG_DIR="$RUNNER_TEMP/azure-$profile" az account set --subscription "$subscription"
+          done
         }
         authenticate_profiles
-        if [ "$REFRESH" = true ]; then
+        for permission in $permissions; do
+          case "$permission" in
+            none) continue ;;
+            read) client="$READ_CLIENT_ID" ;;
+            write) client="$WRITE_CLIENT_ID" ;;
+            admin) client="$ADMIN_CLIENT_ID" ;;
+          esac
+          mkdir -p "$RUNNER_TEMP/azd-$permission"
+          AZURE_CONFIG_DIR="$RUNNER_TEMP/azure-$permission" \
+            AZD_CONFIG_DIR="$RUNNER_TEMP/azd-$permission" azd auth login \
+            --client-id "$client" --federated-credential-provider github --tenant-id "$TENANT_ID"
+        done
+        if [ "$REFRESH" = true ] && [ -n "${profiles// /}" ]; then
           status_file="$RUNNER_TEMP/azure-profile-refresh-status"
           (
             trap 'echo "$?" > "$status_file"' EXIT
@@ -93,20 +108,3 @@ runs:
           echo "AZURE_PROFILE_REFRESH_PID=$refresh_pid" >> "$GITHUB_ENV"
           echo "AZURE_PROFILE_REFRESH_STATUS=$status_file" >> "$GITHUB_ENV"
         fi
-
-    - name: Authenticate azd with only the test identity
-      if: inputs.permission != 'storage' && inputs.permission != 'none'
-      shell: bash
-      env:
-        TEST_PERMISSION: ${{ inputs.permission }}
-      run: |
-        set -euo pipefail
-        case "$TEST_PERMISSION" in
-          read) client_id="$AZURE_READ_CLIENT_ID"; profile="$AZURE_READ_CONFIG_DIR" ;;
-          write) client_id="$AZURE_WRITE_CLIENT_ID"; profile="$AZURE_WRITE_CONFIG_DIR" ;;
-          admin) client_id="$AZURE_ADMIN_CLIENT_ID"; profile="$AZURE_ADMIN_CONFIG_DIR" ;;
-          *) echo "::error::Unsupported azd permission"; exit 1 ;;
-        esac
-        AZURE_CONFIG_DIR="$profile" azd auth login \
-          --client-id "$client_id" --federated-credential-provider github \
-          --tenant-id "$AZURE_TENANT_ID"

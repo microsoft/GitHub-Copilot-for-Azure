@@ -14,27 +14,25 @@ export function getAzureEnvironment(
   tags: Record<string, string | string[]> | undefined,
   env: NodeJS.ProcessEnv = process.env,
 ): Record<string, string> {
-  // WARNING: In CI, "" opts into admin for untagged tests; undefined preserves inherited credentials.
-  // Unset this env var if the workflow or local run shouldn't scope to a specific profile.
-  // Do not replace this with a truthiness check.
+  // An empty TEST_PERMISSION enables profile selection; undefined preserves local credentials.
   if (env.CI !== "true" || env.TEST_PERMISSION === undefined) {
     return {};
   }
-  const permission = tags?.azurePermission ?? (env.TEST_PERMISSION === "none" ? "none" : "admin");
-  const jobPermission = env.TEST_AZURE_PERMISSION;
-  if (jobPermission !== undefined) {
-    if (!["", "read", "write", "admin", "none"].includes(jobPermission) || (tags?.azurePermission ?? "") !== jobPermission) {
-      throw new Error("Stimulus azurePermission does not match the test job's permission");
-    }
-  }
+  const permission = tags?.azurePermission ?? "admin";
   if (permission !== "none" && permission !== "read" && permission !== "write" && permission !== "admin") {
     throw new Error("tags.azurePermission must be 'read', 'write', 'admin', or 'none' when specified");
   }
 
   const selected = getProfileEnvironment(permission, env);
+  const azdVariable = `AZD_${permission.toUpperCase()}_CONFIG_DIR`;
+  const azdDirectory = env[azdVariable]?.trim();
+  if (!azdDirectory || !path.isAbsolute(azdDirectory)) {
+    throw new Error(`${azdVariable} must be an absolute azd profile path`);
+  }
   return {
     AZURE_CLIENT_ID: selected.AZURE_CLIENT_ID!,
     AZURE_CONFIG_DIR: selected.AZURE_CONFIG_DIR!,
+    AZD_CONFIG_DIR: azdDirectory,
   };
 }
 

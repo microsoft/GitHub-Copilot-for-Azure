@@ -2,15 +2,13 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import * as path from "node:path";
 import { tmpdir } from "node:os";
-import { transferReports } from "../report-storage.ts";
-import { aggregatePermissionResults } from "../aggregate-permission-results.ts";
+import { publishLocalReports } from "../report-storage.ts";
 
 const storage = vi.hoisted(() => ({
   blobs: new Map<string, Buffer>(),
   publicAccess: undefined as string | undefined,
   credential: { getToken: vi.fn() },
   failUpload: false,
-  failDelete: false,
 }));
 vi.mock("../utils/azure-environment.ts", () => ({
   createStageCredential: () => storage.credential,
@@ -30,28 +28,13 @@ vi.mock("@azure/storage-blob", () => ({
             }
             storage.blobs.set(name, readFileSync(file));
           },
-          downloadToFile: async (file: string) => { writeFileSync(file, storage.blobs.get(name)!); },
-          deleteIfExists: async (options: { deleteSnapshots: string }) => {
-            expect(options).toEqual({ deleteSnapshots: "include" });
-            if (storage.failDelete) {
-              throw new Error("storage deletion failed");
-            }
-            return { succeeded: storage.blobs.delete(name) };
-          },
         }),
-        listBlobsFlat: async function* ({ prefix }: { prefix: string }) {
-          for (const name of storage.blobs.keys()) {
-            if (name.startsWith(prefix)) {
-              yield { name };
-            }
-          }
-        },
       };
     }
   },
 }));
 
-describe("private report storage", () => {
+describe("direct private report publication", () => {
   let directory: string;
   const cwd = process.cwd();
   beforeEach(() => {
@@ -60,13 +43,17 @@ describe("private report storage", () => {
     storage.blobs.clear();
     storage.publicAccess = undefined;
     storage.failUpload = false;
-    storage.failDelete = false;
     for (const [name, value] of Object.entries({
-      SKILL: "plugin/skill", RUN_ID: "123", RUN_ATTEMPT: "2",
+      SKILL: "plugin/skill", RUN_ID: "123", REPORT_GROUP: "",
       REPORT_STORAGE_ACCOUNT: "stage", REPORT_STORAGE_CONTAINER: "reports",
     })) {
       vi.stubEnv(name, value);
     }
+    mkdirSync("reports/test-run-all-integration/test", { recursive: true });
+    writeFileSync("reports/test-run-all-integration/testResults.json", '{"test":{"isPass":true}}');
+    writeFileSync("reports/test-run-all-integration/test/.hidden", "preserved");
+    mkdirSync("results");
+    writeFileSync("results/private.jsonl", "raw");
   });
   afterEach(() => {
     process.chdir(cwd);
@@ -74,92 +61,32 @@ describe("private report storage", () => {
     rmSync(directory, { recursive: true, force: true });
   });
 
-  test("round-trips permission reports and hidden files, then publishes one consolidated report", async () => {
-    for (const group of ["read", "none"]) {
-      const work = path.join(directory, group);
-      mkdirSync(path.join(work, "reports/test-run-1", group), { recursive: true });
-      mkdirSync(path.join(work, "results"), { recursive: true });
-      process.chdir(work);
-      vi.stubEnv("REPORT_GROUP", group);
-      writeFileSync("permission-run.json", JSON.stringify({ permission: group, outcome: "success" }));
-      writeFileSync("reports/test-run-1/testResults.json", JSON.stringify({ [group]: { isPass: true } }));
-      writeFileSync("reports/test-run-1/results.jsonl", `${JSON.stringify({ group })}\n`);
-      writeFileSync(`reports/test-run-1/${group}/.hidden`, "preserved");
-      writeFileSync("results/private.jsonl", "raw");
-      await transferReports("upload");
-    }
-    expect([...storage.blobs.keys()].some(name => name.includes("/results/private.jsonl"))).toBe(false);
-    process.chdir(directory);
-    await transferReports("download");
-    expect(aggregatePermissionResults(
-      path.join(directory, "permission-artifacts"), directory, "plugin__skill", "2", ["read", "none"],
-    ).complete).toBe(true);
-    expect(readFileSync("reports/test-run-all-integration/read/.hidden", "utf8")).toBe("preserved");
-    await transferReports("publish");
-    const report = [...storage.blobs].find(([name]) => /^\d{4}-\d{2}-\d{2}\/123\/skill\/testResults.json$/.test(name));
-    expect(report).toBeDefined();
-    expect(JSON.parse(report![1].toString())).toEqual({ read: { isPass: true }, none: { isPass: true } });
-    await transferReports("cleanup");
-    expect([...storage.blobs.keys()].some(name => name.startsWith("workflow-runs/123/2/plugin__skill/")))
-      .toBe(false);
-    expect(storage.blobs.get(report![0])).toBe(report![1]);
+  test.each(["", "deployment-category"])("publishes local reports directly with group '%s'", async (group) => {
+    vi.stubEnv("REPORT_GROUP", group);
+    await publishLocalReports();
+    const prefix = `${new Date().toISOString().slice(0, 10)}/123/skill/${group ? `${group}/` : ""}`;
+    expect([...storage.blobs.keys()]).toEqual([
+      `${prefix}test/.hidden`, `${prefix}testResults.json`,
+    ]);
+    expect(storage.blobs.get(`${prefix}test/.hidden`)?.toString()).toBe("preserved");
   });
 
-  test("cleanup deletes only the current skill and attempt, preserving final reports and other runs", async () => {
-    const temporary = [
-      "workflow-runs/123/2/plugin__skill/read/permission-run.json",
-      "workflow-runs/123/2/plugin__skill/none/reports/test/.hidden",
-    ];
-    const preserved = [
-      "workflow-runs/123/2/plugin__skill-other/read/permission-run.json",
-      "workflow-runs/123/2/other-plugin__skill/read/permission-run.json",
-      "workflow-runs/123/1/plugin__skill/read/permission-run.json",
-      "workflow-runs/1234/2/plugin__skill/read/permission-run.json",
-      "2026-11-02/123/skill/testResults.json",
-    ];
-    for (const name of [...temporary, ...preserved]) {
-      storage.blobs.set(name, Buffer.from("{}"));
-    }
-
-    await transferReports("cleanup");
-    expect([...storage.blobs.keys()]).toEqual(preserved);
-    await transferReports("cleanup");
-    expect([...storage.blobs.keys()]).toEqual(preserved);
-  });
-
-  test("surfaces cleanup failures and preserves undeleted reports for a later retry", async () => {
-    const name = "workflow-runs/123/2/plugin__skill/read/permission-run.json";
-    storage.blobs.set(name, Buffer.from("{}"));
-    storage.failDelete = true;
-
-    await expect(transferReports("cleanup")).rejects.toThrow("storage deletion failed");
-    expect(storage.blobs.has(name)).toBe(true);
-    storage.failDelete = false;
-    await transferReports("cleanup");
-    expect(storage.blobs.size).toBe(0);
-  });
-
-  test("does not download reports from a different run attempt", async () => {
-    storage.blobs.set("workflow-runs/123/1/plugin__skill/read/permission-run.json", Buffer.from("{}"));
-    await transferReports("download");
-    expect(aggregatePermissionResults(
-      path.join(directory, "permission-artifacts"), directory, "plugin__skill", "2", ["read"],
-    ).complete).toBe(false);
-  });
-
-  test.each(["download", "cleanup"])("rejects public containers for %s", async (command) => {
+  test("rejects public containers", async () => {
     storage.publicAccess = "blob";
-    await expect(transferReports(command)).rejects.toThrow("must not allow public access");
+    await expect(publishLocalReports()).rejects.toThrow("must not allow public access");
+    expect(storage.blobs.size).toBe(0);
   });
 
   test("surfaces upload failures", async () => {
     storage.failUpload = true;
-    vi.stubEnv("REPORT_GROUP", "none");
-    await expect(transferReports("upload")).rejects.toThrow("storage upload failed");
+    await expect(publishLocalReports()).rejects.toThrow("storage upload failed");
   });
 
-  test("rejects blob paths that escape the report directory", async () => {
-    storage.blobs.set("workflow-runs/123/2/plugin__skill/read/../../escape", Buffer.from("bad"));
-    await expect(transferReports("download")).rejects.toThrow("Invalid report blob path");
+  test.each([
+    ["REPORT_GROUP", "../escape"], ["SKILL", "../skill"], ["RUN_ID", "not-a-number"],
+  ])("rejects invalid %s", async (variable, value) => {
+    vi.stubEnv(variable, value);
+    await expect(publishLocalReports()).rejects.toThrow();
+    expect(storage.blobs.size).toBe(0);
   });
 });
