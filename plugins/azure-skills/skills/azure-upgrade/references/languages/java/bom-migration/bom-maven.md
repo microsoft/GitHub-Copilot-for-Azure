@@ -12,7 +12,7 @@ Run the `upgrade_bom.py` script located at `references/languages/java/scripts/up
 The following invocation works identically in **bash** and **PowerShell**:
 
 ```bash
-# Path is relative to the skill directory (plugin/skills/azure-upgrade/)
+# Path is relative to the azure-upgrade skill directory (the folder containing its SKILL.md)
 python3 ./references/languages/java/scripts/upgrade_bom.py <project_dir>
 ```
 

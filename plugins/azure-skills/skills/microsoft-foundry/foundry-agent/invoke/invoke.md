@@ -41,7 +41,7 @@ The smoke helper is a text-driven technical verification client, not a complete 
 
 #### Automated Smoke Test
 
-Run the paired smoke-test helper from the `microsoft-foundry` skill root (`plugins/azure-skills/skills/microsoft-foundry`) using `DefaultAzureCredential` (`https://ai.azure.com/.default`). Note that PowerShell uses PascalCase parameters (`-Endpoint`, `-AgentName`, `-Text`, `-Timeout`, `-OutputAudio`, `-DryRun`).
+Run the paired smoke-test helper from the `microsoft-foundry` skill root (the folder containing its SKILL.md) using `DefaultAzureCredential` (`https://ai.azure.com/.default`). Note that PowerShell uses PascalCase parameters (`-Endpoint`, `-AgentName`, `-Text`, `-Timeout`, `-OutputAudio`, `-DryRun`).
 
 **Bash** ([../create/scripts/smoke-test-voice.sh](../create/scripts/smoke-test-voice.sh))
 ```bash

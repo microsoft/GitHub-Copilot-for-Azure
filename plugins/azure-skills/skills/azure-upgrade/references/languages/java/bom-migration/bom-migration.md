@@ -31,7 +31,7 @@ Always perform this resolution at the time the migration plan is generated. Neve
 The following invocation works identically in **bash** and **PowerShell** (no shell-specific syntax):
 
 ```bash
-# Path is relative to the skill directory (plugin/skills/azure-upgrade/)
+# Path is relative to the azure-upgrade skill directory (the folder containing its SKILL.md)
 python3 ./references/languages/java/scripts/upgrade_bom.py --get-latest-version
 # or: python ./references/languages/java/scripts/upgrade_bom.py --get-latest-version
 ```

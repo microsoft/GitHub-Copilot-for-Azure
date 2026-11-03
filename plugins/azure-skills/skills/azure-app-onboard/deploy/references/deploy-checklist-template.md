@@ -19,7 +19,7 @@ Read `prepare-plan.json` to determine the service types, then build the checklis
 
 ## ⛔ Read deploy/SKILL.md
 - You MUST `view` deploy/SKILL.md BEFORE running any `az deployment` command
-- Path: `plugin/skills/azure-app-onboard/deploy/SKILL.md`
+- Path: `deploy/SKILL.md`, relative to the azure-app-onboard skill directory (the folder containing its SKILL.md)
 - If you have not read it in this conversation (or since the last compaction), read it NOW
 - It covers preflight checks, portal links, what-if, SCM lifecycle, deploy-result.json schema, audit logging, and health checks — skip it and none of these happen
 

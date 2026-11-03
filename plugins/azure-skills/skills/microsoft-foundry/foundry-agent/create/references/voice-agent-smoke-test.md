@@ -57,7 +57,7 @@ python -m pip install websockets
 
 ## Running the Smoke-Test Helper Scripts
 
-Run the paired helper scripts from the `microsoft-foundry` skill root (`plugins/azure-skills/skills/microsoft-foundry`):
+Run the paired helper scripts from the `microsoft-foundry` skill root (the folder containing its SKILL.md):
 - Bash: [../scripts/smoke-test-voice.sh](../scripts/smoke-test-voice.sh)
 - PowerShell: [../scripts/smoke-test-voice.ps1](../scripts/smoke-test-voice.ps1)
 
