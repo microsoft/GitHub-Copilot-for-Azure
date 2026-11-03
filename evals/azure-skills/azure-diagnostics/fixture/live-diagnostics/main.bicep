@@ -43,6 +43,7 @@ resource storage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
     supportsHttpsTrafficOnly: true
     minimumTlsVersion: 'TLS1_2'
     allowBlobPublicAccess: false
+    allowSharedKeyAccess: false
   }
 }
 
@@ -81,6 +82,9 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
   name: 'diag-functions-${suffix}'
   location: location
   kind: 'functionapp,linux'
+  identity: {
+    type: 'SystemAssigned'
+  }
   tags: {
     ExpectedApplicationInsightsResourceId: expectedInsights.id
   }
@@ -103,8 +107,12 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
           value: 'node'
         }
         {
-          name: 'AzureWebJobsStorage'
-          value: 'DefaultEndpointsProtocol=https;AccountName=${storage.name};AccountKey=${storage.listKeys().keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
+          name: 'AzureWebJobsStorage__accountName'
+          value: storage.name
+        }
+        {
+          name: 'AzureWebJobsStorage__credential'
+          value: 'managedidentity'
         }
         {
           name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
@@ -112,5 +120,31 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
         }
       ]
     }
+  }
+}
+
+resource hostStorageBlobDataOwner 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(storage.id, functionApp.id, 'Storage Blob Data Owner')
+  scope: storage
+  properties: {
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      'b7e6dc6d-f1e8-4753-8033-0f276bb0955b'
+    )
+    principalId: functionApp.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource hostStorageTableDataContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(storage.id, functionApp.id, 'Storage Table Data Contributor')
+  scope: storage
+  properties: {
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      '0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3'
+    )
+    principalId: functionApp.identity.principalId
+    principalType: 'ServicePrincipal'
   }
 }

@@ -20,7 +20,9 @@ Both apps share one Linux B1 plan, which incurs charges until deletion. The othe
 resources are one storage account, one Log Analytics workspace, and two
 workspace-backed Application Insights components. No application code or telemetry
 is seeded: the Functions case verifies the configured destination, **not** actual
-ingestion or end-to-end application health.
+ingestion or end-to-end application health. The storage account disables shared-key
+access; the Function App uses its system-assigned identity for host storage with
+least-privilege Blob Data Owner and Table Data Contributor assignments.
 
 Agents must leave the fixture unchanged. The prompts contain no generated
 resource names or subscription IDs; the executor injects the selected resource
