@@ -88,6 +88,7 @@ const STORAGE_CONTAINER_ENV = "AZURE_FIXTURE_COORDINATION_CONTAINER";
  */
 const TOTAL_BUDGET_MS = 10 * 60 * 1000;
 const PROVISIONING_RETRY_DELAY_MS = 2 * TOTAL_BUDGET_MS;
+const MAX_PROVISIONING_TIMEOUT_MINUTES = 60;
 
 export type WorkflowResourceLockLease = Pick<
   ResourceLockLease,
@@ -143,6 +144,19 @@ function defaultProvisioningDependencies(): ProvisioningDependencies {
     provisioningRetryDelayMs: PROVISIONING_RETRY_DELAY_MS,
     readyRetentionMs: READY_RETENTION_MS,
   };
+}
+
+function provisioningBudgetMs(manifest: FixtureManifest, defaultBudgetMs: number): number {
+  const minutes = manifest.provisioningTimeoutMinutes;
+  if (minutes === undefined) {
+    return defaultBudgetMs;
+  }
+  if (!Number.isInteger(minutes) || minutes < 1 || minutes > MAX_PROVISIONING_TIMEOUT_MINUTES) {
+    throw new Error(
+      `provisioningTimeoutMinutes must be a whole number from 1 through ${MAX_PROVISIONING_TIMEOUT_MINUTES}`
+    );
+  }
+  return minutes * 60 * 1000;
 }
 
 /** Formats as "MM/DD/YYYY HH:mm:ss" in UTC, the form the cleanup script expects. */
@@ -667,7 +681,7 @@ export async function provisionWithDependencies(
     if (manifest.persistence !== undefined && manifest.persistence !== "never" && manifest.persistence !== "permanent") {
       throw new Error(`Unsupported fixture persistence: ${String(manifest.persistence)}`);
     }
-    dependencies.budget.set(dependencies.totalBudgetMs);
+    dependencies.budget.set(provisioningBudgetMs(manifest, dependencies.totalBudgetMs));
 
     const context = computeRunContext(manifest, dependencies);
     const manifestDir = dirname(manifestPath);
@@ -705,6 +719,10 @@ async function provisionTemporaryFixture(
   manifest: FixtureManifest,
   dependencies: ProvisioningDependencies,
 ): Promise<ProvisionManifestOutput> {
+  const totalBudgetMs = provisioningBudgetMs(manifest, dependencies.totalBudgetMs);
+  const provisioningRetryDelayMs = manifest.provisioningTimeoutMinutes === undefined
+    ? dependencies.provisioningRetryDelayMs
+    : Math.max(dependencies.provisioningRetryDelayMs, 2 * totalBudgetMs);
   const accountName = requiredEnvironment(STORAGE_ACCOUNT_ENV, dependencies.environment);
   const containerName = requiredEnvironment(STORAGE_CONTAINER_ENV, dependencies.environment);
   const acquisitionDeadline = dependencies.now() + dependencies.leaseAcquisitionBudgetMs;
@@ -723,7 +741,7 @@ async function provisionTemporaryFixture(
     }
   };
   try {
-    dependencies.budget.set(dependencies.leaseAcquisitionBudgetMs + dependencies.totalBudgetMs);
+    dependencies.budget.set(dependencies.leaseAcquisitionBudgetMs + totalBudgetMs);
     let context = computeRunContext(manifest, dependencies);
     const blobName = coordinationBlobName(context, manifest);
     const lock = dependencies.createResourceLock(accountName, containerName, blobName, acquisitionDeadline);
@@ -732,8 +750,8 @@ async function provisionTemporaryFixture(
     while (true) {
       dependencies.budget.set(Math.max(1, acquisitionDeadline - dependencies.now()));
       lease = await lock.acquire();
-      dependencies.budget.set(dependencies.totalBudgetMs);
-      dependencies.log.log(`Acquired workflow fixture lease for ${manifest.id}@${manifest.version}; owner ${ownerWorkflowRunId}`);
+      dependencies.budget.set(totalBudgetMs);
+      dependencies.log.warn(`Acquired workflow fixture lease for ${manifest.id}@${manifest.version}; owner ${ownerWorkflowRunId}`);
 
       const record = parseCoordinationRecord(await lease.read(), manifest);
       const recordedExpiration = record.state === "Ready"
@@ -793,10 +811,10 @@ async function provisionTemporaryFixture(
         instanceId: context.runId,
         ownerWorkflowRunId,
         resourceGroups: recordResourceGroups(context),
-        nextAttemptNotBefore: new Date(dependencies.now() + dependencies.provisioningRetryDelayMs).toISOString(),
+        nextAttemptNotBefore: new Date(dependencies.now() + provisioningRetryDelayMs).toISOString(),
       };
       await lease.write(preparingRecord);
-      dependencies.log.log(`Provisioning workflow fixture ${manifest.id} instance ${context.runId}`);
+      dependencies.log.warn(`Provisioning workflow fixture ${manifest.id} instance ${context.runId}`);
 
       const expiration = new Date(Math.floor((dependencies.now() + dependencies.readyRetentionMs) / 1000) * 1000);
       const retentionTag = deleteAfterTag(expiration);

@@ -178,6 +178,39 @@ describe("skill improvement configuration", () => {
     );
   });
 
+  test("keeps the diagnostics plan within budget after including live evaluations", () => {
+    const runSpec = loadRunSpec(fileURLToPath(
+      new URL("../specs/azure-diagnostics.yaml", import.meta.url)
+    ));
+    const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
+
+    expect(runSpec.evaluations.development).toContain("functions-vnet-routing.eval.yaml");
+    const plan = createRunPlan(repoRoot, runSpec);
+    expect(() => enforceRunLimits(runSpec, plan)).not.toThrow();
+    expect(plan.baselineAnswerGenerations).toBeGreaterThan(0);
+    expect(plan.heldOutAnswerGenerations).toBeGreaterThan(0);
+    expect(plan.maximumAnswerGenerations).toBeLessThanOrEqual(536);
+    expect(plan.maximumJudgeCalls).toBeLessThanOrEqual(536);
+  });
+
+  test("keeps the Flex routing fixture narrow and keyless", () => {
+    const fixtureRoot = "../../../evals/azure-skills/azure-diagnostics/fixture/functions-vnet-routing/";
+    const bicep = fs.readFileSync(fileURLToPath(
+      new URL(`${fixtureRoot}main.bicep`, import.meta.url)
+    ), "utf8");
+    const postProvision = fs.readFileSync(fileURLToPath(
+      new URL(`${fixtureRoot}post-provision.ts`, import.meta.url)
+    ), "utf8");
+
+    expect(bicep).toContain("name: 'FC1'");
+    expect(bicep).toContain("serviceName: 'Microsoft.App/environments'");
+    expect(bicep).toContain("privateEndpointNetworkPolicies: 'RouteTableEnabled'");
+    expect(bicep.match(/allowSharedKeyAccess: false/g)).toHaveLength(2);
+    expect(bicep).toContain("type: 'SystemAssignedIdentity'");
+    expect(bicep).not.toMatch(/WEBSITE_(?:VNET_ROUTE_ALL|CONTENTOVERVNET|CONTENTAZUREFILECONNECTIONSTRING)/);
+    expect(postProvision).toContain("`${privateEndpointIp}/32`");
+    expect(postProvision).toMatch(/"--next-hop-type",\s+"None"/);
+  });
   test("rejects unsupported run-spec environment variables", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "skill-improvement-env-"));
     const configPath = path.join(root, "run.yaml");
