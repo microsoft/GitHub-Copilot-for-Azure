@@ -31,7 +31,7 @@ export function createWriteCredential() {
 }
 
 function createProfileCredential(profile: "stage" | "write") {
-  if (process.env.CI !== "true" || env.TEST_PERMISSION === undefined) {
+  if (process.env.CI !== "true" || process.env.TEST_PERMISSION === undefined) {
     return new DefaultAzureCredential();
   }
   const env = getProfileEnvironment(profile);
