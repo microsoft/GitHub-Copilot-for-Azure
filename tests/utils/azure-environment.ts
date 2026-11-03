@@ -6,7 +6,7 @@ export function getProfileEnvironment(
   profile: "stage" | "read" | "write" | "admin" | "none",
   env: NodeJS.ProcessEnv = process.env,
 ): NodeJS.ProcessEnv {
-  if (env.CI !== "true" && env.TEST_PERMISSION === undefined) {
+  if (env.CI !== "true" || env.TEST_PERMISSION === undefined) {
     return { ...env };
   }
   const variable = `AZURE_${profile.toUpperCase()}_CONFIG_DIR`;
@@ -31,7 +31,7 @@ export function createWriteCredential() {
 }
 
 function createProfileCredential(profile: "stage" | "write") {
-  if (process.env.CI !== "true") {
+  if (process.env.CI !== "true" || env.TEST_PERMISSION === undefined) {
     return new DefaultAzureCredential();
   }
   const env = getProfileEnvironment(profile);
