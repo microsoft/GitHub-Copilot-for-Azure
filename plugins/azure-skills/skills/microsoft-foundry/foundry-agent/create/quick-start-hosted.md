@@ -66,6 +66,7 @@ Populate each question with the default option below.
 | Region | The active azd environment already contains the intended `AZURE_LOCATION`, or this change does not provision regional resources. | `northcentralus` | Azure resource location. |
 | Foundry project | The workspace or azd environment is already configured with a Foundry project, or the user provided one. | New Foundry project | Offer a new or existing project. For a new project, do not pass `--project-id`; `azd provision` creates it. For an existing project, use its ARM resource ID with `azd ai agent init --project-id`. |
 | Foundry model deployment | The user provided one. | Official sample's model selection | If the user specifies a model deployment, collect its deployment name. |
+| Monitoring approval | Not creating a new Foundry project, the project has a `network:` block, `monitoring.enabled: false` is already set, or the toolchain lacks [automatic monitoring](../../references/agent-tracing-setup.md#select-the-actual-provisioning-path). | Approve monitoring | Ask in this same round: provisioning a new project creates App Insights and Log Analytics, which incur charges and store agent telemetry. If declined, set `monitoring.enabled: false` before Step 8. |
 | Deploy mode | Always — resolve without asking. | `code` | Container deploy is not supported in this quick start. To use container deploy, follow [create-hosted.md](create-hosted.md). |
 
 If the user supplied only a **Foundry project endpoint** (not an ARM ID), resolve the ARM ID before Step 4:
@@ -204,13 +205,13 @@ If recovery still fails → escape to [create-hosted.md](create-hosted.md).
 azd provision --no-state --no-prompt
 ```
 
-Before running this for a new project, complete the [tracing setup preflight](../../references/agent-tracing-setup.md#preflight-before-provisioning): handle a `network:` block first (it requires `monitoring.enabled: false`; a missing setting means monitoring is on by default), check capability and opt-out, and get monitoring charges/privacy approval. An existing project that skips provisioning needs no approval unless the user supplies a component ID.
+Before running this for a new project, apply the Step 2 monitoring answer per the [tracing setup preflight](../../references/agent-tracing-setup.md#preflight-before-provisioning): a `network:` block requires `monitoring.enabled: false` (a missing setting means monitoring is on by default), and a declined approval also sets `monitoring.enabled: false`. Do not ask again here.
 
 `--no-state` skips the existing-deployment check; safe here because the golden path starts from a fresh environment (Step 4). Keep it for this quickstart; you can omit it later when re-provisioning the same environment.
 
 ⏳ May take time — creates the resource group, Foundry account + project, and model deployment. Supporting native azd builds also create App Insights/Log Analytics and an `AppInsights` connection for a new project by default (not for projects with a `network:` block, which must set `monitoring.enabled: false`); older or custom IaC must not be assumed to do so. Wait for the prompt to return; do not interrupt.
 
-Follow [best-effort tracing setup](../../references/agent-tracing-setup.md) for post-provision discovery, including an existing-project quickstart that skipped provision. The approval and opt-out checks already ran in the preflight above. Preserve existing destinations/authentication and opt-outs. Warn and continue on optional access and verification failures; a monitoring failure inside `azd provision` fails that step, so report its cause. For an existing project, connecting a component requires its resource ID and separate approval; azd does not create one.
+Follow [best-effort tracing setup](../../references/agent-tracing-setup.md) for post-provision discovery. Preserve existing destinations/authentication and opt-outs. Warn and continue on optional access failures; a monitoring failure inside `azd provision` fails that step, so report its cause.
 
 ### Step 9 — Wire local env vars
 
@@ -308,7 +309,7 @@ azd ai agent invoke "<short representative prompt>"
 
 Run the smoke invocation only as part of the requested deployment or test.
 
-Capture its UTC window and available response/conversation identifiers, then follow [fresh trace verification](../../references/agent-tracing-verification.md). Reuse this invocation, not an additional billed call. Report successful deployment/invocation separately from human read access and stored-trace verification; optional failures warn and continue to the remaining workflow.
+Do not poll for traces here: ingestion takes 1-5 minutes, which exceeds the quick start's time budget, and an immediate query gives false negatives. Only confirm the project has an `AppInsights` connection (see [best-effort tracing setup](../../references/agent-tracing-setup.md)), then tell the user telemetry can take a few minutes to appear and that [fresh trace verification](../../references/agent-tracing-verification.md) can be run later. Report deployment/invocation success separately from trace availability.
 
 ### Step 13 — Submit eval suite generation (async, fire-and-forget)
 

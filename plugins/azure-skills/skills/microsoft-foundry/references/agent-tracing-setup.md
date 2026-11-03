@@ -32,7 +32,7 @@ Effective-connection discovery and human access checks happen after provisioning
 
 ## Select the Actual Provisioning Path
 
-- **Native azd:** requires matched projects/agents/connections builds that include automatic monitoring; versions alone are insufficient, so check release notes. Confirm after provisioning that `azd env get-values` contains `AZD_FOUNDRY_MONITORING_MODE`. Until released, only matched development builds support this. Do not install them automatically.
+- **Native azd:** requires matched projects/agents/connections builds that include automatic monitoring; versions alone are insufficient. Confirm after provisioning that `azd env get-values` contains `AZD_FOUNDRY_MONITORING_MODE`. Do not install development builds automatically.
 - In supporting builds, a **new** project gets a workspace-backed App Insights component and an `AppInsights` connection by default, with no flag or authoring change. Monitoring is part of the main provisioning graph, not a best-effort second step: a policy or conflict failure (for example a conflicting connection or restricted ingestion) fails `azd provision` and its message names the cause. Report it, then fix it or set `monitoring.enabled: false`.
 - Existing projects are unchanged unless `monitoring.applicationInsightsResourceId` is set. azd never creates a new component for an existing project.
 - **Private networking:** automatic monitoring does not configure private ingestion. A new project with a `network:` block fails unless `monitoring.enabled: false`, and an existing network-isolated project is rejected. Do not try to work around this; tell the user tracing needs a private-link design.
