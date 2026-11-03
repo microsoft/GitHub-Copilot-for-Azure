@@ -1872,6 +1872,10 @@ stimuli:
       requiredSkills:
         - azure-advisor-cost-optimization
     graders:
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
       - type: output-matches
         config:
           pattern: "(?i)pricing basis[^\\r\\n]*Retail"
