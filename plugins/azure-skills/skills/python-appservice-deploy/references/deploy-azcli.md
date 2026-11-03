@@ -79,7 +79,7 @@ if (-not $? -or $LASTEXITCODE -ne 0) { throw "LF normalization/validation failed
 
 ### Create a fresh ZIP
 
-Package only the checked files after normalization/validation succeeds. Stop on any failure; deployment requires successful packaging, not merely an existing archive.
+Package only after normalization/validation succeeds. Stop on any failure; deployment requires successful packaging, not merely an existing archive.
 
 Zip the project (excluding venv, caches, git, node_modules):
 

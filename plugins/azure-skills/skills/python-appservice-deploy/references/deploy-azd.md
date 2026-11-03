@@ -25,7 +25,7 @@ If no match → use the az CLI path.
 
 Verify the latest stable Azure CLI before deployment. Django remote builds require `STATIC_ROOT` and successful `python manage.py check` and `python manage.py collectstatic --noinput`.
 
-Before every `azd up`/`azd deploy`, run the shared [LF normalization and validation example](deploy-azcli.md#normalize-linux-scripts) on the service's actual package inputs, including generated startup scripts. Use its shell-specific exit guard. Package only checked files; any normalization, validation or packaging failure stops deployment. Require a fresh package, never a cached artifact from a failed attempt.
+Before every `azd up`/`azd deploy`, run the shared [LF normalization and validation example](deploy-azcli.md#normalize-linux-scripts) on the service's actual package inputs, including generated startup scripts. Use its shell-specific exit guard. Package only after normalization/validation succeeds; any normalization, validation or packaging failure stops deployment. Require a fresh package, never a cached artifact from a failed attempt.
 
 ## Authenticate
 
@@ -93,5 +93,5 @@ Present the URL with the `https://` prefix and the post-deploy message from [pos
 ## Notes
 
 - ⛔ Do **not** run `azd init -t <template>` in an existing workspace — it can destroy user code. Only `azd init` (no template) is safe inside an existing project.
-- If the template cannot provision Linux P0v3 in the quota-checked region, stop and hand off to `azure-prepare` rather than provisioning an unchecked alternative.
+- If `azd up` provisions infra that doesn't match P0v3 Linux, the underlying template owns that decision — don't fight it. Note this to the user.
 - If `azd deploy` fails because no environment exists, fall back to `azd env new` then re-run.
