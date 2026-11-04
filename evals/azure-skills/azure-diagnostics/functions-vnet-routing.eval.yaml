@@ -25,7 +25,7 @@ stimuli:
       Diagnose the live Azure resources in the supplied resource group using
       read-only evidence. Identify the Function App, its VNet integration and
       test-storage private endpoint, then use configuration, telemetry, DNS,
-      route, and recent-change evidence to explain why only the blob read fails.
+      route, and recent-change evidence to explain the blob-read failure.
       Explain the root cause and the evidence supporting it, then recommend the
       narrowest safe correction and concrete recovery checks. Do not change
       routes, networking, app settings, identities, or any Azure resource.
@@ -71,7 +71,7 @@ stimuli:
       - The agent invokes azure-diagnostics and gathers live resource, route, telemetry, or Activity Log evidence from the supplied resource group rather than returning only general Functions networking guidance.
       - The response establishes that the Function App uses a subnet delegated to Microsoft.App/environments, the route table is associated with that integration subnet, and the blob private endpoint is on a separate subnet with private DNS.
       - The response identifies the recent storage-path route creation or write and shows that its /32 destination matches the blob private endpoint IP and its next hop is None, making the timing and scope causally consistent with the read failures.
-      - "The response recognizes the split failure signature: the health endpoint remains available, the storage hostname still resolves privately, and only the test-storage connection times out; it does not infer a broad platform outage from the 503."
+      - "The response recognizes the observed failure signature: the health endpoint remains available, the storage hostname still resolves privately, and the test-storage connection times out; it does not infer a broad platform outage from the 503."
       - "The explanation is Flex-specific: outbound VNet routing does not require Route All, the integration subnet delegation is not Microsoft.Web/serverFarms, and deployment packages remain in the unchanged host storage path."
       - The recommended rollback removes or corrects only the offending storage-path route after approval, then rechecks the route table, private DNS result, health endpoint, blob-read success, and a uniquely correlated Application Insights event.
       - The response remains read-only, does not expose keys or connection strings, and does not claim the rollback or validation has already occurred.
