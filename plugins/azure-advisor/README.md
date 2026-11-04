@@ -5,6 +5,8 @@ Use Azure Advisor recommendations to understand optimization opportunities, iden
 This plugin includes:
 
 - `azure-advisor` for recommendation discovery, summaries, affected resources, metadata, service retirements, and lifecycle updates.
+- `azure-advisor-cost-user-context` for resolving tenant, subscription, and Advisor service-group scope before cost analysis.
+- `azure-advisor-cost-optimization` for Advisor idle-resource findings, savings estimates, historical waste, lifecycle reporting, and confirmed recommendation postpone/dismiss updates.
 - `azure-advisor-actionability` for one-recommendation remediation, followed by resource-specific command placeholder resolution. When Advisor returns no usable remediation, it falls back to relevant public Microsoft Learn documentation. Responses identify whether guidance comes from Advisor or Microsoft Learn and cite documentation used for the fallback.
 
 ## Security

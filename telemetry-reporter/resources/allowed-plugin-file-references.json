@@ -1,5 +1,13 @@
 {
   "references": {
+    "azure-advisor": [
+      "azure-advisor-cost-optimization\\references\\examples.md",
+      "azure-advisor-cost-optimization\\references\\lifecycle.md",
+      "azure-advisor-cost-optimization\\references\\output-and-savings.md",
+      "azure-advisor-cost-optimization\\references\\tools-and-recovery.md",
+      "azure-advisor-cost-optimization\\references\\workflow.md",
+      "azure-advisor-cost-user-context\\references\\scope-resolution.md"
+    ],
     "aks-skills": [
       "aks-cost-optimization\\references\\aks-bin-packing.md",
       "aks-cost-optimization\\references\\aks-nap.md",

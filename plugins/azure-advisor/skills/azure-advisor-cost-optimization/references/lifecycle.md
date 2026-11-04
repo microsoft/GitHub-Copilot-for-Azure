@@ -1,0 +1,123 @@
+# Lifecycle and remediation
+
+Use `advisor_recommendation_list` directly for lifecycle reporting. This lifecycle guidance is
+specific to the combined `category=Cost` and `sub-category=IdleResources` workflow; generic Cost,
+prioritized Cost outside `IdleResources`, cross-category, and non-Cost lifecycle requests remain
+on the generic Advisor workflow. Preserve both filters for every operation here. For completed
+realized-savings
+reporting, request `status=Completed`; for postponed or dismissed reporting, request the explicitly
+requested status. Do not call `advisor_recommendation_summary` for this lifecycle request or include unrelated
+Cost recommendation types. Keep lifecycle measures separate by currency:
+
+- Reporting defaults to `Completed` resources when the user asks how much was saved or what a
+  completed cleanup recovered.
+- `Completed`: realized savings for returned records whose `resourceDeletedOn` is in the requested
+  period.
+- `New`: recoverable current potential when requested.
+- `Postponed`: accumulated waste and remaining potential when explicitly requested.
+- `Dismissed`: accumulated waste when explicitly requested; do not present it as current
+  recoverable potential unless Advisor returns that value for the record.
+
+Use only Advisor/ARG-returned monetary fields for lifecycle output. For completed resources, use
+an Advisor/ARG-returned realized-savings value when present; otherwise report `Unavailable`.
+`resourceDeletedOn` may be used to select records within the requested period, but must not be
+used with a daily rate to calculate a replacement savings amount.
+
+For the `Completed on` field, select the returned timestamp by `properties.completionType`:
+use `properties.platformStateUpdatedAt` for `SystemVerified`, and
+`properties.customerStateUpdatedAt` for `MarkedByUser` or when `completionType` is missing or
+unrecognized. The client does not send a completion timestamp in the mark-completed PATCH;
+Advisor stamps the applicable field. Do not use `lastUpdated`, `lastRefreshed`, or resource
+deletion time as a substitute.
+
+Use the exact monetary labels by lifecycle state: `Realized savings` for `Completed`, and
+`Yearly potential savings` plus `Cost` for `Postponed` and `Dismissed`. Never render daily,
+per-day, monthly, ongoing, or inferred cost in a lifecycle response.
+
+For dismissed records, report Advisor's returned accumulated waste and its calculation timestamp
+when available. Use `properties.customerStateUpdatedAt` for the UI-compatible `Dismissed on`
+field when it is returned. The client does not send this timestamp in the dismiss PATCH; Advisor
+stamps it when the customer state changes, and ARG returns it after propagation. The UI may show a
+provisional local current-time value immediately after the PATCH, but that is not authoritative
+for MCP output. Keep `lastUpdated`, `lastRefreshed`, `platformStateUpdatedAt`, and resource
+deletion time distinct; do not substitute any of them for `customerStateUpdatedAt`. Do not
+extrapolate additional post-dismissal cost without an authoritative dismissal timestamp and an
+explicitly supported calculation.
+Aggregate the per-resource values for the requested period and pricing basis. Include completed
+resource counts, state counts, and unavailable records when returned. Do not mix historical state
+totals into a current recommendation-type summary.
+
+For lifecycle reports, use headings and short narrative sections by default. When multiple
+recommendation types are returned, begin each lifecycle-state section with a concise
+recommendation-type summary, then render one resource section per type. Choose prose, bullets,
+cards, or a table based on readability. The summary fields are lifecycle-specific:
+Completed uses `Recommendation type`, `Completed resources`, and `Realized savings`; Postponed
+uses `Recommendation type`, `Postponed resources`, `Yearly potential savings`, and `Cost`;
+Dismissed uses `Recommendation type`, `Dismissed resources`, `Yearly potential savings`, and
+`Cost`.
+For completed reporting, preserve `Resource`, `Resource group`, `Resource ID`, `Advisor resource
+type`, `Currency`, `Pricing basis`, `Completed on`, and `Realized savings` in the chosen format.
+Postponed and Dismissed use `Yearly potential savings` and `Cost` instead. Do not
+flatten resources from different recommendation types into one unlabeled result.
+
+When the prompt explicitly asks what was completed, postponed, or dismissed, report the requested
+states as separate sections or with an explicit lifecycle-state column. Otherwise, report only
+`Completed` resources by default. Preserve each resource's exact Advisor status, scope, currency,
+pricing basis, and applicable measure; never combine realized savings with accumulated waste into
+one unlabeled total.
+
+For postpone or dismiss operations on active idle-resource findings, obtain the stable
+recommendation identifier and exact scope.
+First resolve whether the request applies to the explicitly identified resources only or to every
+resource of the same recommendation type in the same scope. Render the known scope and target
+information before asking. If the target set is ambiguous, use `ask_user` for that focused choice
+rather than applying the update broadly.
+
+Before any postpone or dismiss state change, call `advisor_recommendation_list` directly with
+only active recommendations: `status=New`, `category=Cost`, and `sub-category=IdleResources` in
+the resolved subscription or Service Group scope. `Completed`, `Postponed`, and `Dismissed`
+records are lifecycle-reporting targets, not active candidates for these updates. Group the
+returned records by recommendation type in the visible response, then ask which recommendation
+type to review. Do not call
+`advisor_recommendation_summary` for this action flow.
+
+After a type is selected, show every affected resource in that type with its resource ID and
+stable recommendation ID in a visible response before asking. Use `ask_user` to choose
+`Selected resources only (Recommended)` or `All resources in this recommendation type`, then
+require explicit resource selection. Never
+offer a single option that dismisses or postpones all resources across multiple recommendation
+types. Do not show or update Security or unrelated recommendation categories. The update
+operation is single-record: call it once per selected stable recommendation ID. This is required
+by the MCP update contract, not a generic batch-update assumption. Use the list
+record's stable `name` as `recommendationId`; never pass the ARM resource ID or the
+`recommendationTypeId` to the update command. A single returned resource still requires explicit
+selection.
+The resource list must be rendered in a visible assistant response before the selection question.
+This explicit selection requirement applies to postpone and dismiss flows, not ordinary
+read-only analysis. After an ordinary selected-type listing, render the returned resources and
+stop with a next step; do not ask the user to select a resource unless the request enters an
+actionability, remediation, state-changing, or handoff flow.
+
+For postponement, preserve a future return date supplied by the user; otherwise propose a
+concrete return date 30 calendar days from the current date,
+render the exact resources, scope, proposed return date, and continuing accumulated waste, then
+use `ask_user` with `Use this date (Recommended)` or `Choose another date`; do not ask an
+open-ended duration question. For dismissal, render the exact resources, scope, current-resource
+count, and combined Advisor-returned savings before using one free-text `ask_user` question for
+a reason when the user has not supplied one. Do not silently choose `Other`, and do not calculate
+a replacement amount from dates or daily rates.
+
+Show the complete proposed changes and obtain explicit confirmation before calling
+`advisor_recommendation_update`. Its required inputs are the selected stable
+`recommendationId`, exactly one subscription or Service Group scope, and
+`recommendationStatus` (`Postponed` or `Dismissed`). Postponement additionally requires a future
+ISO 8601 `postponedUntilDateTime` with a timezone offset. Dismissal accepts the supported
+`recommendationDismissReason` values; when no reason maps cleanly, use `Other`. Respect RBAC
+failures, preserve per-item failures, and report partial success accurately.
+Render the proposed changes visibly before the confirmation question; do not call the update
+operation and confirmation prompt back-to-back.
+
+This skill never deletes, resizes, deallocates, or reconfigures resources. Keep Advisor-based
+cost analysis and candidate classification in this workflow. Route
+only the selected remediation artifact or execution-preparation request to
+`azure-advisor-actionability`.
