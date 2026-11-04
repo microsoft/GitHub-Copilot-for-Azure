@@ -298,35 +298,33 @@ try {
     "--name",
     functionAppName,
     "--query",
-    "{defaultHostName:defaultHostName,enabled:enabled,publicNetworkAccess:publicNetworkAccess,state:state}",
+    "{hostName:hostNames[0],enabled:enabled,publicNetworkAccess:publicNetworkAccess,state:state}",
     "-o",
     "json",
   ])) as {
-    defaultHostName?: string;
+    hostName?: string;
     enabled?: boolean;
     publicNetworkAccess?: string;
     state?: string;
   };
-  if (!functionAppStatus.defaultHostName) {
-    throw new Error("The Function App does not have a default host name.");
-  }
+  const functionAppHostName = functionAppStatus.hostName || `${functionAppName}.azurewebsites.net`;
   if (functionAppStatus.publicNetworkAccess === "Disabled") {
     throw new Error("The Function App public endpoint is disabled.");
   }
   log(
-    `Warming ${functionAppStatus.defaultHostName}; state=${functionAppStatus.state ?? "unknown"}, `
+    `Warming ${functionAppHostName}; state=${functionAppStatus.state ?? "unknown"}, `
     + `enabled=${String(functionAppStatus.enabled)}, publicNetworkAccess=${functionAppStatus.publicNetworkAccess ?? "unknown"}.`
   );
   await retry(
     "waiting for the health endpoint to return 200",
-    () => request(functionAppStatus.defaultHostName!, "health", functionKey),
+    () => request(functionAppHostName, "health", functionKey),
     (response) => response.status === 200,
     600_000,
   );
 
   const baseline = await retry(
     "waiting for the managed-identity blob read to succeed through the private endpoint",
-    () => request(functionAppStatus.defaultHostName!, "read-blob", functionKey),
+    () => request(functionAppHostName, "read-blob", functionKey),
     (response) => response.status === 200
       && response.body.includes("Flex VNet private endpoint baseline is healthy.")
       && response.resolvedIp === privateEndpointIp,
@@ -374,12 +372,12 @@ try {
 
   const failedRead = await retry(
     "waiting for the routed blob read to fail with 503 while DNS remains correct",
-    () => request(functionAppStatus.defaultHostName!, "read-blob", functionKey),
+    () => request(functionAppHostName, "read-blob", functionKey),
     (response) => response.status === 503 && response.resolvedIp === privateEndpointIp,
     240_000,
     15_000,
   );
-  const healthAfterFault = await request(functionAppStatus.defaultHostName, "health", functionKey);
+  const healthAfterFault = await request(functionAppHostName, "health", functionKey);
   if (healthAfterFault.status !== 200) {
     throw new Error(`The health endpoint returned ${healthAfterFault.status} after fault injection.`);
   }

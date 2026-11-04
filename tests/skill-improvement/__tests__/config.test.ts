@@ -214,6 +214,7 @@ describe("skill improvement configuration", () => {
     expect(postProvision).toContain('"networkInterfaces[0].id"');
     expect(postProvision).toContain('"ipConfigurations[0].privateIPAddress"');
     expect(postProvision).not.toContain("customDnsConfigs");
+    expect(postProvision).toContain("`${functionAppName}.azurewebsites.net`");
   });
   test("rejects unsupported run-spec environment variables", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "skill-improvement-env-"));
