@@ -27,8 +27,8 @@ stimuli:
       endpoint, then use configuration, telemetry, DNS, route, and recent-change
       evidence to explain the blob-read failure.
       Explain the root cause and the evidence supporting it, then recommend the
-      narrowest safe correction and concrete recovery checks. Do not change
-      routes, networking, app settings, identities, or any Azure resource.
+      narrowest safe correction and concrete recovery checks. Investigate and
+      recommend next steps, but do not make any changes.
     rubric:
       - The agent invokes azure-diagnostics and reads live evidence from the supplied resource group, including the Function App or its telemetry and the relevant VNet route configuration; a generic checklist or hypothetical commands alone do not pass.
       - The response identifies the affected Function App, the separate test storage account or its blob private endpoint, and the integration route table using observed names or resource IDs.
