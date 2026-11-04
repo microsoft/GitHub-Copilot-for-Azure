@@ -22,10 +22,10 @@ stimuli:
     prompt: |
       Our Flex Consumption Function App is online, but its storage-backed
       operation started returning 503 while the health endpoint remains 200.
-      Diagnose the live Azure resources in the supplied resource group using
-      read-only evidence. Identify the Function App, its VNet integration and
-      test-storage private endpoint, then use configuration, telemetry, DNS,
-      route, and recent-change evidence to explain the blob-read failure.
+      Diagnose the live Azure resources in the supplied resource group.
+      Identify the Function App, its VNet integration and test-storage private
+      endpoint, then use configuration, telemetry, DNS, route, and recent-change
+      evidence to explain the blob-read failure.
       Explain the root cause and the evidence supporting it, then recommend the
       narrowest safe correction and concrete recovery checks. Do not change
       routes, networking, app settings, identities, or any Azure resource.
@@ -61,12 +61,12 @@ stimuli:
       Investigate a recent network regression in the supplied Azure resource
       group. A Flex Consumption Function App can still answer its health request,
       but managed-identity access to a blob through a private endpoint times out.
-      Perform a read-only change-correlation and routing audit: establish the
-      expected topology, inspect recent Activity Log evidence and the effective
-      route configuration, and explain whether the change is causally consistent
-      with the failure signature. Include Flex-specific networking behavior,
-      the smallest rollback, and the evidence required to declare recovery.
-      Do not modify or restart anything.
+      Perform a change-correlation and routing audit: establish the expected
+      topology, inspect recent Activity Log evidence and the effective route
+      configuration, and explain whether the change is causally consistent with
+      the failure signature. Include Flex-specific networking behavior, the
+      smallest rollback, and the evidence required to declare recovery. Do not
+      modify or restart anything.
     rubric:
       - The agent invokes azure-diagnostics and gathers live resource, route, telemetry, or Activity Log evidence from the supplied resource group rather than returning only general Functions networking guidance.
       - The response establishes that the Function App uses a subnet delegated to Microsoft.App/environments, the route table is associated with that integration subnet, and the blob private endpoint is on a separate subnet with private DNS.
