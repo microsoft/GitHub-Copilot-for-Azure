@@ -16,6 +16,11 @@ Streamable HTTP servers use `type: "streamable-http"`. Empty server maps
 are valid. Keep server names and configuration equivalent to the retained
 legacy `.mcp.json`, whose client-specific transport syntax is unchanged.
 
+The shared Azure MCP allowlist source is `plugins/allowed-azure-tools.json`;
+copying it into built plugins is handled separately. See
+[Azure MCP tool allowlists](azure-mcp-allowlists.md) for release discovery,
+automatic PR updates, and manual refresh instructions.
+
 The build produces `com.github.copilot/hooks/hooks.json` from compiled
 `hooks/copilot-hooks.json`, including plugin-local Copilot fragments.
 This is a file-based Copilot extension, not a portable hook component.
