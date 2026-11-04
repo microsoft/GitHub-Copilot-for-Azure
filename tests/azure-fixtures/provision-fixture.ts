@@ -89,6 +89,8 @@ const STORAGE_CONTAINER_ENV = "AZURE_FIXTURE_COORDINATION_CONTAINER";
 const TOTAL_BUDGET_MS = 10 * 60 * 1000;
 const PROVISIONING_RETRY_DELAY_MS = 2 * TOTAL_BUDGET_MS;
 const MAX_PROVISIONING_TIMEOUT_MINUTES = 60;
+const DEPLOYMENT_RETRY_ATTEMPTS = 4;
+const DEPLOYMENT_RETRY_DELAY_MS = 15_000;
 
 export type WorkflowResourceLockLease = Pick<
   ResourceLockLease,
@@ -332,7 +334,7 @@ export function runPostTestScript(context: FixtureRunContext, manifest: FixtureM
   }
 }
 
-function provisionBicepConfig(
+async function provisionBicepConfig(
   context: FixtureRunContext,
   manifest: FixtureManifest,
   bicepConfig: BicepConfig,
@@ -340,7 +342,9 @@ function provisionBicepConfig(
   additionalTags: string[] = [],
   runCommand: ProvisioningDependencies["runAz"] = runAz,
   now: () => number = Date.now,
-) {
+  sleep: ProvisioningDependencies["sleep"] = (ms) => new Promise((resolvePromise) => setTimeout(resolvePromise, ms)),
+  log: Pick<Console, "warn"> = console,
+): Promise<void> {
   const resourceGroupName = context.resourceGroupNames[bicepConfig.resourceGroupNameBase];
   if (!resourceGroupName) {
     throw new Error(`No resource group name was computed for base ${bicepConfig.resourceGroupNameBase}`);
@@ -395,7 +399,7 @@ function provisionBicepConfig(
 
   const deploymentName = `${basename(bicepConfig.path, ".bicep")}-${context.runId.slice(0, 8)}`;
 
-  runCommand([
+  const deploymentArgs = [
     "deployment",
     "group",
     "create",
@@ -409,7 +413,24 @@ function provisionBicepConfig(
     ...parameterArgs,
     "-o",
     "none",
-  ]);
+  ];
+  for (let attempt = 1; attempt <= DEPLOYMENT_RETRY_ATTEMPTS; attempt++) {
+    try {
+      runCommand(deploymentArgs);
+      return;
+    } catch (error) {
+      if (!errorText(error).includes("AnotherOperationInProgress")
+        || attempt === DEPLOYMENT_RETRY_ATTEMPTS) {
+        throw error;
+      }
+      const delayMs = DEPLOYMENT_RETRY_DELAY_MS * attempt;
+      log.warn(
+        `Azure deployment ${deploymentName} reported AnotherOperationInProgress; `
+        + `retrying in ${delayMs / 1000} seconds (attempt ${attempt + 1}/${DEPLOYMENT_RETRY_ATTEMPTS}).`,
+      );
+      await sleep(delayMs);
+    }
+  }
 }
 
 function markFixturesCompleted(
@@ -693,7 +714,17 @@ export async function provisionWithDependencies(
         ? []
         : [deleteAfterTag(new Date(dependencies.now() + DEFAULT_TIME_TO_LIVE_SEC * 1000))];
       for (const bicepConfig of manifest.bicepConfigs) {
-        provisionBicepConfig(context, manifest, bicepConfig, manifestDir, retentionTags, dependencies.runAz, dependencies.now);
+        await provisionBicepConfig(
+          context,
+          manifest,
+          bicepConfig,
+          manifestDir,
+          retentionTags,
+          dependencies.runAz,
+          dependencies.now,
+          dependencies.sleep,
+          dependencies.log,
+        );
       }
       markFixturesCompleted(context, dependencies.runAz);
     }
@@ -823,10 +854,20 @@ async function provisionTemporaryFixture(
       const retentionTag = deleteAfterTag(expiration);
       for (const config of manifest.bicepConfigs) {
         lease.assertHealthy();
-        provisionBicepConfig(context, manifest, config, dirname(manifestPath), [
-          `${FIXTURE_COMPONENT_TAG}=${config.resourceGroupNameBase}`,
-          retentionTag,
-        ], dependencies.runAz, dependencies.now);
+        await provisionBicepConfig(
+          context,
+          manifest,
+          config,
+          dirname(manifestPath),
+          [
+            `${FIXTURE_COMPONENT_TAG}=${config.resourceGroupNameBase}`,
+            retentionTag,
+          ],
+          dependencies.runAz,
+          dependencies.now,
+          dependencies.sleep,
+          dependencies.log,
+        );
         await dependencies.immediate();
         lease.assertHealthy();
       }

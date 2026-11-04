@@ -1045,6 +1045,29 @@ describe("additional failure modes", () => {
     expect(fake.postProvisionRuns).toHaveLength(0);
     expect(azCommands(fake).filter((args) => args[1] === "update")).toHaveLength(0);
   });
+
+  it("retries Azure network operations that are still in progress", async () => {
+    const fake = environment();
+    fake.fail({
+      actor: "retry",
+      operation: "deployment group create",
+      invocation: 1,
+      error: new Error("AnotherOperationInProgress"),
+    });
+
+    await expect(provisionWithDependencies(
+      manifestPath,
+      { ...manifest, provisioningTimeoutMinutes: 1 },
+      fake.createDependencies("retry"),
+    )).resolves.toBeDefined();
+
+    expect(fake.deploymentCount).toBe(2);
+    expect(fake.logs).toContainEqual(expect.objectContaining({
+      actor: "retry",
+      level: "warn",
+      message: expect.stringContaining("retrying in 15 seconds (attempt 2/4)"),
+    }));
+  });
 });
 
 describe("injected time budget", () => {
