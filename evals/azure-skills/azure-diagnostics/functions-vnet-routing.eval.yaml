@@ -26,8 +26,7 @@ stimuli:
       read-only evidence. Identify the Function App, its VNet integration and
       test-storage private endpoint, then use configuration, telemetry, DNS,
       route, and recent-change evidence to explain why only the blob read fails.
-      Distinguish the root cause from identity, firewall, private-endpoint
-      approval, host storage, and application-health problems. Recommend the
+      Explain the root cause and the evidence supporting it, then recommend the
       narrowest safe correction and concrete recovery checks. Do not change
       routes, networking, app settings, identities, or any Azure resource.
     rubric:
