@@ -203,6 +203,7 @@ describe("skill improvement configuration", () => {
     ), "utf8");
 
     expect(bicep).toContain("name: 'FC1'");
+    expect(bicep).toContain("publicNetworkAccess: 'Enabled'");
     expect(bicep).toContain("serviceName: 'Microsoft.App/environments'");
     expect(bicep).toContain("privateEndpointNetworkPolicies: 'RouteTableEnabled'");
     expect(bicep.match(/allowSharedKeyAccess: false/g)).toHaveLength(2);

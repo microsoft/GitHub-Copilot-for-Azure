@@ -172,6 +172,7 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
     serverFarmId: plan.id
     virtualNetworkSubnetId: integrationSubnet.id
     httpsOnly: true
+    publicNetworkAccess: 'Enabled'
     functionAppConfig: {
       deployment: {
         storage: {

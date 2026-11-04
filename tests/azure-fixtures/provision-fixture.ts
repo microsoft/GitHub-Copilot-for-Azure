@@ -720,12 +720,15 @@ async function provisionTemporaryFixture(
   dependencies: ProvisioningDependencies,
 ): Promise<ProvisionManifestOutput> {
   const totalBudgetMs = provisioningBudgetMs(manifest, dependencies.totalBudgetMs);
+  const leaseAcquisitionBudgetMs = manifest.provisioningTimeoutMinutes === undefined
+    ? dependencies.leaseAcquisitionBudgetMs
+    : Math.max(dependencies.leaseAcquisitionBudgetMs, totalBudgetMs + 5 * 60 * 1000);
   const provisioningRetryDelayMs = manifest.provisioningTimeoutMinutes === undefined
     ? dependencies.provisioningRetryDelayMs
     : Math.max(dependencies.provisioningRetryDelayMs, 2 * totalBudgetMs);
   const accountName = requiredEnvironment(STORAGE_ACCOUNT_ENV, dependencies.environment);
   const containerName = requiredEnvironment(STORAGE_CONTAINER_ENV, dependencies.environment);
-  const acquisitionDeadline = dependencies.now() + dependencies.leaseAcquisitionBudgetMs;
+  const acquisitionDeadline = dependencies.now() + leaseAcquisitionBudgetMs;
   const ownerWorkflowRunId = dependencies.environment.GITHUB_RUN_ID
     ? `${dependencies.environment.GITHUB_RUN_ID}:${dependencies.environment.GITHUB_RUN_ATTEMPT ?? "1"}`
     : `local:${dependencies.processId}:${dependencies.randomUUID()}`;
@@ -741,7 +744,7 @@ async function provisionTemporaryFixture(
     }
   };
   try {
-    dependencies.budget.set(dependencies.leaseAcquisitionBudgetMs + totalBudgetMs);
+    dependencies.budget.set(leaseAcquisitionBudgetMs + totalBudgetMs);
     let context = computeRunContext(manifest, dependencies);
     const blobName = coordinationBlobName(context, manifest);
     const lock = dependencies.createResourceLock(accountName, containerName, blobName, acquisitionDeadline);

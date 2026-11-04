@@ -9,7 +9,7 @@ tags:
 
 defaults:
   runs: 1
-  timeout: "35m"
+  timeout: "50m"
   executor: copilot-sdk-agent-runner
   model: claude-sonnet-5
   judge_model: claude-sonnet-5

@@ -390,6 +390,36 @@ describe("deterministic contenders", () => {
     expect(azCommands(fake).filter((args) => ["create", "update", "delete"].includes(args[1]))).toHaveLength(0);
     await lease.release();
   });
+
+  it("extends follower acquisition for a manifest provisioning timeout", async () => {
+    const fake = environment();
+    fake.onOperation({
+      actor: "owner",
+      operation: "deployment group create",
+      invocation: 1,
+      run: () => fake.advance(20_000),
+    });
+    const extendedManifest: FixtureManifest = {
+      ...manifest,
+      provisioningTimeoutMinutes: 1,
+    };
+
+    const [owner, follower] = await Promise.all([
+      provisionWithDependencies(
+        manifestPath,
+        extendedManifest,
+        fake.createDependencies("owner"),
+      ),
+      provisionWithDependencies(
+        manifestPath,
+        extendedManifest,
+        fake.createDependencies("follower"),
+      ),
+    ]);
+
+    expect(output(follower).fixtureInstanceId).toBe(output(owner).fixtureInstanceId);
+    expect(fake.deploymentCount).toBe(manifest.bicepConfigs.length);
+  });
 });
 
 describe("failure boundaries", () => {

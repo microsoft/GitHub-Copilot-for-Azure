@@ -78,29 +78,21 @@ async function retry<T>(
   }
 
   if (lastError instanceof Error) {
-    throw new Error(`Timed out while ${description}: ${lastError.message}`, { cause: lastError });
+    const cause = (lastError as Error & { cause?: unknown }).cause;
+    const causeText = cause instanceof Error
+      ? `; cause: ${cause.message}${"code" in cause ? ` (${String(cause.code)})` : ""}`
+      : "";
+    throw new Error(`Timed out while ${description}: ${lastError.message}${causeText}`, { cause: lastError });
   }
   throw new Error(`Timed out while ${description}; last result was ${JSON.stringify(lastResult)}`);
 }
 
-async function request(path: string, functionKey: string): Promise<{
+async function request(appHostName: string, path: string, functionKey: string): Promise<{
   status: number;
   body: string;
   correlationId: string | null;
   resolvedIp: string | null;
 }> {
-  const appHostName = runAz([
-    "functionapp",
-    "show",
-    "--resource-group",
-    resourceGroup,
-    "--name",
-    functionAppName,
-    "--query",
-    "defaultHostName",
-    "-o",
-    "tsv",
-  ]);
   const response = await fetch(`https://${appHostName}/api/${path}?code=${encodeURIComponent(functionKey)}`, {
     signal: AbortSignal.timeout(20_000),
   });
@@ -298,21 +290,47 @@ try {
     180_000,
   );
 
-  log("Warming the Function App and validating the healthy baseline.");
+  const functionAppStatus = JSON.parse(runAz([
+    "functionapp",
+    "show",
+    "--resource-group",
+    resourceGroup,
+    "--name",
+    functionAppName,
+    "--query",
+    "{defaultHostName:defaultHostName,enabled:enabled,publicNetworkAccess:publicNetworkAccess,state:state}",
+    "-o",
+    "json",
+  ])) as {
+    defaultHostName?: string;
+    enabled?: boolean;
+    publicNetworkAccess?: string;
+    state?: string;
+  };
+  if (!functionAppStatus.defaultHostName) {
+    throw new Error("The Function App does not have a default host name.");
+  }
+  if (functionAppStatus.publicNetworkAccess === "Disabled") {
+    throw new Error("The Function App public endpoint is disabled.");
+  }
+  log(
+    `Warming ${functionAppStatus.defaultHostName}; state=${functionAppStatus.state ?? "unknown"}, `
+    + `enabled=${String(functionAppStatus.enabled)}, publicNetworkAccess=${functionAppStatus.publicNetworkAccess ?? "unknown"}.`
+  );
   await retry(
     "waiting for the health endpoint to return 200",
-    () => request("health", functionKey),
+    () => request(functionAppStatus.defaultHostName!, "health", functionKey),
     (response) => response.status === 200,
-    180_000,
+    600_000,
   );
 
   const baseline = await retry(
     "waiting for the managed-identity blob read to succeed through the private endpoint",
-    () => request("read-blob", functionKey),
+    () => request(functionAppStatus.defaultHostName!, "read-blob", functionKey),
     (response) => response.status === 200
       && response.body.includes("Flex VNet private endpoint baseline is healthy.")
       && response.resolvedIp === privateEndpointIp,
-    240_000,
+    480_000,
   );
   if (!baseline.correlationId) {
     throw new Error("The successful blob read did not return a correlation ID.");
@@ -356,12 +374,12 @@ try {
 
   const failedRead = await retry(
     "waiting for the routed blob read to fail with 503 while DNS remains correct",
-    () => request("read-blob", functionKey),
+    () => request(functionAppStatus.defaultHostName!, "read-blob", functionKey),
     (response) => response.status === 503 && response.resolvedIp === privateEndpointIp,
     240_000,
     15_000,
   );
-  const healthAfterFault = await request("health", functionKey);
+  const healthAfterFault = await request(functionAppStatus.defaultHostName, "health", functionKey);
   if (healthAfterFault.status !== 200) {
     throw new Error(`The health endpoint returned ${healthAfterFault.status} after fault injection.`);
   }
