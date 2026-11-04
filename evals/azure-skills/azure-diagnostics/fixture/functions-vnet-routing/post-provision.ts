@@ -178,22 +178,40 @@ const applicationInsightsName = findResourceName("Microsoft.Insights/components"
 
 async function main(): Promise<void> {
 try {
-  const privateEndpointIp = runAz([
-    "network",
-    "private-endpoint",
-    "show",
-    "--resource-group",
-    resourceGroup,
-    "--name",
-    privateEndpointName,
-    "--query",
-    "customDnsConfigs[0].ipAddresses[0]",
-    "-o",
-    "tsv",
-  ]);
-  if (!privateEndpointIp) {
-    throw new Error("The test storage private endpoint does not have an allocated IP address.");
-  }
+  const privateEndpointNicId = await retry(
+    "waiting for the test storage private endpoint NIC",
+    async () => runAz([
+      "network",
+      "private-endpoint",
+      "show",
+      "--resource-group",
+      resourceGroup,
+      "--name",
+      privateEndpointName,
+      "--query",
+      "networkInterfaces[0].id",
+      "-o",
+      "tsv",
+    ]),
+    (nicId) => nicId.length > 0,
+    120_000,
+  );
+  const privateEndpointIp = await retry(
+    "waiting for the test storage private endpoint IP address",
+    async () => runAz([
+      "network",
+      "nic",
+      "show",
+      "--ids",
+      privateEndpointNicId,
+      "--query",
+      "ipConfigurations[0].privateIPAddress",
+      "-o",
+      "tsv",
+    ]),
+    (ipAddress) => ipAddress.length > 0,
+    120_000,
+  );
 
   const zipPath = join(temporaryDirectory, "function-app.zip");
   if (process.platform === "win32") {

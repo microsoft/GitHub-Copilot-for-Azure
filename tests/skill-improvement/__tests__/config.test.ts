@@ -210,6 +210,9 @@ describe("skill improvement configuration", () => {
     expect(bicep).not.toMatch(/WEBSITE_(?:VNET_ROUTE_ALL|CONTENTOVERVNET|CONTENTAZUREFILECONNECTIONSTRING)/);
     expect(postProvision).toContain("`${privateEndpointIp}/32`");
     expect(postProvision).toMatch(/"--next-hop-type",\s+"None"/);
+    expect(postProvision).toContain('"networkInterfaces[0].id"');
+    expect(postProvision).toContain('"ipConfigurations[0].privateIPAddress"');
+    expect(postProvision).not.toContain("customDnsConfigs");
   });
   test("rejects unsupported run-spec environment variables", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "skill-improvement-env-"));
