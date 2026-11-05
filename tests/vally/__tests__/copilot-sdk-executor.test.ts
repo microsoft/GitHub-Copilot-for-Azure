@@ -43,14 +43,18 @@ describe("convertToTrajectoryEvents", () => {
   test.each([true, false])("normalizes namespace calls and results without changing raw events (success=%s)", success => {
     const parameters = { subscriptions: ["demo"], prioritized: true, top: 20 };
     const source = metadata({
-      toolName: "Azure.advisor", mcpToolName: "advisor", toolCallId: "call",
+      toolName: "Azure.advisor", mcpToolName: "advisor", mcpServerName: "Azure",
+      parentToolCallId: "parent", toolCallId: "call",
       arguments: { command: "advisor_recommendation_list", parameters },
     }, success);
     const before = structuredClone(source);
     const events = convertToTrajectoryEvents(source);
     expect(events[0]).toMatchObject({
       type: "tool_call",
-      data: { toolName: "advisor_recommendation_list", toolCallId: "call", arguments: parameters },
+      data: {
+        toolName: "advisor_recommendation_list", toolCallId: "call", arguments: parameters,
+        mcpToolName: "advisor", mcpServerName: "Azure", parentToolCallId: "parent",
+      },
     });
     expect(events[1]).toMatchObject({
       type: "tool_result",
@@ -70,7 +74,9 @@ describe("convertToTrajectoryEvents", () => {
     const events = convertToTrajectoryEvents(metadata({
       toolName: "Azure.advisor", mcpToolName: "advisor", toolCallId: "call", arguments: args,
     }));
-    expect(events[0]?.data).toEqual({ toolName: "Azure.advisor", toolCallId: "call", arguments: args });
+    expect(events[0]?.data).toEqual({
+      toolName: "Azure.advisor", mcpToolName: "advisor", toolCallId: "call", arguments: args,
+    });
     expect(events[1]).toMatchObject({ type: "tool_result", data: { toolName: "Azure.advisor" } });
   });
 
@@ -82,9 +88,7 @@ describe("convertToTrajectoryEvents", () => {
     ];
     for (const data of calls) {
       const events = convertToTrajectoryEvents(metadata(data));
-      expect(events[0]?.data).toEqual({
-        toolName: data.toolName, toolCallId: data.toolCallId, arguments: data.arguments,
-      });
+      expect(events[0]?.data).toEqual(data);
       expect(events[1]).toMatchObject({ type: "tool_result", data: { toolName: data.toolName } });
     }
   });

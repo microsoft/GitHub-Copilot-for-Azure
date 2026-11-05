@@ -507,14 +507,13 @@ stimuli:
       cost: llm
       area: completed-period-selection
       parity: response-shape
-      questionOnly: "true"
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"(?i)(^|[._])ask_user$","argsPattern":".*"}]'
       requiredSkills:
         - azure-advisor-cost-optimization
     constraints:
       max_turns: 40
     graders:
-      - type: pending-question
+      - type: completed
+      - type: tool-calls
         config:
           disallowed:
             - name: "(?i)advisor_recommendation_(summary|list|update)"
@@ -2137,8 +2136,6 @@ stimuli:
       cost: llm
       area: batch-postpone-confirmation
       parity: response-shape
-      questionOnly: "true"
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"(?i)(^|[._])ask_user$","argsPattern":".*"}]'
       requiredSkills:
         - azure-advisor-cost-optimization
     constraints:
@@ -2152,9 +2149,12 @@ stimuli:
         config:
           scoring: scale_1_5
           threshold: 0.8
-      - type: pending-question
+      - type: completed
+      - type: output-matches
         config:
           pattern: "(?is)^(?=.*(?:one|1) week)(?=.*(?:one|1) month)(?=.*choose a (?:specific )?date and time)(?=.*cancel).*$"
+      - type: tool-calls
+        config:
           disallowed:
             - name: "(?i)advisor_recommendation_(summary|list|prevalidate|update)"
 
@@ -2268,8 +2268,6 @@ stimuli:
       tier: smoke
       cost: llm
       area: batch-postpone-confirmation
-      questionOnly: "true"
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"(?i)(^|[._])ask_user$","argsPattern":".*"}]'
       requiredSkills:
         - azure-advisor-cost-optimization
     constraints:
@@ -2283,9 +2281,12 @@ stimuli:
         config:
           scoring: scale_1_5
           threshold: 0.8
-      - type: pending-question
+      - type: completed
+      - type: output-matches
         config:
           pattern: "(?is)^(?=.*date)(?=.*time)(?=.*(?:timezone|time zone|UTC)).*$"
+      - type: tool-calls
+        config:
           disallowed:
             - name: "(?i)advisor_recommendation_(summary|list|prevalidate|update)"
 
@@ -2346,16 +2347,17 @@ stimuli:
       tier: smoke
       cost: llm
       area: batch-resource-selection
-      questionOnly: "true"
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"(?i)(^|[._])ask_user$","argsPattern":".*"}]'
       requiredSkills:
         - azure-advisor-cost-optimization
     constraints:
       max_turns: 40
     graders:
-      - type: pending-question
+      - type: completed
+      - type: output-matches
         config:
           pattern: "(?is)(which|select|resource)"
+      - type: tool-calls
+        config:
           disallowed:
             - name: "(?i)advisor_recommendation_(summary|list|prevalidate|update)"
       - type: prompt

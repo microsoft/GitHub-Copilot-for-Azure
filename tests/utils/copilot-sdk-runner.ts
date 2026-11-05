@@ -120,7 +120,6 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig): IAgentRunn
       const session = await client.createSession({
         model: model,
         onPermissionRequest: approveAll,
-        onUserInputRequest: runConfig.onUserInputRequest,
         skillDirectories: skillDirectories,
         disabledSkills: disabledSkills?.map(s => s.name),
         ...(disableAzureMcp ? {} : {

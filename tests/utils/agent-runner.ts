@@ -1,4 +1,4 @@
-import { approveAll, type CopilotClient, type SessionConfig, type SessionEvent, type SystemMessageConfig } from "@github/copilot-sdk";
+import { approveAll, type CopilotClient, type SessionEvent, type SystemMessageConfig } from "@github/copilot-sdk";
 import { fileURLToPath } from "node:url";
 import { redactSecrets } from "./redact.ts";
 import { type SkillRef } from "./skill-loader.ts";
@@ -92,9 +92,6 @@ export type AgentMetadata = {
 }
 
 export type AgentRunConfig = {
-  /** Opt-in SDK user-input handling for question-only evaluations. */
-  onUserInputRequest?: SessionConfig["onUserInputRequest"];
-
   /**
    * An optional function to configure the test workspace.
    * The test runner will create an empty workspace, initialize it following the environment config
@@ -964,6 +961,20 @@ export function getAzureScopePrompt(fixtureOutput: ProvisionScriptOutput): strin
   return `Limit your operations in the following resource groups: ${JSON.stringify(fixtureOutput.resourceGroups)}. Never read or modify resources outside these resource groups.`;
 }
 
+type ToolExecutionStartData = Extract<SessionEvent, { type: "tool.execution_start" }>["data"];
+
+function toTrajectoryToolCallData(data: ToolExecutionStartData): Extract<TrajectoryEvent, { type: "tool_call" }>["data"] {
+  const args = data.arguments;
+  const namespace = data.mcpToolName;
+  if (namespace
+    && args !== null && typeof args === "object" && !Array.isArray(args)
+    && args.learn !== true && typeof args.command === "string"
+    && args.command.toLowerCase().startsWith(`${namespace.toLowerCase()}_`)) {
+    return { ...data, toolName: args.command, arguments: args.parameters ?? {} };
+  }
+  return data;
+}
+
 export function convertToTrajectoryEvents(agentMetadata: AgentMetadata): TrajectoryEvent[] {
   const result: TrajectoryEvent[] = [];
   const invokedSkillNames = new Set(
@@ -973,23 +984,10 @@ export function convertToTrajectoryEvents(agentMetadata: AgentMetadata): Traject
       .map(event => event.data.name),
   );
 
-  // Grade logical MCP commands while keeping the original SDK events unchanged.
-  const toolCallsById = new Map<string, Extract<TrajectoryEvent, { type: "tool_call" }>["data"]>();
+  const toolCallsById = new Map<string, ToolExecutionStartData>();
   for (const e of agentMetadata.events) {
     if (e.type === "tool.execution_start") {
-      const args = e.data.arguments;
-      const namespace = e.data.mcpToolName;
-      const call = {
-        toolName: e.data.toolName, toolCallId: e.data.toolCallId, arguments: args,
-      };
-      if (namespace
-        && args !== null && typeof args === "object" && !Array.isArray(args)
-        && args.learn !== true && typeof args.command === "string"
-        && args.command.toLowerCase().startsWith(`${namespace.toLowerCase()}_`)) {
-        call.toolName = args.command;
-        call.arguments = args.parameters ?? {};
-      }
-      toolCallsById.set(e.data.toolCallId, call);
+      toolCallsById.set(e.data.toolCallId, e.data);
     }
   }
 
@@ -1078,10 +1076,11 @@ export function convertToTrajectoryEvents(agentMetadata: AgentMetadata): Traject
       result.push({
         type: "tool_call",
         timestamp,
-        data: toolCallsById.get(e.data.toolCallId)!,
+        data: toTrajectoryToolCallData(e.data),
       });
     } else if (e.type === "tool.execution_complete") {
-      const toolName = toolCallsById.get(e.data.toolCallId)?.toolName ?? "unknown";
+      const toolCall = toolCallsById.get(e.data.toolCallId);
+      const toolName = toolCall ? toTrajectoryToolCallData(toolCall).toolName : "unknown";
       result.push({
         type: "tool_result",
         timestamp,

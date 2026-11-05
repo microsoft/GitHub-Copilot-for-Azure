@@ -19,7 +19,6 @@ const mocks = vi.hoisted(() => ({
   getAzureFixtureManifestPath: vi.fn(),
   getAzureScopePrompt: vi.fn(),
   getEarlyTerminateCondition: vi.fn(),
-  getQuestionOnlyInputHandler: vi.fn(),
   getRequiredSkillsCondition: vi.fn(),
   getSkillName: vi.fn(),
   getSystemPrompt: vi.fn(),
@@ -53,7 +52,6 @@ vi.mock("../../azure-fixtures/provision-fixture.ts", () => ({
 vi.mock("../tag-helpers.ts", () => ({
   getAzureFixtureManifestPath: mocks.getAzureFixtureManifestPath,
   getEarlyTerminateCondition: mocks.getEarlyTerminateCondition,
-  getQuestionOnlyInputHandler: mocks.getQuestionOnlyInputHandler,
   getRequiredSkillsCondition: mocks.getRequiredSkillsCondition,
   getSkillName: mocks.getSkillName,
   getSystemPrompt: mocks.getSystemPrompt,
@@ -140,7 +138,6 @@ describe("SdkAgentExecutor", { concurrent: false }, () => {
     mocks.getAzureFixtureManifestPath.mockReturnValue(undefined);
     mocks.getAzureScopePrompt.mockReturnValue("Azure scope");
     mocks.getEarlyTerminateCondition.mockReturnValue({});
-    mocks.getQuestionOnlyInputHandler.mockReturnValue(undefined);
     mocks.getRequiredSkillsCondition.mockReturnValue(undefined);
     mocks.getSkillName.mockReturnValue("target-skill");
     mocks.getSystemPrompt.mockReturnValue(undefined);
@@ -173,22 +170,6 @@ describe("SdkAgentExecutor", { concurrent: false }, () => {
     }
   });
 
-  test("forwards the pending-question input handler to the shared runner", async () => {
-    const onUserInputRequest = () => {
-      throw new Error("Question-only evaluation has no user response.");
-    };
-    const stimulus: Stimulus = {
-      ...defaultStimulus,
-      tags: { ...defaultStimulus.tags, questionOnly: "true" },
-    };
-    mocks.getQuestionOnlyInputHandler.mockReturnValue(onUserInputRequest);
-
-    await executor.execute(stimulus, defaultOptions);
-
-    expect(mocks.getQuestionOnlyInputHandler).toHaveBeenCalledWith(stimulus.tags);
-    expect(runner.run).toHaveBeenCalledWith(expect.objectContaining({ onUserInputRequest }));
-  });
-
   test("builds the run configuration and trajectory for multiple turns", async () => {
     mocks.getRequiredSkillsCondition.mockReturnValue(["dependency-skill"]);
     const stimulus: Stimulus = {
@@ -202,7 +183,6 @@ describe("SdkAgentExecutor", { concurrent: false }, () => {
     const trajectory = await executor.execute(stimulus, defaultOptions);
 
     expect(runner.run).toHaveBeenCalledWith({
-      onUserInputRequest: undefined,
       workspace: defaultOptions.workDir,
       env: {
         UV_CACHE_DIR: path.join(defaultOptions.workDir, ".uv-cache"),

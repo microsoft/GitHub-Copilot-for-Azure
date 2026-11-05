@@ -36,7 +36,6 @@ import { listPlugins, type Plugin, type SkillRef } from "../utils/skill-loader.t
 import {
   getAzureFixtureManifestPath,
   getEarlyTerminateCondition,
-  getQuestionOnlyInputHandler,
   getRequiredSkillsCondition,
   getSkillName,
   getSystemPrompt,
@@ -103,7 +102,6 @@ export abstract class SdkAgentExecutor implements Executor {
     const prompt = stimulus.turns ? stimulus.turns[0] : stimulus.prompt;
     const followUps = stimulus.turns ? stimulus.turns.slice(1) : undefined;
     const runConfig: AgentRunConfig = {
-      onUserInputRequest: getQuestionOnlyInputHandler(tags),
       workspace: workDir,
       env: {
         ...options.env,
