@@ -13,6 +13,7 @@
         "test": "echo \"No tests yet\""
     },
     "dependencies": {
+        "@azure/arm-resourcegraph": "^5.0.0",
         "@azure/data-tables": "^13.3.2",
         "@azure/functions": "^4.6.0",
         "@azure/identity": "^4.13.1",

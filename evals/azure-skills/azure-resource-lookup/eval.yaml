@@ -237,7 +237,7 @@ stimuli:
       tier: full
       cost: llm
       area: response-quality
-      azureFixture: ./fixture/missing-tag/azure-manifest.json
+      azureFixture: ./fixture/missing-tag/azure.manifest.json
     graders:
       - type: output-matches
         config:
