@@ -1,0 +1,77 @@
+name: azure-validate-node-runtime-eval
+description: Block validation of an existing Node.js 20 app without silently upgrading or deploying it.
+
+tags:
+  type: integration
+  skill: azure-validate
+
+defaults:
+  runs: 1
+  timeout: "20m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+
+scoring:
+  threshold: 1.0
+
+stimuli:
+  - name: "Block Existing Node.js 20 Container"
+    prompt: "Use azure-prepare and azure-validate to check this existing azd Container Apps project for deployment readiness. Check the runtime locally before any Azure commands. Report blockers and the minimum runtime upgrade required. Do not change the application's Node.js major version without my approval. Do not provision, deploy, or connect to Azure."
+    environment:
+      files:
+        - src: fixture/containerized-app/app.js
+          dest: app.js
+        - src: fixture/containerized-app/package.json
+          dest: package.json
+        - src: fixture/containerized-app/Dockerfile
+          dest: Dockerfile
+        - src: fixture/containerized-app/azure.yaml
+          dest: azure.yaml
+        - src: fixture/containerized-app/infra/main.bicep
+          dest: infra/main.bicep
+        - src: fixture/containerized-app/infra/abbreviations.json
+          dest: infra/abbreviations.json
+        - src: fixture/containerized-app/infra/resources.bicep
+          dest: infra/resources.bicep
+        - src: fixture/containerized-app/infra/main.parameters.json
+          dest: infra/main.parameters.json
+      commands:
+        - node -e "const fs=require('node:fs'); const p='Dockerfile'; fs.writeFileSync(p,fs.readFileSync(p,'utf8').replace('node:22-alpine','node:20-alpine'))"
+    constraints:
+      max_turns: 40
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-validate
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+          disallowed:
+            - azure-deploy
+      - type: output-matches
+        config:
+          pattern: '(?i)Node(?:\.js)?\s*(?:version\s*)?20'
+      - type: output-matches
+        config:
+          pattern: '(?i)(?:Node(?:\.js)?\s*)?22'
+      - type: output-matches
+        config:
+          pattern: '(?i)block|fail|unsupported|upgrade|end.of.life'
+      - type: file-matches
+        config:
+          path: "Dockerfile"
+          pattern: '(?m)^FROM node:20-alpine'
+      - type: file-matches
+        config:
+          path: ".azure/deployment-plan.md"
+          pattern: '(?im)^\s*(?:\*\*)?Status(?:\*\*)?\s*:\s*(?:\*\*)?Validated\b'
+          negate: true
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)bash|powershell|pwsh|run_in_terminal"
+              command: "(?i)azd\\s+(up|deploy|provision)\\b|terraform\\s+apply\\b|az\\s+deployment\\b[^\\n]*\\bcreate\\b"

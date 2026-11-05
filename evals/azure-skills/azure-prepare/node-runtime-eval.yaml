@@ -1,0 +1,82 @@
+name: azure-prepare-node-runtime-eval
+description: Verify generated Node.js deployment artifacts use supported LTS runtimes, not Node.js 20.
+
+tags:
+  type: integration
+  skill: azure-prepare
+
+defaults:
+  runs: 1
+  timeout: "30m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+
+scoring:
+  threshold: 1.0
+
+stimuli:
+  - name: "Node.js Container Build and Runtime"
+    turns:
+      - "Create a Node.js Express hello-world API for Azure Container Apps using azd and a multi-stage Dockerfile. Prepare the deployment files only; do not provision or deploy."
+      - "Approve the plan and use recommended defaults. Finish generating the files without provisioning or deploying."
+    constraints:
+      max_turns: 60
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: file-matches
+        config:
+          path: "**/Dockerfile"
+          pattern: '(?im)^FROM\s+(?:--platform=\S+\s+)?(?:(?:docker\.io/(?:library/)?)?node|mcr\.microsoft\.com/azurelinux/base/nodejs):(?:2[2468]|[3-9][02468])(?:[.-][^\s]+)?(?:\s|$)'
+      - type: file-matches
+        config:
+          path: "**/Dockerfile"
+          pattern: '(?im)^FROM\s+(?:--platform=\S+\s+)?(?:(?:docker\.io/(?:library/)?)?node|mcr\.microsoft\.com/azurelinux/base/nodejs):(?:[01]?\d|2[01])(?:[.:\s@-]|$)'
+          negate: true
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)bash|powershell|pwsh|run_in_terminal"
+              command: "(?i)azd\\s+(up|deploy)\\b|azd\\s+provision\\b(?![^\\n]*--preview)"
+
+  - name: "Node.js App Service Platform Runtime"
+    turns:
+      - "Create a Node.js Express hello-world API for a Linux Azure App Service using azd and Bicep, using the built-in Node runtime rather than Docker. Prepare the deployment files only; do not provision or deploy."
+      - "Approve the plan and use recommended defaults. Finish generating the files without provisioning or deploying."
+    constraints:
+      max_turns: 60
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: file-matches
+        config:
+          path: "**/*.bicep"
+          pattern: '(?i)NODE\|(?:2[2468]|[3-9][02468])-lts'
+      - type: file-matches
+        config:
+          path: "**/*.bicep"
+          pattern: '(?i)NODE\|(?:[01]?\d|2[01])(?:[.\s''"-]|$)'
+          negate: true
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)bash|powershell|pwsh|run_in_terminal"
+              command: "(?i)azd\\s+(up|deploy)\\b|azd\\s+provision\\b(?![^\\n]*--preview)"
