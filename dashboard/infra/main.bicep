@@ -31,6 +31,11 @@ param toolUsageTableName string = 'integrationtoolusage'
 @description('Principal (object) ID of the user-assigned managed identity used by the integration test pipeline to write token usage rows (skillcitestidentity).')
 param ciTestIdentityPrincipalId string = '531282f7-49cb-4149-af74-6c84a5270e87'
 
+var fixtureSubscriptionIds = union(
+  filter(map(split(azureSubscriptionIds, ','), id => toLower(trim(id))), id => !empty(id)),
+  []
+)
+
 var tags = {
   'azd-env-name': environmentName
   skipDelete: true
@@ -51,6 +56,14 @@ module identity './modules/managed-identity.bicep' = {
     environmentName: environmentName
   }
 }
+
+module fixtureSubscriptionReader './modules/subscription-reader.bicep' = [for subscriptionId in fixtureSubscriptionIds: {
+  name: 'fixture-reader-${uniqueString(subscriptionId)}'
+  scope: subscription(subscriptionId)
+  params: {
+    principalId: identity.outputs.identityPrincipalId
+  }
+}]
 
 // The dashboard MI (identity) has the following permissions to the msbenchnightlydata storage account:
 // - Storage Blob Data Reader: read blobs in any container (read MSBench metrics from eval_report.json).

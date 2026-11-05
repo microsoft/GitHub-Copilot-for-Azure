@@ -76,6 +76,8 @@ Open the URL printed in the terminal. With the local backend running, all featur
 
 Configure `AZURE_SUBSCRIPTION_IDS` in the [deployment workflow](../.github/workflows/deploy-dashboard.yml) environment for the `azd up` step. Its value is a comma-separated list of Azure subscription IDs used to query fixture data. The [deployment parameters](infra/main.parameters.json) read this environment variable and Bicep sets it on the backend Function App.
 
+Bicep also grants the dashboard Function App's managed identity the **Reader** role on each configured subscription so it can query fixture resources through Azure Resource Graph. Whitespace and empty entries are ignored, and duplicate subscription IDs receive only one assignment. The deployment pipeline identity must have permission to create subscription-scope deployments and role assignments on each target subscription. Removing a subscription from the list does not revoke an existing role assignment; remove that assignment separately when access is no longer needed.
+
 This project supports [Azure Developer CLI (azd)](https://learn.microsoft.com/azure/developer/azure-developer-cli/). To deploy:
 
 ```bash
