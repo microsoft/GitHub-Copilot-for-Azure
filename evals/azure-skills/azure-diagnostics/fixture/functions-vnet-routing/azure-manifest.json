@@ -1,7 +1,7 @@
 {
   "id": "azure-diagnostics-functions-vnet-routing",
   "schemaVersion": 1,
-  "version": 6,
+  "version": 7,
   "type": "readOnly",
   "persistence": "temporary",
   "provisioningTimeoutMinutes": 40,

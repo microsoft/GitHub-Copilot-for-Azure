@@ -148,6 +148,7 @@ async function waitForTelemetry(
   applicationInsightsId: string,
   correlationId: string,
   description: string,
+  timeoutMs = 360_000,
 ): Promise<void> {
   const queryUrl = `https://management.azure.com${applicationInsightsId}/query?api-version=2018-04-20`;
   await retry(
@@ -170,7 +171,7 @@ async function waitForTelemetry(
       return (result.tables?.[0]?.rows?.length ?? 0) > 0;
     },
     (found) => found,
-    180_000,
+    timeoutMs,
     15_000,
   );
 }
