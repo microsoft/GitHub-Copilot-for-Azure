@@ -82,7 +82,7 @@ $buildPublishDirectory = $publishDirectory
 $buildRestoreConfigFile = $restoreConfigFilePath
 $muslContainerArguments = @()
 $muslPlatform = if ($targetArchitecture -eq 'x64') { 'linux/amd64' } else { 'linux/arm64' }
-$muslRuntimeImage = 'mcr.microsoft.com/dotnet/runtime-deps:10.0-alpine3.23'
+$muslRuntimeImage = 'mcr.microsoft.com/dotnet/runtime-deps:10.0-alpine3.24'
 
 function Invoke-BuildDotNet {
     param([string[]] $Arguments)
