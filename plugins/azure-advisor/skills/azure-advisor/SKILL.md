@@ -1,11 +1,6 @@
 ---
 name: azure-advisor
-description: >-
-  Use Azure Advisor. WHEN: "show recommendations", "top Advisor actions",
-  "prioritize recommendations", "service retirements", "update status".
-  Unused-resource discovery and Cost/IdleResources requests use
-  azure-advisor-cost-optimization; generic Cost and cross-category requests stay here.
-  DO NOT USE FOR: fixes (use azure-advisor-actionability).
+description: "Use Azure Advisor. WHEN: \"show recommendations\", \"top Advisor actions\", \"prioritize recommendations\", \"service retirements\", \"update status\". Unused-resource discovery and Cost/IdleResources requests use azure-advisor-cost-optimization; generic Cost and cross-category requests stay here. DO NOT USE FOR: fixes (use azure-advisor-actionability)."
 license: MIT
 metadata:
   author: Microsoft
