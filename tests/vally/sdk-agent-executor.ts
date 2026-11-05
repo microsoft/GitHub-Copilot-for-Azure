@@ -58,6 +58,7 @@ type BilledTrajectory = Trajectory & {
   metadata: Trajectory["metadata"] & {
     evaluationAnswerBilling: EvaluationAnswerBilling;
     completionStatus: AgentMetadata["completionStatus"];
+    persistentWorkDir?: string;
   };
 };
 
@@ -250,7 +251,10 @@ export abstract class SdkAgentExecutor implements Executor {
 
       const persistentWorkspaceRoot = process.env.VALLY_PERSIST_WORKSPACES_DIR?.trim();
       if (trajectory && persistentWorkspaceRoot) {
-        trajectory.workDir = persistWorkspace(workDir, persistentWorkspaceRoot);
+        trajectory.metadata.persistentWorkDir = persistWorkspace(
+          workDir,
+          persistentWorkspaceRoot,
+        );
       }
 
       if (postTestScriptConfig) {

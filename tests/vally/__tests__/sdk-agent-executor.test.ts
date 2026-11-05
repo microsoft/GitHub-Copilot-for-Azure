@@ -308,16 +308,17 @@ describe("SdkAgentExecutor", { concurrent: false }, () => {
         workDir,
       });
 
-      expect(trajectory.workDir).toMatch(new RegExp(`^${persistentRoot.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
+      expect(trajectory.workDir).toBe(workDir);
+      expect(trajectory.metadata.persistentWorkDir?.startsWith(persistentRoot)).toBe(true);
       expect(fs.readFileSync(
-        path.join(trajectory.workDir, "support-bundle", "summary.md"),
+        path.join(trajectory.metadata.persistentWorkDir!, "support-bundle", "summary.md"),
         "utf8",
       )).toBe("summary");
       expect(fs.readFileSync(
-        path.join(trajectory.workDir, "diagnostic-support-bundle.zip"),
+        path.join(trajectory.metadata.persistentWorkDir!, "diagnostic-support-bundle.zip"),
         "utf8",
       )).toBe("zip");
-      expect(fs.existsSync(path.join(trajectory.workDir, ".git"))).toBe(false);
+      expect(fs.existsSync(path.join(trajectory.metadata.persistentWorkDir!, ".git"))).toBe(false);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }

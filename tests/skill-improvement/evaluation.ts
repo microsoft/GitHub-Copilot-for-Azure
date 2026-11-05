@@ -40,8 +40,10 @@ export type VallyRecord = {
     details?: GradeDetail[];
   };
   trajectory?: {
+    workDir?: string;
     metadata?: {
       evaluationAnswerBilling?: EvaluationAnswerBilling;
+      persistentWorkDir?: string;
     };
     output?: string;
     stimulus?: {
@@ -146,6 +148,22 @@ function readJsonl(filePath: string, recover = false): VallyRecord[] {
     }
   }
   return records;
+}
+
+function usePersistedWorkspaces(records: VallyRecord[], answerFile: string): void {
+  let changed = false;
+  for (const record of records) {
+    const persistentWorkDir = record.trajectory?.metadata?.persistentWorkDir;
+    if (!persistentWorkDir) continue;
+    record.trajectory!.workDir = persistentWorkDir;
+    changed = true;
+  }
+  if (changed) {
+    fs.writeFileSync(
+      answerFile,
+      records.map(record => JSON.stringify(record)).join("\n") + "\n",
+    );
+  }
 }
 
 export function findVallyRunDirectory(root: string): string {
@@ -268,6 +286,7 @@ async function generateAnswers(
   }
 
   const records = readJsonl(answerFile);
+  usePersistedWorkspaces(records, answerFile);
   recordBilling(records);
   const runDirectory = findVallyRunDirectory(taskDirectory);
   const count = records

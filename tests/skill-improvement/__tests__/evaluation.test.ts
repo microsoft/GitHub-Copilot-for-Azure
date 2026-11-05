@@ -80,6 +80,8 @@ describe("answer billing propagation", () => {
         type: "assistant.usage",
         data: nanoAiu === undefined ? {} : { copilotUsage: { totalNanoAiu: nanoAiu } },
       }, ...(partial ? [{ type: "assistant.usage", data: {} }] : [])], !interrupted);
+      const persistentWorkDir = path.join(root, "persisted-workspace");
+      fs.mkdirSync(persistentWorkDir);
       const processError = new Error(`${failure} failed`);
       vi.mocked(runProcess).mockImplementation(async (_command, args, options) => {
         if (!options.stdoutFile) {
@@ -96,7 +98,11 @@ describe("answer billing propagation", () => {
           fs.writeFileSync(options.stdoutFile, JSON.stringify({
             type: "trial-result",
             itemId: "suite::one",
-            trajectory: { output: "answer", metadata: { evaluationAnswerBilling } },
+            trajectory: {
+              output: "answer",
+              workDir: path.join(root, "deleted-workspace"),
+              metadata: { evaluationAnswerBilling, persistentWorkDir },
+            },
           }) + "\n" + (truncated ? '{"trajectory":\n{"type":"progress"}\n' : ""));
         } else {
           expect(args).not.toContain("--workers");
@@ -104,6 +110,7 @@ describe("answer billing propagation", () => {
             throw new Error("Expected saved answers as grading input.");
           }
           const record = JSON.parse(fs.readFileSync(options.stdinFile, "utf8"));
+          expect(record.trajectory.workDir).toBe(persistentWorkDir);
           fs.writeFileSync(options.stdoutFile, JSON.stringify({
             ...record,
             gradeResult: { passed: true, score: 1 },
