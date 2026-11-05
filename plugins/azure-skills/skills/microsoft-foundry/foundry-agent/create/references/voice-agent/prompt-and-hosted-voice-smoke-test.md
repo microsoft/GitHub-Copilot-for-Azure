@@ -2,7 +2,7 @@
 
 How to verify a deployed Microsoft Foundry Voice Agent — either a **Prompt Voice Agent** or a **Hosted Voice wrapper** — over the managed Foundry `voice` WebSocket endpoint.
 
-This helper does not support GPT-Live. For `subProtocol: live`, use [GPT-Live smoke testing](gpt-live-smoke-test.md).
+This helper does not support GPT-Live Voice. For that subtype, use [GPT-Live Voice smoke testing](gpt-live-voice-smoke-test.md).
 
 > **Why not `azd ai agent invoke`?**
 > `azd ai agent invoke` does not support Voice Agents. Always verify them over the managed `voice` WebSocket endpoint or in the Microsoft Foundry portal (`https://ai.azure.com`). You can inspect the deployed endpoint URL with `azd ai agent endpoint show <voice-service>`.

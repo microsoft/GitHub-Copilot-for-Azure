@@ -1,6 +1,6 @@
 # Voice Agent YAML Settings
 
-For requested/preserved Prompt Voice and Hosted Voice settings. Use `kind: voice`; preserve unrelated fields. Do not apply this reference to GPT-Live; use [GPT-Live YAML](gpt-live-yaml.md), whose native Live authoring surface is intentionally separate.
+For requested/preserved Prompt Voice and Hosted Voice settings. Use `kind: voice`; preserve unrelated fields. Do not apply this reference to GPT-Live Voice; use [GPT-Live Voice YAML](gpt-live-voice-yaml.md), whose native Live authoring surface is intentionally separate.
 
 | Owner | Settings |
 |---|---|

@@ -1,10 +1,10 @@
-# GPT-Live YAML
+# GPT-Live Voice YAML
 
-Author GPT-Live as a third Voice architecture after applying [common invariants](common.md). It is not a Prompt Voice setting and does not use a Hosted Voice Bridge.
+Author GPT-Live Voice after selecting it with [Voice Agent subtypes](subtypes.md) and applying [common invariants](common.md). It is not a Prompt Voice setting and does not use a Hosted Voice Bridge.
 
 ## Canonical Minimal Shape
 
-Author the complete service directly; there is no `azd ai agent init --kind gpt-live`, and a Prompt Voice scaffold must not be converted into GPT-Live.
+Author the complete service directly; there is no `azd ai agent init --kind gpt-live`, and a Prompt Voice scaffold must not be converted into GPT-Live Voice.
 
 ```yaml
 services:
@@ -19,7 +19,7 @@ services:
       id: gpt-live-1
 ```
 
-`model.id` must name an existing compatible GPT-Live deployment. The model and any requested delegation backend deployment or managed agent must already exist. Do not assume the Prompt Voice `deployments[]` plus `azd provision` Golden Path applies; verify deployment ownership and lifecycle separately before changing infrastructure.
+`model.id` must name an existing compatible GPT-Live model deployment. The model and any requested delegation backend deployment or managed agent must already exist. Do not assume the Prompt Voice `deployments[]` plus `azd provision` Golden Path applies; verify deployment ownership and lifecycle separately before changing infrastructure.
 
 ## Optional Settings and Known Values
 

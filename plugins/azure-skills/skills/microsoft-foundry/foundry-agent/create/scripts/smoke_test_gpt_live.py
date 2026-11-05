@@ -42,7 +42,6 @@ class Evidence:
     saw_input: bool = False
     closed: bool = False
     diagnostic_ready: asyncio.Event = field(default_factory=asyncio.Event)
-    closed_event: asyncio.Event = field(default_factory=asyncio.Event)
 
     def update_diagnostic_ready(self) -> None:
         if (
@@ -184,7 +183,6 @@ async def receive(events: object, evidence: Evidence) -> None:
             evidence.output_audio_base64_characters += len(event.delta)
         elif kind == "session.closed":
             evidence.closed = True
-            evidence.closed_event.set()
             return
         evidence.update_diagnostic_ready()
     raise SmokeError("WebSocket ended without session.closed")
@@ -240,28 +238,33 @@ async def run_smoke(args: argparse.Namespace, endpoint: str) -> int:
                     raise SmokeError("WebSocket ended before session.started")
 
                 receiver = asyncio.create_task(receive(events, evidence))
-                if args.input_wav:
-                    await send_wav(connection, args.input_wav)
-                    ready = asyncio.create_task(evidence.diagnostic_ready.wait())
-                    done, _ = await asyncio.wait(
-                        {ready, receiver}, return_when=asyncio.FIRST_COMPLETED
-                    )
-                    if receiver in done:
-                        receiver.result()
-                        raise SmokeError(
-                            "Session closed before WAV diagnostic evidence completed"
-                        )
+                try:
+                    if args.input_wav:
+                        await send_wav(connection, args.input_wav)
+                        ready = asyncio.create_task(evidence.diagnostic_ready.wait())
+                        try:
+                            done, _ = await asyncio.wait(
+                                {ready, receiver},
+                                return_when=asyncio.FIRST_COMPLETED,
+                            )
+                            if receiver in done:
+                                await asyncio.gather(receiver)
+                                raise SmokeError(
+                                    "Session closed before WAV diagnostic evidence completed"
+                                )
+                        finally:
+                            if not ready.done():
+                                ready.cancel()
+                            await asyncio.gather(ready, return_exceptions=True)
 
-                await connection.session.close()
-                closed = asyncio.create_task(evidence.closed_event.wait())
-                done, _ = await asyncio.wait(
-                    {closed, receiver}, return_when=asyncio.FIRST_COMPLETED
-                )
-                if receiver in done:
-                    receiver.result()
-                if not evidence.closed:
-                    raise SmokeError("Session did not emit session.closed")
-                await receiver
+                    await connection.session.close()
+                    await asyncio.gather(receiver)
+                    if not evidence.closed:
+                        raise SmokeError("Session did not emit session.closed")
+                finally:
+                    if not receiver.done():
+                        receiver.cancel()
+                    await asyncio.gather(receiver, return_exceptions=True)
 
     print(
         json.dumps(

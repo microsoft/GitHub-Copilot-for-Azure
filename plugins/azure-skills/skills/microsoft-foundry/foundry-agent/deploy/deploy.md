@@ -12,7 +12,7 @@ For **ordinary prompt agents**, use the Foundry MCP `agent_update` tool.
 |----------|-------|
 | Hosted (recommended) | `azd provision` when needed, code deploy via `azd deploy` (`codeConfiguration` present), then verify and invoke |
 | Hosted (container) | `azd provision` when needed, container deploy via `azd deploy` (remote builds require a Dockerfile and ACR; local builds also require Docker; no `codeConfiguration:` in the `azure.yaml` service block) |
-| Voice (GPT-Live) | Verify the configured existing model deployment and requested delegation backend prerequisites, declarative `azd deploy`, then use the dedicated `voice/live/sessions` session smoke |
+| Voice (GPT-Live Voice) | Verify the configured existing model deployment and requested delegation backend prerequisites, declarative `azd deploy`, then use the dedicated `voice/live/sessions` session smoke |
 | Voice (Prompt Voice) | `azd provision` when needed, declarative `azd deploy`, then verify over the `voice` WebSocket endpoint (`azd ai agent invoke` is not supported) |
 | Voice (Hosted Voice) | `azd provision` when needed, `azd deploy` for both the `kind: hosted` target and `kind: voice` wrapper, report both versions separately, and smoke-test the wrapper over the `voice` WebSocket endpoint |
 | Managed Harness Agent | `azd provision` when needed, then declarative `azd deploy`; no code/container packaging |
@@ -23,7 +23,7 @@ For **ordinary prompt agents**, use the Foundry MCP `agent_update` tool.
 
 ## Route by Agent Type
 
-- Voice Agent (GPT-Live, single-agent Prompt Voice, or two-agent Hosted Voice wrapper + `kind: hosted` target) -> **Voice** (azd Voice workflow below). Classify `subProtocol: live` before `conversationEngine` and `modelType`.
+- `kind: voice` or legacy `kind: prompt-voice` -> **Voice**. Read [Voice Agent subtypes](../create/references/voice-agent/subtypes.md), then use the azd Voice workflow below.
 - Shipping Python / .NET code (`kind: hosted`) -> **Hosted** (azd workflow below).
 - Explicit `kind: prompt` plus `harness.type: microsoft_copilot_preview` or legacy `github_copilot_preview` -> **Managed Harness Agent** (azd workflow below).
 - Ordinary Prompt Agent model / instructions / tools -> **Prompt** (MCP workflow below).
@@ -351,7 +351,7 @@ Show Agent name, version, project, model, harness, tools, optional Toolbox, depl
 
 ## Workflow -- Voice Agent (azd)
 
-Follow [Voice Agent deployment](references/voice-deploy.md) for GPT-Live, Prompt Voice, and Hosted Voice prerequisites, deployment order, and two-stage verification.
+Follow [Voice Agent deployment](references/voice-deploy.md) for GPT-Live Voice, Prompt Voice, and Hosted Voice prerequisites, deployment order, and two-stage verification.
 
 ## Workflow -- Prompt agent (MCP)
 

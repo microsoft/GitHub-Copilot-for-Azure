@@ -2,7 +2,7 @@
 
 Create, configure, or extend a Microsoft Foundry Voice Agent:
 
-- **GPT-Live**: one native Live Voice Agent using `subProtocol: live`, `modelType: self_deployed`, and an existing compatible model deployment.
+- **GPT-Live Voice**: one native Live Voice Agent using `subProtocol: live`, `modelType: self_deployed`, and an existing compatible model deployment.
 - **Prompt Voice**: one managed Voice Agent using `modelType: managed` or `self_deployed`.
 - **Hosted Voice**: a voice-based agent using a hosted text agent as its conversation engine, with a managed **Voice wrapper** (`kind: voice`) and **hosted target** (`kind: hosted`).
 
@@ -10,7 +10,7 @@ For a custom Hosted WebSocket agent with developer-defined frames and no managed
 
 ## Quick Reference
 
-| Decision | GPT-Live | Prompt Voice | Hosted Voice |
+| Decision | GPT-Live Voice | Prompt Voice | Hosted Voice |
 |---|---|---|---|
 | Foundry agents | One `kind: voice` service | One `kind: voice` service | One hosted target plus one Voice wrapper |
 | Reasoning and tools | Native Live service or configured delegation | Voice service | Hosted target |
@@ -53,8 +53,8 @@ Before authoring files or running azd:
 
 3. Follow [Common Project Context Resolution](../../SKILL.md#agent-common-project-context-resolution):
    - Inspect `azure.yaml` and `azd env get-values` when an azd project exists.
-   - Classify existing services before selecting a target. Do not convert an existing Prompt, Hosted, Managed Harness, or Voice Agent into another type.
-   - If multiple services exist, ask which GPT-Live, Voice wrapper, or Prompt Voice service to modify. Selecting a Voice wrapper also selects its `conversationEngine.name` hosted target as a deployment dependency.
+   - Classify existing Voice services with [Voice Agent subtypes](references/voice-agent/subtypes.md) before selecting a target. Do not convert an existing Prompt, Hosted, Managed Harness, or Voice Agent into another type.
+   - If multiple services exist, ask which GPT-Live Voice, Voice wrapper, or Prompt Voice service to modify. Selecting a Hosted Voice wrapper also selects its named hosted target as a deployment dependency.
    - Resolve an existing project endpoint to its ARM ID with `scripts/resolve-project-id.sh` or `scripts/resolve-project-id.ps1`; never construct the ARM ID from the endpoint.
 
 ## Step 2: Model-First Decision and Collected-Values Checkpoint
@@ -67,17 +67,11 @@ For a generic greenfield request to create a Voice Agent, proceed with **Prompt 
 - `model.id: gpt-realtime`
 - canonical authored `kind: voice`
 
-Classify an existing or requested Voice service in this exact order:
-
-1. `subProtocol: live` or explicit GPT-Live intent -> **GPT-Live**.
-2. Otherwise, `conversationEngine.type: hosted_agent` or explicit Hosted Voice intent -> **Hosted Voice**.
-3. Otherwise, `modelType: managed` or `self_deployed` -> **Prompt Voice**.
-
-GPT-Live also uses `modelType: self_deployed`, so never classify by `modelType` first.
+Classify existing or requested Voice services with [Voice Agent subtypes](references/voice-agent/subtypes.md) before resolving subtype-specific model strategy.
 
 Resolve model strategy from deployment intent, not from the presence of a model name:
 
-- Explicit GPT-Live intent selects the native Live architecture. Require an existing compatible model deployment and any requested delegation backend; do not infer that the Prompt Voice provisioning Golden Path applies.
+- Explicit GPT-Live Voice intent selects the native Live architecture. Require an existing compatible model deployment and any requested delegation backend; do not infer that the Prompt Voice provisioning Golden Path applies.
 - A model name alone, including a model name plus a project endpoint or name, uses managed Prompt Voice (`modelType: managed`) and does not create a project model deployment.
 - Explicit lifecycle wording selects self-deployed Prompt Voice: BYOM, self-deployed, project model deployment, existing deployment, deployment name, create/deploy/provision the model, create if missing/not found, ensure the deployment exists, or inspect/select its version, SKU, capacity, or quota. For example, "Use `gpt-realtime`; create it if it does not exist" is sufficient self-deployed intent.
 - Explicit user choice overrides inference. Ask one focused clarification only when signals conflict, such as requesting both managed/service-hosted behavior and creation or provisioning of a deployment.
@@ -90,9 +84,9 @@ Ask only when another unresolved requirement materially changes the architecture
 - an existing project or codebase whose services imply a subtype but do not identify the target clearly;
 - a planning, explanation, or comparison request that explicitly asks to evaluate the available approaches.
 
-For planning or comparison, explain GPT-Live, Prompt Voice managed, Prompt Voice self-deployed, Hosted Voice, and custom raw `invocations_ws` without creating files or running azd.
+For planning or comparison, explain GPT-Live Voice, Prompt Voice managed, Prompt Voice self-deployed, Hosted Voice, and custom raw `invocations_ws` without creating files or running azd.
 
-For GPT-Live, detect requested optional settings or existing settings that must be preserved. Do not apply ordinary Voice Live or Hosted Voice settings.
+For GPT-Live Voice, detect requested optional settings or existing settings that must be preserved. Do not apply ordinary Voice Live or Hosted Voice settings.
 
 For Prompt Voice and Hosted Voice, detect requested Voice Agent settings or existing settings that must be preserved, including structured inputs, audio, transcription, turn detection, voice, greeting/avatar, tools, handoff, response options, storage, or telephony. Do not ask about settings the user did not request.
 
@@ -109,9 +103,9 @@ Resolve values from the request, workspace, `azure.yaml`, and active azd environ
 | Foundry project | Confirm new versus existing; never provision implicitly |
 | Existing project identity | Resolve both endpoint and ARM ID; pass the ARM ID to `--project-id` |
 | azd environment | Reuse the selected environment or collect the intended environment |
-| Model strategy | GPT-Live is self-deployed only; otherwise use managed for a model name alone and self-deployed for explicit deployment lifecycle intent |
-| Model/deployment name | GPT-Live requires an existing compatible deployment; use `gpt-live-1` for the canonical new example or preserve an existing custom deployment name; default managed Prompt Voice to `gpt-realtime` |
-| Delegation | For GPT-Live, preserve or collect `client`, `responses`, or `foundry_managed_agent` and only its discriminator-compatible nested fields |
+| Model strategy | GPT-Live Voice is self-deployed only; otherwise use managed for a model name alone and self-deployed for explicit deployment lifecycle intent |
+| Model/deployment name | GPT-Live Voice requires an existing compatible deployment; use `gpt-live-1` for the canonical new example or preserve an existing custom deployment name; default managed Prompt Voice to `gpt-realtime` |
+| Delegation | For GPT-Live Voice, preserve or collect `client`, `responses`, or `foundry_managed_agent` and only its discriminator-compatible nested fields |
 | Instructions | Preserve existing instructions or collect the requested behavior |
 | Output voice | Preserve an existing value or use the user's requested voice; otherwise omit it and use the azd default |
 
@@ -119,29 +113,29 @@ State every applied default clearly before authoring.
 
 ## Step 3: Load Only the Selected Authoring Reference
 
-Always read [Voice Agent common invariants](references/voice-agent/common.md).
+Always read [Voice Agent subtypes](references/voice-agent/subtypes.md) and [Voice Agent common invariants](references/voice-agent/common.md).
 
-- For **GPT-Live**, read [GPT-Live YAML](references/voice-agent/gpt-live-yaml.md).
+- For **GPT-Live Voice**, read [GPT-Live Voice YAML](references/voice-agent/gpt-live-voice-yaml.md).
 - For **Prompt Voice**, read [Prompt Voice YAML](references/voice-agent/prompt-voice-yaml.md).
 - For **Hosted Voice**, read [Hosted Voice YAML](references/voice-agent/hosted-voice-yaml.md) and [Hosted Voice Bridge `1.0`](references/voice-agent/hosted-voice-bridge.md).
 - For Prompt Voice or Hosted Voice settings, read [Voice Agent YAML settings](references/voice-agent/prompt-and-hosted-voice-settings.md).
 
 Do not load the other subtype's YAML reference unless the user asks for a comparison or migration.
 
-Before editing settings, map every requested field to the GPT-Live service, Prompt Voice service, Voice wrapper, or hosted target using the selected reference. Preserve unrelated existing fields and edit only the requested YAML paths.
+Before editing settings, map every requested field to the GPT-Live Voice service, Prompt Voice service, Voice wrapper, or hosted target using the selected reference. Preserve unrelated existing fields and edit only the requested YAML paths.
 
 ## Step 4: Initialize or Update
 
-### GPT-Live
+### GPT-Live Voice
 
-Author the canonical service directly using [GPT-Live YAML](references/voice-agent/gpt-live-yaml.md). There is no `azd ai agent init --kind gpt-live`; do not generate Prompt Voice and mutate it into GPT-Live.
+Author the canonical service directly using [GPT-Live Voice YAML](references/voice-agent/gpt-live-voice-yaml.md). There is no `azd ai agent init --kind gpt-live`; do not generate Prompt Voice and mutate it into GPT-Live Voice.
 
 Before deploy:
 
 1. Confirm the selected project already has the configured compatible model deployment and any requested delegation backend deployment or managed agent.
 2. Keep `subProtocol: live`, `modelType: self_deployed`, and `model.id` set to the exact existing deployment name. Use `gpt-live-1` for the canonical new example.
-3. Preserve requested or existing optional configuration using the selected GPT-Live YAML reference.
-4. Do not add `services.ai-project.deployments[]` or run `azd provision` for GPT-Live unless its deployment lifecycle has been independently verified for that project.
+3. Preserve requested or existing optional configuration using the selected GPT-Live Voice YAML reference.
+4. Do not add `services.ai-project.deployments[]` or run `azd provision` for GPT-Live Voice unless its deployment lifecycle has been independently verified for that project.
 
 ### Prompt Voice
 
@@ -192,7 +186,7 @@ After init, enter the generated project directory before setting subscription, r
 
 ## Step 5: Local Validation
 
-- **GPT-Live** has no local container. Continue to deploy.
+- **GPT-Live Voice** has no local container. Continue to deploy.
 - **Prompt Voice** has no local container. Continue to deploy.
 - **Hosted Voice** must validate the target's Bridge handler locally before deployment. Follow [local run](references/local-run.md) and [Hosted Voice Bridge `1.0`](references/voice-agent/hosted-voice-bridge.md). Target-only validation does not replace an end-to-end wrapper smoke test.
 
@@ -202,7 +196,7 @@ Follow [deploy](../deploy/deploy.md), then [invoke](../invoke/invoke.md).
 
 Voice services do not support `azd ai agent invoke`.
 
-- For **GPT-Live**, run the dedicated helper in [GPT-Live smoke testing](references/voice-agent/gpt-live-smoke-test.md). The default gate verifies the deployed version and clean Live session lifecycle; optional WAV input enables deeper transcript/audio diagnostics. Never use the ordinary Voice helper or `/protocols/voice`.
+- For **GPT-Live Voice**, run the dedicated helper in [GPT-Live Voice smoke testing](references/voice-agent/gpt-live-voice-smoke-test.md). The default gate verifies the deployed version and clean Live session lifecycle; optional WAV input enables deeper transcript/audio diagnostics. Never use the ordinary Voice helper or `/protocols/voice`.
 - For **Prompt Voice** and **Hosted Voice**, use the two-stage process in [Voice smoke testing](references/voice-agent/prompt-and-hosted-voice-smoke-test.md): run the managed Voice WebSocket helper, then provide the Playground URL for manual acceptance.
 
 For Prompt Voice and Hosted Voice, run the helper from the `microsoft-foundry` skill root:
@@ -223,7 +217,7 @@ For Prompt Voice and Hosted Voice, run the helper from the `microsoft-foundry` s
   -Timeout 180
 ```
 
-The final handoff must distinguish the results: report deployed/active status and whether automated technical verification passed, provide the Foundry Portal or Agent Playground URL, and recommend the subtype-appropriate manual acceptance. For GPT-Live, test microphone, full-duplex behavior, interruption, voice quality, and latency. For Prompt Voice and Hosted Voice, also test STT and VAD/turn-taking. Do not claim that manual validation was completed automatically.
+The final handoff must distinguish the results: report deployed/active status and whether automated technical verification passed, provide the Foundry Portal or Agent Playground URL, and recommend the subtype-appropriate manual acceptance. For GPT-Live Voice, test microphone, full-duplex behavior, interruption, voice quality, and latency. For Prompt Voice and Hosted Voice, also test STT and VAD/turn-taking. Do not claim that manual validation was completed automatically.
 
 ## Error Handling
 
@@ -232,8 +226,8 @@ The final handoff must distinguish the results: report deployed/active status an
 | Project choice is unresolved | Stop and ask for a new or existing project before init or provision |
 | Existing endpoint has no ARM ID | Resolve it with the paired `resolve-project-id` script |
 | Init would duplicate an existing service | Edit the existing Voice service in place |
-| GPT-Live deployment or delegation backend is missing | Stop and report the existing-deployment prerequisite; do not apply the Prompt Voice provisioning Golden Path without verified lifecycle support |
-| GPT-Live is sent to `/protocols/voice` or the ordinary helper | Use `/protocols/voice/live/sessions?api-version=v1` and the GPT-Live session smoke helper |
+| GPT-Live Voice deployment or delegation backend is missing | Stop and report the existing-deployment prerequisite; do not apply the Prompt Voice provisioning Golden Path without verified lifecycle support |
+| GPT-Live Voice is sent to `/protocols/voice` or the ordinary helper | Use `/protocols/voice/live/sessions?api-version=v1` and the GPT-Live Voice session smoke helper |
 | Prompt Voice model deployment is missing | Do not author `model.id` alone. Reuse a compatible existing deployment, or confirm creation and follow the `deployments[]` preview/provision Golden Path |
 | Hosted target fails locally | Fix the hosted target's Bridge handler before deploying the Voice wrapper |
 | `azd ai agent invoke` rejects Voice | Use the subtype-specific WebSocket verification path or Foundry Voice playground |

@@ -8,7 +8,7 @@ Invoke ordinary Prompt Agents with Foundry MCP. Invoke Hosted and Managed Harnes
 |------------|----------|-------------|------------------|
 | Prompt | — | Foundry MCP `agent_invoke` | `conversationId`; no hosted session or file operations |
 | Managed Harness Agent | Responses | `azd ai agent invoke` | Managed response history; no Hosted session/file operations |
-| Voice (GPT-Live) | `voice/live/sessions` (`wss://.../protocols/voice/live/sessions?api-version=v1`) | Session lifecycle smoke; optional user-supplied WAV diagnostic; Foundry Voice playground for interactive audio-to-audio testing; **never** the ordinary Voice helper or `azd ai agent invoke` | Native Live session; no Hosted session/file commands |
+| Voice (GPT-Live Voice) | `voice/live/sessions` (`wss://.../protocols/voice/live/sessions?api-version=v1`) | Session lifecycle smoke; optional user-supplied WAV diagnostic; Foundry Voice playground for interactive audio-to-audio testing; **never** the ordinary Voice helper or `azd ai agent invoke` | Native Live session; no Hosted session/file commands |
 | Voice (Prompt Voice or Hosted Voice wrapper) | `voice` (`wss://.../protocols/voice?api-version=v1`) | Smoke helper for minimal programmatic verification; Foundry Voice playground for interactive audio-to-audio testing; **never** `azd ai agent invoke` | Real-time Voice session; no Hosted session/file commands on `kind: voice` |
 | Hosted Voice target (diagnostic only) | `invocations_ws` + Bridge `1.0` | Bridge-compatible WebSocket client; see [hosted-voice-bridge.md](../create/references/voice-agent/hosted-voice-bridge.md) | Target container session (`agent_session_id`); does not validate the Voice wrapper |
 | Hosted | `responses` | `azd ai agent invoke` | azd sessions, files, conversations, and monitor commands |
@@ -16,11 +16,11 @@ Invoke ordinary Prompt Agents with Foundry MCP. Invoke Hosted and Managed Harnes
 | Hosted | `activity` | Microsoft 365 channel, such as Teams | Activity conversation and channel state |
 | Hosted (custom real-time/audio) | `invocations_ws` | Custom WebSocket client; follow [invocations-ws](../invocations-ws/invocations-ws.md) | Agent-managed state keyed by `agent_session_id` |
 
-Classify `azure.yaml` Voice services in this exact order: `subProtocol: live` is **GPT-Live**; otherwise `conversationEngine.type: hosted_agent` is a **Hosted Voice wrapper**; otherwise `modelType: managed` or `self_deployed` is **Prompt Voice**. Apply the top-level compatibility classification for legacy manifests. `kind: hosted` is **Hosted**; `kind: prompt` plus `harness.type: microsoft_copilot_preview` or legacy `github_copilot_preview` is a **Managed Harness Agent**; other `kind: prompt` services are ordinary **Prompt Agents**. If still unknown, use `agent_get` only to classify.
+For `kind: voice` or legacy `kind: prompt-voice`, read [Voice Agent subtypes](../create/references/voice-agent/subtypes.md). Classify other agent types from the top-level agent rules; use `agent_get` only when project context remains insufficient.
 
 ## Voice Agent Workflow
 
-> **Critical**: `azd ai agent invoke` does **not** support Voice Agents. GPT-Live must use its dedicated Live session helper; Prompt Voice and Hosted Voice use the bundled ordinary Voice helper. For interactive microphone/audio-to-audio testing, provide the Voice Agent Playground URL from `azd ai agent show --output json`.
+> **Critical**: `azd ai agent invoke` does **not** support Voice Agents. GPT-Live Voice must use its dedicated Live session helper; Prompt Voice and Hosted Voice use the bundled ordinary Voice helper. For interactive microphone/audio-to-audio testing, provide the Voice Agent Playground URL from `azd ai agent show --output json`.
 
 ### Step 1: Verify Deployed Version(s)
 
@@ -30,14 +30,14 @@ Inside the azd project, run:
 azd ai agent show --output json
 ```
 
-- For **GPT-Live** or **Prompt Voice**, confirm the `kind: voice` agent version is active.
+- For **GPT-Live Voice** or **Prompt Voice**, confirm the `kind: voice` agent version is active.
 - For **Hosted Voice**, confirm **both** the `kind: hosted` target and the `kind: voice` wrapper versions are active, and target the **`kind: voice` wrapper's** name for end-to-end Voice invocation.
 
 ### Step 2: Choose the Invocation Experience
 
-- **GPT-Live technical verification:** follow [gpt-live-smoke-test.md](../create/references/voice-agent/gpt-live-smoke-test.md) over `/protocols/voice/live/sessions`. The default gate verifies startup and clean closure; optionally pass a WAV for deeper transcript/audio diagnostics.
+- **GPT-Live Voice technical verification:** follow [gpt-live-voice-smoke-test.md](../create/references/voice-agent/gpt-live-voice-smoke-test.md) over `/protocols/voice/live/sessions`. The default gate verifies startup and clean closure; optionally pass a WAV for deeper transcript/audio diagnostics.
 - **Prompt Voice or Hosted Voice technical verification:** run the bundled smoke helper over the managed `voice` WebSocket.
-- **Interactive or full audio-to-audio testing:** direct the user to the Foundry Voice Agent playground URL returned by `azd ai agent show --output json`. For GPT-Live, validate microphone input, full-duplex behavior, interruption, playback/voice quality, and perceived latency. For Prompt Voice and Hosted Voice, also validate STT quality and VAD/turn-taking.
+- **Interactive or full audio-to-audio testing:** direct the user to the Foundry Voice Agent playground URL returned by `azd ai agent show --output json`. For GPT-Live Voice, validate microphone input, full-duplex behavior, interruption, playback/voice quality, and perceived latency. For Prompt Voice and Hosted Voice, also validate STT quality and VAD/turn-taking.
 
 Neither verification path is a complete interactive microphone client. See the selected subtype reference for the validation boundary.
 
