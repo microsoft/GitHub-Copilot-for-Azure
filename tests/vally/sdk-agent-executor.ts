@@ -5,6 +5,7 @@ import {
   type Stimulus,
   type Trajectory,
 } from "@microsoft/vally";
+import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -46,6 +47,12 @@ import { normalizeTestName } from "./utils.ts";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const modelOverride = process.env.MODEL_OVERRIDE?.trim() || undefined;
+const excludedPersistentWorkspaceDirectories = new Set([
+  ".copilot",
+  ".git",
+  ".uv-cache",
+  "node_modules",
+]);
 
 type BilledTrajectory = Trajectory & {
   metadata: Trajectory["metadata"] & {
@@ -58,6 +65,21 @@ export type SdkAgentExecutorConfig = {
   name: string;
   createRunner: (config: AgentRunnerConfig) => IAgentRunner;
 };
+
+function persistWorkspace(workDir: string, root: string): string {
+  const destination = path.join(root, crypto.randomUUID());
+  fs.mkdirSync(root, { recursive: true });
+  fs.cpSync(workDir, destination, {
+    recursive: true,
+    filter: source => {
+      const relativePath = path.relative(workDir, source);
+      if (!relativePath) return true;
+      const [topLevelDirectory] = relativePath.split(path.sep);
+      return !excludedPersistentWorkspaceDirectories.has(topLevelDirectory);
+    },
+  });
+  return destination;
+}
 
 export abstract class SdkAgentExecutor implements Executor {
   readonly name: string;
@@ -224,6 +246,11 @@ export abstract class SdkAgentExecutor implements Executor {
       }
       if (cleanupError !== undefined) {
         throw cleanupError;
+      }
+
+      const persistentWorkspaceRoot = process.env.VALLY_PERSIST_WORKSPACES_DIR?.trim();
+      if (trajectory && persistentWorkspaceRoot) {
+        trajectory.workDir = persistWorkspace(workDir, persistentWorkspaceRoot);
       }
 
       if (postTestScriptConfig) {

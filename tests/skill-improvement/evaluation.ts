@@ -219,6 +219,7 @@ async function generateAnswers(
     NO_SKILLS: task.condition.skill === "disabled" ? "true" : "",
     VALLY_RUNNER_DISABLE_AZURE_MCP: task.condition.mcp === "disabled" ? "true" : "",
     VALLY_RUNNER_EXACT_SKILL: task.condition.skill === "enabled" ? "true" : "",
+    VALLY_PERSIST_WORKSPACES_DIR: path.join(taskDirectory, "workspaces"),
     VALLY_PLUGIN_OUTPUT_ROOT: path.join(worktree, "output"),
     TEST_RUN_ID:
       `skill-improvement-${slug(task.condition.name)}-${slug(task.answerModel)}-${slug(task.evalFile)}`,

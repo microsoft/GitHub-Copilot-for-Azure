@@ -3,6 +3,9 @@ import type {
   Stimulus,
   Trajectory,
 } from "@microsoft/vally";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type {
   AgentMetadata,
@@ -126,10 +129,13 @@ describe("SdkAgentExecutor", { concurrent: false }, () => {
   let runner: FakeAgentRunner;
   let executor: TestSdkAgentExecutor;
   let originalExactSkill: string | undefined;
+  let originalPersistentWorkspaces: string | undefined;
 
   beforeEach(() => {
     originalExactSkill = process.env.VALLY_RUNNER_EXACT_SKILL;
+    originalPersistentWorkspaces = process.env.VALLY_PERSIST_WORKSPACES_DIR;
     delete process.env.VALLY_RUNNER_EXACT_SKILL;
+    delete process.env.VALLY_PERSIST_WORKSPACES_DIR;
 
     vi.clearAllMocks();
     mocks.convertToTrajectoryEvents.mockReturnValue(convertedEvents);
@@ -167,6 +173,11 @@ describe("SdkAgentExecutor", { concurrent: false }, () => {
     } else {
       process.env.VALLY_RUNNER_EXACT_SKILL = originalExactSkill;
     }
+    if (originalPersistentWorkspaces === undefined) {
+      delete process.env.VALLY_PERSIST_WORKSPACES_DIR;
+    } else {
+      process.env.VALLY_PERSIST_WORKSPACES_DIR = originalPersistentWorkspaces;
+    }
   });
 
   test("builds the run configuration and trajectory for multiple turns", async () => {
@@ -184,7 +195,7 @@ describe("SdkAgentExecutor", { concurrent: false }, () => {
     expect(runner.run).toHaveBeenCalledWith({
       workspace: defaultOptions.workDir,
       env: {
-        UV_CACHE_DIR: `${defaultOptions.workDir}/.uv-cache`,
+        UV_CACHE_DIR: path.join(defaultOptions.workDir, ".uv-cache"),
       },
       model: defaultOptions.model,
       prompt: "First turn",
@@ -278,6 +289,38 @@ describe("SdkAgentExecutor", { concurrent: false }, () => {
       },
       completionStatus: "completed",
     });
+  });
+
+  test("persists the workspace when a destination is configured", async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "sdk-agent-executor-"));
+    const workDir = path.join(root, "workspace");
+    const persistentRoot = path.join(root, "persisted");
+    fs.mkdirSync(path.join(workDir, "support-bundle"), { recursive: true });
+    fs.mkdirSync(path.join(workDir, ".git"), { recursive: true });
+    fs.writeFileSync(path.join(workDir, "support-bundle", "summary.md"), "summary");
+    fs.writeFileSync(path.join(workDir, "diagnostic-support-bundle.zip"), "zip");
+    fs.writeFileSync(path.join(workDir, ".git", "config"), "excluded");
+    process.env.VALLY_PERSIST_WORKSPACES_DIR = persistentRoot;
+
+    try {
+      const trajectory = await executor.execute(defaultStimulus, {
+        ...defaultOptions,
+        workDir,
+      });
+
+      expect(trajectory.workDir).toMatch(new RegExp(`^${persistentRoot.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
+      expect(fs.readFileSync(
+        path.join(trajectory.workDir, "support-bundle", "summary.md"),
+        "utf8",
+      )).toBe("summary");
+      expect(fs.readFileSync(
+        path.join(trajectory.workDir, "diagnostic-support-bundle.zip"),
+        "utf8",
+      )).toBe("zip");
+      expect(fs.existsSync(path.join(trajectory.workDir, ".git"))).toBe(false);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   });
 
   test("cleans up the runner when execution fails", async () => {

@@ -87,6 +87,9 @@ describe("answer billing propagation", () => {
         }
         if (args.includes("eval")) {
           expect(args[args.indexOf("--workers") + 1]).toBe(String(workers ?? 1));
+          expect(options.env?.VALLY_PERSIST_WORKSPACES_DIR).toBe(
+            path.join(path.dirname(options.stdoutFile), "workspaces")
+          );
           const runDirectory = path.join(path.dirname(options.stdoutFile), "run");
           fs.mkdirSync(runDirectory);
           fs.writeFileSync(path.join(runDirectory, "eval-results.md"), "# Results\n");
