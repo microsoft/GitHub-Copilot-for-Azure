@@ -46,11 +46,11 @@ Update `context.json` at phase boundaries — combine `completedPhases` update w
 
 ## Phase transition rule
 
-> ⛔ **Before executing the FIRST command of any new phase, re-read that phase's sub-SKILL.md.** After prereq → read `prepare/SKILL.md`. After prepare → `scaffold/SKILL.md`. After scaffold gate → `deploy/SKILL.md`. This applies at EVERY transition.
+> ⛔ **Before executing the FIRST command of any new phase, re-read that phase's PHASE.md.** After prereq → read `prepare/PHASE.md`. After prepare → `scaffold/PHASE.md`. After scaffold gate → `deploy/PHASE.md`. This applies at EVERY transition.
 
 ## Post-compaction recovery
 
-> ⛔ After ANY compaction, re-read current phase SKILL.md + this file. Check `scaffold-manifest.json` and `completedPhases` exist if mid-scaffold/deploy.
+> ⛔ After ANY compaction, re-read current phase PHASE.md + this file. Check `scaffold-manifest.json` and `completedPhases` exist if mid-scaffold/deploy.
 
 Begin responses with: "Started session at `.copilot-azure/sessions/{uuid}/`" or "Resuming session from [date] — {statusSummary}".
 
@@ -64,7 +64,7 @@ Set by prereq: (1) auto-approves readiness gate, (2) simplifies prepare Step 3 a
 
 ## Deploy as-is
 
-⛔ Do NOT refactor or upgrade working application code. Deploy what works. Fixing broken code IS allowed (build errors, missing deps) through the approval gate. Upgrade suggestions → `prepare-plan.json.postDeployRecommendations[]`. Infrastructure changes = allowed; code rewrites = forbidden; Azure compatibility changes (TLS, SSL, port) = allowed when detected by prereq AND approved. Never prompt for passwords — auto-generate into Key Vault.
+⛔ Do NOT refactor or upgrade working application code. Deploy what works. Fixing broken code IS allowed (build errors, missing deps) through the approval gate. Upgrade suggestions → `prepare-plan.json.postDeployRecommendations[]`. Infrastructure changes = allowed; code rewrites = forbidden; Azure compatibility changes (TLS, SSL, port) and fixes the user approves at the scaffold gate ([approval-gates.md](approval-gates.md)) = allowed when detected by prereq AND approved. Never prompt for passwords — auto-generate into Key Vault.
 
 ## Known Platform Bugs
 
