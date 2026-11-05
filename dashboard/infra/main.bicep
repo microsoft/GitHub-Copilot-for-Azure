@@ -9,6 +9,10 @@ param environmentName string
 @description('Primary location for all resources')
 param location string
 
+@minLength(1)
+@description('Comma-separated Azure subscription IDs used for fixture data.')
+param azureSubscriptionIds string
+
 @description('Name of the existing MSBench nightly data storage account.')
 param msbenchStorageAccountName string = 'msbenchnightlydata'
 
@@ -105,6 +109,7 @@ module functionApp './modules/function-app.bicep' = {
     storageAccountName: storage.outputs.storageAccountName
     tokenUsageTableName: storage.outputs.tokenUsageTableName
     toolUsageTableName: storage.outputs.toolUsageTableName
+    azureSubscriptionIds: azureSubscriptionIds
     msbenchStorageAccountName: msbenchStorageAccountName
     msbenchEvalTableName: msbenchEvalTableName
     msbenchReportsContainerName: msbenchReportsContainerName

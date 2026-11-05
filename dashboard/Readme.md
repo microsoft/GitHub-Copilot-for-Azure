@@ -74,6 +74,8 @@ Open the URL printed in the terminal. With the local backend running, all featur
 
 ## Deployment
 
+Configure `AZURE_SUBSCRIPTION_IDS` in the [deployment workflow](../.github/workflows/deploy-dashboard.yml) environment for the `azd up` step. Its value is a comma-separated list of Azure subscription IDs used to query fixture data. The [deployment parameters](infra/main.parameters.json) read this environment variable and Bicep sets it on the backend Function App.
+
 This project supports [Azure Developer CLI (azd)](https://learn.microsoft.com/azure/developer/azure-developer-cli/). To deploy:
 
 ```bash
