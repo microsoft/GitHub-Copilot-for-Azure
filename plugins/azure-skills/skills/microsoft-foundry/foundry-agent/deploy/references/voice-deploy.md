@@ -14,7 +14,7 @@ azd ai agent show --output json
 
 ## 2. Provision When Required
 
-Respect the project-selection gate: if no Foundry project endpoint is configured and the user has not asked to create one, stop and ask. Run `azd provision --no-prompt` when creating a project or provisioning Prompt Voice model deployments or ACR infrastructure. For GPT-Live Voice, verify the configured existing compatible model deployment and requested delegation backend prerequisites; do not assume the Prompt Voice provisioning path applies.
+Respect the project-selection gate: if no Foundry project endpoint is configured and the user has not asked to create one, stop and ask. Run `azd provision --no-prompt` when creating a project or provisioning Voice model deployments, Responses delegation backend deployments, or ACR infrastructure. For GPT-Live Voice, follow the selected YAML reference's self-deployed model Golden Path before deployment.
 
 ## 3. Deploy
 

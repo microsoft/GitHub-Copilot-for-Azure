@@ -2,9 +2,22 @@
 
 Author GPT-Live Voice after selecting it with [Voice Agent subtypes](subtypes.md) and applying [common invariants](common.md). It is not a Prompt Voice setting and does not use a Hosted Voice Bridge.
 
-## Canonical Minimal Shape
+## Initialize, Then Author
 
-Author the complete service directly; there is no `azd ai agent init --kind gpt-live`, and a Prompt Voice scaffold must not be converted into GPT-Live Voice.
+For a new GPT-Live Voice service in the selected existing Foundry project, initialize from the official sample:
+
+```bash
+azd ai agent init --no-prompt \
+  -t "https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/voice-agents/gpt-live/azure.yaml" \
+  --project-id "<project-arm-id>" \
+  --agent-name "<agent-name>"
+```
+
+There is no `azd ai agent init --kind gpt-live`. After init, enter the generated or adopted project directory and edit the service to match the request. Preserve canonical `kind: voice`, `subProtocol: live`, and `modelType: self_deployed`; replace the sample model, instructions, delegation, and settings as needed. Remove the sample's grammar-teacher behavior and Responses delegation unless the user requested them.
+
+For an existing azd project or GPT-Live Voice service, edit it in place instead of rerunning init and creating a duplicate.
+
+## Canonical Minimal Shape
 
 ```yaml
 services:
@@ -19,7 +32,19 @@ services:
       id: gpt-live-1
 ```
 
-`model.id` must name an existing compatible GPT-Live model deployment. The model and any requested delegation backend deployment or managed agent must already exist. Do not assume the Prompt Voice `deployments[]` plus `azd provision` Golden Path applies; verify deployment ownership and lifecycle separately before changing infrastructure.
+`model.id` must match the exact compatible deployment name.
+
+## Self-Deployed Model Golden Path
+
+GPT-Live Voice has no managed-model branch. Apply this lifecycle to the GPT-Live model and to `delegation.responses.model` when Responses delegation is configured:
+
+1. Inspect the selected Foundry account for the exact compatible deployment name. Reuse an existing deployment without adding a duplicate entry.
+2. If it is missing, read [Foundry Model Reference](../foundry-model.md) and resolve the exact version, format, supported SKU/capacity, lifecycle, and quota. State the billable/quota-consuming change, and obtain confirmation unless creation was explicit.
+3. Preserve existing project infrastructure and deployment entries, append the resolved deployment under `services.<ai-project-service>.deployments[]`, and set `model.id` or `delegation.responses.model` to the exact `deployments[].name`.
+4. Run `azd provision --preview --no-prompt`, confirm only the intended model infrastructure changes, then run `azd provision --no-prompt`.
+5. Deploy the Voice service only after provisioning succeeds.
+
+Do not use `az cognitiveservices account deployment create` in the normal skill flow; keep `azure.yaml` as the azd source of truth.
 
 ## Optional Settings and Known Values
 
@@ -63,7 +88,7 @@ delegation: { type: client }
 delegation:
   type: responses
   responses:
-    model: <existing-responses-deployment>
+    model: <responses-deployment-name>
     instructions: Return concise backend guidance.
 ```
 

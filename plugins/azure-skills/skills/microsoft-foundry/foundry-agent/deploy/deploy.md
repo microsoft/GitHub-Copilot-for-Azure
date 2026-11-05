@@ -12,7 +12,7 @@ For **ordinary prompt agents**, use the Foundry MCP `agent_update` tool.
 |----------|-------|
 | Hosted (recommended) | `azd provision` when needed, code deploy via `azd deploy` (`codeConfiguration` present), then verify and invoke |
 | Hosted (container) | `azd provision` when needed, container deploy via `azd deploy` (remote builds require a Dockerfile and ACR; local builds also require Docker; no `codeConfiguration:` in the `azure.yaml` service block) |
-| Voice (GPT-Live Voice) | Verify the configured existing model deployment and requested delegation backend prerequisites, declarative `azd deploy`, then use the dedicated `voice/live/sessions` session smoke |
+| Voice (GPT-Live Voice) | `azd provision` when creating a missing model or Responses backend deployment, declarative `azd deploy`, then use the dedicated `voice/live/sessions` session smoke |
 | Voice (Prompt Voice) | `azd provision` when needed, declarative `azd deploy`, then verify over the `voice` WebSocket endpoint (`azd ai agent invoke` is not supported) |
 | Voice (Hosted Voice) | `azd provision` when needed, `azd deploy` for both the `kind: hosted` target and `kind: voice` wrapper, report both versions separately, and smoke-test the wrapper over the `voice` WebSocket endpoint |
 | Managed Harness Agent | `azd provision` when needed, then declarative `azd deploy`; no code/container packaging |
