@@ -85,6 +85,9 @@ review those edits before rerunning rather than overwriting them.
 Unmerged release groups are retained when a newer release arrives. The bot
 rebases its pending branch onto current `main`; merge conflicts fail the run
 for review rather than discarding either history.
+If a branch was pushed but PR creation failed, rerunning creates the missing PR
+even when discovery generates no new changes. Rebases are also published when
+pending changes remain, without requiring another generated commit.
 
 This work maintains the single shared source and existing MCP pins only. A
 later build-system change will copy the allowlist into the required plugin

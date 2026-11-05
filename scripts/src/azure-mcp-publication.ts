@@ -61,7 +61,7 @@ export function prBody(template: string, discovery: Discovery): string {
 
 /**
  * Refreshes a clean checkout, retains pending release history, and publishes one scoped bot-managed PR.
- * Rejects unrelated or concurrently changed work and skips remote writes when the refresh has no changes.
+ * Recovers missing PRs without requiring new generated changes, rejecting unrelated or concurrently changed work.
  */
 export async function publish(discovery: Discovery, io: PublicationIO): Promise<string> {
   const { git, request } = io;
@@ -75,6 +75,8 @@ export async function publish(discovery: Discovery, io: PublicationIO): Promise<
   if (prs[0] && !prs[0].body?.includes("<!-- azure-mcp-allowlist-refresh -->")) {
     throw new Error("Refusing to overwrite an unrelated PR on the automation branch.");
   }
+  await git("config", "user.name", "github-actions[bot]");
+  await git("config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com");
   if (expected) {
     await git("fetch", "--no-tags", "origin", `refs/heads/${branch}`);
     const fetched = (await git("rev-parse", "FETCH_HEAD")).trim();
@@ -92,26 +94,27 @@ export async function publish(discovery: Discovery, io: PublicationIO): Promise<
     await git("checkout", "-b", branch);
   }
   const changed = await io.update();
-  if (changed.length === 0) return "No Azure MCP allowlist or pin changes.";
   const paths = changed.map(path => relative(io.root, path).replaceAll("\\", "/"));
   if (paths.some(path => !allowedPath.test(path))) {
     throw new Error("Generator returned a path outside the allowed publication scope.");
   }
-  await git("config", "user.name", "github-actions[bot]");
-  await git("config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com");
-  await git("add", "--", ...paths);
   const title = `chore: refresh Azure MCP allowlists to ${discovery.version}`;
-  await git("commit", "-m", `${title}\n\nCo-authored-by: Copilot App <223556219+Copilot@users.noreply.github.com>`);
-  if (expected) {
-    const pendingDiff = (await git("diff", "--name-only", expected, "HEAD")).trim();
-    if (!pendingDiff && prs.length > 0) return "Existing refresh PR already contains these changes.";
+  if (paths.length > 0) {
+    await git("add", "--", ...paths);
+    await git("commit", "-m", `${title}\n\nCo-authored-by: Copilot App <223556219+Copilot@users.noreply.github.com>`);
   }
+  const pending = (await git("diff", "--name-only", `${base}...HEAD`)).trim().split("\n").filter(Boolean);
+  if (pending.length === 0) return "No Azure MCP allowlist or pin changes.";
+  const head = (await git("rev-parse", "HEAD")).trim();
+  if (head === expected && prs.length > 0) return "Existing refresh PR already contains these changes.";
   const body = prBody(io.template, discovery);
-  await git("push", `--force-with-lease=refs/heads/${branch}:${expected}`, "origin", `HEAD:refs/heads/${branch}`);
+  if (head !== expected) {
+    await git("push", `--force-with-lease=refs/heads/${branch}:${expected}`, "origin", `HEAD:refs/heads/${branch}`);
+  }
   const payload = { title, body, base: "main", head: branch };
   if (prs.length) await request("PATCH", `/pulls/${prs[0].number}`, payload);
   else await request("POST", "/pulls", payload);
-  return `Published Azure MCP ${discovery.version} refresh (${paths.length} files).`;
+  return `Published Azure MCP ${discovery.version} refresh (${pending.length} files).`;
 }
 
 /** Runs upstream-only publication using the workflow's Git credentials and GitHub API token. */

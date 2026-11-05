@@ -21,13 +21,15 @@ afterEach(async () => {
 });
 
 function fixture(existing = false): PublicationIO {
+  let committed = false;
   return {
     root, template,
     git: vi.fn(async (...args: string[]) => {
-      if (args[0] === "rev-parse") return sha;
+      if (args[0] === "rev-parse") return args[1] === "HEAD" && committed ? "b".repeat(40) : sha;
       if (args[0] === "ls-remote") return existing ? `${sha}\trefs/heads/${branch}` : "";
       if (args[0] === "log") return "github-actions[bot]";
-      if (args[0] === "diff") return "plugins/allowed-azure-tools.json";
+      if (args[0] === "diff") return existing || committed ? "plugins/allowed-azure-tools.json" : "";
+      if (args[0] === "commit") committed = true;
       return "";
     }),
     request: vi.fn(async (method: string) => method === "GET"
@@ -84,15 +86,63 @@ describe("refresh publication", () => {
       "plugins/azure-skills/.mcp.json", "plugins/azure-skills/mcp.json", "plugins/azure-skills/gemini-extension.json");
   });
 
-  it("does not force-push an already-current open PR", async () => {
+  it("configures the bot identity before rebasing pending commits", async () => {
     const io = fixture(true);
-    const original = io.git;
-    io.git = vi.fn((...args) => args[0] === "diff" ? Promise.resolve("") : original(...args));
-    expect(await publish(discovery, io)).toContain("already contains");
-    expect(vi.mocked(io.git).mock.calls.some(([command]) => command === "push")).toBe(false);
+    await publish(discovery, io);
+    const calls = vi.mocked(io.git).mock.calls;
+    const rebase = calls.findIndex(([command]) => command === "rebase");
+    expect(rebase).toBeGreaterThan(-1);
+    for (const setting of ["user.name", "user.email"]) {
+      const configured = calls.findIndex(([command, key]) => command === "config" && key === setting);
+      expect(configured).toBeGreaterThan(-1);
+      expect(configured).toBeLessThan(rebase);
+    }
   });
 
-  it.each(["add", "commit", "push", "fetch"])("propagates git %s failures", async command => {
+  it("does not commit, push or update an already-current open PR", async () => {
+    const io = fixture(true);
+    io.update = vi.fn(async () => []);
+    expect(await publish(discovery, io)).toContain("already contains");
+    expect(vi.mocked(io.git).mock.calls.some(([command]) => ["commit", "push"].includes(command))).toBe(false);
+    expect(vi.mocked(io.request).mock.calls.map(([method]) => method)).toEqual(["GET"]);
+  });
+
+  it("creates a missing PR for an already-pushed refresh without another commit or push", async () => {
+    const io = fixture(true);
+    io.update = vi.fn(async () => []);
+    io.request = vi.fn(async (method: string) => method === "GET" ? [] : {});
+    expect(await publish(discovery, io)).toContain("Published");
+    expect(vi.mocked(io.git).mock.calls.some(([command]) => ["add", "commit", "push"].includes(command))).toBe(false);
+    expect(io.request).toHaveBeenLastCalledWith("POST", "/pulls", expect.objectContaining({ base: "main", head: branch }));
+  });
+
+  it("does not publish an existing automation branch with no changes relative to main", async () => {
+    const io = fixture(true);
+    io.update = vi.fn(async () => []);
+    io.request = vi.fn(async (method: string) => method === "GET" ? [] : {});
+    const original = io.git;
+    io.git = vi.fn((...args) => args[0] === "diff" ? Promise.resolve("") : original(...args));
+    expect(await publish(discovery, io)).toContain("No Azure MCP");
+    expect(vi.mocked(io.git).mock.calls.some(([command]) => ["commit", "push"].includes(command))).toBe(false);
+    expect(vi.mocked(io.request).mock.calls.map(([method]) => method)).toEqual(["GET"]);
+  });
+
+  it("pushes rebased pending changes even when generation has nothing new to commit", async () => {
+    const io = fixture(true);
+    io.update = vi.fn(async () => []);
+    const original = io.git;
+    let headReads = 0;
+    io.git = vi.fn((...args) => {
+      if (args[0] === "rev-parse" && args[1] === "HEAD" && ++headReads > 1) return Promise.resolve("b".repeat(40));
+      return original(...args);
+    });
+    expect(await publish(discovery, io)).toContain("Published");
+    expect(vi.mocked(io.git).mock.calls.some(([command]) => ["add", "commit"].includes(command))).toBe(false);
+    expect(io.git).toHaveBeenCalledWith("push", `--force-with-lease=refs/heads/${branch}:${sha}`, "origin", `HEAD:refs/heads/${branch}`);
+    expect(io.request).toHaveBeenLastCalledWith("PATCH", "/pulls/42", expect.any(Object));
+  });
+
+  it.each(["config", "add", "commit", "push", "fetch", "rebase"])("propagates git %s failures", async command => {
     const io = fixture(true);
     const original = io.git;
     io.git = vi.fn((...args) => args[0] === command ? Promise.reject(new Error(`${command} failed`)) : original(...args));
@@ -139,7 +189,7 @@ describe("refresh publication", () => {
     }
   });
 
-  it("commits and pushes a real local git fixture without staging unrelated files", async () => {
+  it("recovers a failed PR creation and rebases pending releases with an isolated Git identity", async () => {
     const workspace = await mkdtemp(join(tmpdir(), "azure-mcp-publication-"));
     temporary.push(workspace);
     const remote = join(workspace, "origin.git");
@@ -147,9 +197,14 @@ describe("refresh publication", () => {
     await mkdir(checkout);
     const environment = {
       ...process.env,
-      GIT_CONFIG_COUNT: "2",
+      GIT_CONFIG_NOSYSTEM: "1",
+      GIT_CONFIG_GLOBAL: join(workspace, "gitconfig"),
+      GIT_AUTHOR_NAME: undefined, GIT_AUTHOR_EMAIL: undefined,
+      GIT_COMMITTER_NAME: undefined, GIT_COMMITTER_EMAIL: undefined,
+      GIT_CONFIG_COUNT: "3",
       GIT_CONFIG_KEY_0: "commit.gpgsign", GIT_CONFIG_VALUE_0: "false",
       GIT_CONFIG_KEY_1: "core.autocrlf", GIT_CONFIG_VALUE_1: "false",
+      GIT_CONFIG_KEY_2: "user.useConfigOnly", GIT_CONFIG_VALUE_2: "true",
     };
     const git = async (...args: string[]) =>
       (await execute("git", args, { cwd: checkout, env: environment, encoding: "utf8" })).stdout;
@@ -163,8 +218,11 @@ describe("refresh publication", () => {
     await git("remote", "add", "origin", remote);
     await git("push", "origin", "main");
     const path = join(checkout, "plugins", "allowed-azure-tools.json");
-    const request = vi.fn(async (method: string) => method === "GET" ? [] : {});
-    await publish(discovery, {
+    const request = vi.fn(async (method: string) => {
+      if (method === "GET") return [];
+      throw new Error("PR creation failed");
+    });
+    await expect(publish(discovery, {
       git, request, root: checkout, template,
       update: async () => {
         await mkdir(join(checkout, "plugins"), { recursive: true });
@@ -172,17 +230,38 @@ describe("refresh publication", () => {
         await writeFile(join(checkout, "unrelated.txt"), "Do not stage\n");
         return [path];
       },
-    });
+    })).rejects.toThrow("PR creation failed");
     expect((await git("show", "--format=", "--name-only", "HEAD")).trim()).toBe("plugins/allowed-azure-tools.json");
     expect((await git("status", "--short")).trim()).toBe("?? unrelated.txt");
     expect((await git("ls-remote", "--heads", "origin", branch)).trim()).toContain(`refs/heads/${branch}`);
     expect(await git("log", "-1", "--format=%B")).toContain("Co-authored-by: Copilot App");
     expect(request).toHaveBeenLastCalledWith("POST", "/pulls", expect.any(Object));
 
+    const publishedHead = (await git("rev-parse", "HEAD")).trim();
+    const retryCheckout = join(workspace, "retry-checkout");
+    await git("clone", "--branch", "main", remote, retryCheckout);
+    const retryGit = vi.fn(async (...args: string[]) =>
+      (await execute("git", args, { cwd: retryCheckout, env: environment, encoding: "utf8" })).stdout);
+    const retryRequest = vi.fn(async (method: string) => method === "GET" ? [] : {});
+    expect(await publish(discovery, {
+      git: retryGit, request: retryRequest, root: retryCheckout, template,
+      update: async () => [],
+    })).toContain("Published");
+    expect((await retryGit("rev-parse", "HEAD")).trim()).toBe(publishedHead);
+    expect(retryGit.mock.calls.some(([command]) => ["commit", "push"].includes(command))).toBe(false);
+    expect(retryRequest).toHaveBeenLastCalledWith("POST", "/pulls", expect.any(Object));
+
+    await git("checkout", "main");
+    await writeFile(join(checkout, "baseline.txt"), "Main advanced\n");
+    await git("add", "baseline.txt");
+    await git("commit", "-m", "Advance main");
+    await git("push", "origin", "main");
+    const advancedMain = (await git("rev-parse", "HEAD")).trim();
     const nextCheckout = join(workspace, "next-checkout");
     await git("clone", "--branch", "main", remote, nextCheckout);
     const nextGit = async (...args: string[]) =>
       (await execute("git", args, { cwd: nextCheckout, env: environment, encoding: "utf8" })).stdout;
+    await expect(nextGit("var", "GIT_COMMITTER_IDENT")).rejects.toThrow();
     const nextPath = join(nextCheckout, "plugins", "allowed-azure-tools.json");
     const nextRequest = vi.fn(async (method: string) => method === "GET"
       ? [{ number: 42, body: "<!-- azure-mcp-allowlist-refresh -->" }]
@@ -200,8 +279,11 @@ describe("refresh publication", () => {
     });
     expect(await readFile(nextPath, "utf8")).toContain("subscription_list");
     expect(await readFile(nextPath, "utf8")).toContain("new_tool");
+    await nextGit("merge-base", "--is-ancestor", advancedMain, "HEAD");
+    expect((await nextGit("log", "--format=%cn", `${advancedMain}..HEAD`)).trim().split("\n"))
+      .toEqual(["github-actions[bot]", "github-actions[bot]"]);
     expect(nextRequest).toHaveBeenLastCalledWith("PATCH", "/pulls/42", expect.any(Object));
-  }, 30_000);
+  }, 45_000);
 });
 
 interface Step { name: string; uses?: string; run?: string; env?: Record<string, string>; with?: Record<string, unknown> }
