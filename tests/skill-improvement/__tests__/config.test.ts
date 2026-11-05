@@ -185,12 +185,13 @@ describe("skill improvement configuration", () => {
     const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 
     expect(runSpec.evaluations.development).toContain("functions-vnet-routing.eval.yaml");
+    expect(runSpec.evaluations.development).toContain("functions-vnet-snat.eval.yaml");
     const plan = createRunPlan(repoRoot, runSpec);
     expect(() => enforceRunLimits(runSpec, plan)).not.toThrow();
     expect(plan.baselineAnswerGenerations).toBeGreaterThan(0);
     expect(plan.heldOutAnswerGenerations).toBeGreaterThan(0);
-    expect(plan.maximumAnswerGenerations).toBeLessThanOrEqual(536);
-    expect(plan.maximumJudgeCalls).toBeLessThanOrEqual(536);
+    expect(plan.maximumAnswerGenerations).toBeLessThanOrEqual(560);
+    expect(plan.maximumJudgeCalls).toBeLessThanOrEqual(560);
   });
 
   test("keeps the Flex routing fixture narrow and keyless", () => {
@@ -215,6 +216,14 @@ describe("skill improvement configuration", () => {
     expect(postProvision).toContain('"ipConfigurations[0].privateIPAddress"');
     expect(postProvision).not.toContain("customDnsConfigs");
     expect(postProvision).toContain("`${functionAppName}.azurewebsites.net`");
+    expect(postProvision).toContain('"outbound-api"');
+    expect(postProvision).toContain("connection-pressure");
+    const outboundApi = fs.readFileSync(fileURLToPath(
+      new URL(`${fixtureRoot}app/src/functions/outbound-api.js`, import.meta.url)
+    ), "utf8");
+    expect(outboundApi).toContain("PartnerApiConnectionWindow");
+    expect(outboundApi).toContain("EADDRNOTAVAIL");
+    expect(outboundApi).toContain("reusedConnectionCount");
   });
   test("rejects unsupported run-spec environment variables", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "skill-improvement-env-"));

@@ -1,0 +1,103 @@
+name: azure-diagnostics-functions-vnet-snat-eval
+description: |
+  Live Flex Consumption diagnostics for intermittent public dependency failures
+  caused by high outbound connection churn, plus service-team support packaging.
+
+tags:
+  type: integration
+  skill: azure-diagnostics
+
+defaults:
+  runs: 1
+  timeout: "50m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+  judge_model: claude-sonnet-5
+
+scoring:
+  threshold: 0.7
+
+stimuli:
+  - name: "Diagnose Flex Function outbound connection pressure"
+    prompt: |
+      Our Function App stays healthy, but calls to a public partner API become
+      slow or return 503 during traffic spikes and recover when traffic drops.
+      Investigate the live resources and telemetry in the supplied resource
+      group, explain the likely cause, and recommend the safest remediation
+      order. Please don't make changes yet.
+    rubric:
+      - The agent invokes azure-diagnostics and reads live Function App, VNet, and Application Insights or Log Analytics evidence from the supplied resource group; a generic SNAT checklist alone does not pass.
+      - The response identifies the affected Flex Consumption Function App, its integration subnet, and the public partner API failure telemetry using observed resource names, IDs, hostnames, or correlation IDs.
+      - The response correlates healthy low-load and recovery windows with the pressure window's high concurrency, nearly one new connection per request, very low connection reuse, EADDRNOTAVAIL or timeout failures, and HTTP 503 responses.
+      - The response identifies outbound connection or SNAT pressure as the likely failing layer without claiming that an exact platform SNAT-port metric was observed when only application telemetry is available.
+      - The response distinguishes the public partner API destination from the unrelated private-storage /32 route and does not blame private DNS, the blob private endpoint, storage RBAC, or the healthy Function host.
+      - "Remediation is prioritized: reuse pooled clients or keep-alive connections, bound concurrency and retries, load-test the change, then evaluate subnet outbound capacity or NAT Gateway for public destinations if application fixes are insufficient."
+      - All Azure operations remain read-only and scoped to the supplied resource group.
+    tags: &live-snat-tags
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: live-diagnostics
+      requiredSkills:
+        - azure-diagnostics
+      azureFixture: ./fixture/functions-vnet-routing/azure-manifest.json
+    graders: &live-snat-graders
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.7
+      - type: completed
+
+  - name: "Create Flex outbound diagnostic support bundle"
+    prompt: |
+      Our Function App stays healthy, but calls to a public partner API become
+      slow or return 503 during traffic spikes and recover when traffic drops.
+      Investigate the issue without changing Azure resources. Create a
+      downloadable diagnostic-support-bundle.zip in the workspace containing
+      support-bundle/summary.md and support-bundle/evidence.json for the service
+      team. Include the failing component, UTC evidence timeline, likely cause,
+      alternatives you ruled out, and prioritized remediation. Do not include
+      secrets, tokens, connection strings, or function keys.
+    rubric:
+      - The agent invokes azure-diagnostics and gathers live, resource-group-scoped Function, networking, and telemetry evidence before creating the support bundle.
+      - The diagnosis identifies outbound connection or SNAT pressure from high connection churn, low reuse, high concurrency, and EADDRNOTAVAIL or timeout evidence for the public partner API.
+      - The summary provides a UTC evidence timeline, names the failing component and likely cause, distinguishes the unrelated private-storage route, and prioritizes connection reuse and bounded concurrency before capacity changes.
+      - evidence.json contains structured resource identifiers, correlation IDs or timestamps, observed symptoms, likely cause, ruled-out alternatives, and prioritized remediation without secrets.
+      - diagnostic-support-bundle.zip is created from support-bundle/summary.md and support-bundle/evidence.json and the response tells the user where to download it.
+      - The investigation remains read-only and does not claim that remediation was performed.
+    tags: *live-snat-tags
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.7
+      - type: completed
+      - type: file-exists
+        config:
+          path: "support-bundle/summary.md"
+      - type: file-exists
+        config:
+          path: "support-bundle/evidence.json"
+      - type: file-exists
+        config:
+          path: "diagnostic-support-bundle.zip"
+      - type: file-matches
+        config:
+          path: "support-bundle/summary.md"
+          pattern: "(?is)(?=.*(SNAT|outbound connection))(?=.*(timeline|UTC))(?=.*(remediation|recommend))"
+      - type: file-matches
+        config:
+          path: "support-bundle/evidence.json"
+          pattern: '(?s)(?=.*"failingComponent"\s*:)(?=.*"likelyCause"\s*:)(?=.*"timeline"\s*:)(?=.*"prioritizedRemediation"\s*:)'
+      - type: file-not-matches
+        config:
+          path: "support-bundle/**/*"
+          pattern: "(?i)(AccountKey=|SharedAccessSignature=|sig=[A-Za-z0-9%]{8,}|Bearer [A-Za-z0-9._-]{20,})"
