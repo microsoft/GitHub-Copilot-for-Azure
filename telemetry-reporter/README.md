@@ -202,7 +202,9 @@ Platform-specific prerequisites:
   checkout, rather than a linked worktree, so NBGV can read the complete
   history inside the container. The
   [toolchain Dockerfile](eng/native-musl/Dockerfile) uses the exact .NET SDK
-  version from `global.json` on Alpine 3.23 and installs `clang`, `build-base`,
+  version from `global.json` on Alpine 3.23 when invoked by the build script.
+  Direct Docker builds without an SDK build argument default to the floating
+  `10.0` SDK tag. The image installs `clang`, `build-base`,
   `musl-dev`, `binutils`, and `zlib-dev`. The resulting binaries target
   Alpine 3.23 or compatible newer musl environments. No Alpine PowerShell
   installation is required.
