@@ -53,7 +53,7 @@ jobs:
           fi
 
           mkdir -p "$ALLOWLIST_DIR"
-          npm run generateMcpAllowlists -- "${PLUGIN_PATHS[@]}" "$ALLOWLIST_DIR"
+          npm run generateSkillAllowlists -- "${PLUGIN_PATHS[@]}" "$ALLOWLIST_DIR"
 
       - name: Upload generated allowlists
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

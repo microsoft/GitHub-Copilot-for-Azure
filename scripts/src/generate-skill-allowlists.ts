@@ -6,7 +6,7 @@
  * for the standalone telemetry reporter.
  *
  * Usage:
- *   npm run generateMcpAllowlists -- <skills_dir> [output_dir]
+ *   npm run generateSkillAllowlists -- <skills_dir> [output_dir]
  *
  * Outputs two JSON files in <output_dir> (defaults to current working directory):
  *   allowed-skill-names.json
@@ -84,7 +84,7 @@ function main(): void {
   const args = process.argv.slice(2);
   if (args.length < 2) {
     console.error(
-      "Usage: node generate-mcp-allowlists.ts <skills_dir_1> ... <skills_dir_N> <output_dir>"
+      "Usage: node generate-skill-allowlists.ts <skills_dir_1> ... <skills_dir_N> <output_dir>"
     );
     process.exit(1);
   }
