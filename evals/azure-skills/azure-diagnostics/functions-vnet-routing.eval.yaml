@@ -25,6 +25,7 @@ stimuli:
       investigate what's wrong and tell me the safest way to fix it? Please
       don't make changes yet.
     rubric:
+      - "Critical final-answer gate: the final response itself must explicitly summarize the observed Function, storage/private-endpoint, and route-table components; the /32 None route and private DNS evidence; why the Function host remains healthy; the relevant Flex outbound-routing behavior; the minimal correction; and concrete recovery checks. Evidence present only in tool output does not satisfy this gate, and omission of any category is a failing result."
       - The agent invokes azure-diagnostics and reads live evidence from the supplied resource group, including the Function App or its telemetry and the relevant VNet route configuration; a generic checklist or hypothetical commands alone do not pass.
       - The response identifies the affected Function App, the separate test storage account or its blob private endpoint, and the integration route table using observed names or resource IDs.
       - The response correlates the blob timeout or 503 telemetry with a None next-hop /32 route whose prefix is the test storage private endpoint IP, while noting that DNS still resolves the storage hostname to that private IP.
@@ -58,6 +59,7 @@ stimuli:
       changed, whether it caused the problem, and how to roll it back safely?
       Don't make changes yet.
     rubric:
+      - "Critical final-answer gate: the final response itself must explicitly summarize the Microsoft.App/environments integration-subnet delegation, separate private-endpoint subnet and private DNS, attached route table, /32 None route and evidence timeline, why Route All is not required, why unchanged host/deployment storage remains healthy, the minimal rollback, and recovery verification covering health, blob success, DNS, route state, and correlated Application Insights telemetry. Evidence present only in tool output does not satisfy this gate, and omission of any category is a failing result."
       - The agent invokes azure-diagnostics and gathers live resource, route, telemetry, or Activity Log evidence from the supplied resource group rather than returning only general Functions networking guidance.
       - The response establishes that the Function App uses a subnet delegated to Microsoft.App/environments, the route table is associated with that integration subnet, and the blob private endpoint is on a separate subnet with private DNS.
       - The response identifies the recent storage-path route creation or write and shows that its /32 destination matches the blob private endpoint IP and its next hop is None, making the timing and scope causally consistent with the read failures.
