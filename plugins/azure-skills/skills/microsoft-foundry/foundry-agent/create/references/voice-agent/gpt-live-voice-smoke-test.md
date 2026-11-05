@@ -26,17 +26,15 @@ The helper requires Python 3.11 or later and the verified OpenAI Live SDK:
 python -m pip install "openai[realtime]==3.19.2"
 ```
 
-Run from the `foundry-agent/create` directory:
-
 ```bash
-./scripts/smoke-test-gpt-live.sh \
+../../scripts/smoke-test-gpt-live.sh \
   --endpoint "$AZURE_AI_PROJECT_ENDPOINT" \
   --agent-name "<gpt-live-agent-name>" \
   --timeout 180
 ```
 
 ```powershell
-.\scripts\smoke-test-gpt-live.ps1 `
+..\..\scripts\smoke-test-gpt-live.ps1 `
   -Endpoint $env:AZURE_AI_PROJECT_ENDPOINT `
   -AgentName "<gpt-live-agent-name>" `
   -Timeout 180

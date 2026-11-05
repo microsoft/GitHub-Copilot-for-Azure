@@ -128,18 +128,28 @@ Before editing settings, map every requested field to the GPT-Live Voice service
 
 ### GPT-Live Voice
 
-For a new service in the selected existing Foundry project:
+For a new project:
 
 ```bash
 azd ai agent init --no-prompt \
-  -t "https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/voice-agents/gpt-live/azure.yaml" \
-  --project-id "<project-arm-id>" \
-  --agent-name "<agent-name>"
+  --kind prompt-voice \
+  --agent-name "<agent-name>" \
+  --model gpt-live-1
 ```
 
-Enter the generated or adopted project directory. Follow [GPT-Live Voice YAML](references/voice-agent/gpt-live-voice-yaml.md) to apply the requested canonical model, instructions, delegation, and settings. Remove the sample's grammar-teacher instructions and Responses delegation unless requested. There is no `--kind gpt-live`.
+For an existing Foundry project:
 
-For an existing azd project or service, edit it in place instead of rerunning init.
+```bash
+azd ai agent init --no-prompt \
+  --kind prompt-voice \
+  --agent-name "<agent-name>" \
+  --project-id "<project-arm-id>" \
+  --model gpt-live-1
+```
+
+Enter the generated project directory. The generated service is a small declarative Prompt Voice shape with `kind: prompt-voice`, `modelType: managed`, `model.id`, and project/description metadata. Follow [GPT-Live Voice YAML](references/voice-agent/gpt-live-voice-yaml.md): normalize `kind: prompt-voice` to `kind: voice`, add `subProtocol: live`, set `modelType: self_deployed`, set `model.id` to the exact deployment name, and apply requested instructions, settings, and delegation.
+
+For an existing azd project or service, edit it in place instead of rerunning init and creating a duplicate.
 
 Before deploy:
 

@@ -2,22 +2,7 @@
 
 Author GPT-Live Voice after selecting it with [Voice Agent subtypes](subtypes.md) and applying [common invariants](common.md). It is not a Prompt Voice setting and does not use a Hosted Voice Bridge.
 
-## Initialize, Then Author
-
-For a new GPT-Live Voice service in the selected existing Foundry project, initialize from the official sample:
-
-```bash
-azd ai agent init --no-prompt \
-  -t "https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/voice-agents/gpt-live/azure.yaml" \
-  --project-id "<project-arm-id>" \
-  --agent-name "<agent-name>"
-```
-
-There is no `azd ai agent init --kind gpt-live`. After init, enter the generated or adopted project directory and edit the service to match the request. Preserve canonical `kind: voice`, `subProtocol: live`, and `modelType: self_deployed`; replace the sample model, instructions, delegation, and settings as needed. Remove the sample's grammar-teacher behavior and Responses delegation unless the user requested them.
-
-For an existing azd project or GPT-Live Voice service, edit it in place instead of rerunning init and creating a duplicate.
-
-## Canonical Minimal Shape
+## Canonical Shape
 
 ```yaml
 services:
