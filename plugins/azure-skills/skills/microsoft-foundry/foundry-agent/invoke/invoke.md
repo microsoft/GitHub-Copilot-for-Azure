@@ -2,6 +2,8 @@
 
 Invoke ordinary Prompt Agents with Foundry MCP. Invoke Hosted and Managed Harness Agents with azd. Invoke Voice Agents over the managed Foundry `voice` WebSocket endpoint (not `azd ai agent invoke`).
 
+For an ordinary prompt or hosted text-agent deployment smoke, record UTC start/end and returned response/conversation/request identifiers around the requested invocation. Follow [fresh trace verification](../../references/agent-tracing-verification.md) afterwards, without another billed call. Invocation-only requests do not authorize infrastructure, connection, instrumentation, or IAM repair; use [setup guidance](../../references/agent-tracing-setup.md) within existing approval boundaries. Optional tracing failures warn and preserve a successful invocation. Do not equate text output or local Inspector results with a stored cloud trace.
+
 ## Route by Agent Type
 
 | Agent type | Protocol | Invoke path | State management |

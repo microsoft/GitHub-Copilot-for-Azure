@@ -27,6 +27,8 @@ Scaffold or develop a hosted Foundry agent project with the Azure Developer CLI 
 
 For ordinary prompt agents, use [create-prompt.md](create-prompt.md). For a Prompt Agent with `harness.type: microsoft_copilot_preview` or legacy `github_copilot_preview`, use [create-managed-harness.md](create-managed-harness.md). For deploy, use [deploy.md](../deploy/deploy.md).
 
+At the project/deploy handoff, follow [best-effort tracing setup](../../references/agent-tracing-setup.md) for new and existing hosted text agents, then [verify the requested remote invocation](../../references/agent-tracing-verification.md). Local run/Inspector output is not cloud tracing evidence. Preserve existing configuration and approval boundaries; optional tracing failures warn without blocking the agent.
+
 ## Hosted vs Prompt vs Voice
 
 | | Hosted | Prompt | Managed Harness Agent | Voice |

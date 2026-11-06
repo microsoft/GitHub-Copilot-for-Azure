@@ -110,6 +110,8 @@ Run provision only for new projects or real infrastructure changes:
 azd provision --no-prompt
 ```
 
+For a hosted text agent on a new project, complete the [tracing setup preflight](../../references/agent-tracing-setup.md#preflight-before-provisioning) first: any `network:` block (requires `monitoring.enabled: false`; a missing setting means monitoring is on by default), capability, opt-out, and monitoring charges/privacy approval.
+
 > Optional: run `azd provision --preview --no-prompt` first to preview the resource changes (a what-if) before applying them.
 >
 > Optional: add `--no-state` on a fresh azd environment to skip the existing-deployment check and provision faster; omit it when re-provisioning an existing one.
@@ -117,12 +119,14 @@ azd provision --no-prompt
 What this does:
 
 - Creates the Foundry project (if not present) and supporting resources under `infra/`.
-- Creates connections declared as top-level `azure.ai.connection` services. `${PARAM_*}` placeholders resolve from the active azd env.
+- Provisions required infrastructure. Top-level `azure.ai.connection` services are reconciled during **deploy**, not project provisioning.
 - Wires model deployments, AI Search, ACR, etc. `infra/layers/` provision in parallel when present.
 
 After provision completes for a new project, run `azd env get-values` and set missing required azd env values, especially `AZURE_AI_PROJECT_ID` and `AZURE_TENANT_ID`, before local run or the first `azd deploy`.
 
 ### Step 3 -- Pre-deployment check
+
+For hosted text agents, follow [best-effort tracing setup](../../references/agent-tracing-setup.md) for effective-connection discovery and human access checks, even when Step 2 was skipped for an existing project or redeploy. Approval and opt-out checks belong in the Step 2 preflight, before provisioning. Reuse effective monitoring and preserve opt-outs/authentication; connecting a component to an existing project needs its resource ID and separate approval (azd does not create one). Optional access and verification failures warn and continue. Native supporting builds set up monitoring as part of `azd provision` for new projects (a monitoring failure there fails the provision); older tooling and custom IaC must not be assumed to provide that capability.
 
 Branch by deploy mode.
 
@@ -188,6 +192,8 @@ For a multi-protocol service, pass `--protocol` explicitly.
 For the Activity protocol, `azd ai agent invoke` won't work; follow [invoke](../invoke/invoke.md) to invoke the agent.
 
 Run one remote invocation only unless the user explicitly asked to test multi-turn/session behavior. A single successful response is enough for the deployment smoke test. Anything other than a completed/successful response -> run `azd ai agent doctor --output json`, then follow [troubleshoot](../troubleshoot/troubleshoot.md).
+
+For hosted text agents, capture the UTC window and available identifiers around that invocation, then follow [fresh trace verification](../../references/agent-tracing-verification.md). A successful response proves invocation, not stored tracing. Report deployment, invocation, human access, and tracing separately; optional query/ingestion failures warn without failing the deployment.
 
 ### Step 6: Auto-Generate Evaluation Suite (MANDATORY — RUNS AUTOMATICALLY)
 
@@ -369,8 +375,9 @@ Ordinary Prompt Agents are not containerized -- they are a model + instructions 
 
 1. **Collect config** -- resolve endpoint from `azd env get-values` or ask. Then ask for **agent name**, **model deployment** (e.g. `gpt-4o`), and optional **instructions**, **temperature**, **tools**.
 2. **Get schema** -- `agent_definition_schema_get` with `schemaType: "prompt"`.
+   Before deployment, follow [best-effort tracing setup](../../references/agent-tracing-setup.md), including reused projects. Connecting a component to an existing project needs its resource ID and separate approval (azd does not create one); optional failures warn and continue without changing authentication.
 3. **Create** -- `agent_update` with `{"kind": "prompt", "model": "<deployment>", "instructions": "...", "temperature": 0.7}`.
-4. **Smoke test** -- follow [invoke](../invoke/invoke.md).
+4. **Smoke test** -- follow [invoke](../invoke/invoke.md), capture UTC/identifiers, and [verify this invocation's fresh stored trace](../../references/agent-tracing-verification.md). Do not invoke again for tracing; report optional verification/access warnings separately from deployment/invocation.
 5. **Auto-generate evaluation suite** -- see [Step 5: Auto-Generate Evaluation Suite (Prompt)](#step-5-auto-generate-evaluation-suite-prompt-mandatory--runs-automatically) below.
 6. **Hand off** -- evaluate via [observe](../observe/observe.md); clone via `agent_update` + `isCloneRequest`; delete via `agent_delete`.
 
