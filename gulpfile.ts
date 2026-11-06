@@ -160,7 +160,7 @@ function getPluginDirnames(): string[] {
 }
 
 function getPluginVersionedPaths(plugin: string): string[] {
-  return [`plugins/${plugin}`, "hooks"];
+  return [`plugins/${plugin}`, "hooks", "plugins/allowed-azure-tools.json"];
 }
 
 function collectHookFiles(root: string): Map<string, string> {
@@ -618,7 +618,7 @@ export function getVersionedCommits(plugin: string): Commit[] {
   }
 
   // Enumerate all first-parent commits affecting the built plugin from baseline
-  // (inclusive) to HEAD. Shared hooks are copied into every plugin.
+  // (inclusive) to HEAD. Shared hooks and the tool allowlist are copied into every plugin.
   const pluginLogOutput = execSync(
     `git log --first-parent --format=%H%x00%s --reverse ${baselineCommit}~1..HEAD -- ${versionedPaths}`,
     { encoding: "utf-8" }

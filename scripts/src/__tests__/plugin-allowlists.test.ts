@@ -261,12 +261,16 @@ describe("Gulp allowlist packaging", () => {
     rmSync(join(root, "plugins", "alpha", "skills", "alpha-skill", "references", "removed.md"));
     const updatedToolsSource = toolsSource.replace('"compute_vm_get"', '"compute_vm_get", "compute_vm_list"');
     write("plugins/allowed-azure-tools.json", updatedToolsSource);
+    run("git", ["add", "plugins/allowed-azure-tools.json"]);
+    run("git", ["commit", "--quiet", "-m", "change shared tool allowlist only"]);
     const second = build();
     expect(second.status, second.stderr || second.stdout).toBe(0);
     expect(readAllowlist("output/alpha", "allowed-references.txt")).toBe("alpha-skill\\references\\guide.md\n");
     for (const plugin of ["alpha", "beta"]) {
       expect(readFileSync(join(root, "output", plugin, "hooks", "allowlists", "allowed-tools.json")))
         .toEqual(Buffer.from(updatedToolsSource, "utf8"));
+      expect(JSON.parse(read(`output/${plugin}`, "plugin.json")).version).toBe("1.0.1");
+      expect(read(`output/${plugin}`, "CHANGELOG.md")).toContain("change shared tool allowlist only");
     }
     expect(read("plugins", "allowed-azure-tools.json")).toBe(updatedToolsSource);
   }, 30_000);
@@ -288,10 +292,14 @@ describe("Gulp allowlist packaging", () => {
     const sourcePath = join(root, "plugins", "allowed-azure-tools.json");
     rmSync(sourcePath);
     if (kind === "directory") {
-      mkdirSync(sourcePath);
+      const directoryPath = join(root, "tools-source-directory");
+      mkdirSync(directoryPath);
+      symlinkSync(directoryPath, sourcePath, process.platform === "win32" ? "junction" : "dir");
     }
     const result = build();
     expect(result.status).toBe(1);
     expect(result.stderr).toContain("allowed-azure-tools.json");
+    expect(result.stderr).toContain("allowed-tools.json");
+    expect(result.stderr).not.toContain("allowed-azure-tools.json/version.json");
   }, 30_000);
 });

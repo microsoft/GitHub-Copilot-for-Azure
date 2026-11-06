@@ -95,6 +95,8 @@ beside `allowed-skills.txt` and `allowed-references.txt`. It preserves all
 sections and named groups without parsing or rewriting the JSON, and fails if
 the source cannot be read or the destination cannot be written. The generator
 still maintains only the single shared source, not per-plugin source copies.
+Commits changing the shared allowlist count toward every plugin's stamped
+version and changelog, just like changes to shared hooks.
 
 Passing these packaged files to `ghcfa-telem` is separate; the telemetry hooks,
 embedded reporter lists, and existing snapshot workflow remain unchanged.
