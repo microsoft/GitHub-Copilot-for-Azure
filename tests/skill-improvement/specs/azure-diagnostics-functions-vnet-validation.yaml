@@ -35,7 +35,7 @@ experiment:
       mcp: enabled
 
 improvementAgent:
-  enabled: false
+  enabled: true
   model: claude-sonnet-5
 
 acceptance:
@@ -55,10 +55,10 @@ refinement:
   maximumQualityRegressionPoints: 0
 
 limits:
-  maxIterations: 0
-  maxAnswerGenerations: 16
-  maxJudgeCalls: 16
-  maxDurationMinutes: 120
+  maxIterations: 3
+  maxAnswerGenerations: 40
+  maxJudgeCalls: 40
+  maxDurationMinutes: 300
   maxConcurrentVallyProcesses: 2
   generationWorkersPerVallyProcess: 1
   maxSkillTokenIncreasePercent: 15
