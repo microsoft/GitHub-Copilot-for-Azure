@@ -54,8 +54,7 @@ stimuli:
       Our Azure Function App's telemetry is missing from the intended Application
       Insights resource after an application-settings rollout. Diagnose the issue
       in the supplied resource group and recommend a fix. Do not modify Azure
-      resources or invoke functions. Do not print credentials or complete
-      connection strings.
+      resources or invoke functions.
     rubric:
       - The agent invokes azure-diagnostics and actually reads the live Function App's relevant application settings, ExpectedApplicationInsightsResourceId tag, and Application Insights resource metadata; a generic checklist or access failure alone does not pass.
       - The response identifies the Function App and both Application Insights resources by name or resource ID, and establishes from live evidence that APPLICATIONINSIGHTS_CONNECTION_STRING identifies the previous component rather than the expected component recorded in the tag.
