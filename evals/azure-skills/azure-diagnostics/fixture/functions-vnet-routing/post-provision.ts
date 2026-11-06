@@ -87,23 +87,13 @@ async function retry<T>(
   throw new Error(`Timed out while ${description}; last result was ${JSON.stringify(lastResult)}`);
 }
 
-async function request(
-  appHostName: string,
-  path: string,
-  functionKey: string,
-  query: Record<string, string> = {},
-): Promise<{
+async function request(appHostName: string, path: string, functionKey: string): Promise<{
   status: number;
   body: string;
   correlationId: string | null;
   resolvedIp: string | null;
 }> {
-  const url = new URL(`https://${appHostName}/api/${path}`);
-  url.searchParams.set("code", functionKey);
-  for (const [name, value] of Object.entries(query)) {
-    url.searchParams.set(name, value);
-  }
-  const response = await fetch(url, {
+  const response = await fetch(`https://${appHostName}/api/${path}?code=${encodeURIComponent(functionKey)}`, {
     signal: AbortSignal.timeout(20_000),
   });
   return {
@@ -147,12 +137,11 @@ async function seedBlob(storageAccountName: string, seedPath: string): Promise<v
 async function waitForTelemetry(
   applicationInsightsId: string,
   correlationId: string,
-  description: string,
   timeoutMs = 360_000,
 ): Promise<void> {
   const queryUrl = `https://management.azure.com${applicationInsightsId}/query?api-version=2018-04-20`;
   await retry(
-    `waiting for ${description} in Application Insights`,
+    "waiting for the successful blob-read trace in Application Insights",
     async () => {
       const output = runAz([
         "rest",
@@ -363,46 +352,7 @@ try {
     "-o",
     "tsv",
   ]);
-  await waitForTelemetry(applicationInsightsId, baseline.correlationId, "the successful blob-read trace");
-
-  const outboundBaseline = await request(
-    functionAppHostName,
-    "outbound-api",
-    functionKey,
-    { load: "baseline" },
-  );
-  if (outboundBaseline.status !== 200) {
-    throw new Error(`The outbound API baseline returned ${outboundBaseline.status}.`);
-  }
-  const outboundPressure = await request(
-    functionAppHostName,
-    "outbound-api",
-    functionKey,
-    { load: "pressure" },
-  );
-  if (outboundPressure.status !== 503 || !outboundPressure.correlationId) {
-    throw new Error("The outbound API pressure window did not return a correlated 503.");
-  }
-  const outboundRecovery = await request(
-    functionAppHostName,
-    "outbound-api",
-    functionKey,
-    { load: "recovery" },
-  );
-  if (outboundRecovery.status !== 200 || !outboundRecovery.correlationId) {
-    throw new Error("The outbound API recovery window did not return a correlated 200.");
-  }
-  await waitForTelemetry(
-    applicationInsightsId,
-    outboundPressure.correlationId,
-    "the outbound connection-pressure trace",
-  );
-  await waitForTelemetry(
-    applicationInsightsId,
-    outboundRecovery.correlationId,
-    "the outbound recovery trace",
-  );
-  log("Seeded baseline, connection-pressure, and recovery telemetry for the public partner API.");
+  await waitForTelemetry(applicationInsightsId, baseline.correlationId);
 
   log(`Adding a blackhole route only for private endpoint ${privateEndpointIp}/32.`);
   runAz([
@@ -456,10 +406,7 @@ try {
     throw new Error("Host/deployment storage connectivity changed unexpectedly.");
   }
 
-  log(
-    "Fixture is ready: health is 200, storage DNS still resolves privately, read-blob is 503, "
-    + "and outbound connection-pressure telemetry is available."
-  );
+  log("Fixture is ready: health is 200, storage DNS still resolves privately, and read-blob is 503.");
 } finally {
   rmSync(temporaryDirectory, { recursive: true, force: true });
 }

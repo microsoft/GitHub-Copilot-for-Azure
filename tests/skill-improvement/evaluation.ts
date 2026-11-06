@@ -40,10 +40,8 @@ export type VallyRecord = {
     details?: GradeDetail[];
   };
   trajectory?: {
-    workDir?: string;
     metadata?: {
       evaluationAnswerBilling?: EvaluationAnswerBilling;
-      persistentWorkDir?: string;
     };
     output?: string;
     stimulus?: {
@@ -150,22 +148,6 @@ function readJsonl(filePath: string, recover = false): VallyRecord[] {
   return records;
 }
 
-function usePersistedWorkspaces(records: VallyRecord[], answerFile: string): void {
-  let changed = false;
-  for (const record of records) {
-    const persistentWorkDir = record.trajectory?.metadata?.persistentWorkDir;
-    if (!persistentWorkDir) continue;
-    record.trajectory!.workDir = persistentWorkDir;
-    changed = true;
-  }
-  if (changed) {
-    fs.writeFileSync(
-      answerFile,
-      records.map(record => JSON.stringify(record)).join("\n") + "\n",
-    );
-  }
-}
-
 export function findVallyRunDirectory(root: string): string {
   const candidates = fs.readdirSync(root, { withFileTypes: true })
     .filter(entry =>
@@ -237,7 +219,6 @@ async function generateAnswers(
     NO_SKILLS: task.condition.skill === "disabled" ? "true" : "",
     VALLY_RUNNER_DISABLE_AZURE_MCP: task.condition.mcp === "disabled" ? "true" : "",
     VALLY_RUNNER_EXACT_SKILL: task.condition.skill === "enabled" ? "true" : "",
-    VALLY_PERSIST_WORKSPACES_DIR: path.join(taskDirectory, "workspaces"),
     VALLY_PLUGIN_OUTPUT_ROOT: path.join(worktree, "output"),
     TEST_RUN_ID:
       `skill-improvement-${slug(task.condition.name)}-${slug(task.answerModel)}-${slug(task.evalFile)}`,
@@ -286,7 +267,6 @@ async function generateAnswers(
   }
 
   const records = readJsonl(answerFile);
-  usePersistedWorkspaces(records, answerFile);
   recordBilling(records);
   const runDirectory = findVallyRunDirectory(taskDirectory);
   const count = records

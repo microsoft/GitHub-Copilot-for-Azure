@@ -163,7 +163,7 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
     type: 'SystemAssigned'
   }
   tags: {
-    DiagnosticScenario: 'FlexVnetOutboundDiagnostics'
+    DiagnosticScenario: 'FlexVnetStorageRoute'
     ExpectedIntegrationSubnetId: integrationSubnet.id
     ExpectedPrivateEndpointSubnetId: privateEndpointSubnet.id
     ExpectedTestStorageResourceId: testStorage.id

@@ -1,10 +1,8 @@
-# Flex Consumption VNet outbound diagnostics fixture
+# Flex Consumption VNet routing fixture
 
-This temporary shared fixture creates live Azure Functions networking evidence
-for read-only Azure Diagnostics evaluations. It includes a private-storage
-routing fault and deterministic public-dependency connection-pressure
-telemetry. The resources are isolated in one resource group and use generated
-names.
+This temporary shared fixture creates a live Azure Functions networking failure
+for read-only Azure Diagnostics evaluations. The resources are isolated in one
+resource group and use generated names.
 
 ## Topology
 
@@ -27,17 +25,12 @@ only the test-storage role needed to seed the blob.
 
 ## Application
 
-All endpoints require a function key:
+Both endpoints require a function key:
 
 - `/api/health` returns 200 without accessing test storage.
 - `/api/read-blob` uses managed identity and the storage hostname to read
   `sample.txt`. It records the hostname, resolved IP, elapsed time, exception
   type, and correlation ID without logging tokens or connection strings.
-- `/api/outbound-api` records bounded baseline, pressure, and recovery windows
-  for calls to a public partner API. The pressure window reports high
-  concurrency, nearly one new connection per request, low connection reuse,
-  and `EADDRNOTAVAIL` or timeout failures without opening enough real
-  connections to exhaust shared infrastructure.
 
 Blob access uses bounded retries and timeouts so the injected routing failure
 returns a logged 503 promptly.
@@ -52,12 +45,9 @@ The post-provision script:
 4. Warms the app and requires health=200.
 5. Requires a successful blob read whose resolved IP matches the private
    endpoint and waits for its correlated Application Insights trace.
-6. Records successful low-load, failed connection-pressure, and successful
-   recovery windows for the public partner API, then waits for their correlated
-   Application Insights traces.
-7. Adds a `storage-path` route whose prefix is the endpoint's actual private
+6. Adds a `storage-path` route whose prefix is the endpoint's actual private
    IP `/32` and whose next hop is `None`.
-8. Requires health=200, unchanged private DNS resolution, and read-blob=503.
+7. Requires health=200, unchanged private DNS resolution, and read-blob=503.
 
 Flex Consumption already sends VNet-integrated outbound traffic through the
 VNet; the fixture intentionally does not configure Route All. It also avoids
@@ -70,11 +60,6 @@ The fault is limited to one private endpoint `/32`. Do not broaden the route:
 that could disrupt host storage, deployment, or telemetry and obscure the
 intended failure. Evaluations are read-only and must not remove the route or
 modify resources.
-
-The connection-pressure evidence is deterministic and bounded; it is not a
-load generator and does not intentionally consume real SNAT capacity. Its
-purpose is to make the application-level symptoms and connection-reuse pattern
-queryable through live Application Insights while keeping CI stable.
 
 The manifest uses temporary coordinated persistence so repetitions and
 hill-climbing conditions can reuse the same failed fixture. The fixture

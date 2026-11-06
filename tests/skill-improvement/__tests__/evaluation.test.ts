@@ -80,8 +80,6 @@ describe("answer billing propagation", () => {
         type: "assistant.usage",
         data: nanoAiu === undefined ? {} : { copilotUsage: { totalNanoAiu: nanoAiu } },
       }, ...(partial ? [{ type: "assistant.usage", data: {} }] : [])], !interrupted);
-      const persistentWorkDir = path.join(root, "persisted-workspace");
-      fs.mkdirSync(persistentWorkDir);
       const processError = new Error(`${failure} failed`);
       vi.mocked(runProcess).mockImplementation(async (_command, args, options) => {
         if (!options.stdoutFile) {
@@ -89,20 +87,13 @@ describe("answer billing propagation", () => {
         }
         if (args.includes("eval")) {
           expect(args[args.indexOf("--workers") + 1]).toBe(String(workers ?? 1));
-          expect(options.env?.VALLY_PERSIST_WORKSPACES_DIR).toBe(
-            path.join(path.dirname(options.stdoutFile), "workspaces")
-          );
           const runDirectory = path.join(path.dirname(options.stdoutFile), "run");
           fs.mkdirSync(runDirectory);
           fs.writeFileSync(path.join(runDirectory, "eval-results.md"), "# Results\n");
           fs.writeFileSync(options.stdoutFile, JSON.stringify({
             type: "trial-result",
             itemId: "suite::one",
-            trajectory: {
-              output: "answer",
-              workDir: path.join(root, "deleted-workspace"),
-              metadata: { evaluationAnswerBilling, persistentWorkDir },
-            },
+            trajectory: { output: "answer", metadata: { evaluationAnswerBilling } },
           }) + "\n" + (truncated ? '{"trajectory":\n{"type":"progress"}\n' : ""));
         } else {
           expect(args).not.toContain("--workers");
@@ -110,7 +101,6 @@ describe("answer billing propagation", () => {
             throw new Error("Expected saved answers as grading input.");
           }
           const record = JSON.parse(fs.readFileSync(options.stdinFile, "utf8"));
-          expect(record.trajectory.workDir).toBe(persistentWorkDir);
           fs.writeFileSync(options.stdoutFile, JSON.stringify({
             ...record,
             gradeResult: { passed: true, score: 1 },
