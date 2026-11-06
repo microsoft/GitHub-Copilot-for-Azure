@@ -203,6 +203,11 @@ describe("temporary fixture cold start", () => {
     expect(Object.keys(parsed.resourceGroupIdsByComponent ?? {})).toEqual(["storage", "search"]);
     expect(writes(fake).map((record) => record.state)).toEqual(["Preparing", "Ready"]);
     expect(writes(fake).at(-1)).toMatchObject({ ownerWorkflowRunId: "42:3" });
+    const progressLogs = fake.logs.filter((entry) =>
+      entry.message.includes("workflow fixture")
+    );
+    expect(progressLogs).toHaveLength(2);
+    expect(progressLogs.every((entry) => entry.level === "warn")).toBe(true);
     const creates = commands.filter((args) => args[0] === "group" && args[1] === "create");
     expect(creates).toHaveLength(2);
     for (const args of creates) {

@@ -733,7 +733,7 @@ async function provisionTemporaryFixture(
       dependencies.budget.set(Math.max(1, acquisitionDeadline - dependencies.now()));
       lease = await lock.acquire();
       dependencies.budget.set(dependencies.totalBudgetMs);
-      dependencies.log.log(`Acquired workflow fixture lease for ${manifest.id}@${manifest.version}; owner ${ownerWorkflowRunId}`);
+      dependencies.log.warn(`Acquired workflow fixture lease for ${manifest.id}@${manifest.version}; owner ${ownerWorkflowRunId}`);
 
       const record = parseCoordinationRecord(await lease.read(), manifest);
       const recordedExpiration = record.state === "Ready"
@@ -796,7 +796,7 @@ async function provisionTemporaryFixture(
         nextAttemptNotBefore: new Date(dependencies.now() + dependencies.provisioningRetryDelayMs).toISOString(),
       };
       await lease.write(preparingRecord);
-      dependencies.log.log(`Provisioning workflow fixture ${manifest.id} instance ${context.runId}`);
+      dependencies.log.warn(`Provisioning workflow fixture ${manifest.id} instance ${context.runId}`);
 
       const expiration = new Date(Math.floor((dependencies.now() + dependencies.readyRetentionMs) / 1000) * 1000);
       const retentionTag = deleteAfterTag(expiration);

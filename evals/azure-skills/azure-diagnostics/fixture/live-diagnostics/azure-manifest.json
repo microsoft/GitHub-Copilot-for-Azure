@@ -1,0 +1,16 @@
+{
+  "id": "azure-diagnostics-live",
+  "schemaVersion": 1,
+  "version": 1,
+  "type": "readOnly",
+  "persistence": "temporary",
+  "description": "A disabled App Service and a Function App configured to send telemetry to the previous Application Insights component instead of its tagged expected destination.",
+  "bicepConfigs": [
+    {
+      "fixtureId": "azure-diagnostics-live-apps",
+      "path": "main.bicep",
+      "location": "eastus2",
+      "resourceGroupNameBase": "diagnostics-live"
+    }
+  ]
+}
