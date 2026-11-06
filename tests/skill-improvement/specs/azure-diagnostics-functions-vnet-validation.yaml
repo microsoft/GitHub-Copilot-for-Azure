@@ -65,4 +65,4 @@ limits:
 
 output:
   issue: never
-  draftPullRequest: never
+  draftPullRequest: accepted-candidate-only
