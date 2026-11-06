@@ -89,9 +89,34 @@ uses a unique `leaseContainerPrefix`.
 | Symptom | Cause | Fix |
 |---------|-------|-----|
 | Cold start despite "always ready" expectation | No always-ready instance for the function's scale group | Configure `http`, `durable`, `blob`, or `function:<FUNCTION_NAME>` with `az functionapp scale config always-ready set` |
-| Can't reach a VNet-integrated resource | VNet integration not configured, or NSG/route table blocking egress | Confirm subnet delegation and outbound rules; enable VNet route-all if all egress must go through the VNet |
+| Can't reach a VNet-integrated resource | VNet integration not configured, or NSG/route table blocking egress to a private destination | Confirm subnet delegation (`Microsoft.App/environments` for Flex) and inspect the route table/NSG on the integration subnet for a blackhole route; route-all is not the fix for private-destination failures — see the checklist below |
 | Deployment succeeds but scaling is capped | Maximum instance count or the regional subscription memory quota is exhausted | Inspect `az functionapp scale config show -g RG -n APP`; check **Usage + quotas** for the subscription and region |
 | Binding fails after dependency changes | Mixed Functions programming models or incompatible binding-extension versions | Use one programming model and align its binding packages. .NET isolated apps use `Microsoft.Azure.Functions.Worker.Extensions.*`; non-.NET apps using extension bundles should not also install the same binding extensions manually |
+
+> ⚠️ **Final-answer checklist for VNet/route/private-endpoint root causes:** when a route table or
+> private endpoint is the root cause of a VNet-integrated failure, the written response — not just
+> the tool-call trail — must explicitly cover each item below. Partial evidence gathered mid-session
+> doesn't count if it's missing from the final summary:
+>
+> - **Subnet delegation**: state that the Function App's integration subnet is delegated to
+>   `Microsoft.App/environments` (Flex Consumption) or `Microsoft.Web/serverFarms` (Elastic
+>   Premium/Dedicated), and name it explicitly — don't just call it "the subnet."
+> - **Subnet separation**: name the integration subnet and the target's subnet (e.g. the private
+>   endpoint's subnet) as two distinct subnets with their own route-table/NSG associations and DNS
+>   zone links, even if they sit in the same VNet.
+> - **Why "Route All" isn't the fix**: for Flex/Elastic Premium outbound VNet integration, private
+>   RFC1918 destinations already traverse the integration subnet's route table and NSG without
+>   enabling route-all; route-all only forces *public* internet egress through the VNet. If a
+>   private destination is unreachable, the cause is a route/NSG/DNS entry, not a missing route-all
+>   toggle — say so explicitly rather than recommending route-all as the fix.
+> - **Why unrelated paths stay healthy**: explain that host/deployment storage, the platform health
+>   probe, and other destinations are unaffected because they resolve to different IPs/paths not
+>   covered by the blackholed route or blocking NSG rule — the failure is destination-specific, not
+>   a platform-wide outage.
+> - **Post-rollback verification list**: after any proposed route/NSG rollback, re-verify — and
+>   list — private DNS resolution, the route table entry/absence, resource health, the originally
+>   failing call, and a correlated telemetry check (e.g. the next App Insights request/trace after
+>   the fix), not just one of these.
 
 ## Integration Testing Trigger Failure Paths
 
