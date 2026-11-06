@@ -209,3 +209,44 @@ stimuli:
         config:
           pattern: "(?i)option|reduce|increase"
       - type: completed
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Private Network — Template 15a (evaluation-only)
+  # ═══════════════════════════════════════════════════════════════════════════
+  - name: "Template 15a private evaluation setup uses guided helper"
+    prompt: "Set up Microsoft Foundry for evaluations in a private network using the 15a evaluation-only Bicep template, reusing my existing VNet and storage account."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: output-matches
+        config:
+          pattern: "(?i)foundry-private-setup|Setup\\.ps1"
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|approv"
+      - type: completed
+
+  - name: "Template 15a failing evaluations uses read-only diagnostic"
+    prompt: "Evaluations fail in my Foundry project deployed with the private network 15a evaluation-only template. How do I find out what's wrong?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: output-matches
+        config:
+          pattern: "(?i)foundry-private-diagnostic|Diagnose\\.ps1"
+      - type: output-matches
+        config:
+          pattern: "(?i)read-only|report\\.md|evidence\\.json"
+      - type: completed
