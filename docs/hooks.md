@@ -124,6 +124,11 @@ bash ./hooks/scripts/track-telemetry.sh --harness copilot-vscode --application c
 & .\hooks\scripts\track-telemetry.ps1 -Harness copilot-vscode -Application copilot-cli
 ```
 
+These parameters control the reported client name, not event classification.
+Cursor MCP events are recognized by `afterMCPExecution` and
+`mcp_server_name=azure`, provided the plugin owns that server, even when an
+application override or custom harness label changes the reported name.
+
 The shared manifests do not supply an application identifier because the
 Copilot registration is shared by multiple applications. Without an override,
 Cursor's nonempty `cursor_version` is considered first, then the exact VS Code

@@ -796,6 +796,7 @@ describe("Telemetry hook manifests", () => {
       expect(entries).toHaveLength(1);
       const entry = entries[0];
       expect(entry.env).toBeUndefined();
+      // Preserve the host-expanded token rather than substituting the fixture's PLUGIN_ROOT.
       expect(entry.windows).toBe(
         'powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "${PLUGIN_ROOT}/hooks/scripts/track-telemetry.ps1" -Harness copilot-vscode',
       );
@@ -1872,7 +1873,7 @@ describe.each(shells)("Cursor telemetry hook ($name)", shell => {
     const payload = fixture("cursor-mcp-invocation.json");
     payload.mcp_server_name = "github";
 
-    expect(runHook(shell, payload)).toEqual([]);
+    expect(runHook(shell, payload, "", {}, STUB_HOOKS_DIR, "cursor", "Cursor Preview")).toEqual([]);
     expect(readDebugLog()).toBe("");
   });
 
@@ -1882,8 +1883,35 @@ describe.each(shells)("Cursor telemetry hook ($name)", shell => {
     payload.tool_name = "MCP:get_azure_bestpractices";
     delete payload.mcp_server_name;
 
-    expect(runHook(shell, payload)).toEqual([]);
+    expect(runHook(shell, payload, "", {}, STUB_HOOKS_DIR, "cursor", "Cursor Preview")).toEqual([]);
     expect(readDebugLog()).toBe("");
+  });
+
+  it.each([
+    { toolName: "get_azure_bestpractices", cursorVersion: "3.18.9" },
+    { toolName: "MCP:get_azure_bestpractices", cursorVersion: "3.18.9" },
+    { toolName: "get_azure_bestpractices", cursorVersion: undefined },
+    { toolName: "MCP:get_azure_bestpractices", cursorVersion: undefined },
+  ])("preserves MCP telemetry with an application override: $toolName / $cursorVersion", ({ toolName, cursorVersion }) => {
+    const payload = fixture("cursor-mcp-invocation.json");
+    payload.tool_name = toolName;
+    payload.cursor_version = cursorVersion;
+    const args = runHook(shell, payload, "", {}, STUB_HOOKS_DIR, "cursor", "Cursor Preview");
+
+    expectArg(args, "--client-name", "Cursor Preview");
+    expectArg(args, "--event-type", "tool_invocation");
+    expectArg(args, "--session-id", SESSION_ID);
+    expectArg(args, "--tool-name", "get_azure_bestpractices");
+  });
+
+  it("classifies MCP events independently of a custom harness label", () => {
+    const payload = fixture("cursor-mcp-invocation.json");
+    delete payload.cursor_version;
+    const args = runHook(shell, payload, "", {}, STUB_HOOKS_DIR, "Cursor Harness Preview");
+
+    expectArg(args, "--client-name", "Cursor Harness Preview");
+    expectArg(args, "--event-type", "tool_invocation");
+    expectArg(args, "--tool-name", "get_azure_bestpractices");
   });
 });
 

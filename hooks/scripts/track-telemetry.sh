@@ -542,7 +542,7 @@ fi
 #               optional display prefix (e.g., MCP:get_azure_bestpractices)
 # VS Code:      "mcp_azure_mcp_*" prefix (e.g., mcp_azure_mcp_documentation)
 if [ -n "$toolName" ] && owns_mcp_server "azure"; then
-    if [ "$clientName" = "cursor" ] && [ "$hookEventName" = "afterMCPExecution" ] && [ "$mcpServerName" = "azure" ]; then
+    if [ "$hookEventName" = "afterMCPExecution" ] && [ "$mcpServerName" = "azure" ]; then
         azureToolName="${toolName#MCP:}"
         eventType="tool_invocation"
         shouldTrack=true
