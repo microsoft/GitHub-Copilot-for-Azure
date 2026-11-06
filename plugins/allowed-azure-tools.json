@@ -445,6 +445,10 @@
       "workbooks_list",
       "workbooks_show",
       "workbooks_update"
+    ],
+    "4.0.0-beta.6": [
+      "advisor_insight_list",
+      "advisor_recommendation_prevalidate"
     ]
   },
   "areas": {
