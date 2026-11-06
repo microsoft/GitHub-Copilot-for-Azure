@@ -4,6 +4,7 @@ import type {
   Trajectory,
 } from "@microsoft/vally";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import * as path from "node:path";
 import type {
   AgentMetadata,
   AgentRunConfig,
@@ -184,7 +185,7 @@ describe("SdkAgentExecutor", { concurrent: false }, () => {
     expect(runner.run).toHaveBeenCalledWith({
       workspace: defaultOptions.workDir,
       env: {
-        UV_CACHE_DIR: `${defaultOptions.workDir}/.uv-cache`,
+        UV_CACHE_DIR: path.join(defaultOptions.workDir, ".uv-cache"),
       },
       model: defaultOptions.model,
       prompt: "First turn",
