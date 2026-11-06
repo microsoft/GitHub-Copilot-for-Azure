@@ -21,15 +21,11 @@ stimuli:
   - name: "Diagnose a disabled live App Service"
     prompt: |
       Our App Service web app is refusing requests after a configuration rollout.
-      Find the web app (not the Function App) in the supplied resource group and
-      use live read-only evidence to diagnose its availability. Check resource
-      health and the app's administrative state before blaming code, capacity,
-      authentication, or access restrictions. Report the exact target and the
-      evidence for the cause, then propose the smallest correction and a recovery
-      check. You may collect diagnostics, but do not change settings, start or
-      restart apps, deploy code, or modify any Azure resources.
+      Diagnose the issue in the supplied resource group using live read-only
+      evidence and recommend a fix. Do not modify Azure resources.
     rubric:
-      - The agent invokes azure-diagnostics and actually reads the live web app's state or enabled property using Azure tools, CLI, or the bundled diagnostic script; hypothetical commands or access failures alone are not a successful diagnosis.
+      - The agent invokes azure-diagnostics, selects the App Service web app rather than the Function App, and actually reads its live state or enabled property using Azure tools, CLI, or the bundled diagnostic script; hypothetical commands or access failures alone are not a successful diagnosis.
+      - The agent checks resource health and the app's administrative state before blaming code, capacity, authentication, or access restrictions.
       - The response identifies the discovered web app by name and resource group, and attributes its unavailability to its disabled or stopped administrative state using observed enabled=false or Stopped evidence.
       - The response distinguishes the administrative state from platform health and does not invent an application exception, capacity issue, authentication failure, or IP restriction as the root cause.
       - The response recommends enabling or starting only the affected app after approval, checks whether the deployment source would disable it again, and proposes verifying Running state and an HTTP response without claiming the repair has been performed.
