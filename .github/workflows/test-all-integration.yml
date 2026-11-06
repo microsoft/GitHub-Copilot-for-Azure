@@ -40,6 +40,11 @@ on:
         required: false
         type: string
         default: ""
+      eval-tag:
+        description: "Optional: Vally stimulus tag filter (e.g. area=live-diagnostics)"
+        required: false
+        type: string
+        default: ""
       deploy-test-pattern:
         description: "Optional: Comma separated patterns by name or describe block for filtering azure-deploy tests."
         required: false
@@ -250,10 +255,15 @@ jobs:
           TEST_RUN_ID: all-integration
           MODEL_OVERRIDE: ${{ inputs.model-override }}
           SKILL: ${{ matrix.skill }}
+          EVAL_TAG: ${{ inputs.eval-tag }}
         run: |
           PLUGIN_DIR="${SKILL%%/*}"
           SKILL_NAME="${SKILL##*/}"
-          npm run test:vally -- --plugin $PLUGIN_DIR --skill $SKILL_NAME --workers 2
+          EVAL_ARGS=()
+          if [[ -n "$EVAL_TAG" ]]; then
+            EVAL_ARGS+=(--tag "$EVAL_TAG")
+          fi
+          npm run test:vally -- --plugin "$PLUGIN_DIR" --skill "$SKILL_NAME" --workers 2 "${EVAL_ARGS[@]}"
 
       - name: Generate skill report
         if: always()
