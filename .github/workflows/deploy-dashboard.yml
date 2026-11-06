@@ -106,5 +106,7 @@ jobs:
         working-directory: dashboard
 
       - name: Deploy
+        env:
+          AZURE_SUBSCRIPTION_IDS: ${{ vars.AZURE_SUBSCRIPTION_IDS }}
         run: azd up --no-prompt
         working-directory: dashboard
