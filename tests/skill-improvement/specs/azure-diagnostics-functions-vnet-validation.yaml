@@ -21,6 +21,12 @@ models:
 experiment:
   repetitions: 2
   conditions:
+    - name: Agent only
+      skill: disabled
+      mcp: disabled
+    - name: MCP only
+      skill: disabled
+      mcp: enabled
     - name: Skill only
       skill: enabled
       mcp: disabled
@@ -50,8 +56,8 @@ refinement:
 
 limits:
   maxIterations: 0
-  maxAnswerGenerations: 8
-  maxJudgeCalls: 8
+  maxAnswerGenerations: 16
+  maxJudgeCalls: 16
   maxDurationMinutes: 120
   maxConcurrentVallyProcesses: 2
   generationWorkersPerVallyProcess: 1
