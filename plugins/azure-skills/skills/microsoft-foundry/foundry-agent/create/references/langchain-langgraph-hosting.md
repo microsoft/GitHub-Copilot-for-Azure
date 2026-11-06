@@ -1,33 +1,60 @@
 # LangChain and LangGraph Hosting
 
-Use this guidance when creating, migrating, or re-hosting a LangChain or LangGraph agent on Foundry.
+Preserve the existing application and choose the least invasive hosting path that meets the requested contract. Reading guidance does not authorize execution.
 
-## Design Intent
+## Existing Application: Plan or Local Work
 
-Preserve the agent's existing framework behavior and minimize migration-specific code. Choose the least invasive hosting path that satisfies the requested behavior.
+Read the application's entry point, configuration and acceptance requirements first. Inspect only task-relevant public signatures and guide headings; follow implementation detail only for an unresolved contract or observed failure. Do not enter scaffold, deployment, cloud invocation or metadata workflows for a local task.
 
-Treat migration as additive. Do not delete or replace user-authored code, and do not remove existing dependencies. Add only the hosting configuration, files, and dependencies required to run the existing agent on Foundry.
+- Preserve graph exports/mappings, factory signatures, providers, tools, prompts, checkpointers and client inputs/outputs. Add separate hosting configuration or a small adapter where necessary; do not replace the application with a sample.
+- Make configuration available before graph initialization. A runner may not load graph JSON's `env` entry. If construction is invocation-time, read configuration then; do not freeze a tenant or change an existing required-argument factory into a zero-argument public API.
+- Reuse public hosting/storage APIs and preserve caller-supplied state-root ownership. Add custom stores, locking, persistence or recovery only for a concrete requested lifetime or demonstrated default-path requirement.
+- Verify original behavior and the requested hosting contract: terminal status, actual output and requested streaming. Enter native ASGI lifecycle for in-process tests and probe the host's `/readiness`; echoed `READY` output is not native readiness evidence. Bound cleanup of owned servers. Expand validation for a failure or uncovered requirement, not by default.
+- A plan ends with source-grounded facts, minimal proposed changes, required validation and unverified boundaries. Local work does not install cloud tooling, access Azure or claim cloud/durability/isolation acceptance merely to make the migration complete.
 
-Do not add, remove, or replace the agent's checkpointer unless the user explicitly requests a checkpointing change. Checkpointing belongs to the agent's application logic, not its hosting configuration.
+## Minimal Public Local Composition
 
-## Hosting Decision
+For a checkpoint-free local message graph, this public composition can be the body of the existing zero-argument ASGI factory. `make_hosted_graph` denotes the application's selected graph factory from the separate hosting configuration; adapt that binding, not the original graph or its public signature.
 
-| Need | Hosting path |
-|------|--------------|
-| Standard LangChain or LangGraph agent hosting with no custom server behavior | **Configuration-only** |
-| Custom request handling, protocol behavior, lifecycle control, or other hosting behavior that configuration cannot express | **Host server integration** |
+```python
+from azure.ai.agentserver.responses import InMemoryResponseProvider
+from langchain_azure_ai.agents.hosting import ResponsesAgentServerHost, ResponsesHostServer
 
-Prefer configuration-only hosting unless the user explicitly requests custom hosting behavior or the existing agent demonstrably requires it. Do not add host server integration merely because the project already contains agent code.
 
-## Sample Selection
+def create_app():
+    graph = make_hosted_graph()
+    host = ResponsesAgentServerHost(
+        store=InMemoryResponseProvider(),
+        configure_observability=None,
+    )
+    return ResponsesHostServer(graph, app=host).app
+```
 
-Use the parent workflow's azd sample selection guidance. For configuration-only hosting, select the sample matching the required protocol:
+Use the selected factory directly; this checkpoint-free example needs no helper class, custom conversation store or private provider import. `InMemoryResponseProvider` selects response history storage, not graph checkpoints or conversation storage. It does not make the entire host durable or universally offline. For checkpointed graphs, preserve the checkpointer and verify invocation-time conversation/thread bindings and their existing storage requirements. `configure_observability=None` omits the setup callback, not inherited exporters or loggers. Preserve custom graph/client conversion hooks when required.
 
-| Protocol | Sample |
-|----------|--------|
-| Responses | [Configuration-driven agent (Responses, LangGraph, Python)](https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/hosted-agents/langgraph/responses/10-run/azure.yaml) |
-| Invocations | [Configuration-driven agent (Invocations, LangGraph, Python)](https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/hosted-agents/langgraph/invocations/03-run/azure.yaml) |
+For in-process tests, enter `app.router.lifespan_context(app)` around `httpx.ASGITransport(app=app)`; check native `/readiness`, actual non-streaming and requested SSE terminal output/status. For cleanup that must support Python 3.10, use `contextlib.ExitStack.enter_context` or `try/finally`, not Python 3.11-only `TestCase.enterContext`. Report the installed package's version requirements and untested versions; a Python 3.13 test is not a 3.10–3.14 matrix. Do not blanket-mock socket connections as offline proof: it can break Windows asyncio's loopback socketpair. State the tested enforcement boundary.
 
-Use a host server integration sample only when the hosting decision above requires that path.
+## Hosting and Protocol Decisions
 
-Samples provide hosting patterns only. Use their manifests, adapters, protocol wiring, and deployment configuration as references; do not treat sample application structure or conventions as the desired final application.
+Prefer configuration-only hosting when configuration expresses the required behavior. Use host-server integration only for custom request/protocol/lifecycle behavior that requires it, not merely because agent code already exists.
+
+| Existing contract | Decision |
+|---|---|
+| Compatible message inputs/outputs and graph state | Responses runner; preserve graph selection |
+| Custom inputs/outputs or state shape | Honor the requested protocol using documented adapter hooks where needed; shape alone does not authorize switching the client API |
+| LangGraph Server runs/threads/state APIs, Studio or custom HTTP routes | Responses hosting does not preserve these; identify client adaptation or a retained service |
+
+## Deployment or Durable State: Only When Requested
+
+For deployment, read [deploy](../../deploy/deploy.md) for the selected azd environment and remote dependency closure. For cloud invocation, read [SDK operations](sdk-operations.md). Developer access is not runtime-principal authorization.
+
+Response history is not a graph checkpoint. Preserve the existing checkpointer unless change is authorized. For requested cross-compute graph/file durability or unfinished-request recovery, use existing SDK guidance: durable graph progress plus host `resilient_background=true` and request `background=true, store=true`; streaming is not categorically excluded. Retrieving the original response is not resubmitting work.
+
+Preserve acceptance constraints through existing delegation, including saved-file format and supported inline citations. Do not rewrite application prompts, inject fabricated output or relax criteria to pass. Verify actual terminal/tool/file results and only the requested state/identity boundaries; an active deployment or Echo response is insufficient. Untested boundaries remain unverified.
+
+## Sample Selection: Scaffolding Only
+
+Use the parent workflow's selection guidance when scaffolding is requested. Existing applications reuse patterns, not sample application structure:
+
+- [Configuration-driven Responses/LangGraph](https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/hosted-agents/langgraph/responses/10-run/azure.yaml)
+- [Configuration-driven Invocations/LangGraph](https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/hosted-agents/langgraph/invocations/03-run/azure.yaml)

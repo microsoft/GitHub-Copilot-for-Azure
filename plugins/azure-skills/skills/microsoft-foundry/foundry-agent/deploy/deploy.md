@@ -94,7 +94,7 @@ azd ai project show --output json
 azd ai agent show --output json
 ```
 
-Branch on output: `not_deployed` -> Step 2. `active` / `deployed` -> redeploy (skip Step 2, go to Step 3). If `azd ai project show` fails with `missing_project_endpoint`, do Step 2 first -- `azd provision` will create the project.
+Branch on output: `not_deployed` -> Step 2. `active` / `deployed` -> redeploy (skip Step 2, go to Step 3). If `azd ai project show` fails with `missing_project_endpoint`, check the selected azd environment and write the known existing endpoint with `azd env set AZURE_AI_PROJECT_ENDPOINT <url>`; a process variable or local `.env` alone may not configure azd. Recheck before continuing. Do not provision a replacement project to repair missing local configuration; Step 2 applies only to requested new resources or real infrastructure changes.
 
 > **Important:** Before deploy, also make sure the agent's `azure.yaml` service block and the azd environment are aligned with the user's provided configuration values.
 
@@ -127,6 +127,8 @@ After provision completes for a new project, run `azd env get-values` and set mi
 Branch by deploy mode.
 
 #### Code deploy
+
+Remote builds need the application's complete declared runtime dependency closure, including dependencies loaded only by delegated tools. Verify imports/startup in a clean environment using the actual upload dependency file, not a developer interpreter with preinstalled packages. If the existing application uses `AzureAIProjectToolbox`, include its MCP adapter dependencies (`langchain-mcp-adapters`, `httpx`, and a compatible `mcp`) in that file; keep versions aligned with the application's verified dependency set. Preserve original providers/tools and declared dependencies. A successful package install or first model call alone does not exercise the delegated search path.
 
 Run `azd env get-values` and verify that these values are set for the intended
 environment:

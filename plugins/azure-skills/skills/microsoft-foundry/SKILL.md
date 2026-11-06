@@ -9,7 +9,7 @@ metadata:
 
 # Microsoft Foundry Skill
 
-This skill helps developers work with Microsoft Foundry resources, covering model discovery and deployment, complete dev lifecycle of AI agent, evaluation workflows, and troubleshooting.
+Guidance for Microsoft Foundry models, agents, resources, evaluation, and troubleshooting.
 
 ## Pre-Execution Requirements
 
@@ -17,9 +17,9 @@ Follow each applicable subsection below before starting its corresponding action
 
 ### Dependency Check and Setup
 
-**MANDATORY:** As the first step after this skill loads, run the dependency check and setup script below from this skill's root and wait for it to finish before continuing. The script checks first and installs only missing dependencies; it does not reinstall dependencies that are already available.
+First establish scope: plan, local implementation/test, or deployment. For an existing LangChain/LangGraph plan or local task, start with [LangChain and LangGraph hosting](foundry-agent/create/references/langchain-langgraph-hosting.md) and the application contract. Do not enter scaffold, deployment, cloud invocation, or metadata workflows unless requested. Read-only tasks perform no setup or execution.
 
-**You MUST complete this check before reading or entering any sub-skill, workflow, or workflow-specific reference.**
+**MANDATORY for execution that needs these dependencies:** Run the setup script before the corresponding workflow and wait for it to finish. It checks first and installs only missing dependencies. Do not run it merely to inspect or plan; local Python hosting work does not require installing azd or cloud tooling.
 
 ```bash
 ./scripts/check-and-setup-dependencies.sh     # macOS / Linux
@@ -42,7 +42,7 @@ Strictly follow the script output for subsequent actions.
 
 ## Sub-Skills
 
-This skill includes specialized sub-skills for specific workflows. **When a sub-skill matches the task, strictly follow its workflow:**
+This skill includes specialized sub-skills for specific workflows. **When a sub-skill matches the task, follow the portions within the requested scope:**
 
 | Sub-Skill | When to Use | Reference |
 |-----------|-------------|-----------|
@@ -92,46 +92,32 @@ Match user intent to the correct infrastructure workflow.
 
 ## Agent Development Lifecycle
 
-Match user intent to the correct agent workflow. Read each sub-skill in order before executing.
+Choose only the requested stages below. Read the selected workflow before executing its steps; complete dependency setup only when needed and read azd guidance before any azd command. Existing LangChain/LangGraph plans and local work use the direct reference rows, not deployment setup.
 
 | User Intent | Workflow (read in order) |
 |-------------|------------------------|
-| Create or develop a Voice Agent (Prompt Voice or Hosted Voice) | [dependency check and setup](#dependency-check-and-setup) → [azd-guidance](foundry-agent/azd-guidance/azd-guidance.md) → [create-voice](foundry-agent/create/create-voice.md) → [deploy](foundry-agent/deploy/deploy.md) → [invoke](foundry-agent/invoke/invoke.md) |
-| Create or develop an explicitly requested Managed Harness Agent / Copilot harness agent | [dependency check and setup](#dependency-check-and-setup) → [azd-guidance](foundry-agent/azd-guidance/azd-guidance.md) → [create-managed-harness](foundry-agent/create/create-managed-harness.md) → [deploy](foundry-agent/deploy/deploy.md) → [invoke](foundry-agent/invoke/invoke.md) |
-| Create a new hosted agent end-to-end (scaffold + deploy + test) | [dependency check and setup](#dependency-check-and-setup) → [azd-guidance](foundry-agent/azd-guidance/azd-guidance.md) → [quick-start-hosted](foundry-agent/create/quick-start-hosted.md) (self-contained end-to-end) |
-| Anything beyond the standard quickstart (existing code, migration, re-hosting, deployment customization, scaffold-time connections, A2A (Agent2Agent), recovery) | [dependency check and setup](#dependency-check-and-setup) → [azd-guidance](foundry-agent/azd-guidance/azd-guidance.md) → [create](foundry-agent/create/create-hosted.md) → [deploy](foundry-agent/deploy/deploy.md) → [invoke](foundry-agent/invoke/invoke.md) |
-| Optimize existing Python hosted agent | [dependency check and setup](#dependency-check-and-setup) → [azd-guidance](foundry-agent/azd-guidance/azd-guidance.md) → [agent-optimizer](foundry-agent/agent-optimizer/agent-optimizer.md) → scaffold/review → eval.yaml → optimize → apply candidate → deploy → invoke |
-| Deploy an agent (code already exists) | [dependency check and setup](#dependency-check-and-setup) → [azd-guidance](foundry-agent/azd-guidance/azd-guidance.md) → deploy (includes eval-suite setup) → invoke → observe (evaluate/optimize) |
-| Update/redeploy an agent after code changes | [dependency check and setup](#dependency-check-and-setup) → [azd-guidance](foundry-agent/azd-guidance/azd-guidance.md) → deploy (includes eval-suite setup) → invoke → observe (evaluate/optimize) |
-| Set up a CI/CD deployment pipeline for a hosted agent | [dependency check and setup](#dependency-check-and-setup) → [azd-guidance](foundry-agent/azd-guidance/azd-guidance.md) → cicd |
-| Invoke/test/chat with an agent | [dependency check and setup](#dependency-check-and-setup) → [azd-guidance](foundry-agent/azd-guidance/azd-guidance.md) → invoke |
-| Schedule/event-trigger an agent, or CRUD/enable/disable/dispatch a routine | [dependency check and setup](#dependency-check-and-setup) → [azd-guidance](foundry-agent/azd-guidance/azd-guidance.md) → routine |
+| Create or develop a Voice Agent (Prompt Voice or Hosted Voice) | [create-voice](foundry-agent/create/create-voice.md) → [deploy](foundry-agent/deploy/deploy.md) → [invoke](foundry-agent/invoke/invoke.md) |
+| Create or develop an explicitly requested Managed Harness Agent / Copilot harness agent | [create-managed-harness](foundry-agent/create/create-managed-harness.md) → [deploy](foundry-agent/deploy/deploy.md) → [invoke](foundry-agent/invoke/invoke.md) |
+| Create a new hosted agent end-to-end (scaffold + deploy + test) | [quick-start-hosted](foundry-agent/create/quick-start-hosted.md) (self-contained end-to-end) |
+| Inspect or plan hosting an existing application (read-only) | Inspect source/configuration → [LangChain and LangGraph hosting](foundry-agent/create/references/langchain-langgraph-hosting.md); stop with facts, a scoped plan, and unverified boundaries |
+| Run, repair, or adapt an existing LangChain/LangGraph application locally | [LangChain and LangGraph hosting](foundry-agent/create/references/langchain-langgraph-hosting.md) → installed public hosting API or specific guide section; no scaffold, deployment, Azure calls, or metadata bootstrap |
+| Scaffold or deploy beyond the standard quickstart (existing code with authorized deployment, connections, A2A, recovery) | Inspect the existing application contract → required dependency setup → [azd-guidance](foundry-agent/azd-guidance/azd-guidance.md) before azd → [create](foundry-agent/create/create-hosted.md); only requested deploy/invoke stages |
+| Optimize existing Python hosted agent | [agent-optimizer](foundry-agent/agent-optimizer/agent-optimizer.md) → scaffold/review → eval.yaml → optimize → apply candidate → deploy → invoke |
+| Deploy an agent (code already exists) | [deploy](foundry-agent/deploy/deploy.md) → invoke → observe; only requested stages |
+| Update/redeploy an agent after code changes | [deploy](foundry-agent/deploy/deploy.md) → invoke → observe; only requested stages |
+| Set up a CI/CD deployment pipeline for a hosted agent | cicd |
+| Invoke/test/chat with an agent | invoke |
+| Schedule/event-trigger an agent, or CRUD/enable/disable/dispatch a routine | routine |
 | Optimize / improve agent prompt or instructions | observe (Step 4: Optimize) |
 | Evaluate and optimize agent (full loop) | observe |
 | Enable continuous evaluation monitoring | observe (Step 6: CI/CD & Monitoring) |
-| Pull agent insights / list generated issues and recommendations | [dependency check and setup](#dependency-check-and-setup) → [insights](foundry-agent/insights/insights.md) (all pages with expanded evidence; read-only) |
-| Troubleshoot an agent issue | [dependency check and setup](#dependency-check-and-setup) → [azd-guidance](foundry-agent/azd-guidance/azd-guidance.md) → invoke → troubleshoot |
-| Fix a broken agent (troubleshoot + redeploy) | [dependency check and setup](#dependency-check-and-setup) → [azd-guidance](foundry-agent/azd-guidance/azd-guidance.md) → invoke → troubleshoot → apply fixes → deploy → invoke |
+| Pull agent insights / list generated issues and recommendations | [insights](foundry-agent/insights/insights.md) (all pages with expanded evidence; read-only) |
+| Troubleshoot an agent issue | invoke → troubleshoot |
+| Fix a broken agent (troubleshoot + redeploy) | invoke → troubleshoot → apply fixes → deploy → invoke |
 
 ## Agent: .foundry Workspace Standard
 
-Every agent source folder can keep Foundry-specific cache and overlay state under `.foundry/`:
-
-```text
-<agent-root>/
-  .foundry/
-    agent-metadata.yaml
-    agent-metadata.prod.yaml
-    suites/
-    datasets/
-    evaluators/
-    results/
-```
-
-- In azd projects, derive deployment context (project endpoint, agent name/version, ACR, App Insights) from `azure.yaml` plus `azd env get-values`; do not duplicate those values in metadata when azd already provides them.
-- `agent-metadata.yaml` is the preferred local/dev overlay for non-azd values, remote Foundry suite references, local cache paths, result summaries, and explicit overrides. Optional sidecar files such as `agent-metadata.prod.yaml` can hold a single prod or CI-targeted overlay without mixing multiple environments in one file.
-- `suites/`, `datasets/`, and `evaluators/` are local cache folders. Reuse them when they are current, and ask before refreshing or overwriting them.
-- See [Agent Metadata Contract](references/agent-metadata-contract.md) for the canonical schema and workflow rules.
+For Foundry cache/overlay work, follow [Agent Metadata Contract](references/agent-metadata-contract.md). Keep azd-owned deployment context authoritative; ask before refreshing or overwriting user-edited cache/metadata. An existing-app plan or local task does not require creating this workspace.
 
 ## Agent: Setup References
 
@@ -139,118 +125,9 @@ Every agent source folder can keep Foundry-specific cache and overlay state unde
 
 ## Agent: Common Project Context Resolution
 
-Agent skills should run this step **only when they need configuration values they don't already have**. If a value (for example, agent root, environment, project endpoint, or agent name) is already known from the user's message or a previous skill in the same session, skip resolution for that value.
+For create/deploy, cloud invocation, observe/trace, or metadata work, read [Detailed Context Resolution](references/agent-metadata-contract.md#detailed-context-resolution) only for values not already known. The canonical overlay schema and resolution workflow are maintained together there.
 
-### Step 1: Discover Agent Roots and azd Context
-
-First check whether the workspace has `azure.yaml` with services using `host: azure.ai.agent`.
-
-- **One azd agent service** -> classify it from `kind`, `harness`, `modelType`, and `conversationEngine`, then use that service's `project` folder or the `azure.yaml` directory as the agent root.
-- **Multiple azd agent services** -> check whether a Voice wrapper references a `kind: hosted` service via `conversationEngine.name`:
-  - **Selecting the Hosted Voice wrapper** implies its named `kind: hosted` target as an upstream dependency (`uses: [<target>]`, `conversationEngine.name: <target>`); deploy and verification must report both services separately.
-  - **Selecting the `kind: hosted` target alone** scopes changes/debugging to the target container and does not automatically modify the wrapper.
-  - **Otherwise** -> require the user to choose the target service/folder.
-- **No azd agent service** -> search the workspace for `.foundry/` folders that contain `agent-metadata.yaml` or `agent-metadata.<env>.yaml`.
-  - **One match** -> use that agent root.
-  - **Multiple matches** -> require the user to choose the target agent folder.
-  - **No matches** -> for [insights](foundry-agent/insights/insights.md), ask only for missing remote inputs without initializing local files; for create/deploy workflows, seed a new `.foundry/` folder during setup; for other workflows, stop and ask the user which agent source folder to initialize.
-
-After selecting an agent root, keep all local `.foundry` cache inspection, source inspection, evaluator suggestions, dataset suggestions, and prompt-optimization context inside that folder only. Do **not** scan sibling agent folders unless the user explicitly switches roots.
-
-### Step 2: Resolve Environment and Deployment Context
-
-If `azure.yaml` is present, resolve the azd environment first:
-
-1. Environment explicitly named by the user
-2. `AZURE_ENV_NAME` from `azd env get-values`
-3. azd default environment from `.azure/config.json`
-4. Environment already selected earlier in the session
-
-Run `azd env get-values` for the selected environment when project/deployment values are not already known. Prefer azd values for deployment context:
-
-| azd Variable | Resolves To |
-|-------------|-------------|
-| `AZURE_AI_PROJECT_ENDPOINT` or `AZURE_AIPROJECT_ENDPOINT` | Project endpoint |
-| `AGENT_<SERVICE>_NAME` | Agent name for the selected azd service |
-| `AGENT_<SERVICE>_VERSION` | Agent version for the selected azd service |
-| `AZURE_CONTAINER_REGISTRY_NAME` or `AZURE_CONTAINER_REGISTRY_ENDPOINT` | ACR registry name / image URL prefix |
-| `APPLICATIONINSIGHTS_CONNECTION_STRING` | App Insights connection string for trace workflows |
-| `AZURE_SUBSCRIPTION_ID`, `AZURE_RESOURCE_GROUP`, `AZURE_AI_ACCOUNT_NAME`, `AZURE_AI_PROJECT_NAME` | Azure resource lookup and Playground links |
-
-When azd supplies these values, use them as the source of truth and do not copy them into `.foundry/agent-metadata*.yaml` on metadata writes.
-
-### Step 3: Select Metadata Overlay and Resolve Environment
-
-Inside the selected agent root, choose the metadata file in this order:
-1. Metadata filename or path explicitly provided by the user or workflow
-2. If an explicit environment is already known and `.foundry/agent-metadata.<env>.yaml` exists, use that file
-3. `.foundry/agent-metadata.yaml`
-4. If multiple metadata files remain and no rule above selects one, prompt the user to choose
-
-Read the selected metadata file and resolve any remaining environment choice in this order:
-1. Environment explicitly named by the user
-2. If the selected metadata file defines exactly one environment, use it
-3. Environment already selected earlier in the session
-4. `defaultEnvironment` from metadata
-
-If the selected metadata file still contains multiple environments and none of the rules above selects one, prompt the user to choose. Keep the selected agent root, metadata file, environment, and whether context came from azd or metadata visible in every workflow summary.
-
-If the selected environment exposes older `testSuites[]` metadata but not `evaluationSuites[]`, treat `testSuites[]` as the source for this session and normalize each entry in memory to the `evaluationSuites[]` shape before continuing. If the metadata is older still and only exposes legacy `testCases[]`, normalize that list the same way. Preserve dataset and evaluator fields, keep any existing `tags`, and map legacy `priority` to `tags.tier` only when `tags.tier` is missing: `P0` -> `smoke`, `P1` -> `regression`, `P2` -> `coverage`.
-
-### Step 4: Resolve eval.yaml Local Evaluation Intent
-
-If `eval.yaml` exists in the selected agent root, parse it before generating new suites:
-
-- `agent.name` -> target agent candidate; verify it matches the selected azd/metadata agent before using it.
-- `dataset.local_uri` -> local seed dataset candidate; legacy `dataset_file` may be normalized in memory.
-- `dataset.name` / `dataset.version` -> registered dataset candidate.
-- `validation_dataset` -> optional validation dataset candidate.
-- `evaluators[]` -> candidate Foundry evaluator names; verify with `evaluator_catalog_get` before treating them as remote evaluators.
-- `name` -> local eval/suite candidate; verify remotely before persisting as `suiteName`.
-- `options.eval_model`, `options.optimization_model`, `options.max_candidates`, `options.optimization_config.model_search_space`, `options.pass_threshold`, `max_samples`, `trace_days`, and `generation_instruction` -> setup defaults.
-
-Treat `eval.yaml` as local evaluation intent, not proof that a Foundry suite exists. Persist synced suite/dataset/evaluator references to `.foundry` only after remote lookup or registration succeeds.
-
-### Step 5: Resolve Common Configuration
-
-Layer sources in this order:
-
-1. Explicit user input and values already selected in the session
-2. azd environment values for deployment context
-3. `.foundry/agent-metadata*.yaml` overlay values and remote suite/cache references
-4. `azure.yaml` and `eval.yaml` local source configuration
-5. User prompts for anything still missing
-
-If azd and metadata both provide the same value and they differ, stop and ask which source is authoritative. If they match, use the azd value and avoid rewriting the duplicate on future metadata writes.
-
-| Effective Value | Preferred Source | Used By |
-|-----------------|------------------|---------|
-| Project endpoint | azd env | deploy, invoke, observe, trace, troubleshoot |
-| Agent name/version | azd agent variables, then `azure.yaml` | invoke, observe, trace, troubleshoot |
-| ACR | azd env | deploy |
-| Evaluation suites and cache paths | `.foundry/agent-metadata*.yaml` | observe, eval-datasets |
-| Local seed dataset/evaluator intent | `eval.yaml` | observe, eval-datasets |
-
-### Step 6: Write Metadata Overlay (Create/Deploy/Observe Only)
-
-On any metadata write (deploy, auto-setup, dataset refresh, or trace-to-dataset update), persist only non-derivable overlay/cache state in the selected metadata file:
-
-- azd binding (`azd.environmentName`, `azd.service`) when useful for future resolution
-- `evaluationSuites[]` with remote suite/dataset/evaluator references and local cache paths
-- `lastEval`, result files, comparison summaries, or explicit non-azd overrides
-
-Do not copy azd-owned deployment values into metadata when azd already provides them. If the selected file is a preferred single-environment file, rewrite only that one environment block. If the selected file is a legacy multi-environment file, rewrite only the selected environment block. Never copy or merge environments across sibling metadata files automatically. If the selected environment still uses older `testSuites[]` or legacy `testCases[]`, rewrite it to `evaluationSuites[]` and remove migrated `priority` fields from the rewritten entries.
-
-### Step 7: Collect Missing Values
-
-Use the `ask_user` or `askQuestions` tool **only for values not resolved** from the user's message, session context, metadata, or azd bootstrap. Common values skills may need:
-- **Agent root** — Target azd service project folder or folder containing `.foundry/agent-metadata*.yaml`
-- **Metadata file** — `agent-metadata.yaml` for local/dev, or an explicit sidecar such as `agent-metadata.prod.yaml`
-- **Environment** — azd environment, `dev`, `prod`, or another environment key from metadata
-- **Project endpoint** — Microsoft Foundry project endpoint URL
-- **Agent name** — Name of the target agent
-
-> 💡 **Tip:** If the user already provides the agent path, environment, project endpoint, or agent name, extract it directly — do not ask again.
+Existing-app read-only plans and local implementation/tests use the direct routing above. Do not resolve a cloud project, initialize metadata, scan unrelated evaluation configuration, or run azd for those tasks.
 
 ## Agent: Agent Types
 
@@ -293,20 +170,4 @@ Use `agent_get` only when the type cannot be resolved from project context. Pres
 
 ## Network Isolation Errors
 
-Applies to **any** call against a Foundry project or its parent Foundry account — Foundry MCP tools, `azd`, `az` CLI, `curl`, REST, or SDK.
-
-If an error matches `Public access is disabled` / `PublicNetworkAccessDisabled` / `403 Forbidden` from a private endpoint / connection timeout / the project endpoint FQDN resolves to a public IP, this typically means the parent Foundry account has `publicNetworkAccess=Disabled` or `Enabled from selected IP addresses`, and the current shell is outside its VNet.
-
-Only if the error is ambiguous, confirm against the Foundry account using a management-plane call (works from anywhere with reader access):
-
-```bash
-az cognitiveservices account show \
-  --name <account> --resource-group <rg> \
-  --query "properties.{publicNetworkAccess:publicNetworkAccess, networkAcls:networkAcls, privateEndpointConnections:privateEndpointConnections[].properties.privateLinkServiceConnectionState.status}"
-```
-
-`publicNetworkAccess: "Disabled"` — or `"Enabled"` together with non-empty `networkAcls.ipRules` / `virtualNetworkRules` — confirms isolation. If `publicNetworkAccess: "Enabled"` and `networkAcls` is empty, the failure is a caller-side network issue (e.g. Private DNS resolving the FQDN to a public IP from inside a VNet with a private endpoint), not an account-config issue.
-
-If it's indeed a network isolation issue, supported connection options are documented in [Choose a secure connection method to Foundry](https://learn.microsoft.com/azure/foundry/how-to/configure-private-link#choose-a-secure-connection-method-to-foundry).
-
-> ℹ️ Foundry MCP tools cannot reach a VNet-isolated project even from inside the VNet.
+For Foundry project/account calls, read [network-isolation guidance](references/auth-best-practices.md#network-isolation-errors) when errors identify disabled public access, a private-endpoint failure, or suspected private DNS. A generic 403 alone does not establish isolation. Preserve the existing network boundary.

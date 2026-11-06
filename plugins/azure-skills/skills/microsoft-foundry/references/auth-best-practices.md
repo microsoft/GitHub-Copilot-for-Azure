@@ -128,3 +128,17 @@ function getCredential() {
 - [Python identity library](https://learn.microsoft.com/python/api/overview/azure/identity-readme)
 - [JavaScript identity library](https://learn.microsoft.com/javascript/api/overview/azure/identity-readme)
 - [Java identity library](https://learn.microsoft.com/java/api/overview/azure/identity-readme)
+
+## Network Isolation Errors
+
+For Foundry project/account calls through MCP, azd, Azure CLI, REST, or an SDK, distinguish network reachability from authentication and authorization. Explicit `PublicNetworkAccessDisabled` errors or private-endpoint/DNS failures justify network investigation; a generic 403 or timeout alone does not prove isolation.
+
+When the error is ambiguous and a management-plane read is authorized, inspect the parent account:
+
+```bash
+az cognitiveservices account show --name <account> --resource-group <rg> --query "properties.{publicNetworkAccess:publicNetworkAccess,networkAcls:networkAcls,privateEndpointConnections:privateEndpointConnections[].properties.privateLinkServiceConnectionState.status}"
+```
+
+Compare the account's public-access policy, selected-network rules, approved private endpoints, and the caller's DNS/routing. Disabled public access requires an approved private connection; enabled public access alone does not establish that the caller can reach the endpoint. Do not classify all 403 responses as networking or use an account-setting check as proof of end-to-end connectivity.
+
+Preserve the network boundary. Use an approved connection method from [Configure network isolation for Foundry](https://learn.microsoft.com/azure/foundry/how-to/configure-private-link#choose-a-secure-connection-method-to-foundry), and verify whether the selected MCP/tool execution environment can reach it. Do not enable public access or change firewall rules merely to complete a local task.
