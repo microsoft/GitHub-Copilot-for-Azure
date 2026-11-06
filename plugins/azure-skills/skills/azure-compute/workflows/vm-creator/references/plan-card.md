@@ -36,8 +36,8 @@ The Plan Card is the single source of truth for the create-flow. It renders **ev
 | Public IP | Standard, dynamic | default |
 | OS disk | 30 GB Premium SSD | default |
 | Boot diagnostics | Managed | default |
-| Estimated cost | ~$0.096/hr (~$70/mo) | from `compute_vm_list-skus` |
-| Quota | ✅ 4/100 vCPUs used in `standardDSv5Family` | from `compute_vm_check-quota` |
+| Estimated cost | ~$0.096/hr (~$70/mo) | from [Retail Prices API](../../../references/retail-prices-api.md) |
+| Quota | ✅ 4/100 vCPUs used in `standardDSv5Family` | from `az vm list-usage` |
 ```
 
 ## After rendering — single batched action picker

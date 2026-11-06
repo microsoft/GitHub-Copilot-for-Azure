@@ -29,7 +29,7 @@ az deployment group create \
 | `adminUsername` | * | — | Linux admin user |
 | `adminPublicKey` | * | — | Contents of `id_rsa.pub` (secure) |
 | `location` | | resourceGroup location | Azure region |
-| `vmSize` | | `Standard_D2s_v5` | Verify availability with `compute_vm_list-skus` |
+| `vmSize` | | `Standard_D2s_v5` | Verify availability with `az vm list-skus --location <region> --size <size>` |
 | `osDiskSizeGb` | | `30` | |
 | `osDiskType` | | `Premium_LRS` | |
 | `zone` | | `''` | `1`/`2`/`3`, or empty for regional |

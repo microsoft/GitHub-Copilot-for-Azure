@@ -7,10 +7,7 @@ Azure MCP server installed, and the user is signed in to Azure (e.g. `az login`)
 
 ## Pre-flight checks (read-only)
 
-```
-compute_vm_check-quota(subscription, location, family={derived from vmSize})
-compute_vm_list-skus(subscription, location, familyPrefix={derived from vmSize})
-```
+Azure MCP has no command to list VM sizes, and its `quota_usage_check` returns only a partial view (at most three sizes per family). Run the CLI checks in [validation-gates.md](../validation-gates.md) first.
 
 Confirm:
 - Quota has headroom for the requested vCPU count
@@ -60,7 +57,7 @@ Call `compute_vmss_create` with the same fields, plus:
 
 | Error | Action |
 |---|---|
-| `Quota exceeded` | re-run `compute_vm_check-quota`; suggest smaller SKU or different family |
+| `Quota exceeded` | re-run `az vm list-usage`; suggest smaller SKU or different family |
 | `A VM with the specified name already exists` | ask for a new name |
 | `Resource not found` on RG | create the RG first (`group_create` MCP or `az group create`) |
 | `Authorization failed` | user needs Contributor or VM Contributor on the RG |
