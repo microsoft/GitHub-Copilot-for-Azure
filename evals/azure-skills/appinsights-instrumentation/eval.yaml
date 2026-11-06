@@ -33,6 +33,7 @@ stimuli:
   - name: "App Insights instrumentation for ASP.NET Core"
     prompt: "How do I add Application Insights to my ASP.NET Core web app?"
     tags:
+      azurePermission: none
       type: integration
       tier: smoke
       cost: llm
@@ -59,6 +60,7 @@ stimuli:
         - src: fixture/package.json
           dest: package.json
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -89,6 +91,7 @@ stimuli:
         - src: fixture/aspnetcore-app/aspnetcore-app.csproj
           dest: aspnetcore-app.csproj
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -120,6 +123,7 @@ stimuli:
         - src: fixture/python-app/requirements.txt
           dest: requirements.txt
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm

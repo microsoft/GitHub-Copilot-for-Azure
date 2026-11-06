@@ -1,0 +1,21 @@
+name: Stop Azure profile refresh
+description: Stop the refresh process and fail if it exited unexpectedly.
+runs:
+  using: composite
+  steps:
+    - name: Stop refresh and check status
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [ -z "${AZURE_PROFILE_REFRESH_PID:-}" ]; then
+          exit 0
+        fi
+        if [ -f "$AZURE_PROFILE_REFRESH_STATUS" ]; then
+          echo "::error::Azure profile refresh failed (exit $(cat "$AZURE_PROFILE_REFRESH_STATUS"))"
+          exit 1
+        fi
+        if ! kill -0 "$AZURE_PROFILE_REFRESH_PID" 2>/dev/null; then
+          echo "::error::Azure profile refresh is no longer running"
+          exit 1
+        fi
+        kill "$AZURE_PROFILE_REFRESH_PID"

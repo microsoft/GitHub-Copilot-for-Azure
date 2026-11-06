@@ -36,6 +36,7 @@ stimuli:
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
     tags:
+      azurePermission: none
       type: integration
       tier: smoke
       cost: llm
@@ -61,6 +62,7 @@ stimuli:
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -86,6 +88,7 @@ stimuli:
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -111,6 +114,7 @@ stimuli:
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -136,6 +140,7 @@ stimuli:
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -161,6 +166,7 @@ stimuli:
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm

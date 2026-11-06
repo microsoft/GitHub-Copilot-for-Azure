@@ -31,6 +31,7 @@ stimuli:
   - name: "Blob storage upload and container management"
     prompt: "How do I upload files to Azure Blob Storage and manage containers?"
     tags:
+      azurePermission: none
       type: integration
       tier: smoke
       cost: llm
@@ -52,6 +53,7 @@ stimuli:
   - name: "Storage access tiers guidance"
     prompt: "What are the different Azure Storage access tiers and when should I use them?"
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -73,6 +75,7 @@ stimuli:
   - name: "Blob SDK upload and download"
     prompt: "How do I upload and download blobs from Azure Blob Storage in my application?"
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm

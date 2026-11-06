@@ -4,10 +4,37 @@
 import type { SystemMessageConfig } from "@github/copilot-sdk";
 import * as path from "node:path";
 import type { AgentMetadata } from "../utils/agent-runner.ts";
+import { getProfileEnvironment } from "../utils/azure-environment.ts";
 import { isSkillInvoked, getToolCalls, getAllAssistantMessages, argsString } from "../utils/evaluate.ts";
 
 const INLINE_PATTERN_FLAGS = /^\(\?([ims]+)\)/;
 const SCOPED_INLINE_PATTERN_FLAGS = /^\(\?([ims]+):([\s\S]*)\)$/;
+
+export function getAzureEnvironment(
+  tags: Record<string, string | string[]> | undefined,
+  env: NodeJS.ProcessEnv = process.env,
+): Record<string, string> {
+  // An empty TEST_PERMISSION enables profile selection; undefined preserves local credentials.
+  if (env.CI !== "true" || env.TEST_PERMISSION === undefined) {
+    return {};
+  }
+  const permission = tags?.azurePermission ?? "admin";
+  if (permission !== "none" && permission !== "read" && permission !== "write" && permission !== "admin") {
+    throw new Error("tags.azurePermission must be 'read', 'write', 'admin', or 'none' when specified");
+  }
+
+  const selected = getProfileEnvironment(permission, env);
+  const azdVariable = `AZD_${permission.toUpperCase()}_CONFIG_DIR`;
+  const azdDirectory = env[azdVariable]?.trim();
+  if (!azdDirectory || !path.isAbsolute(azdDirectory)) {
+    throw new Error(`${azdVariable} must be an absolute azd profile path`);
+  }
+  return {
+    AZURE_CLIENT_ID: selected.AZURE_CLIENT_ID!,
+    AZURE_CONFIG_DIR: selected.AZURE_CONFIG_DIR!,
+    AZD_CONFIG_DIR: azdDirectory,
+  };
+}
 
 export function compileEarlyTerminatePattern(pattern: string): RegExp {
   const scopedInlineFlags = SCOPED_INLINE_PATTERN_FLAGS.exec(pattern);

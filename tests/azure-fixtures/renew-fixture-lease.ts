@@ -1,4 +1,4 @@
-import { DefaultAzureCredential } from "@azure/identity";
+import { createWriteCredential } from "../utils/azure-environment.ts";
 import { BlobServiceClient } from "@azure/storage-blob";
 
 const RENEWAL_INTERVAL_MS = 15_000;
@@ -12,7 +12,7 @@ let stopped = false;
 let operation = Promise.resolve();
 const serviceClient = new BlobServiceClient(
   `https://${accountName}.blob.core.windows.net`,
-  new DefaultAzureCredential(),
+  createWriteCredential(),
 );
 const leaseClient = serviceClient
   .getContainerClient(containerName)

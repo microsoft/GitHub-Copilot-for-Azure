@@ -58,6 +58,7 @@ stimuli:
     constraints:
       max_turns: 50
     tags:
+      azurePermission: read
       type: integration
       tier: full
       cost: llm
@@ -104,6 +105,7 @@ stimuli:
     constraints:
       max_turns: 50
     tags:
+      azurePermission: read
       type: integration
       tier: full
       cost: llm
@@ -154,6 +156,7 @@ stimuli:
     constraints:
       max_turns: 50
     tags:
+      azurePermission: read
       type: integration
       tier: full
       cost: llm
@@ -199,6 +202,7 @@ stimuli:
     constraints:
       max_turns: 50
     tags:
+      azurePermission: read
       type: integration
       tier: full
       cost: llm
@@ -246,6 +250,7 @@ stimuli:
     constraints:
       max_turns: 50
     tags:
+      azurePermission: read
       type: integration
       tier: full
       cost: llm
@@ -287,6 +292,7 @@ stimuli:
     constraints:
       max_turns: 50
     tags:
+      azurePermission: read
       type: integration
       tier: full
       cost: llm

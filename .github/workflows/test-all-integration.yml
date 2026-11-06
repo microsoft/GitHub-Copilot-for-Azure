@@ -56,7 +56,6 @@ jobs:
       deploy-test-pattern: ${{ steps.resolve.outputs.deploy-test-pattern }}
     steps:
       - name: Checkout repository
-        if: github.event_name == 'schedule'
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Resolve inputs based on trigger type
@@ -108,6 +107,9 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
       has_azure_deploy: ${{ steps.set-matrix.outputs.has_azure_deploy }}
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
       - name: Parse skills input into matrix
         id: set-matrix
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
@@ -119,7 +121,10 @@ jobs:
             // Each item is in the form of "<plugin-dirname>/<skill-name>"
             // Filter out azure-deploy (it runs via a separate reusable workflow)
             const skillsInput = process.env.SKILLS_INPUT || "";
-            const skills = skillsInput.split(",").map(s => s.trim());
+            const skills = [...new Set(skillsInput.split(",").map(s => s.trim()).filter(Boolean))];
+            if (skills.some(skill => !/^[a-z0-9-]+\/[a-z0-9-]+$/.test(skill))) {
+              throw new Error("Skills must be plugin/skill references");
+            }
 
             // Check if azure-deploy is in the list
             const hasAzureDeploy = skills.includes("azure-skills/azure-deploy");
@@ -142,211 +147,39 @@ jobs:
 
   test:
     name: Integration – ${{ matrix.skill }}
-    needs: [resolve-inputs, setup]
+    needs: setup
     if: needs.setup.outputs.matrix != '[]'
-    environment: cideploytest
     runs-on: ubuntu-latest
+    environment: cideploytest
     env:
-      AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      AZURE_STAGE_CLIENT_ID: ${{ vars.AZURE_STAGE_CLIENT_ID }}
+      AZURE_READ_CLIENT_ID: ${{ vars.AZURE_READ_CLIENT_ID }}
+      AZURE_WRITE_CLIENT_ID: ${{ vars.AZURE_WRITE_CLIENT_ID }}
+      AZURE_ADMIN_CLIENT_ID: ${{ vars.AZURE_ADMIN_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      AZURE_STAGE_SUBSCRIPTION_ID: ${{ vars.AZURE_STAGE_SUBSCRIPTION_ID }}
+      AZURE_FIXTURE_COORDINATION_STORAGE_ACCOUNT: ${{ vars.AZURE_FIXTURE_COORDINATION_STORAGE_ACCOUNT }}
+      AZURE_FIXTURE_COORDINATION_CONTAINER: ${{ vars.AZURE_FIXTURE_COORDINATION_CONTAINER }}
+      REPORT_STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
+      REPORT_STORAGE_CONTAINER: ${{ github.event_name == 'schedule' && (vars.REPORT_STORAGE_CONTAINER || 'integration-reports') || (vars.MANUAL_REPORT_STORAGE_CONTAINER || 'manual-integration-reports') }}
+      TOKEN_USAGE_STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
+      TOKEN_USAGE_TABLE_NAME: ${{ vars.TOKEN_USAGE_TABLE || 'integrationtokenusage' }}
+      TOOL_USAGE_STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
+      TOOL_USAGE_TABLE_NAME: ${{ vars.TOOL_USAGE_TABLE || 'integrationtoolusage' }}
     strategy:
-      fail-fast: false # don't cancel siblings on failure
-      max-parallel: 5 # limit number of concurrent jobs
+      fail-fast: false
+      max-parallel: 5
       matrix:
         skill: ${{ fromJson(needs.setup.outputs.matrix) }}
-
-    defaults:
-      run:
-        working-directory: tests
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           fetch-depth: 0
-
-      - name: Install azd
-        uses: Azure/setup-azd@0b7e3a35ab00f2eee7080c845eb39c3f0ebfa553 # v2
-
-      - name: Log in with Azure (Federated Credentials)
-        run: |
-          azd auth login `
-            --client-id "$Env:AZURE_CLIENT_ID" `
-            --federated-credential-provider "github" `
-            --tenant-id "$Env:AZURE_TENANT_ID"
-        shell: pwsh
-
-      - name: Azure login
-        uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
+      - name: Run skill tests and publish reports
+        uses: ./.github/actions/test-integration
         with:
-          client-id: ${{ vars.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-
-      # azure/login only fetches the OIDC access token once.
-      # If a test starts after the token expires, it will fail with authentication errors.
-      # This step runs code to refresh the cached OIDC access token periodically to ensure all tests have a valid access token.
-      # Learn more at https://github.com/Azure/login/issues/372
-      # Refresh interval is sub-5-minutes because the OIDC token's lifetime is
-      # 5 minutes. Using 240s avoids seeing invalid tokens due to clock skew.
-      - name: Fetch OIDC token every 240 seconds
-        shell: bash
-        env:
-          AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
-          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
-        run: |
-          while true; do
-            token=$(curl -s -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange" | jq .value -r)
-            az login --service-principal -u $AZURE_CLIENT_ID -t $AZURE_TENANT_ID --federated-token $token --output none
-            sleep 240
-          done &
-
-      - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: "22"
-          cache: "npm"
-          cache-dependency-path: tests/package-lock.json
-
-      - name: Setup .NET
-        if: contains(needs.resolve-inputs.outputs.skills, 'azure-deploy')
-        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
-        with:
-          dotnet-version: "10.0.x"
-
-      - name: Setup Python
-        if: contains(needs.resolve-inputs.outputs.skills, 'azure-deploy')
-        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
-        with:
-          python-version: "3.13"
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build plugin output
-        run: |
-          cd ..
-          npm ci --ignore-scripts
-          npm run build
-
-      # github.token(aka. GITHUB_TOKEN) is granted permission to make CAPI requests by having the copilot-requests permission
-      - name: Setup Copilot CLI
-        id: setup-copilot-cli
-        uses: mvkaran/setup-copilot-cli@d05a47209e6b3185c9c55702bef49f28e6eebef7 # v1
-        with:
-          token: ${{ github.token }}
-
-      # Integration tests are broken down per skill for easy tracking of partially complete runs.
-      # Test failures now fail the job (continue-on-error: false), while report steps still run via if: always().
-      # Skill authors should use the reports to identify issues and polish their skills/tests.
-
-      # Override the number of concurrent workers to 2 to prevent a GitHub hosted Actions runner running out of memory.
-      - name: Run integration tests (vally) - ${{ matrix.skill }}
-        env:
-          NO_SKILLS: ${{ inputs.no-skills && 'true' || '' }}
-          TEST_RUN_ID: all-integration
-          MODEL_OVERRIDE: ${{ inputs.model-override }}
-          SKILL: ${{ matrix.skill }}
-        run: |
-          PLUGIN_DIR="${SKILL%%/*}"
-          SKILL_NAME="${SKILL##*/}"
-          npm run test:vally -- --plugin $PLUGIN_DIR --skill $SKILL_NAME --workers 2
-
-      - name: Generate skill report
-        if: always()
-        id: generate-skill-report
-        env:
-          SKILL: ${{ matrix.skill }}
-        run: |
-          SKILL_NAME="${SKILL##*/}"
-          npm run report -- --skill "$SKILL_NAME" || true
-
-      - name: Show skill report
-        if: always()
-        id: show-skill-report
-        run: |
-          SKILL_REPORT=$(find reports -name "*-SKILL-REPORT.md" -type f | head -n 1)
-          if [ -n "$SKILL_REPORT" ]; then
-            echo "Found skill report: $SKILL_REPORT"
-            cat "$SKILL_REPORT" >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "No skill report found"
-          fi
-
-      # Note: The managed identity must have write permission to the target storage account
-      - name: Publish report to Azure Storage
-        if: always() && github.event_name == 'schedule' && vars.REPORT_STORAGE_ACCOUNT != ''
-        id: publish-report
-        env:
-          RUN_ID: ${{ github.run_id }}
-          JOB_ID: ${{ github.job }}
-          STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
-          STORAGE_CONTAINER: ${{ vars.REPORT_STORAGE_CONTAINER || 'integration-reports' }}
-          SKILL: ${{ matrix.skill }}
-        run: |
-          DATE=$(date -u +%Y-%m-%d)
-          SKILL_NAME="${SKILL##*/}"
-          PREFIX="${DATE}/${RUN_ID}/${SKILL_NAME}/"
-          echo "Uploading reports to ${STORAGE_ACCOUNT}/${STORAGE_CONTAINER}/${PREFIX}"
-          az storage blob upload-batch \
-            --account-name "$STORAGE_ACCOUNT" \
-            --destination "$STORAGE_CONTAINER" \
-            --destination-path "$PREFIX" \
-            --source reports/test-run-all-integration/ \
-            --auth-mode login \
-            --overwrite
-
-      # Publish reports to the same storage account but a separate container for manual runs.
-      # Note: The managed identity must have write permission to the target storage account.
-      - name: Publish report to Azure Storage (manual run)
-        if: always() && github.event_name == 'workflow_dispatch' && vars.REPORT_STORAGE_ACCOUNT != ''
-        id: publish-report-manual
-        env:
-          RUN_ID: ${{ github.run_id }}
-          JOB_ID: ${{ github.job }}
-          STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
-          STORAGE_CONTAINER: ${{ vars.MANUAL_REPORT_STORAGE_CONTAINER || 'manual-integration-reports' }}
-          SKILL: ${{ matrix.skill }}
-        run: |
-          DATE=$(date -u +%Y-%m-%d)
-          SKILL_NAME="${SKILL##*/}"
-          PREFIX="${DATE}/${RUN_ID}/${SKILL_NAME}/"
-          echo "Uploading reports to ${STORAGE_ACCOUNT}/${STORAGE_CONTAINER}/${PREFIX}"
-          az storage blob upload-batch \
-            --account-name "$STORAGE_ACCOUNT" \
-            --destination "$STORAGE_CONTAINER" \
-            --destination-path "$PREFIX" \
-            --source reports/test-run-all-integration/ \
-            --auth-mode login \
-            --overwrite
-
-      # Upload per-test token usage to the Azure Table that powers the dashboard's
-      # "token usage over time" page. Runs for both scheduled and manual runs.
-      # Note: The managed identity must have Storage Table Data Contributor on the storage account.
-      - name: Upload token usage to table
-        if: always() && vars.REPORT_STORAGE_ACCOUNT != ''
-        env:
-          TOKEN_USAGE_STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
-          TOKEN_USAGE_TABLE_NAME: ${{ vars.TOKEN_USAGE_TABLE || 'integrationtokenusage' }}
-          SKILL_INPUT: ${{ matrix.skill }}
-          BRANCH: ${{ github.ref_name }}
-          RUN_ID: ${{ github.run_id }}
-        run: |
-          export SKILL="${SKILL_INPUT##*/}"
-          npm run upload:token-usage
-
-      # Upload per-run tool usage (one row per tool call) to the Azure Table that
-      # powers the dashboard's per-run tool review. Runs for both scheduled and manual runs.
-      # Note: The managed identity must have Storage Table Data Contributor on the storage account.
-      - name: Upload tool usage to table
-        if: always() && vars.REPORT_STORAGE_ACCOUNT != ''
-        env:
-          TOOL_USAGE_STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
-          TOOL_USAGE_TABLE_NAME: ${{ vars.TOOL_USAGE_TABLE || 'integrationtoolusage' }}
-          SKILL_INPUT: ${{ matrix.skill }}
-          BRANCH: ${{ github.ref_name }}
-          RUN_ID: ${{ github.run_id }}
-        run: |
-          export SKILL="${SKILL_INPUT##*/}"
-          npm run upload:tool-usage
+          skill: ${{ matrix.skill }}
+          model-override: ${{ inputs.model-override || '' }}
+          no-skills: ${{ inputs.no-skills || false }}

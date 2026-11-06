@@ -126,7 +126,7 @@ The script maintains a "context." The context contains metadata about the script
 - `subscriptionId`: the subscription ID of the test subscription
 - `tenantId`: the tenant ID of the test subscription
 - `resourceGroupNames`: the resource group names computed for this run
-- `testPrincipalId`: the principal ID of the test principal. For CI runs, this is the managed identity. For local runs, this is the user principal.
+- `testPrincipalId` (optional): the principal ID of the test principal. For CI runs, this is the managed identity. For local runs, this is the user principal. It is looked up only when a Bicep config declares a `testPrincipalId` parameter without an explicit `value`; otherwise, it is omitted from the context. Required lookup failures still fail provisioning.
 
 The context is computed at the beginning of the script run.
 

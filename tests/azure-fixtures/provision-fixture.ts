@@ -20,6 +20,7 @@ import {
   type RunBudget,
 } from "./fixture-common.ts";
 import { ResourceLock, type ResourceLockLease } from "./resource-lock.ts";
+import { getProfileEnvironment } from "../utils/azure-environment.ts";
 
 /**
  * Run-scoped values available to substitution tokens in Bicep parameters.
@@ -45,9 +46,9 @@ export type FixtureRunContext = {
   resourceGroupNames: Record<string, string>;
 
   /**
-   * Object ID of the identity the agent runs as.
+   * Object ID of the identity the agent runs as, resolved only when a Bicep parameter requires it.
    */
-  testPrincipalId: string;
+  testPrincipalId?: string;
 };
 
 function resolveBicepParameter(context: FixtureRunContext, parameterConfig: BicepParameterConfig): JsonValue {
@@ -123,7 +124,7 @@ export type ProvisioningDependencies = {
   readyRetentionMs: number;
 };
 
-function defaultProvisioningDependencies(): ProvisioningDependencies {
+function defaultProvisioningDependencies(environment: NodeJS.ProcessEnv = process.env): ProvisioningDependencies {
   const budget = createBudget();
   return {
     now: Date.now,
@@ -136,7 +137,7 @@ function defaultProvisioningDependencies(): ProvisioningDependencies {
     createResourceLock: (account, container, blob, acquisitionDeadline) => new ResourceLock(account, container, blob, acquisitionDeadline),
     log: console,
     budget,
-    environment: process.env,
+    environment,
     processId: process.pid,
     leaseAcquisitionBudgetMs: LEASE_ACQUISITION_BUDGET_MS,
     totalBudgetMs: TOTAL_BUDGET_MS,
@@ -194,7 +195,14 @@ type AzureAccount = {
 /**
  * Get the test principal ID using AZ CLI.
  */
-function getTestPrincipalId(account: AzureAccount, runCommand: ProvisioningDependencies["runAz"] = runAz): string {
+function getTestPrincipalId(account: AzureAccount, runCommand: ProvisioningDependencies["runAz"], environment: NodeJS.ProcessEnv): string {
+  if (environment.CI === "true" && environment.TEST_PERMISSION !== undefined) {
+    const clientId = environment.AZURE_CLIENT_ID?.trim();
+    if (!clientId) {
+      throw new Error("Missing test identity for fixture principal resolution");
+    }
+    return runCommand(["ad", "sp", "show", "--id", clientId, "--query", "id", "-o", "tsv"]);
+  }
   // The signed-in identity is a user locally and a federated service principal in CI.
   // They need different commands to get the principal ID.
   if (account.user?.type === "servicePrincipal" && account.user.name) {
@@ -205,7 +213,7 @@ function getTestPrincipalId(account: AzureAccount, runCommand: ProvisioningDepen
 
 function computeRunContext(
   manifest: FixtureManifest,
-  dependencies?: Pick<ProvisioningDependencies, "runAz" | "randomSuffix" | "randomUUID">,
+  dependencies?: Pick<ProvisioningDependencies, "runAz" | "randomSuffix" | "randomUUID" | "environment">,
 ): FixtureRunContext {
   const runCommand = dependencies?.runAz ?? runAz;
   const account = JSON.parse(runCommand(["account", "show", "-o", "json"])) as AzureAccount;
@@ -222,7 +230,9 @@ function computeRunContext(
     subscriptionId: account.id,
     tenantId: account.tenantId,
     resourceGroupNames,
-    testPrincipalId: getTestPrincipalId(account, runCommand),
+    testPrincipalId: manifest.bicepConfigs.some(config =>
+      config.parameters?.some(parameter => parameter.key === "testPrincipalId" && parameter.value === undefined),
+    ) ? getTestPrincipalId(account, runCommand, dependencies?.environment ?? process.env) : undefined,
   };
 }
 
@@ -291,7 +301,7 @@ function runPostProvisionScripts(
       const stdout = execFileSync(
         NPX_COMMAND,
         ["-y", "tsx", resolve(manifestDir, scriptConfig.path), "--resource-groups", ...resourceGroupNames],
-        { encoding: "utf8", timeout: budget.remainingMs(step), killSignal: "SIGKILL", shell: true }
+        { env: getProfileEnvironment("write"), encoding: "utf8", timeout: budget.remainingMs(step), killSignal: "SIGKILL", shell: true }
       );
       return stdout;
     } catch (error) {
@@ -312,7 +322,7 @@ export function runPostTestScript(context: FixtureRunContext, manifest: FixtureM
     const stdout = execFileSync(
       NPX_COMMAND,
       ["-y", "tsx", resolve(manifestDir, scriptConfig.path), "--resource-groups", ...resourceGroupNames],
-      { encoding: "utf8", killSignal: "SIGKILL", shell: true }
+      { env: getProfileEnvironment("write"), encoding: "utf8", killSignal: "SIGKILL", shell: true }
     );
     return stdout;
   }
@@ -650,8 +660,9 @@ function workflowOutput(
 export function provision(
   manifestPath: string,
   manifest: FixtureManifest,
+  environment: NodeJS.ProcessEnv = process.env,
 ): Promise<ProvisionManifestOutput> {
-  return provisionWithDependencies(manifestPath, manifest, defaultProvisioningDependencies());
+  return provisionWithDependencies(manifestPath, manifest, defaultProvisioningDependencies(environment));
 }
 
 export async function provisionWithDependencies(

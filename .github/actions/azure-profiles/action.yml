@@ -1,0 +1,110 @@
+name: Authenticate isolated Azure profiles
+description: Authenticate only the required test identities, or the report identity, without using default profiles.
+inputs:
+  permissions:
+    description: JSON array of required test permissions
+    default: "[]"
+  fixtures:
+    description: Authenticate the write profile for fixture provisioning
+    default: "false"
+  storage:
+    description: Authenticate the dedicated report storage identity instead of test identities
+    default: "false"
+  refresh:
+    description: Refresh CLI tokens until stop-azure-profiles is called
+    default: "false"
+runs:
+  using: composite
+  steps:
+    - name: Authenticate required profiles
+      shell: bash
+      env:
+        PERMISSIONS: ${{ inputs.permissions }}
+        FIXTURES: ${{ inputs.fixtures }}
+        STORAGE: ${{ inputs.storage }}
+        REFRESH: ${{ inputs.refresh }}
+        STAGE_CLIENT_ID: ${{ env.AZURE_STAGE_CLIENT_ID }}
+        READ_CLIENT_ID: ${{ env.AZURE_READ_CLIENT_ID }}
+        WRITE_CLIENT_ID: ${{ env.AZURE_WRITE_CLIENT_ID }}
+        ADMIN_CLIENT_ID: ${{ env.AZURE_ADMIN_CLIENT_ID }}
+        TENANT_ID: ${{ env.AZURE_TENANT_ID }}
+        TEST_SUBSCRIPTION_ID: ${{ env.AZURE_SUBSCRIPTION_ID }}
+        STAGE_SUBSCRIPTION_ID: ${{ env.AZURE_STAGE_SUBSCRIPTION_ID }}
+      run: |
+        set -euo pipefail
+        : "${TENANT_ID:?AZURE_TENANT_ID is required}"
+        permissions=$(printf '%s' "$PERMISSIONS" | jq -er '
+          if type == "array" and all(.[]; . == "read" or . == "write" or . == "admin" or . == "none")
+          then unique | join(" ") else error("Invalid Azure permissions") end')
+        profiles=""
+        if [ "$STORAGE" = true ]; then
+          profiles=stage
+        else
+          for permission in $permissions; do
+            [ "$permission" = none ] || profiles="$profiles $permission"
+          done
+          if [ "$FIXTURES" = true ] && [[ " $profiles " != *" write "* ]]; then
+            profiles="$profiles write"
+          fi
+          mkdir -p "$RUNNER_TEMP/azure-none" "$RUNNER_TEMP/azd-none"
+          {
+            echo "TEST_PERMISSION="
+            echo "AZURE_CONFIG_DIR=$RUNNER_TEMP/azure-none"
+            echo "AZD_CONFIG_DIR=$RUNNER_TEMP/azd-none"
+            echo "AZURE_CLIENT_ID="
+          } >> "$GITHUB_ENV"
+        fi
+        for profile in stage read write admin none; do
+          upper=$(printf '%s' "$profile" | tr '[:lower:]' '[:upper:]')
+          echo "AZURE_${upper}_CONFIG_DIR=$RUNNER_TEMP/azure-$profile" >> "$GITHUB_ENV"
+          echo "AZD_${upper}_CONFIG_DIR=$RUNNER_TEMP/azd-$profile" >> "$GITHUB_ENV"
+        done
+
+        authenticate_profiles() {
+          [ -n "${profiles// /}" ] || return 0
+          token=$(curl --fail --silent --show-error \
+            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange" | jq -er .value)
+          echo "::add-mask::$token"
+          for profile in $profiles; do
+            case "$profile" in
+              stage) client="$STAGE_CLIENT_ID"; subscription="$STAGE_SUBSCRIPTION_ID" ;;
+              read) client="$READ_CLIENT_ID"; subscription="$TEST_SUBSCRIPTION_ID" ;;
+              write) client="$WRITE_CLIENT_ID"; subscription="$TEST_SUBSCRIPTION_ID" ;;
+              admin) client="$ADMIN_CLIENT_ID"; subscription="$TEST_SUBSCRIPTION_ID" ;;
+            esac
+            : "${client:?Managed identity client ID is required}"
+            : "${subscription:?Subscription ID is required}"
+            mkdir -p "$RUNNER_TEMP/azure-$profile"
+            AZURE_CONFIG_DIR="$RUNNER_TEMP/azure-$profile" az login --service-principal \
+              --username "$client" --tenant "$TENANT_ID" --federated-token "$token" --output none
+            AZURE_CONFIG_DIR="$RUNNER_TEMP/azure-$profile" az account set --subscription "$subscription"
+          done
+        }
+        authenticate_profiles
+        for permission in $permissions; do
+          case "$permission" in
+            none) continue ;;
+            read) client="$READ_CLIENT_ID" ;;
+            write) client="$WRITE_CLIENT_ID" ;;
+            admin) client="$ADMIN_CLIENT_ID" ;;
+          esac
+          mkdir -p "$RUNNER_TEMP/azd-$permission"
+          AZURE_CONFIG_DIR="$RUNNER_TEMP/azure-$permission" \
+            AZD_CONFIG_DIR="$RUNNER_TEMP/azd-$permission" azd auth login \
+            --client-id "$client" --federated-credential-provider github --tenant-id "$TENANT_ID"
+        done
+        if [ "$REFRESH" = true ] && [ -n "${profiles// /}" ]; then
+          status_file="$RUNNER_TEMP/azure-profile-refresh-status"
+          (
+            trap 'echo "$?" > "$status_file"' EXIT
+            while true; do
+              sleep 240
+              authenticate_profiles
+            done
+          ) &
+          refresh_pid=$!
+          kill -0 "$refresh_pid"
+          echo "AZURE_PROFILE_REFRESH_PID=$refresh_pid" >> "$GITHUB_ENV"
+          echo "AZURE_PROFILE_REFRESH_STATUS=$status_file" >> "$GITHUB_ENV"
+        fi

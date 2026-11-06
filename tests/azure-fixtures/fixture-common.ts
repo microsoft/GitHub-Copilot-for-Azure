@@ -4,6 +4,7 @@
 
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { getProfileEnvironment } from "../utils/azure-environment.ts";
 
 export type JsonValue = string | number | boolean | JsonValue[] | { [key: string]: JsonValue };
 
@@ -194,6 +195,7 @@ export function runAz(args: string[], options: { subjectToBudget?: boolean; budg
   try {
     // az traps SIGTERM and can hang, so kill it outright.
     return execFileSync(AZ_COMMAND, args, {
+      env: getProfileEnvironment("write"),
       encoding: "utf8",
       timeout: options.subjectToBudget === false ? undefined : options.budget?.remainingMs(step),
       killSignal: "SIGKILL",
