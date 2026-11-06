@@ -43,6 +43,11 @@ Activate this skill when user wants to:
 8. Route AKS incidents to the dedicated AKS troubleshooting document
 9. Keep baseline AKS diagnostics available even when the optional `aks-skills`
    add-on is absent, declined, or unsupported by the host
+10. Before sending the final answer, re-check it against any "final-answer checklist" in the
+    matched reference guide (e.g., required architecture details, why ruled-out causes don't
+    apply, full post-fix verification steps). Thorough tool calls don't substitute for a
+    complete written summary — evidence gathered mid-session that is missing from the final
+    text still fails review
 
 ---
 
@@ -62,7 +67,7 @@ Activate this skill when user wants to:
 |---------|---------------|-----------|
 | **Container Apps** | Image pull failures, cold starts, health probes, port mismatches | [container-apps/](references/container-apps/README.md) |
 | **App Service** | High CPU, deployment failures, crashes, slow responses, TLS/custom domains | [app-service/](references/app-service/README.md) |
-| **Function Apps** | App details, invocation failures, timeouts, binding errors, cold starts, missing app settings | [functions/](references/functions/README.md) |
+| **Function Apps** | App details, invocation failures, timeouts, binding errors, cold starts, missing app settings, VNet integration/route table/NSG/private-endpoint failures | [functions/](references/functions/README.md) |
 | **AKS** | Cluster access, nodes, `kube-system`, scheduling, crash loops, ingress, DNS, upgrades | [AKS Troubleshooting](troubleshooting/aks/aks-troubleshooting.md) |
 | **Compute** | VM RDP/SSH connectivity, NSG/firewall blocks, credential resets, VM agent/tooling issues | [VM Connectivity Troubleshooting](troubleshooting/compute/vm-troubleshooting.md) |
 | **Messaging** | Event Hubs & Service Bus SDK errors, AMQP failures, message lock, connectivity | [Messaging Troubleshooting](troubleshooting/messaging/README.md) |
@@ -75,6 +80,7 @@ Activate this skill when user wants to:
 - Route active AKS incidents, AKS-specific intake, evidence gathering, and remediation guidance to [AKS Troubleshooting](troubleshooting/aks/aks-troubleshooting.md).
 - Route Azure VM RDP/SSH connectivity, NSG/firewall, credential reset, and VM agent troubleshooting to [VM Connectivity Troubleshooting](troubleshooting/compute/vm-troubleshooting.md).
 - Route Azure Messaging SDK troubleshooting (Event Hubs, Service Bus) to [Messaging Troubleshooting](troubleshooting/messaging/README.md).
+- When a Function App's VNet integration, route table, NSG, or private endpoint is implicated in the root cause, open the mandatory final-answer checklist in [functions/triggers.md](references/functions/triggers.md#flex-consumption-specifics) before writing the summary — tool evidence alone does not satisfy it; every checklist item must appear in the written text.
 
 ---
 
