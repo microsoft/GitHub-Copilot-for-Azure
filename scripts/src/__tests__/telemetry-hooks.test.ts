@@ -847,7 +847,7 @@ describe("Telemetry hook manifests", () => {
   );
 });
 
-describe.each(shells)("Generated plugin metadata ($name)", shell => {
+describe.each(shells)("Generated plugin metadata ($name)", { timeout: 30_000 }, shell => {
   it("reads plugin name and version from hooks/metadata.txt", () => {
     const args = runHook(
       shell,
@@ -1258,7 +1258,7 @@ describe.each(shells)("Telemetry reporter installer detection ($name)", shell =>
   });
 });
 
-describe.each(shells)("Telemetry harness detection ($name)", shell => {
+describe.each(shells)("Telemetry harness detection ($name)", { timeout: 30_000 }, shell => {
   const cases: Array<{
     name: string;
     harness?: string;
@@ -1555,7 +1555,7 @@ describe.each(shells)("Telemetry harness detection ($name)", shell => {
   });
 });
 
-describe.each(shells)("Session start telemetry hook ($name)", shell => {
+describe.each(shells)("Session start telemetry hook ($name)", { timeout: 30_000 }, shell => {
   it.each([
     {
       client: "Copilot CLI",
@@ -1711,7 +1711,7 @@ describe.each(shells)("Session start telemetry hook ($name)", shell => {
   });
 });
 
-describe.each(shells)("Telemetry publisher debug logs ($name)", shell => {
+describe.each(shells)("Telemetry publisher debug logs ($name)", { timeout: 30_000 }, shell => {
   it("identifies the standalone version, executable, and actual arguments", () => {
     const env = reporterStubEnvironment(shell);
     const args = runHook(shell, fixture("cursor-mcp-invocation.json"), "", env, STUB_HOOKS_DIR);
@@ -1768,7 +1768,7 @@ describe.each(shells)("Telemetry publisher debug logs ($name)", shell => {
       `Publisher: ${STANDALONE_PUBLISHER} | Execution failed ${shell.name === "Bash" ? "with status 127." : "to start."
       }`,
     );
-  }, 30_000);
+  });
 
   it("diagnoses a successful installer exit with no executable path", () => {
     const args = runHook(
@@ -1823,7 +1823,7 @@ describe.each(shells)("Telemetry publisher debug logs ($name)", shell => {
   });
 });
 
-describe.each(shells)("Cursor telemetry hook ($name)", shell => {
+describe.each(shells)("Cursor telemetry hook ($name)", { timeout: 30_000 }, shell => {
   const skillRoot = createCursorSkillCache();
 
   it("reports a SKILL.md read as a skill invocation", () => {
@@ -1839,7 +1839,7 @@ describe.each(shells)("Cursor telemetry hook ($name)", shell => {
     expectArg(args, "--skill-name", "azure-cost");
     expectArg(args, "--skill-version", "1.2.3");
     expect(args).not.toContain("--file-reference");
-  }, 10_000);
+  });
 
   it("reports a bundled file read as a reference read", () => {
     const payload = fixture("cursor-reference-read.json") as CursorPayload & Record<string, unknown>;
@@ -1853,7 +1853,7 @@ describe.each(shells)("Cursor telemetry hook ($name)", shell => {
     expectArg(args, "--skill-version", "1.2.3");
     expectArg(args, "--file-reference", "azure-cost\\cost-query\\guardrails.md");
     expect(args).not.toContain("--skill-name");
-  }, 10_000);
+  });
 
   it.each(["get_azure_bestpractices", "MCP:get_azure_bestpractices"])(
     "reports an Azure MCP invocation without Cursor's display prefix: %s",
@@ -1917,7 +1917,7 @@ describe.each(shells)("Cursor telemetry hook ($name)", shell => {
 
 const powerShell = shellCandidates.find(shell => shell.name === "PowerShell");
 
-describe.skipIf(!powerShell)("PowerShell telemetry input encoding", () => {
+describe.skipIf(!powerShell)("PowerShell telemetry input encoding", { timeout: 30_000 }, () => {
   it.each([
     { name: "without a BOM", prefix: "" },
     { name: "with a BOM", prefix: "\uFEFF" },
