@@ -89,7 +89,12 @@ If a branch was pushed but PR creation failed, rerunning creates the missing PR
 even when discovery generates no new changes. Rebases are also published when
 pending changes remain, without requiring another generated commit.
 
-This work maintains the single shared source and existing MCP pins only. A
-later build-system change will copy the allowlist into the required plugin
-output locations. Passing it to `ghcfa-telem` is also separate; the embedded reporter lists
-and existing snapshot workflow remain unchanged.
+The plugin build copies the shared source byte-for-byte to
+`output/<plugin-name>/hooks/allowlists/allowed-tools.json` for every plugin,
+beside `allowed-skills.txt` and `allowed-references.txt`. It preserves all
+sections and named groups without parsing or rewriting the JSON, and fails if
+the source cannot be read or the destination cannot be written. The generator
+still maintains only the single shared source, not per-plugin source copies.
+
+Passing these packaged files to `ghcfa-telem` is separate; the telemetry hooks,
+embedded reporter lists, and existing snapshot workflow remain unchanged.

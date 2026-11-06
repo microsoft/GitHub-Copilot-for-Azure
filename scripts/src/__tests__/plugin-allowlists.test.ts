@@ -132,6 +132,19 @@ describe("plugin text allowlists", () => {
 });
 
 describe("Gulp allowlist packaging", () => {
+  const toolsSource = JSON.stringify({
+    commands: {
+      "first release": ["subscription_list", "storage_account_get"],
+      "later release": ["compute_vm_get"],
+    },
+    areas: {
+      "namespace group": ["storage", "compute"],
+    },
+    extensionTools: {
+      "Azure extension": ["azure_auth-set_auth_context"],
+    },
+  }, null, 2).replace(/\n/g, "\r\n");
+
   function run(command: string, args: string[]): void {
     const result = spawnSync(command, args, { cwd: root, encoding: "utf8" });
     if (result.status !== 0) {
@@ -160,6 +173,7 @@ describe("Gulp allowlist packaging", () => {
     run("git", ["add", "README.md"]);
     run("git", ["commit", "--quiet", "-m", "initial fixture"]);
 
+    write("plugins/allowed-azure-tools.json", toolsSource);
     for (const plugin of ["alpha", "beta"]) {
       write(`plugins/${plugin}/version.json`, JSON.stringify({ version: "1.0" }));
       for (const manifestDirectory of [".", ".plugin", ".cursor-plugin", ".claude-plugin"]) {
@@ -216,11 +230,14 @@ describe("Gulp allowlist packaging", () => {
     prepareBuild();
     write("plugins/alpha/hooks/allowlists/allowed-skills.txt", "stale-source-entry\n");
     write("plugins/alpha/hooks/allowlists/allowed-references.txt", "stale-source-entry\n");
+    write("plugins/alpha/hooks/allowlists/allowed-tools.json", '{"stale":true}\n');
     write("plugins/alpha/skills/alpha-skill/references/removed.md");
     const first = build();
     expect(first.error).toBeUndefined();
     expect(first.status, first.stderr || first.stdout).toBe(0);
     for (const plugin of ["alpha", "beta"]) {
+      expect(readFileSync(join(root, "output", plugin, "hooks", "allowlists", "allowed-tools.json")))
+        .toEqual(Buffer.from(toolsSource, "utf8"));
       expect(readAllowlist(`output/${plugin}`, "allowed-skills.txt")).toBe(`${plugin}-skill\n`);
       expect(readAllowlist(`output/${plugin}`, "allowed-references.txt")).toBe(
         `${plugin}-skill\\references\\guide.md\n` +
@@ -236,21 +253,45 @@ describe("Gulp allowlist packaging", () => {
       expect(read(`output/${plugin}`, "com.github.copilot/hooks/hooks.json"))
         .toBe(read(`output/${plugin}`, "hooks/copilot-hooks.json"));
       expect(existsSync(join(root, "output", plugin, "hooks", "hooks.json"))).toBe(false);
-      for (const filename of ["allowed-skills.txt", "allowed-references.txt"]) {
+      for (const filename of ["allowed-skills.txt", "allowed-references.txt", "allowed-tools.json"]) {
         expect(existsSync(join(root, "output", plugin, filename))).toBe(false);
       }
     }
+    expect(read("plugins", "allowed-azure-tools.json")).toBe(toolsSource);
     rmSync(join(root, "plugins", "alpha", "skills", "alpha-skill", "references", "removed.md"));
+    const updatedToolsSource = toolsSource.replace('"compute_vm_get"', '"compute_vm_get", "compute_vm_list"');
+    write("plugins/allowed-azure-tools.json", updatedToolsSource);
     const second = build();
     expect(second.status, second.stderr || second.stdout).toBe(0);
     expect(readAllowlist("output/alpha", "allowed-references.txt")).toBe("alpha-skill\\references\\guide.md\n");
+    for (const plugin of ["alpha", "beta"]) {
+      expect(readFileSync(join(root, "output", plugin, "hooks", "allowlists", "allowed-tools.json")))
+        .toEqual(Buffer.from(updatedToolsSource, "utf8"));
+    }
+    expect(read("plugins", "allowed-azure-tools.json")).toBe(updatedToolsSource);
   }, 30_000);
 
-  it("rejects the build when an allowlist cannot be written", () => {
+  it.each(["allowed-skills.txt", "allowed-tools.json"])(
+    "rejects the build when %s cannot be written",
+    (filename) => {
+      prepareBuild();
+      write(`plugins/alpha/hooks/allowlists/${filename}/blocker`);
+      const result = build();
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain(filename);
+    },
+    30_000,
+  );
+
+  it.each(["missing", "directory"])("rejects the build with a %s tools source", (kind) => {
     prepareBuild();
-    write("plugins/alpha/hooks/allowlists/allowed-skills.txt/blocker");
+    const sourcePath = join(root, "plugins", "allowed-azure-tools.json");
+    rmSync(sourcePath);
+    if (kind === "directory") {
+      mkdirSync(sourcePath);
+    }
     const result = build();
     expect(result.status).toBe(1);
-    expect(result.stderr).toContain("allowed-skills.txt");
+    expect(result.stderr).toContain("allowed-azure-tools.json");
   }, 30_000);
 });

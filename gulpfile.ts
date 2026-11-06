@@ -551,6 +551,10 @@ function buildPlugin(pluginDirname: string): Promise<void> {
       try {
         assemblePluginHooks(pluginDirname);
         writePluginAllowlists(pluginOutputDir);
+        copyFileSync(
+          path.join("plugins", "allowed-azure-tools.json"),
+          path.join(pluginOutputDir, "hooks", "allowlists", "allowed-tools.json"),
+        );
         generateChangelog(pluginDirname, legacyChangelog);
         resolve();
       } catch (err) {
