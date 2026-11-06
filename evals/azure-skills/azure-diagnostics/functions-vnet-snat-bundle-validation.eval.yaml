@@ -1,0 +1,74 @@
+name: azure-diagnostics-functions-vnet-snat-bundle-validation
+description: Temporary validation for the Flex outbound diagnostic support bundle.
+
+tags:
+  type: integration
+  skill: azure-diagnostics
+
+defaults:
+  runs: 1
+  timeout: "50m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+  judge_model: claude-sonnet-5
+
+scoring:
+  threshold: 0.7
+
+stimuli:
+  - name: "Create Flex outbound diagnostic support bundle"
+    prompt: |
+      Our Function App stays healthy, but calls to a public partner API become
+      slow or return 503 during traffic spikes and recover when traffic drops.
+      Investigate the issue without changing Azure resources. Create a
+      downloadable diagnostic-support-bundle.zip in the workspace containing
+      support-bundle/summary.md and support-bundle/evidence.json for the service
+      team. Include the failing component, UTC evidence timeline, likely cause,
+      alternatives you ruled out, and prioritized remediation. Do not include
+      secrets, tokens, connection strings, or function keys.
+    rubric:
+      - The agent invokes azure-diagnostics and gathers live, resource-group-scoped Function, networking, and telemetry evidence before creating the support bundle.
+      - The diagnosis identifies outbound connection or SNAT pressure from high connection churn, low reuse, high concurrency, and EADDRNOTAVAIL or timeout evidence for the public partner API.
+      - The summary provides a UTC evidence timeline, names the failing component and likely cause, distinguishes the unrelated private-storage route, and prioritizes connection reuse and bounded concurrency before capacity changes.
+      - evidence.json contains structured resource identifiers, correlation IDs or timestamps, observed symptoms, likely cause, ruled-out alternatives, and prioritized remediation without secrets.
+      - diagnostic-support-bundle.zip is created from support-bundle/summary.md and support-bundle/evidence.json and the response tells the user where to download it.
+      - The investigation remains read-only and does not claim that remediation was performed.
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: live-diagnostics
+      requiredSkills:
+        - azure-diagnostics
+      azureFixture: ./fixture/functions-vnet-routing/azure-manifest.json
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.7
+      - type: completed
+      - type: file-exists
+        config:
+          path: "support-bundle/summary.md"
+      - type: file-exists
+        config:
+          path: "support-bundle/evidence.json"
+      - type: file-exists
+        config:
+          path: "diagnostic-support-bundle.zip"
+      - type: file-matches
+        config:
+          path: "support-bundle/summary.md"
+          pattern: "(?is)(?=.*(SNAT|outbound connection))(?=.*(timeline|UTC))(?=.*(remediation|recommend))"
+      - type: file-matches
+        config:
+          path: "support-bundle/evidence.json"
+          pattern: '(?is)(?=.*"failing_?component"\s*:)(?=.*"likely_?cause"\s*:)(?=.*"timeline(?:_?utc)?"\s*:)(?=.*"(?:prioritized_?remediation|remediation_?priority)"\s*:)'
+      - type: file-not-matches
+        config:
+          path: "support-bundle/**/*"
+          pattern: "(?i)(AccountKey=|SharedAccessSignature=|sig=[A-Za-z0-9%]{8,}|******"

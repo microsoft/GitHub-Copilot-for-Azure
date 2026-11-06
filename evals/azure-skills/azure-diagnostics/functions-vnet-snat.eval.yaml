@@ -96,7 +96,7 @@ stimuli:
       - type: file-matches
         config:
           path: "support-bundle/evidence.json"
-          pattern: '(?s)(?=.*"failingComponent"\s*:)(?=.*"likelyCause"\s*:)(?=.*"timeline"\s*:)(?=.*"prioritizedRemediation"\s*:)'
+          pattern: '(?is)(?=.*"failing_?component"\s*:)(?=.*"likely_?cause"\s*:)(?=.*"timeline(?:_?utc)?"\s*:)(?=.*"(?:prioritized_?remediation|remediation_?priority)"\s*:)'
       - type: file-not-matches
         config:
           path: "support-bundle/**/*"

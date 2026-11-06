@@ -218,6 +218,11 @@ describe("skill improvement configuration", () => {
     expect(postProvision).toContain("`${functionAppName}.azurewebsites.net`");
     expect(postProvision).toContain('"outbound-api"');
     expect(postProvision).toContain("connection-pressure");
+    const snatEval = fs.readFileSync(fileURLToPath(
+      new URL("../../../evals/azure-skills/azure-diagnostics/functions-vnet-snat.eval.yaml", import.meta.url)
+    ), "utf8");
+    expect(snatEval).toContain('"failing_?component"');
+    expect(snatEval).toContain("(?:prioritized_?remediation|remediation_?priority)");
     const outboundApi = fs.readFileSync(fileURLToPath(
       new URL(`${fixtureRoot}app/src/functions/outbound-api.js`, import.meta.url)
     ), "utf8");
