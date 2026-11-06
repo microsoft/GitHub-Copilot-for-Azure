@@ -183,6 +183,7 @@ describe("report artifact filenames", () => {
       toolCounts: {},
       skillFiles: {},
       skillsLoaded: [],
+      rawData: [{ message: "Raw run data" }],
     };
 
     await createMarkdownReport("report-filenames", { prompt: "Test prompt", timeout: 30 * 1000 }, metadata);
@@ -202,6 +203,7 @@ describe("report artifact filenames", () => {
       toolCounts: metadata.toolCounts,
       skillFiles: metadata.skillFiles,
       skillsLoaded: metadata.skillsLoaded,
+      rawData: metadata.rawData,
     }, null, 2), "utf-8");
     expect(writtenPaths).not.toContain(path.join(path.dirname(markdownPath), "agent-metadata.json"));
     expect(writtenPaths).toContain(deriveToolUsageFileName(markdownPath));

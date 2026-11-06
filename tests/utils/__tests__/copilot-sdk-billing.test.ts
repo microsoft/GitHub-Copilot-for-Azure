@@ -56,7 +56,7 @@ describe("SDK answer billing completion", () => {
       const runner = useAgentRunner({ testName: "copilot-sdk-billing" });
       const metadata = await runner.run({
         prompt: "offline billing test",
-        timeout: mode === "timeout" ? 10 : undefined,
+        timeout: mode === "timeout" ? 10 : 30 * 1000,
         maxTurns: mode === "max-turns" ? 1 : undefined,
         shouldEarlyTerminate: mode === "early-termination"
           ? metadata => metadata.events.some(event => event.type === "assistant.usage")
