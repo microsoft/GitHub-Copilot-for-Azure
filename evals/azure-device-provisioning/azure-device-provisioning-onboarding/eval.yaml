@@ -1,0 +1,88 @@
+name: azure-device-provisioning-onboarding-routing-eval
+description: |
+  Routing evaluation for read-only Azure IoT DPS onboarding validation, certificate preflight,
+  registration-state comparison, and fleet batching requests.
+
+tags:
+  type: integration
+  skill: azure-device-provisioning-onboarding
+
+defaults:
+  runs: 5
+  timeout: "10m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  - name: "Validate X509 cohort before provisioning"
+    prompt: "Validate whether these 10 X.509 devices are ready to provision through my DPS enrollment group."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-device-provisioning-onboarding"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-device-provisioning-onboarding
+
+  - name: "Check DPS certificate chain"
+    prompt: "Check this public certificate chain against my DPS enrollment before production rollout."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-device-provisioning-onboarding"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-device-provisioning-onboarding
+
+  - name: "Compare preflight prediction with assignments"
+    prompt: "Revalidate the devices and compare their actual DPS assignments with the previous preflight prediction."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-device-provisioning-onboarding"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-device-provisioning-onboarding
+
+  - name: "Validate large DPS fleet"
+    prompt: "Validate this manifest of 100 devices for DPS onboarding and give me an aggregate readiness report."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-device-provisioning-onboarding"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-device-provisioning-onboarding
+
+  - name: "Resume fleet validation"
+    prompt: "Resume my checkpointed DPS onboarding validation and process the remaining devices."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-device-provisioning-onboarding"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-device-provisioning-onboarding

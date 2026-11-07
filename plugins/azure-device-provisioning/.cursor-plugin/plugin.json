@@ -1,0 +1,23 @@
+{
+  "name": "azure-device-provisioning",
+  "description": "Azure IoT Device Provisioning Service onboarding validation for device identity, enrollment configuration, assignment prediction, and fleet readiness.",
+  "version": "0.0.0-placeholder",
+  "author": {
+    "name": "Microsoft",
+    "url": "https://www.microsoft.com"
+  },
+  "homepage": "https://github.com/microsoft/github-copilot-for-azure",
+  "repository": "https://github.com/microsoft/GitHub-Copilot-for-Azure",
+  "license": "MIT",
+  "keywords": [
+    "azure",
+    "cloud",
+    "iot",
+    "device-provisioning",
+    "dps",
+    "onboarding"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "hooks": "./hooks/cursor-hooks.json"
+}
