@@ -110,6 +110,16 @@
             "integrationTestSchedule": {
                 "0 12 * * 2-6": "azure-advisor,azure-advisor-actionability"
             }
+        },
+        {
+            "name": "azure-device-provisioning",
+            "dirname": "azure-device-provisioning",
+            "skills": [
+                "azure-device-provisioning-onboarding"
+            ],
+            "integrationTestSchedule": {
+                "0 12 * * 2-6": "azure-device-provisioning-onboarding"
+            }
         }
     ]
 }
