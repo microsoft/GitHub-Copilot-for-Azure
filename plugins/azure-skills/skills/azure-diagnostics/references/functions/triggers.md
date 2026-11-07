@@ -89,9 +89,19 @@ uses a unique `leaseContainerPrefix`.
 | Symptom | Cause | Fix |
 |---------|-------|-----|
 | Cold start despite "always ready" expectation | No always-ready instance for the function's scale group | Configure `http`, `durable`, `blob`, or `function:<FUNCTION_NAME>` with `az functionapp scale config always-ready set` |
-| Can't reach a VNet-integrated resource | VNet integration not configured, or NSG/route table blocking egress | Confirm subnet delegation and outbound rules; enable VNet route-all if all egress must go through the VNet |
+| Can't reach a VNet-integrated resource | VNet integration is absent or routing, security, or DNS blocks the destination | Inspect the plan-specific subnet delegation, DNS resolution, route table, and NSG. Change Route All only when the observed routing requirements justify it |
 | Deployment succeeds but scaling is capped | Maximum instance count or the regional subscription memory quota is exhausted | Inspect `az functionapp scale config show -g RG -n APP`; check **Usage + quotas** for the subscription and region |
 | Binding fails after dependency changes | Mixed Functions programming models or incompatible binding-extension versions | Use one programming model and align its binding packages. .NET isolated apps use `Microsoft.Azure.Functions.Worker.Extensions.*`; non-.NET apps using extension bundles should not also install the same binding extensions manually |
+
+For Function networking failures, make the final response decision-useful:
+
+1. **Topology**: State the observed hosting plan, integration subnet and delegation, destination, DNS path, and relevant route or NSG associations.
+2. **Cause**: Connect route, NSG, DNS, and telemetry evidence to the failure timeline.
+3. **Scope**: Explain why the affected path fails, why other paths remain healthy, and whether Route All is relevant.
+4. **Fix**: Recommend the smallest reversible correction; don't apply it without authorization.
+5. **Verify**: Recheck DNS, effective routing and security, resource health, the failed operation, and correlated telemetry.
+
+State only verified facts and identify any evidence gaps.
 
 ## Integration Testing Trigger Failure Paths
 
