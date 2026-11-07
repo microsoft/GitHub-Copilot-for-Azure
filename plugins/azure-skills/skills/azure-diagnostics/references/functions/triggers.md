@@ -95,9 +95,9 @@ uses a unique `leaseContainerPrefix`.
 
 For Function networking failures, make the final response decision-useful:
 
-1. **Topology**: State the observed hosting plan, integration subnet and delegation, destination, DNS path, and relevant route or NSG associations.
+1. **Topology**: Name the observed hosting plan, integration subnet and delegation, destination subnet or endpoint, DNS path, and relevant route or NSG associations. Distinguish the source and destination network paths.
 2. **Cause**: Connect route, NSG, DNS, and telemetry evidence to the failure timeline.
-3. **Scope**: Explain why the affected path fails, why other paths remain healthy, and whether Route All is relevant.
+3. **Scope**: Explain which destination is affected, why health checks, host or deployment dependencies, and other destinations remain healthy when supported by evidence, and whether Route All is relevant.
 4. **Fix**: Recommend the smallest reversible correction; don't apply it without authorization.
 5. **Verify**: Recheck DNS, effective routing and security, resource health, the failed operation, and correlated telemetry.
 
