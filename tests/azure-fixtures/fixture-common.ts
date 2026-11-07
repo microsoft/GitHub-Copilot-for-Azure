@@ -112,6 +112,12 @@ export type FixtureManifest = {
   persistence?: "never" | "temporary" | "permanent";
 
   /**
+   * Optional provisioning budget override for complex fixtures.
+   * Must be a whole number from 1 through 60. Existing fixtures default to 10 minutes.
+   */
+  provisioningTimeoutMinutes?: number;
+
+  /**
    * Additional post-provision script to run after provisioning the fixtures but before running the test.
    * Post-provision scripts are given the computed resource group names.
    * --resource-groups <rg-1> <rg-2> ... <rg-n>

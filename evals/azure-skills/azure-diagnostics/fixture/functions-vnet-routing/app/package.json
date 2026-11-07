@@ -1,0 +1,14 @@
+{
+  "name": "functions-vnet-routing-fixture",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/functions/*.js",
+  "engines": {
+    "node": "22"
+  },
+  "dependencies": {
+    "@azure/functions": "4.17.0",
+    "@azure/identity": "4.14.1",
+    "@azure/storage-blob": "12.34.0"
+  }
+}
