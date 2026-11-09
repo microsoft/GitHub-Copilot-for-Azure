@@ -260,11 +260,16 @@ azd ai agent run --no-client
 ```
 
 > **Readiness gate — required before local invocation.**
-> - Start checking TCP connections to `localhost:<port>` immediately after launching the agent in the background; retry failed connections every 2–5 seconds.
-> - In the same loop, check whether the `azd ai agent run` process has exited. **If it exited, stop polling immediately**, read its output, and fix that specific cause (for example, a dependency install failure) before restarting.
-> - **Keep each startup wait at 5 seconds or less**, including sleeps and shell-tool output reads.
+> - Run the bundled readiness script immediately after launching the agent in the background. It checks `localhost:<port>` every 2 seconds and exits unsuccessfully after 5 minutes if the port remains unavailable.
 > - **Proceed to the smoke invocation as soon as TCP connects**, keeping the server running.
-> - If the startup timeout expires before a connection succeeds, inspect the server logs and resolve the cause before retrying.
+> - If the script times out, inspect the server logs and resolve the cause before retrying.
+
+From the skill root (`microsoft-foundry/`), run the [Bash](scripts/wait-local-ready.sh) or [PowerShell](scripts/wait-local-ready.ps1) script:
+
+```bash
+./foundry-agent/create/scripts/wait-local-ready.sh <port>          # macOS / Linux
+./foundry-agent/create/scripts/wait-local-ready.ps1 -Port <port>   # Windows (PowerShell)
+```
 
 Smoke-invoke (local):
 
