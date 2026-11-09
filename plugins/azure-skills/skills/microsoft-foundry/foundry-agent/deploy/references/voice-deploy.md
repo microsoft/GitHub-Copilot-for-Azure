@@ -35,9 +35,20 @@ Alternatively, run `azd deploy --no-prompt` to deploy all services in dependency
 
 ## 4. Verify in Two Stages
 
-1. Run `azd ai agent show --output json` and verify status `active` or `deployed`. For Hosted Voice, report the active version of the target and wrapper separately.
+1. Use the selected local `azure.yaml` service key for deployment readback:
+
+   ```bash
+   azd ai agent show "<voice-service-key>" --output json
+   azd ai agent endpoint show "<voice-service-key>" --output json
+   ```
+
+   Verify `agent show` reports `active` or `deployed` and the expected subtype definition. Verify `endpoint show` uses `api-version=v1` and the subtype path:
+   - GPT-Live Voice: `/endpoint/protocols/voice/live/sessions`
+   - Prompt Voice or Hosted Voice wrapper: `/endpoint/protocols/voice`
+
+   For Hosted Voice, report target and wrapper status separately; run endpoint verification against the wrapper service key. These `show` commands use the local service key. The smoke helper uses the resolved remote agent name returned by deployment/readback when it differs.
 2. Do not run `azd ai agent invoke`; it does not support the `voice` protocol. Do not use generic `azd ai agent eval generate` as a Voice smoke test; transcript evaluation has separate limits in [observe](../../observe/observe.md).
 3. **Automated technical gate:** for GPT-Live Voice, run the dedicated helper from [GPT-Live Voice smoke testing](../../create/references/voice-agent/gpt-live-voice-smoke-test.md) over `/protocols/voice/live/sessions`; the default gate verifies session startup and clean closure. For Prompt Voice and Hosted Voice, run [smoke-test-voice.sh](../../create/scripts/smoke-test-voice.sh) or [smoke-test-voice.ps1](../../create/scripts/smoke-test-voice.ps1). Deployment is technically verified only when the service version(s) are active and the selected gate succeeds.
-4. **Manual experience acceptance:** provide the Voice Agent Playground URL from `azd ai agent show --output json` and recommend a complete microphone/audio-to-audio test in the Foundry portal.
+4. **Manual experience acceptance:** provide the Voice Agent Playground URL from the service-specific readback and recommend a complete microphone/audio-to-audio test in the Foundry portal.
 
 Follow [Prompt and Hosted Voice smoke testing](../../create/references/voice-agent/prompt-and-hosted-voice-smoke-test.md); do not attribute portal-only experience properties to the automated smoke test.

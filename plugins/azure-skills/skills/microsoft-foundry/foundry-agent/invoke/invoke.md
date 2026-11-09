@@ -27,11 +27,13 @@ For `kind: voice` or legacy `kind: prompt-voice`, read [Voice Agent subtypes](..
 Inside the azd project, run:
 
 ```bash
-azd ai agent show --output json
+azd ai agent show "<voice-service-key>" --output json
+azd ai agent endpoint show "<voice-service-key>" --output json
 ```
 
 - For **GPT-Live Voice** or **Prompt Voice**, confirm the `kind: voice` agent version is active.
 - For **Hosted Voice**, confirm **both** the `kind: hosted` target and the `kind: voice` wrapper versions are active, and target the **`kind: voice` wrapper's** name for end-to-end Voice invocation.
+- Use the local service key for these readback commands. Use the resolved remote Voice Agent name for the smoke helper when it differs.
 
 ### Step 2: Choose the Invocation Experience
 

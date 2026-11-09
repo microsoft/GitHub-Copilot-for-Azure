@@ -36,7 +36,19 @@ Before authoring files or running azd:
 
    Resolve every `[ACTION]` before continuing. Never run `az login` or `azd auth login` for the user.
 
-2. Read [Foundry azd guidance](../azd-guidance/azd-guidance.md) before any azd command.
+2. Enable the `agents.voice` preview for the current process. This is required for GPT-Live Voice, Prompt Voice, and Hosted Voice:
+
+   ```bash
+   export AZD_ALPHA_ENABLE_AGENTS_VOICE=true
+   ```
+
+   ```powershell
+   $env:AZD_ALPHA_ENABLE_AGENTS_VOICE = "true"
+   ```
+
+   Without it, Voice init/template adoption, agent add, provision, and deploy return `feature_not_enabled`; show, endpoint show, delete, and down remain available. Keep this process-only: do not use `azd env set` or write it to `.env` or `azure.yaml`.
+
+3. Read [Foundry azd guidance](../azd-guidance/azd-guidance.md) before any azd command.
 
    Commands below use the repository's neutral `azd ...` form. Execute every azd invocation with the user agent set inline:
 
@@ -51,7 +63,7 @@ Before authoring files or running azd:
 
    Do not persist `AZURE_DEV_USER_AGENT` with `azd env set`, `.env`, or `azure.yaml`.
 
-3. Follow [Common Project Context Resolution](../../SKILL.md#agent-common-project-context-resolution):
+4. Follow [Common Project Context Resolution](../../SKILL.md#agent-common-project-context-resolution):
    - Inspect `azure.yaml` and `azd env get-values` when an azd project exists.
    - Classify existing Voice services with [Voice Agent subtypes](references/voice-agent/subtypes.md) before selecting a target. Do not convert an existing Prompt, Hosted, Managed Harness, or Voice Agent into another type.
    - If multiple services exist, ask which GPT-Live Voice, Voice wrapper, or Prompt Voice service to modify. Selecting a Hosted Voice wrapper also selects its named hosted target as a deployment dependency.
