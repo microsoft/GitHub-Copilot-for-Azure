@@ -93,9 +93,10 @@ In Bash:
   --allowed-tools "./allowed-tools.json"
 ```
 
-The skills file in this example must contain `custom-skill`. Generating and
-passing plugin-specific lists from the build and hooks is separate work;
-existing callers continue using embedded lists until they supply these flags.
+The skills file in this example must contain `custom-skill`. The plugin build
+packages these files under `hooks/allowlists/`, and both shared telemetry hooks
+pass their installed paths for every reported event. Other callers continue
+using embedded lists for any omitted options.
 
 ## Allowlist maintenance
 

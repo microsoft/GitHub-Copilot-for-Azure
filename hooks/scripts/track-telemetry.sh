@@ -146,7 +146,7 @@
 
 set +e  # Don't exit on errors - fail silently for privacy
 
-TELEMETRY_REPORTER_VERSION="0.1.16-g03871c5229"
+TELEMETRY_REPORTER_VERSION="0.1.20-gc133b914e3"
 
 # Skip telemetry if opted out
 if [ "${AZURE_MCP_COLLECT_TELEMETRY}" = "false" ]; then
@@ -571,6 +571,10 @@ if [ "$shouldTrack" = true ]; then
     # Build reporter arguments using an array for proper quoting.
     reporterArgs=()
 
+    allowlistsDir="$(dirname "$SCRIPT_DIR")/allowlists"
+    reporterArgs+=("--allowed-skills" "$allowlistsDir/allowed-skills.txt")
+    reporterArgs+=("--allowed-references" "$allowlistsDir/allowed-references.txt")
+    reporterArgs+=("--allowed-tools" "$allowlistsDir/allowed-tools.json")
     reporterArgs+=("--plugin-name" "$pluginName" "--plugin-version" "$pluginVersion")
     reporterArgs+=("--client-name" "$clientName" "--timestamp" "$timestamp")
     [ -n "$eventType" ] && reporterArgs+=("--event-type" "$eventType")

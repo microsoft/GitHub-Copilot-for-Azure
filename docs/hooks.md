@@ -47,8 +47,21 @@ The build also copies the shared `plugins/allowed-azure-tools.json` source to
 `hooks/allowlists/allowed-tools.json` in every plugin package, beside the text
 lists. It copies the JSON byte-for-byte, preserving the `commands`, `areas`, and
 `extensionTools` sections and their named groups. A source read or destination
-write failure rejects the build. The telemetry hooks do not yet pass these
-three files to the reporter.
+write failure rejects the build.
+
+Both telemetry hooks pass these three filenames to the reporter using
+`--allowed-skills`, `--allowed-references`, and `--allowed-tools` for every
+reported event. Paths are resolved from the installed hook script's location,
+not the client's working directory, and remain single arguments when the
+plugin path contains spaces. The hooks pass the tools JSON filename without
+parsing or rewriting its contents.
+
+Each file replaces its corresponding embedded allowlist; the tools JSON
+replaces all three tool categories together. The hooks pass all three paths
+even if files are missing. Missing or unreadable files and malformed tools JSON
+cause the reporter to fail without publishing telemetry or falling back to
+embedded lists. The host hook still continues, using the existing opt-in
+failure logging described below.
 
 ## Copilot CLI
 
