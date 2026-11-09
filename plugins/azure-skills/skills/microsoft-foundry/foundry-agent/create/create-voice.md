@@ -36,7 +36,7 @@ Before authoring files or running azd:
 
    Resolve every `[ACTION]` before continuing. Never run `az login` or `azd auth login` for the user.
 
-2. Enable the `agents.voice` preview for the current process. This is required for GPT-Live Voice, Prompt Voice, and Hosted Voice:
+2. Set the process-only `agents.voice` preview flag. This is required for Voice Agents:
 
    ```bash
    export AZD_ALPHA_ENABLE_AGENTS_VOICE=true
@@ -45,8 +45,6 @@ Before authoring files or running azd:
    ```powershell
    $env:AZD_ALPHA_ENABLE_AGENTS_VOICE = "true"
    ```
-
-   Without it, Voice init/template adoption, agent add, provision, and deploy return `feature_not_enabled`; show, endpoint show, delete, and down remain available. Keep this process-only: do not use `azd env set` or write it to `.env` or `azure.yaml`.
 
 3. Read [Foundry azd guidance](../azd-guidance/azd-guidance.md) before any azd command.
 
