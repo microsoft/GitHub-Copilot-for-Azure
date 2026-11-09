@@ -47,7 +47,7 @@ Act on the summary prefixes:
 
 - `[OK]` -- nothing to do.
 - `[WARN]` -- non-blocking; continue.
-- `[ACTION]` -- resolve first, then rerun the script. If `az` or `azd` is missing, ask before installing in interactive mode; install directly in non-interactive mode. For how to install `azd`, see <https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/install-azd>. In any mode, never run `az login` or `azd auth login`; stop and ask the user to log in manually before any init, provision, or deploy command. Missing `azure.ai.agents` / `azure.ai.projects` extensions may be resolved with `azd extension install <name>`.
+- `[ACTION]` -- resolve first, then rerun the script. If `az` or `azd` is missing, ask before installing in interactive mode; install directly in non-interactive mode. For how to install `azd`, see <https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/install-azd>. In any mode, never run `az login` or `azd auth login`; stop and ask the user to log in manually before any init, provision, or deploy command. Missing `azure.ai.agents` / `azure.ai.projects` / `azure.ai.evaluations` extensions may be resolved with `azd extension install <name>`.
 
 ### Step 2 — Collect necessary information
 
@@ -310,28 +310,21 @@ Run the smoke invocation only as part of the requested deployment or test.
 
 Directly submit the eval suite generation asynchronously, do not ask the user for confirmation.
 
-Read the agent service's `description:` from `azure.yaml` (the value you set in Step 5) and pass it as `--gen-instruction`:
+Read the agent service's `description:` from `azure.yaml` (the value you set in Step 5) and pass it as `--agent-instruction`:
 
 ```bash
-azd ai agent eval generate --gen-instruction "<agent service description>" --no-wait --no-prompt
+azd ai eval generate --from agent --agent-instruction "<agent service description>" --no-wait --no-prompt
 ```
 
 Expected output:
 
-```
-Eval generate submitted (async)
-   dataset generation: datagen-<id> (queued)
-   evaluator generation: evaluatorgen-<id> (in_progress)
-   Config written to: src/<agent-name>/eval.yaml
-   When ready, run:
-     azd ai agent eval run
-```
+Separate dataset and evaluator generation job IDs.
 
 Generation runs server-side and takes several minutes. Tell the user:
 
-> *"Eval suite generation submitted. Run `azd ai agent eval run` whenever you're ready — it'll wait for generation to finish and execute the eval in one step."*
+> *"Eval suite generation submitted. Collect each job with `azd ai eval job show <job-id> --dataset` or `--evaluator`, configure and create the eval with `azd ai eval init` and `azd ai eval create`, then run `azd ai eval run start` whenever you're ready."*
 
-Run `azd ai agent eval run` only after the user explicitly agrees.
+Run `azd ai eval run start` only after the user explicitly agrees.
 
 ### Step 14 — Final summary
 
@@ -351,7 +344,7 @@ Three follow-up commands to include:
 
 ```bash
 azd ai agent invoke "<follow-up message>"   # chat with the deployed agent (billed)
-azd ai agent eval run                       # finalize + run the eval suite (Step 13)
+azd ai eval run start                       # run the eval suite after setup (Step 13)
 azd down                                    # tear down all resources when done
 ```
 
