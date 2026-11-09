@@ -5,7 +5,6 @@
 #   ./foundry-agent/create/scripts/smoke-test-gpt-live.sh \
 #     --endpoint <project-endpoint> \
 #     --agent-name <gpt-live-agent-name> \
-#     [--input-wav <file-path>] \
 #     [--timeout <seconds>] \
 #     [--dry-run] \
 #     [--help]

@@ -4,7 +4,7 @@ Verify GPT-Live Voice over its dedicated native Live endpoint. Do not use `azd a
 
 ## Basic Technical Gate
 
-The default smoke is intentionally simple:
+The smoke is intentionally simple:
 
 1. Read the deployed GPT-Live Voice agent and latest version.
 2. Connect to:
@@ -41,9 +41,5 @@ python -m pip install "openai[realtime]==3.19.2"
 ```
 
 The wrappers run [smoke_test_gpt_live.py](../../scripts/smoke_test_gpt_live.py). Use [smoke-test-gpt-live.sh](../../scripts/smoke-test-gpt-live.sh) or [smoke-test-gpt-live.ps1](../../scripts/smoke-test-gpt-live.ps1). Use `--dry-run` / `-DryRun` to preview without authentication.
-
-## Optional WAV Diagnostic
-
-Pass `--input-wav <path>` / `-InputWav <path>` only when the user supplies an uncompressed mono PCM16/24-kHz WAV. The helper then also requires non-empty input transcript, output transcript, and output audio before closing. Unlike the ordinary helper's typed input, the native Live path needs audio input for this deeper diagnostic. The helper does not generate audio or use microphone, TTS, or playback dependencies.
 
 Exit codes: `0` pass/help/dry-run, `1` runtime or validation failure, `2` usage error.

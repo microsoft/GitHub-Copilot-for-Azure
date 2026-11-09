@@ -10,23 +10,17 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import base64
 from dataclasses import dataclass, field
 import json
-from pathlib import Path
 import sys
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlsplit, urlunsplit
 from urllib.request import Request, urlopen
-import wave
 
 from smoke_test_voice import acquire_token, positive_integer
 
 API_VERSION = "v1"
 PREVIEW_HEADER = "VoiceAgents=V1Preview"
-RATE = 24000
-FRAME_SAMPLES = 480
-FRAME_BYTES = FRAME_SAMPLES * 2
 
 
 class SmokeError(Exception):
@@ -35,21 +29,9 @@ class SmokeError(Exception):
 
 @dataclass
 class Evidence:
-    input_transcript: str = ""
-    output_transcript: str = ""
-    output_audio_base64_characters: int = 0
     event_types: list[str] = field(default_factory=list)
-    saw_input: bool = False
     closed: bool = False
-    diagnostic_ready: asyncio.Event = field(default_factory=asyncio.Event)
-
-    def update_diagnostic_ready(self) -> None:
-        if (
-            self.input_transcript.strip()
-            and self.output_transcript.strip()
-            and self.output_audio_base64_characters > 0
-        ):
-            self.diagnostic_ready.set()
+    close_reason: str = ""
 
 
 def parse_args() -> argparse.Namespace:
@@ -58,11 +40,6 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--endpoint", required=True, help="Foundry project endpoint")
     parser.add_argument("--agent-name", required=True, help="GPT-Live agent name")
-    parser.add_argument(
-        "--input-wav",
-        type=Path,
-        help="Optional mono PCM16/24-kHz WAV for transcript/audio diagnosis",
-    )
     parser.add_argument("--timeout", type=positive_integer, default=180)
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
@@ -143,48 +120,21 @@ def resolve_agent(endpoint: str, agent: str, token: str) -> tuple[str, str, str]
     return agent_url, version, model.strip()
 
 
-def validate_wav(path: Path) -> None:
-    if not path.is_file():
-        raise SmokeError(f"Input WAV was not found: {path}")
-    try:
-        with wave.open(str(path), "rb") as source:
-            actual = (
-                source.getnchannels(),
-                source.getsampwidth(),
-                source.getframerate(),
-                source.getcomptype(),
-            )
-    except (OSError, wave.Error) as exc:
-        raise SmokeError(f"Failed to read input WAV: {exc}") from exc
-    if actual != (1, 2, RATE, "NONE"):
-        raise SmokeError("Input WAV must be uncompressed mono PCM16 at 24000 Hz")
-
-
-async def send_wav(connection: object, path: Path) -> None:
-    with wave.open(str(path), "rb") as source:
-        while pcm := source.readframes(FRAME_SAMPLES):
-            encoded = base64.b64encode(pcm.ljust(FRAME_BYTES, b"\0")).decode()
-            await connection.session.input_audio.append(audio=encoded)
-            await asyncio.sleep(FRAME_SAMPLES / RATE)
-
-
 async def receive(events: object, evidence: Evidence) -> None:
     async for event in events:
         kind = event.type
         evidence.event_types.append(kind)
         if kind == "error":
             raise SmokeError(f"GPT-Live error: {event.error.message}")
-        if kind == "session.input_transcript.delta":
-            evidence.saw_input = True
-            evidence.input_transcript += event.delta
-        elif kind == "session.output_transcript.delta" and evidence.saw_input:
-            evidence.output_transcript += event.delta
-        elif kind == "session.output_audio.delta" and evidence.saw_input:
-            evidence.output_audio_base64_characters += len(event.delta)
-        elif kind == "session.closed":
+        if kind == "session.closed":
+            evidence.close_reason = event.reason
+            if event.reason != "close_requested":
+                raise SmokeError(
+                    "GPT-Live session closed unexpectedly: "
+                    f"{event.reason}"
+                )
             evidence.closed = True
             return
-        evidence.update_diagnostic_ready()
     raise SmokeError("WebSocket ended without session.closed")
 
 
@@ -239,24 +189,6 @@ async def run_smoke(args: argparse.Namespace, endpoint: str) -> int:
 
                 receiver = asyncio.create_task(receive(events, evidence))
                 try:
-                    if args.input_wav:
-                        await send_wav(connection, args.input_wav)
-                        ready = asyncio.create_task(evidence.diagnostic_ready.wait())
-                        try:
-                            done, _ = await asyncio.wait(
-                                {ready, receiver},
-                                return_when=asyncio.FIRST_COMPLETED,
-                            )
-                            if receiver in done:
-                                await asyncio.gather(receiver)
-                                raise SmokeError(
-                                    "Session closed before WAV diagnostic evidence completed"
-                                )
-                        finally:
-                            if not ready.done():
-                                ready.cancel()
-                            await asyncio.gather(ready, return_exceptions=True)
-
                     await connection.session.close()
                     await asyncio.gather(receiver)
                     if not evidence.closed:
@@ -274,12 +206,7 @@ async def run_smoke(args: argparse.Namespace, endpoint: str) -> int:
                 "model_deployment": model,
                 "session_started": True,
                 "session_closed": evidence.closed,
-                "input_wav": str(args.input_wav) if args.input_wav else None,
-                "input_transcript": evidence.input_transcript.strip() or None,
-                "output_transcript": evidence.output_transcript.strip() or None,
-                "output_audio_base64_characters": (
-                    evidence.output_audio_base64_characters
-                ),
+                "close_reason": evidence.close_reason,
                 "event_types": evidence.event_types,
             },
             indent=2,
@@ -295,14 +222,11 @@ def main() -> int:
     args = parse_args()
     try:
         endpoint = normalize_endpoint(args.endpoint)
-        if args.input_wav:
-            validate_wav(args.input_wav)
         if args.dry_run:
             print("DRY-RUN: GPT-Live Voice Agent Smoke Test")
             print(f"  Project Endpoint : {endpoint}")
             print(f"  Agent Name       : {args.agent_name}")
             print(f"  WebSocket URL    : {websocket_url(endpoint, args.agent_name)}")
-            print(f"  Input WAV        : {args.input_wav or '(none)'}")
             print(f"  Timeout (s)      : {args.timeout}")
             print(f"  Header           : Foundry-Features: {PREVIEW_HEADER}")
             print("  Auth Resource    : https://ai.azure.com")

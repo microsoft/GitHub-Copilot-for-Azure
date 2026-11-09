@@ -4,7 +4,6 @@
 #   .\foundry-agent\create\scripts\smoke-test-gpt-live.ps1 `
 #     -Endpoint <project-endpoint> `
 #     -AgentName <gpt-live-agent-name> `
-#     [-InputWav <file-path>] `
 #     [-Timeout <seconds>] `
 #     [-DryRun] `
 #     [-Help]
@@ -17,7 +16,6 @@
 param(
     [string]$Endpoint = "",
     [string]$AgentName = "",
-    [string]$InputWav = "",
     [string]$Timeout = "180",
     [switch]$DryRun,
     [switch]$Help,
@@ -79,9 +77,6 @@ $arguments = @(
     "--timeout", $Timeout
 )
 
-if (-not [string]::IsNullOrWhiteSpace($InputWav)) {
-    $arguments += @("--input-wav", $InputWav)
-}
 if ($DryRun) {
     $arguments += "--dry-run"
 }

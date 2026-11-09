@@ -216,7 +216,7 @@ Follow [deploy](../deploy/deploy.md), then [invoke](../invoke/invoke.md).
 
 Voice services do not support `azd ai agent invoke`.
 
-- For **GPT-Live Voice**, run the dedicated helper in [GPT-Live Voice smoke testing](references/voice-agent/gpt-live-voice-smoke-test.md). The default gate verifies the deployed version and clean Live session lifecycle; optional WAV input enables deeper transcript/audio diagnostics. Never use the ordinary Voice helper or `/protocols/voice`.
+- For **GPT-Live Voice**, run the dedicated helper in [GPT-Live Voice smoke testing](references/voice-agent/gpt-live-voice-smoke-test.md). The gate verifies the deployed version and clean Live session lifecycle. Never use the ordinary Voice helper or `/protocols/voice`.
 - For **Prompt Voice** and **Hosted Voice**, use the two-stage process in [Voice smoke testing](references/voice-agent/prompt-and-hosted-voice-smoke-test.md): run the managed Voice WebSocket helper, then provide the Playground URL for manual acceptance.
 
 For Prompt Voice and Hosted Voice, run the helper from the `microsoft-foundry` skill root:
