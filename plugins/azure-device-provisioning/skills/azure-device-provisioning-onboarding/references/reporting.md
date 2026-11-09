@@ -2,8 +2,27 @@
 
 ## Current-state validation
 
-When the MCP response contains `validation.customerSummary`, return it without additional narrative.
-Do not add raw count deltas, detailed timestamps, discarded attempts, or temporary-file cleanup.
+For a single MCP call covering 1-10 devices, when the response contains
+`validation.customerSummary`, return it without additional narrative. Do not add raw count deltas,
+detailed timestamps, discarded attempts, or temporary-file cleanup.
+
+## Fleet validation
+
+For a batched fleet run, never return one batch's `validation.customerSummary` as the fleet result.
+Restore the checkpoint aggregate, merge every newly completed batch, and produce one fleet-wide
+summary.
+
+The summary must include:
+
+- Total, processed, remaining, and failed device counts.
+- Ready, ready-with-warnings, and blocked device counts from all completed batches.
+- Assignment and intended-Hub match or mismatch counts when registration state was requested.
+- Deduplicated shared blockers and warnings.
+- Device IDs only for blockers, assignment mismatches, unique warnings, and execution failures.
+- A resume instruction when devices remain unassessed.
+
+Never mark unassessed devices ready or blocked, and never discard results restored from the
+checkpoint.
 
 ## Preflight comparison
 

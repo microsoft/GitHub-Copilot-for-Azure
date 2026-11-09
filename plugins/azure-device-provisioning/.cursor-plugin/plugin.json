@@ -1,6 +1,6 @@
 {
   "name": "azure-device-provisioning",
-  "description": "Azure IoT Device Provisioning Service onboarding validation for device identity, enrollment configuration, assignment prediction, and fleet readiness.",
+  "description": "Azure IoT Device Provisioning Service capabilities for device lifecycle workflows, including onboarding validation, enrollment readiness, and fleet assessment.",
   "version": "0.0.0-placeholder",
   "author": {
     "name": "Microsoft",
