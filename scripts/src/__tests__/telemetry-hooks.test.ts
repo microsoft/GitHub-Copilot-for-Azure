@@ -117,16 +117,16 @@ const EMPTY_MCP_PLUGIN_ROOT = join(TEST_DIR, "empty-mcp-plugin");
 const EMPTY_MCP_HOOKS_DIR = join(EMPTY_MCP_PLUGIN_ROOT, "hooks", "scripts");
 const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), "fixtures");
 const SESSION_ID = "73e52424-a95d-4e21-b70c-2dffe48fdd86";
-const TELEMETRY_REPORTER_VERSION = "0.1.16-g03871c5229";
+const TELEMETRY_REPORTER_VERSION = "0.1.20-gc133b914e3";
 const TELEMETRY_REPORTER_DIGESTS = {
-  "linux-arm64": "f1a12dd39592b3179b96cf98d1648e15ad7189690484e0fa6d4ebabd74373b59",
-  "linux-musl-arm64": "70d1a09e9c9136417ba00ac78c390517fa4d991082358cd949a996633227f2f8",
-  "linux-musl-x64": "82fcdb2751c9002bd45f44a0a181bcd8a205835ced0260275fff1e2a80295b5e",
-  "linux-x64": "4d35e70d142afaa827f0940c79420f1558edb2b397b11c9fa3c3511bfd0b3326",
-  "osx-arm64": "8af0f060c53088e4298a8939719a89bc25e4f2d751ec10e8ca75da5dd818d073",
-  "osx-x64": "643fa1379a724a3b147da973b7c3c193fe40fdc58739b6a37da5e43a2d6905f9",
-  "win-arm64": "fdd37f4538522099b552284a8029ad586ac6006f44bccdeb8048b60afeac9cf0",
-  "win-x64": "f850546e46777b59373cf3525e65b882056dd8f3d141e2799cbda223d18ff199",
+  "linux-arm64": "00eee4cca1950d96837ebb036445bfbce17e52cf571b3edbb1a8f0946848d9d7",
+  "linux-musl-arm64": "5077d1a24a243542dd35df67c77a055429ae029d3876aaa874a5bc6176122763",
+  "linux-musl-x64": "e84741fec93d78199e376b5ce30d8930bab12a8aef2d1cfc2b08bd2feaf79144",
+  "linux-x64": "a93b332644fac0e9e899f52247bf5d0f1942921f3ee106320fc14b37165e9be5",
+  "osx-arm64": "ab2e2a5aa153b93588cd87dc1782f9d42452359b621366b61217359dd939fd05",
+  "osx-x64": "3b8b43f3385b6a40a0e134d10ba675292c8eddbb225039c5f48fdb106f70a253",
+  "win-arm64": "61d70acc51cb51a112ec81b888c4f847e7d43ea02b836e007fffbe663af26f61",
+  "win-x64": "b826917a20fbb3f5fa14aaab8207eceb5a7ae6491299133285171d47a775ae05",
 } as const;
 const STANDALONE_PUBLISHER = `Standalone ghcfa-telem (version ${TELEMETRY_REPORTER_VERSION})`;
 const PUBLISHER_STDOUT = "test-only-private-publisher-stdout";
@@ -305,6 +305,7 @@ function runHook(
     ? []
     : [shell.name === "Bash" ? "--application" : "-Application", application];
   const result = spawnSync(shell.command, [...shell.args(scriptPath), ...harnessArgs, ...applicationArgs], {
+    cwd: SCRATCH_DIR,
     encoding: "utf8",
     input: `${inputPrefix}${JSON.stringify(payload)}`,
     env: {
@@ -650,6 +651,21 @@ function expectStandaloneInvocation(args: string[]): void {
   expect(args).not.toContain("plugin-telemetry");
 }
 
+function expectAllowlistArguments(
+  shell: ShellCase,
+  args: string[],
+  pluginRoot = PLUGIN_ROOT,
+): void {
+  for (const [option, filename] of [
+    ["--allowed-skills", "allowed-skills.txt"],
+    ["--allowed-references", "allowed-references.txt"],
+    ["--allowed-tools", "allowed-tools.json"],
+  ]) {
+    expect(args.filter(arg => arg === option)).toHaveLength(1);
+    expectArg(args, option, pathForShell(shell, join(pluginRoot, "hooks", "allowlists", filename)));
+  }
+}
+
 function expectIsoTimestamp(args: string[]): void {
   const index = args.indexOf("--timestamp");
   expect(index).toBeGreaterThan(-1);
@@ -865,6 +881,7 @@ describe.each(shells)("Generated plugin metadata ($name)", { timeout: 30_000 }, 
 
     expectArg(args, "--plugin-name", "sidecar-plugin");
     expectArg(args, "--plugin-version", "9.8.7");
+    expectAllowlistArguments(shell, args, SIDECAR_METADATA_PLUGIN_ROOT);
   });
 
   it("suppresses session telemetry when generated plugin metadata is missing", () => {
@@ -1616,6 +1633,7 @@ describe.each(shells)("Session start telemetry hook ($name)", { timeout: 30_000 
       const args = runHook(shell, payload, "", env, STUB_HOOKS_DIR, harness);
 
       expectStandaloneInvocation(args);
+      expectAllowlistArguments(shell, args);
       expectArg(args, "--plugin-name", expectedPlugin.name);
       expectArg(args, "--plugin-version", expectedPlugin.version);
       expectArg(args, "--client-name", expectedClient);
@@ -1646,6 +1664,7 @@ describe.each(shells)("Session start telemetry hook ($name)", { timeout: 30_000 
 
     expectStandaloneInvocation(args);
     expectArg(args, "--tool-name", "get_azure_bestpractices");
+    expectAllowlistArguments(shell, args);
   });
 
   it.skipIf(process.platform === "win32")(
@@ -1711,6 +1730,45 @@ describe.each(shells)("Session start telemetry hook ($name)", { timeout: 30_000 
   });
 });
 
+describe.each(shells)("Telemetry allowlist arguments ($name)", { timeout: 30_000 }, shell => {
+  it("passes missing allowlist paths without dropping overrides", () => {
+    expect(existsSync(join(PLUGIN_ROOT, "hooks", "allowlists"))).toBe(false);
+
+    const args = runHook(shell, fixture("cursor-mcp-invocation.json"));
+
+    expectAllowlistArguments(shell, args);
+    expectArg(args, "--event-type", "tool_invocation");
+  });
+
+  it.each([
+    JSON.stringify({
+      commands: { Initial: ["get_azure_bestpractices"], "Next release": ["custom_command"] },
+      areas: { Initial: ["storage"] },
+      extensionTools: { "Azure extension": ["azure_auth-set_auth_context"] },
+    }, null, 2),
+    "{ malformed tools JSON",
+  ])("passes spaced installed paths without reading or rewriting tools JSON (%#)", toolsJson => {
+    const allowlistsDir = join(SPACED_PLUGIN_ROOT, "hooks", "allowlists");
+    mkdirSync(allowlistsDir, { recursive: true });
+    writeFileSync(join(allowlistsDir, "allowed-skills.txt"), "custom-skill\n");
+    writeFileSync(join(allowlistsDir, "allowed-references.txt"), "custom-skill/references/example.md\n");
+    const toolsPath = join(allowlistsDir, "allowed-tools.json");
+    writeFileSync(toolsPath, toolsJson);
+
+    const args = runHook(
+      shell,
+      { hook_event_name: "SessionStart", session_id: SESSION_ID },
+      "",
+      { COPILOT_CLI: "1", AZURE_SKILLS_PLUGIN_ROOT: SCRATCH_DIR },
+      SPACED_HOOKS_DIR,
+    );
+
+    expectAllowlistArguments(shell, args, SPACED_PLUGIN_ROOT);
+    expectArg(args, "--event-type", "session_start");
+    expect(readFileSync(toolsPath, "utf8")).toBe(toolsJson);
+  });
+});
+
 describe.each(shells)("Telemetry publisher debug logs ($name)", { timeout: 30_000 }, shell => {
   it("identifies the standalone version, executable, and actual arguments", () => {
     const env = reporterStubEnvironment(shell);
@@ -1743,6 +1801,8 @@ describe.each(shells)("Telemetry publisher debug logs ($name)", { timeout: 30_00
 
     expectArg(args, "--tool-name", "get_azure_bestpractices");
     expect(log).toContain(`Publisher: ${STANDALONE_PUBLISHER} | Execution failed with status 17.`);
+    expectAllowlistArguments(shell, args);
+    expect(log.match(/\| Executable:/g)).toHaveLength(1);
     expect(log.indexOf("| Args:")).toBeLessThan(log.indexOf("| Execution failed"));
     expect(log).not.toContain(PUBLISHER_STDOUT);
     expect(log).not.toContain(PUBLISHER_STDERR);
@@ -1833,6 +1893,7 @@ describe.each(shells)("Cursor telemetry hook ($name)", { timeout: 30_000 }, shel
     const args = runHook(shell, payload);
 
     expectStandaloneInvocation(args);
+    expectAllowlistArguments(shell, args);
     expectArg(args, "--client-name", "cursor");
     expectArg(args, "--event-type", "skill_invocation");
     expectArg(args, "--session-id", SESSION_ID);
@@ -1849,6 +1910,7 @@ describe.each(shells)("Cursor telemetry hook ($name)", { timeout: 30_000 }, shel
 
     expectArg(args, "--client-name", "cursor");
     expectArg(args, "--event-type", "reference_file_read");
+    expectAllowlistArguments(shell, args);
     expectArg(args, "--session-id", SESSION_ID);
     expectArg(args, "--skill-version", "1.2.3");
     expectArg(args, "--file-reference", "azure-cost\\cost-query\\guardrails.md");

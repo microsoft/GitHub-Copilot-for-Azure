@@ -152,7 +152,7 @@ param(
 
 $ErrorActionPreference = "SilentlyContinue"
 
-$telemetryReporterVersion = "0.1.16-g03871c5229"
+$telemetryReporterVersion = "0.1.20-gc133b914e3"
 
 # Dumps raw input to a file in the AZURE_SKILLS_TELEMETRY_LOG_DIR/raw-input/
 # directory for debugging if the env var is set.
@@ -593,6 +593,10 @@ if ($shouldTrack) {
     # Build reporter arguments
     $reporterArguments = @()
 
+    $allowlistsDir = Join-Path (Split-Path -Parent $scriptDir) 'allowlists'
+    $reporterArguments += "--allowed-skills"; $reporterArguments += (Join-Path $allowlistsDir 'allowed-skills.txt')
+    $reporterArguments += "--allowed-references"; $reporterArguments += (Join-Path $allowlistsDir 'allowed-references.txt')
+    $reporterArguments += "--allowed-tools"; $reporterArguments += (Join-Path $allowlistsDir 'allowed-tools.json')
     $reporterArguments += "--plugin-name"; $reporterArguments += $pluginName
     $reporterArguments += "--plugin-version"; $reporterArguments += $pluginVersion
     $reporterArguments += "--client-name"; $reporterArguments += $clientName
