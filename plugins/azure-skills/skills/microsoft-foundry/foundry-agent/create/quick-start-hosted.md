@@ -264,11 +264,11 @@ azd ai agent run --no-client
 > - **Proceed to the smoke invocation as soon as TCP connects**, keeping the server running.
 > - If the script times out, inspect the server logs and resolve the cause before retrying.
 
-From the skill root (`microsoft-foundry/`), run the [Bash](scripts/wait-local-ready.sh) or [PowerShell](scripts/wait-local-ready.ps1) script:
+Run the readiness script:
 
 ```bash
-./foundry-agent/create/scripts/wait-local-ready.sh <port>          # macOS / Linux
-./foundry-agent/create/scripts/wait-local-ready.ps1 -Port <port>   # Windows (PowerShell)
+./scripts/wait-local-ready.sh <port>          # macOS / Linux
+./scripts/wait-local-ready.ps1 -Port <port>   # Windows (PowerShell)
 ```
 
 Smoke-invoke (local):
