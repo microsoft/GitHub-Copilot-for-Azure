@@ -16,6 +16,29 @@ scoring:
   threshold: 0.8
 
 stimuli:
+  - name: "Keep generic Cost on the existing Advisor workflow"
+    prompt: "Show the highest-priority Azure Advisor Cost recommendations in subscription 00000000-0000-0000-0000-000000000000, including reservations and savings plans."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: cost-routing
+      requiredSkills:
+        - azure-advisor
+    constraints:
+      max_turns: 4
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor
+          disallowed:
+            - azure-advisor-cost-optimization
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)advisor_recommendation_summary"
+
   - name: "Route top Advisor actions to prioritized summary"
     prompt: "List the top 3 Azure Advisor actions to take in my configured default subscription."
     tags:
@@ -152,7 +175,7 @@ stimuli:
         config:
           required:
             - name: "(?i)(advisor_recommendation_list|advisor)$"
-              pattern: '^(?!.*"learn"\s*:\s*true)(?!.*"command"\s*:\s*"(?!advisor_recommendation_list"))(?=.*"recommendation-type-id"\s*:\s*"55a560ff-1039-4a49-b6da-6f272dc52db6")(?=.*"prioritized"\s*:\s*true)(?=.*"top"\s*:\s*2\b)'
+              pattern: '^(?!.*"learn"\s*:\s*true)(?!.*"command"\s*:\s*"(?!advisor_recommendation_list"))(?=.*"recommendation-type-ids"\s*:\s*\[\s*"55a560ff-1039-4a49-b6da-6f272dc52db6"\s*\])(?=.*"prioritized"\s*:\s*true)(?=.*"top"\s*:\s*2\b)'
               result: *advisor-success
           disallowed:
             - name: "(?i)advisor_recommendation_summary$"
@@ -201,7 +224,7 @@ stimuli:
     constraints:
       max_turns: 12
     rubric:
-      - "A successful summary containing at least one group must precede a successful list; an empty or failed summary cannot establish drill-down coverage. List must use the first actual returned group's GUID key as recommendation-type-id, preserve the resolved subscription and category Cost, and retain prioritized true. Do not copy summary top=2 to the record limit."
+      - "A successful summary containing at least one group must precede a successful list; an empty or failed summary cannot establish drill-down coverage. List must use the first actual returned group's GUID key as the sole entry in recommendation-type-ids, preserve the resolved subscription and category Cost, and retain prioritized true. Do not copy summary top=2 to the record limit."
     graders:
       - *advisor-skill
       - type: tool-calls
@@ -210,7 +233,7 @@ stimuli:
             - name: "(?i)(advisor_recommendation_summary|advisor)$"
               pattern: &cost-summary-input '^(?!.*"learn"\s*:\s*true)(?!.*"command"\s*:\s*"(?!advisor_recommendation_summary"))(?!.*"group-by"\s*:\s*"(?!recommendation-type"))(?=.*"prioritized"\s*:\s*true)(?=.*"category"\s*:\s*"Cost")(?=.*"top"\s*:\s*2\b)'
             - name: "(?i)(advisor_recommendation_list|advisor)$"
-              pattern: &cost-list-input '^(?!.*"learn"\s*:\s*true)(?!.*"command"\s*:\s*"(?!advisor_recommendation_list"))(?=.*"recommendation-type-id"\s*:\s*"[0-9a-fA-F-]{36}")(?=.*"prioritized"\s*:\s*true)(?=.*"category"\s*:\s*"Cost")(?!.*"top"\s*:\s*2\b)'
+              pattern: &cost-list-input '^(?!.*"learn"\s*:\s*true)(?!.*"command"\s*:\s*"(?!advisor_recommendation_list"))(?=.*"recommendation-type-ids"\s*:\s*\[\s*"[0-9a-fA-F-]{36}"\s*\])(?=.*"prioritized"\s*:\s*true)(?=.*"category"\s*:\s*"Cost")(?!.*"top"\s*:\s*2\b)'
           required:
             - name: "(?i)(advisor_recommendation_summary|advisor)$"
               pattern: *cost-summary-input

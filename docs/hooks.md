@@ -67,13 +67,29 @@ failure logging described below.
 
 Copilot CLI uses the `copilot-hooks.json` hooks manifest, referenced explicitly via the `hooks` property in the Copilot plugin manifest (`.plugin/plugin.json`). Although it shares the manifest with VS Code, it only uses the `bash` and `powershell` properties defined in it. At runtime, Copilot CLI replaces the `PLUGIN_ROOT` variable to construct the path that can resolve the scripts. On macOS and Linux, it executes the `bash` script. On Windows, it executes the PowerShell script referenced by the `powershell` property.
 
-The `SessionStart` hook reports new and resumed sessions. Copilot CLI is identified through its `COPILOT_CLI` environment variable, and plugin metadata is read from `.plugin/plugin.json`.
+The `SessionStart` hook reports new and resumed sessions. Copilot CLI is identified
+by `COPILOT_CLI=1` together with standalone-launcher evidence
+(`COPILOT_CLI_PATH`, `COPILOT_CLI_BINARY_VERSION`, or `COPILOT_LOADER_PID`).
+This is corroborating evidence, not a guaranteed host contract. Cursor's
+`cursor_version` and VS Code's exact application marker take precedence over
+these ambient variables. Standalone CLI evidence still takes precedence over
+weaker VS Code ancestry and transcript-path signals, so a CLI launched in a
+VS Code terminal is not classified as VS Code merely because of that ancestry.
+Plugin metadata is read from `.plugin/plugin.json`.
 
 ## VS Code
 
 VS Code uses the `copilot-hooks.json` hooks manifest. Although it shares the manifest with Copilot CLI, it only uses the `windows`, `osx` and `linux` properties defined in it. At runtime, VS Code replaces the `PLUGIN_ROOT` variable to construct the path that can resolve the scripts. These values are complete command lines rather than shell-specific script bodies. The Windows command therefore invokes `powershell.exe` explicitly and quotes the script path so execution does not depend on the user's `.ps1` file association and works when the plugin path contains spaces.
 
-The shared manifest marks its hooks as belonging to the Copilot/VS Code client family so session-start payloads without tool or transcript fields are still identified as VS Code. Plugin metadata is read from `.plugin/plugin.json`.
+The shared manifest passes the `copilot-vscode` harness on every telemetry hook.
+This identifies the registration family, not the application. The exact
+`AI_AGENT=github_copilot_vscode_agent` marker identifies VS Code even when it
+embeds the Copilot runtime (`COPILOT_CLI=1`). A VS Code PID together with either
+the `extensionHost` crash-reporter process type or the extension-host entrypoint
+also supports VS Code identification. Tool-use IDs and transcript paths remain
+fallback signals. Once VS Code is identified, the existing transcript-path
+logic chooses Insiders when `Code - Insiders` is present, otherwise Stable.
+Plugin metadata is read from `.plugin/plugin.json`.
 
 ## Claude Code
 
@@ -86,6 +102,78 @@ The `SessionStart` hook reports both startup and resume events. Plugin metadata 
 Cursor uses the `cursor-hooks.json` hooks manifest. At runtime, Cursor replaces the `CURSOR_PLUGIN_ROOT` variable to construct the path that can resolve to the scripts. Like Claude Code, it executes the telemetry script with Bash on every platform.
 
 The `sessionStart` hook reports each new Composer conversation. Plugin metadata is read from `.cursor-plugin/plugin.json`.
+
+## Harness parameter and host detection
+
+The shared manifests pass an optional harness to the
+[Bash](../hooks/scripts/track-telemetry.sh) and
+[PowerShell](../hooks/scripts/track-telemetry.ps1) telemetry scripts on every
+event. Bash accepts `--harness <value>`; PowerShell accepts `-Harness <value>`.
+For example, from the repository root, with the hook JSON supplied on stdin:
+
+```bash
+bash ./hooks/scripts/track-telemetry.sh --harness copilot-vscode
+```
+
+```powershell
+& .\hooks\scripts\track-telemetry.ps1 -Harness copilot-vscode
+```
+
+| Harness | Client-name behavior |
+|---------|----------------------|
+| `claude-code` | Reports `claude-code` unchanged. |
+| `cursor` | Reports `cursor` unchanged, even without `cursor_version`. |
+| `copilot-vscode` | Refines the Copilot/VS Code family using application evidence; inconclusive input reports `unknown`. |
+| Any other nonempty value | Reports the value unchanged, including casing and spaces. |
+| Omitted or empty | Uses environment and payload evidence, with the same runtime/application distinction. |
+
+Definitive and custom harness values override conflicting environment or payload
+signals. All nonempty harnesses other than `copilot-vscode` use the same
+pass-through rule; `claude` is not an alias for `claude-code`. An optional
+explicit application identifier takes precedence over
+harness and passive detection: a launcher that knows its frontend can pass
+`--application <client-name>` in Bash or `-Application <client-name>` in
+PowerShell. The value is forwarded unchanged. From the repository root:
+
+```bash
+bash ./hooks/scripts/track-telemetry.sh --harness copilot-vscode --application copilot-cli
+```
+
+```powershell
+& .\hooks\scripts\track-telemetry.ps1 -Harness copilot-vscode -Application copilot-cli
+```
+
+These parameters control the reported client name, not event classification.
+Cursor MCP events are recognized by `afterMCPExecution` and
+`mcp_server_name=azure`, provided the plugin owns that server, even when an
+application override or custom harness label changes the reported name.
+
+The shared manifests do not supply an application identifier because the
+Copilot registration is shared by multiple applications. Without an override,
+Cursor's nonempty `cursor_version` is considered first, then the exact VS Code
+`AI_AGENT` marker takes precedence over ambient CLI evidence. Standalone CLI
+evidence precedes weaker VS Code extension-host, tool-ID, and path evidence.
+Neither Cursor's version field nor environment-based detection requires
+`hook_event_name`. The existing VS Code Stable/Insiders path distinction is
+retained.
+
+Payload shape selects an input format, not an application. `toolArgs` without
+`hook_event_name` no longer implies CLI, and `hook_event_name` alone no longer
+implies Claude. A session with only those fields reports `unknown`; use an
+explicit harness/application value or corroborating host evidence to identify
+it. In particular, older CLI sessions without launcher evidence and compatible
+Claude/Codex-shaped payloads are not automatically assigned a product name.
+
+`COPILOT_CLI=1` alone indicates the runtime, not the frontend. Likewise,
+`COPILOT_CLI_RUN_AS_NODE=1` alone, a standalone-launcher variable without the
+runtime marker, or `VSCODE_PID` alone is inconclusive. Such inputs report
+`unknown` rather than guessing CLI, VS Code, or Claude. These environment
+signals are observational and can be inherited; they are not authentication.
+No new passive GitHub Copilot app detection rule is assumed.
+
+The manifests no longer set `AZURE_SKILLS_HOOK_CLIENT_FAMILY`. The scripts still
+consult it if set externally, but treat it as a family hint rather than proof
+of VS Code.
 
 ## Session-start telemetry
 
