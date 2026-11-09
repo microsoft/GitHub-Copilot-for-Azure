@@ -41,8 +41,14 @@ After assembling hooks, the build generates `hooks/allowlists/allowed-skills.txt
 and `hooks/allowlists/allowed-references.txt` in each plugin package. These
 plugin-specific, newline-separated lists describe the packaged skills and their
 supporting files. Reference paths remain relative to the plugin's `skills/`
-directory, not the allowlist directory. The telemetry hooks do not yet pass these
-files to the reporter.
+directory, not the allowlist directory.
+
+The build also copies the shared `plugins/allowed-azure-tools.json` source to
+`hooks/allowlists/allowed-tools.json` in every plugin package, beside the text
+lists. It copies the JSON byte-for-byte, preserving the `commands`, `areas`, and
+`extensionTools` sections and their named groups. A source read or destination
+write failure rejects the build. The telemetry hooks do not yet pass these
+three files to the reporter.
 
 ## Copilot CLI
 
