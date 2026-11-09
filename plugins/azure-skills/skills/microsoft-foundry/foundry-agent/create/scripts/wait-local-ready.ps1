@@ -25,7 +25,7 @@ while ($elapsed.Elapsed.TotalSeconds -lt 300) {
     try {
         $connection = $client.ConnectAsync("127.0.0.1", $portNumber)
         if ($connection.Wait(1000) -and $client.Connected) {
-            Write-Output "[READY] localhost:$portNumber"
+            Write-Output "[READY] localhost:$portNumber accepts TCP connections. Keep the server running and proceed to the local smoke invocation."
             exit 0
         }
     } catch [System.AggregateException] {
@@ -37,5 +37,5 @@ while ($elapsed.Elapsed.TotalSeconds -lt 300) {
     Start-Sleep -Seconds 2
 }
 
-Write-Error "[ERROR] localhost:$portNumber did not become ready within 300 seconds." -ErrorAction Continue
+Write-Error "[ERROR] localhost:$portNumber did not become ready within 300 seconds. Inspect the server logs and resolve the cause before retrying." -ErrorAction Continue
 exit 1

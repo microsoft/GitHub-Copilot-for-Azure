@@ -50,11 +50,7 @@ What this does:
 5. Opens no client when `--no-client` is set. Without that flag, azd opens Agent Inspector for the Responses and Invocations protocols, and Microsoft 365 Agents Playground for the Activity protocol.
 
 > **Readiness gate — required before local invocation.**
-> - Run the bundled readiness script immediately after launching the agent in the background. It checks `localhost:<port>` every 2 seconds and exits unsuccessfully after 5 minutes if the port remains unavailable.
-> - **Proceed to the smoke invocation as soon as TCP connects**, keeping the server running.
-> - If the script times out, inspect the server logs and resolve the cause before retrying.
-
-Run the readiness script:
+> Run the script to wait for the local server port (`8088` by default) to accept TCP connections.
 
 ```bash
 ../scripts/wait-local-ready.sh <port>          # macOS / Linux

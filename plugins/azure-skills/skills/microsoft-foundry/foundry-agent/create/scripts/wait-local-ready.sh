@@ -25,11 +25,11 @@ fi
 deadline=$((SECONDS + 300))
 while ((SECONDS < deadline)); do
   if (: > "/dev/tcp/127.0.0.1/$port") 2>/dev/null; then
-    echo "[READY] localhost:$port"
+    echo "[READY] localhost:$port accepts TCP connections. Keep the server running and proceed to the local smoke invocation."
     exit 0
   fi
   sleep 2
 done
 
-echo "[ERROR] localhost:$port did not become ready within 300 seconds." >&2
+echo "[ERROR] localhost:$port did not become ready within 300 seconds. Inspect the server logs and resolve the cause before retrying." >&2
 exit 1
