@@ -10,7 +10,7 @@ target:
 evaluations:
   root: evals/azure-skills/azure-diagnostics
   development:
-    - functions-vnet-routing.eval.yaml
+    - functions-vnet-routing-comparative.eval.yaml
 
 models:
   answers:
