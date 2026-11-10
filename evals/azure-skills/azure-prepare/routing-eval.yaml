@@ -49,6 +49,7 @@ stimuli:
       Create a C# Azure Functions app that processes Cosmos DB change feed events.
       Use Bicep for infrastructure. Set up managed identity with proper RBAC roles.
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -114,6 +115,7 @@ stimuli:
       Build a TypeScript Azure Functions app that reads from Cosmos DB change feed.
       I want to use Terraform for the infrastructure, not Bicep.
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -178,6 +180,7 @@ stimuli:
       Create a C# Azure Durable Functions app with a fan-out/fan-in orchestration
       pattern. Deploy to Azure.
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -230,6 +233,7 @@ stimuli:
       Create a simple Azure Functions HTTP API in C# that returns hello world.
       Deploy to Azure using Bicep infrastructure.
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -287,6 +291,7 @@ stimuli:
       Create a Python Azure Functions app with an HTTP trigger that returns JSON.
       Use Bicep for infrastructure as code.
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -332,6 +337,7 @@ stimuli:
       Build a TypeScript Azure Functions API with an HTTP endpoint.
       Use Bicep for the infrastructure.
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -385,6 +391,7 @@ stimuli:
       Create an Azure Functions MCP server in TypeScript that exposes tools
       for querying a product catalog. Deploy to Azure.
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -438,6 +445,7 @@ stimuli:
       I need a Node.js Azure Functions app with Cosmos DB ASAP.
       Skip the planning, just generate all the code and deploy it right now.
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -492,6 +500,7 @@ stimuli:
       Create a C# Azure Functions app that processes messages from a Service Bus queue.
       Use Bicep for infrastructure with managed identity authentication.
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -545,6 +554,7 @@ stimuli:
       Create a Python Azure Functions app that runs on a schedule every 5 minutes
       to clean up old records. Deploy to Azure.
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -603,6 +613,7 @@ stimuli:
   - name: "New Azure Application Preparation"
     prompt: "Prepare my application for Azure deployment and set up the infrastructure using azd"
     tags:
+      azurePermission: none
       type: integration
       tier: smoke
       cost: llm
@@ -622,6 +633,7 @@ stimuli:
   - name: "Modernizing Application For Azure"
     prompt: "Modernize my existing application for Azure hosting and generate the required infrastructure files using azd"
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -641,6 +653,7 @@ stimuli:
   - name: "Functional Verification Before Deployment"
     prompt: "Prepare my web app for Azure using azd and verify it works locally before deploying"
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -660,6 +673,7 @@ stimuli:
   - name: "Subscription Policy Compliance"
     prompt: "Prepare my application for Azure deployment using azd and check subscription policies for compliance"
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -679,6 +693,7 @@ stimuli:
   - name: "Key Vault Secrets Integration"
     prompt: "Prepare my Azure application to use Key Vault for storing secrets and credentials using azd"
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -698,6 +713,7 @@ stimuli:
   - name: "Azure Identity Authentication"
     prompt: "Set up my Azure application with managed identity authentication for accessing Azure services using azd"
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -723,6 +739,7 @@ stimuli:
         - src: fixture/social-media/package.json
           dest: package.json
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -750,6 +767,7 @@ stimuli:
         - src: fixture/functions-http/requirements.txt
           dest: requirements.txt
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -777,6 +795,7 @@ stimuli:
         - src: fixture/functions-event/requirements.txt
           dest: requirements.txt
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -804,6 +823,7 @@ stimuli:
         - src: fixture/functions-timer/requirements.txt
           dest: requirements.txt
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -827,6 +847,7 @@ stimuli:
         - src: fixture/whiteboard/index.html
           dest: index.html
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -850,6 +871,7 @@ stimuli:
         - src: fixture/portfolio/index.html
           dest: index.html
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -875,6 +897,7 @@ stimuli:
         - src: fixture/discussion-board/package.json
           dest: package.json
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -902,6 +925,7 @@ stimuli:
         - src: fixture/todo/frontend/index.html
           dest: frontend/index.html
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -929,6 +953,7 @@ stimuli:
         - src: fixture/functions-http/requirements.txt
           dest: requirements.txt
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -956,6 +981,7 @@ stimuli:
         - src: fixture/functions-event/requirements.txt
           dest: requirements.txt
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -983,6 +1009,7 @@ stimuli:
         - src: fixture/functions-servicebus/requirements.txt
           dest: requirements.txt
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -1010,6 +1037,7 @@ stimuli:
         - src: fixture/containerized-web/Dockerfile
           dest: Dockerfile
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -1037,6 +1065,7 @@ stimuli:
         - src: fixture/nodejs-hello/Dockerfile
           dest: Dockerfile
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -1060,6 +1089,7 @@ stimuli:
         - src: fixture/whiteboard/index.html
           dest: index.html
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -1083,6 +1113,7 @@ stimuli:
         - src: fixture/portfolio/index.html
           dest: index.html
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -1108,6 +1139,7 @@ stimuli:
         - src: fixture/discussion-board/package.json
           dest: package.json
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -1135,6 +1167,7 @@ stimuli:
         - src: fixture/todo/frontend/index.html
           dest: frontend/index.html
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -1162,6 +1195,7 @@ stimuli:
         - src: fixture/functions-http/requirements.txt
           dest: requirements.txt
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -1189,6 +1223,7 @@ stimuli:
         - src: fixture/functions-event/requirements.txt
           dest: requirements.txt
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -1216,6 +1251,7 @@ stimuli:
         - src: fixture/url-shortener/requirements.txt
           dest: requirements.txt
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -1243,6 +1279,7 @@ stimuli:
         - src: fixture/containerized-web/Dockerfile
           dest: Dockerfile
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -1270,6 +1307,7 @@ stimuli:
         - src: fixture/nodejs-hello/Dockerfile
           dest: Dockerfile
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -1295,6 +1333,7 @@ stimuli:
         - src: fixture/social-media/package.json
           dest: package.json
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -1314,6 +1353,7 @@ stimuli:
   - name: "APIM Deployment"
     prompt: "Deploy a new Azure API Management instance for my application using azd"
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm

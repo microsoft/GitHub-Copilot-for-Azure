@@ -32,6 +32,7 @@ stimuli:
   - name: "Compliance assessment with azqr"
     prompt: "Run azqr to check my Azure subscription for compliance against best practices"
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -53,6 +54,7 @@ stimuli:
   - name: "Key Vault expired certificates and secrets"
     prompt: "Show me expired certificates and secrets in my Azure Key Vault"
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -74,6 +76,7 @@ stimuli:
   - name: "Full compliance audit with Key Vault checks"
     prompt: "Run a full compliance audit on my Azure environment including resource best practices and Key Vault expiration checks"
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -95,6 +98,7 @@ stimuli:
   - name: "Orphaned resources and compliance check"
     prompt: "Check my Azure subscription for orphaned resources and compliance issues"
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm

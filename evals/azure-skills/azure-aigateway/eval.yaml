@@ -32,6 +32,7 @@ stimuli:
   - name: "APIM AI Gateway setup for OpenAI"
     prompt: "How do I set up Azure API Management as an AI Gateway for my Azure OpenAI models?"
     tags:
+      azurePermission: none
       type: integration
       tier: smoke
       cost: llm
@@ -53,6 +54,7 @@ stimuli:
   - name: "Rate limiting and token limits for AI requests"
     prompt: "How do I add rate limiting and token limits to my AI model requests using APIM?"
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -74,6 +76,7 @@ stimuli:
   - name: "Semantic caching for OpenAI cost reduction"
     prompt: "Enable semantic caching for my Azure OpenAI API to reduce costs"
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -95,6 +98,7 @@ stimuli:
   - name: "Content safety and jailbreak detection"
     prompt: "Add content safety and jailbreak detection to my AI gateway endpoint"
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -116,6 +120,7 @@ stimuli:
   - name: "Load balance across OpenAI backends"
     prompt: "Load balance requests across multiple Azure OpenAI backends in API Management"
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -137,6 +142,7 @@ stimuli:
   - name: "MCP server rate limiting in APIM"
     prompt: "How do I add rate limiting to protect my MCP server tools in APIM?"
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -158,6 +164,7 @@ stimuli:
   - name: "Add OpenAI backend to APIM"
     prompt: "Add an Azure OpenAI backend to my existing API Management instance"
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm

@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   convertToTrajectoryEvents: vi.fn(),
   createMarkdownReport: vi.fn(),
   deleteResourceGroup: vi.fn(),
+  getAzureEnvironment: vi.fn(),
   getAzureFixtureManifestPath: vi.fn(),
   getAzureScopePrompt: vi.fn(),
   getEarlyTerminateCondition: vi.fn(),
@@ -56,6 +57,7 @@ vi.mock("../tag-helpers.ts", () => ({
   getSkillName: mocks.getSkillName,
   getSystemPrompt: mocks.getSystemPrompt,
   getTakeScreenshotCondition: mocks.getTakeScreenshotCondition,
+  getAzureEnvironment: mocks.getAzureEnvironment,
 }));
 
 import { SdkAgentExecutor } from "../sdk-agent-executor.ts";
@@ -135,6 +137,7 @@ describe("SdkAgentExecutor", { concurrent: false }, () => {
     vi.clearAllMocks();
     mocks.convertToTrajectoryEvents.mockReturnValue(convertedEvents);
     mocks.createMarkdownReport.mockResolvedValue(undefined);
+    mocks.getAzureEnvironment.mockReturnValue({});
     mocks.getAzureFixtureManifestPath.mockReturnValue(undefined);
     mocks.getAzureScopePrompt.mockReturnValue("Azure scope");
     mocks.getEarlyTerminateCondition.mockReturnValue({});
@@ -334,6 +337,12 @@ describe("SdkAgentExecutor", { concurrent: false }, () => {
   });
 
   test("provisions and cleans up a non-persisted fixture", async () => {
+    const azureEnvironment = {
+      AZURE_CLIENT_ID: "read-client",
+      AZURE_CONFIG_DIR: "/tmp/azure-read",
+      AZD_CONFIG_DIR: "/tmp/azd-read",
+    };
+    mocks.getAzureEnvironment.mockReturnValue(azureEnvironment);
     const manifest = {
       bicepConfigs: [],
       postTestScript: {
@@ -361,9 +370,15 @@ describe("SdkAgentExecutor", { concurrent: false }, () => {
 
     await executor.execute(defaultStimulus, defaultOptions);
 
+    expect(mocks.provision).toHaveBeenCalledWith(
+      expect.stringMatching(/target-skill\/fixture\.json$/u),
+      manifest,
+      expect.objectContaining(azureEnvironment),
+    );
     expect(runner.run).toHaveBeenCalledWith(
       expect.objectContaining({
         prompt: `${defaultStimulus.prompt}\nAzure scope`,
+        env: expect.objectContaining(azureEnvironment),
       }),
     );
     expect(mocks.runPostTestScript).toHaveBeenCalledWith(
