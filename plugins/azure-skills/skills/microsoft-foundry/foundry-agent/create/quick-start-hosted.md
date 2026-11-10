@@ -260,12 +260,10 @@ azd ai agent run --no-client
 ```
 
 > **Readiness gate — required before local invocation.**
-> Run the script to wait for the local server port (`8088` by default) to accept TCP connections.
-
-```bash
-./scripts/wait-local-ready.sh <port>          # macOS / Linux
-./scripts/wait-local-ready.ps1 -Port <port>   # Windows (PowerShell)
-```
+> Run the bundled [Bash helper](scripts/wait-local-ready.sh) or [PowerShell helper](scripts/wait-local-ready.ps1) to wait for the local server port (`8088` by default) to accept TCP connections. Keep the working directory at the azd project root; replace `<skill-root>` below with the absolute path to the installed `microsoft-foundry` skill.
+>
+> - macOS / Linux: `bash "<skill-root>/foundry-agent/create/scripts/wait-local-ready.sh" <port>`
+> - PowerShell: `& "<skill-root>/foundry-agent/create/scripts/wait-local-ready.ps1" -Port <port>`
 
 Smoke-invoke (local):
 
