@@ -113,7 +113,7 @@ Step 4 needs `--runtime` and `--entry-point` values. These are CLI args, **not**
 
 Run `azd ai agent init`. `azd ai agent init` is sufficient to create new Foundry projects (or reuse an existing one) and create new Foundry agents. By default, you do not need to run `azd init` unless the user has specific initialization requirements.
 
-Pass `--deploy-mode code` by default to use code deploy.
+Pass `--deploy-mode code` by default to use code deploy. Do not pass `--protocol` when running `azd ai agent init` with an azure.yaml manifest specified via -m.
 
 ```bash
 azd ai agent init --no-prompt \
