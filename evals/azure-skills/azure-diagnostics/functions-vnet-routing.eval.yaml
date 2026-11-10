@@ -22,8 +22,7 @@ stimuli:
     prompt: |
       Our Function App's blob-read endpoint started returning 503 or timing out,
       but its health endpoint still returns 200. It worked previously. Can you
-      investigate what's wrong and tell me the safest way to fix it? Please
-      don't make changes yet.
+      investigate what's wrong and tell me the safest way to fix it?
     rubric:
       - "Critical gate: The final response must state the evidence-backed root cause, minimal safe remediation, and concrete recovery verification. Evidence appearing only in tool output does not count."
       - The agent invokes azure-diagnostics and reads live evidence from the supplied resource group, including the Function App or its telemetry and the relevant VNet route configuration; a generic checklist or hypothetical commands alone do not pass.
@@ -57,7 +56,6 @@ stimuli:
       Blob reads from our Function App started timing out shortly after a
       networking change, while health checks still pass. Can you determine what
       changed, whether it caused the problem, and how to roll it back safely?
-      Don't make changes yet.
     rubric:
       - "Critical gate: The final response must state the evidence-backed root cause, minimal safe remediation, and concrete recovery verification. Evidence appearing only in tool output does not count."
       - The agent invokes azure-diagnostics and gathers live resource, route, telemetry, or Activity Log evidence from the supplied resource group rather than returning only general Functions networking guidance.
