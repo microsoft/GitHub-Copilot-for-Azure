@@ -99,7 +99,7 @@ telephony:
 
 Token: process environment only, never YAML/chat/summaries. Connection must preexist deploy. azd doesn't create accounts, buy/discover numbers, or prove routing; test a call.
 
-Each `transferTargets` item requires `name`, a nonblank `description`, and `destination`. Destination kinds:
+Bindings require `provider`, `identifier`, and `connection`; `transferTargets` is optional. Omit it to leave the existing singleton transfer targets unmanaged, or set `transferTargets: []` to manage the set as empty. When present, each item requires `name`, a nonblank `description`, and `destination`. Destination kinds:
 
 - `pstn`: `value` is `+<E.164>`.
 - `teams`: `value` is a canonical GUID or `28:orgid:<guid>`.
