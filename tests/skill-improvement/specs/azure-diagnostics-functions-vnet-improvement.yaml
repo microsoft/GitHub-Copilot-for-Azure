@@ -56,9 +56,9 @@ refinement:
 
 limits:
   maxIterations: 2
-  maxAnswerGenerations: 32
-  maxJudgeCalls: 32
-  maxDurationMinutes: 180
+  maxAnswerGenerations: 64
+  maxJudgeCalls: 64
+  maxDurationMinutes: 240
   maxConcurrentVallyProcesses: 4
   generationWorkersPerVallyProcess: 1
   maxSkillTokenIncreasePercent: 15

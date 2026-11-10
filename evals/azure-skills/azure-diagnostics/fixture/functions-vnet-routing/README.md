@@ -37,7 +37,16 @@ returns a logged 503 promptly.
 
 ## Provisioning and fault injection
 
-The post-provision script:
+All variants share the same Bicep and application. Small wrapper scripts select
+one of three modes in `post-provision.ts`:
+
+- `route-blackhole`: the original narrow `/32 -> None` route fault.
+- `ambiguous-route`: harmless Function/storage tag updates and an unrelated
+  `192.0.2.10/32 -> None` route precede the real private-endpoint route fault.
+- `dns-unlinked`: the unrelated route is present, but the actual fault is
+  removal of the test-storage private DNS zone's VNet link.
+
+The shared post-provision logic:
 
 1. Packages and remotely builds the Function app.
 2. Seeds `sample.txt` through Entra authentication.
@@ -45,9 +54,9 @@ The post-provision script:
 4. Warms the app and requires health=200.
 5. Requires a successful blob read whose resolved IP matches the private
    endpoint and waits for its correlated Application Insights trace.
-6. Adds a `storage-path` route whose prefix is the endpoint's actual private
-   IP `/32` and whose next hop is `None`.
-7. Requires health=200, unchanged private DNS resolution, and read-blob=503.
+6. Applies the selected isolated fault and any scenario-specific decoys.
+7. Requires health=200, the mode's expected DNS result, read-blob=503, and a
+   correlated failure trace.
 
 Flex Consumption already sends VNet-integrated outbound traffic through the
 VNet; the fixture intentionally does not configure Route All. It also avoids
@@ -56,10 +65,10 @@ unchanged.
 
 ## Safety and cost
 
-The fault is limited to one private endpoint `/32`. Do not broaden the route:
-that could disrupt host storage, deployment, or telemetry and obscure the
-intended failure. Evaluations are read-only and must not remove the route or
-modify resources.
+Routing faults are limited to one private endpoint `/32`; the DNS control
+removes only the test-storage private zone's VNet link. Do not broaden either
+fault: that could disrupt host storage, deployment, or telemetry and obscure
+the intended failure. Evaluations are read-only and must not modify resources.
 
 The manifest uses temporary coordinated persistence so repetitions and
 hill-climbing conditions can reuse the same failed fixture. The fixture

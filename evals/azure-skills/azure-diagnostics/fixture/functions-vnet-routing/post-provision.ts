@@ -15,6 +15,8 @@ if (resourceGroups.length !== 1) {
 const resourceGroup = resourceGroups[0];
 const temporaryDirectory = mkdtempSync(join(tmpdir(), "functions-vnet-routing-"));
 
+export type FaultMode = "route-blackhole" | "ambiguous-route" | "dns-unlinked";
+
 function log(message: string): void {
   console.error(`[functions-vnet-routing] ${message}`);
 }
@@ -52,6 +54,63 @@ function findResourceName(resourceType: string, prefix: string): string {
     throw new Error(`No ${resourceType} resource beginning with ${prefix} was found.`);
   }
   return name;
+}
+
+function findResourceId(resourceType: string, name: string): string {
+  return runAz([
+    "resource",
+    "show",
+    "--resource-group",
+    resourceGroup,
+    "--resource-type",
+    resourceType,
+    "--name",
+    name,
+    "--query",
+    "id",
+    "-o",
+    "tsv",
+  ]);
+}
+
+function createBlackholeRoute(
+  routeTableName: string,
+  name: string,
+  addressPrefix: string,
+): void {
+  runAz([
+    "network",
+    "route-table",
+    "route",
+    "create",
+    "--resource-group",
+    resourceGroup,
+    "--route-table-name",
+    routeTableName,
+    "--name",
+    name,
+    "--address-prefix",
+    addressPrefix,
+    "--next-hop-type",
+    "None",
+    "-o",
+    "none",
+  ]);
+}
+
+function mergeTags(resourceId: string, tags: string[]): void {
+  runAz([
+    "tag",
+    "update",
+    "--resource-id",
+    resourceId,
+    "--operation",
+    "Merge",
+    "--tags",
+    ...tags,
+    "-o",
+    "none",
+  ]);
 }
 
 async function retry<T>(
@@ -141,7 +200,7 @@ async function waitForTelemetry(
 ): Promise<void> {
   const queryUrl = `https://management.azure.com${applicationInsightsId}/query?api-version=2018-04-20`;
   await retry(
-    "waiting for the successful blob-read trace in Application Insights",
+    "waiting for the correlated blob-read trace in Application Insights",
     async () => {
       const output = runAz([
         "rest",
@@ -172,7 +231,7 @@ const routeTableName = findResourceName("Microsoft.Network/routeTables", "fnrt-r
 const privateEndpointName = findResourceName("Microsoft.Network/privateEndpoints", "fnrt-storage-pe-");
 const applicationInsightsName = findResourceName("Microsoft.Insights/components", "fnrt-insights-");
 
-async function main(): Promise<void> {
+export async function provisionFixture(faultMode: FaultMode): Promise<void> {
 try {
   const privateEndpointNicId = await retry(
     "waiting for the test storage private endpoint NIC",
@@ -354,30 +413,68 @@ try {
   ]);
   await waitForTelemetry(applicationInsightsId, baseline.correlationId);
 
-  log(`Adding a blackhole route only for private endpoint ${privateEndpointIp}/32.`);
-  runAz([
-    "network",
-    "route-table",
-    "route",
-    "create",
-    "--resource-group",
-    resourceGroup,
-    "--route-table-name",
-    routeTableName,
-    "--name",
-    "storage-path",
-    "--address-prefix",
-    `${privateEndpointIp}/32`,
-    "--next-hop-type",
-    "None",
-    "-o",
-    "none",
-  ]);
+  if (faultMode === "ambiguous-route") {
+    log("Adding harmless maintenance changes before the actual route fault.");
+    mergeTags(findResourceId("Microsoft.Web/sites", functionAppName), [
+      "MaintenanceWindow=completed",
+      "DeploymentRing=stable",
+    ]);
+    mergeTags(findResourceId("Microsoft.Storage/storageAccounts", testStorageName), [
+      "DataClassification=test",
+      "MaintenanceWindow=completed",
+    ]);
+    createBlackholeRoute(routeTableName, "monitoring-egress", "192.0.2.10/32");
+  }
+
+  if (faultMode === "route-blackhole" || faultMode === "ambiguous-route") {
+    log(`Adding a blackhole route only for private endpoint ${privateEndpointIp}/32.`);
+    createBlackholeRoute(routeTableName, "storage-path", `${privateEndpointIp}/32`);
+  } else {
+    log("Adding an unrelated route, then unlinking only the test-storage private DNS zone.");
+    createBlackholeRoute(routeTableName, "monitoring-egress", "192.0.2.10/32");
+    const privateDnsZoneName = "privatelink.blob.core.windows.net";
+    const privateDnsLinkName = runAz([
+      "network",
+      "private-dns",
+      "link",
+      "vnet",
+      "list",
+      "--resource-group",
+      resourceGroup,
+      "--zone-name",
+      privateDnsZoneName,
+      "--query",
+      "[0].name",
+      "-o",
+      "tsv",
+    ]);
+    if (!privateDnsLinkName) {
+      throw new Error("The test-storage private DNS VNet link was not found.");
+    }
+    runAz([
+      "network",
+      "private-dns",
+      "link",
+      "vnet",
+      "delete",
+      "--resource-group",
+      resourceGroup,
+      "--zone-name",
+      privateDnsZoneName,
+      "--name",
+      privateDnsLinkName,
+      "--yes",
+    ]);
+  }
 
   const failedRead = await retry(
-    "waiting for the routed blob read to fail with 503 while DNS remains correct",
+    "waiting for the selected fault to produce a 503",
     () => request(functionAppHostName, "read-blob", functionKey),
-    (response) => response.status === 503 && response.resolvedIp === privateEndpointIp,
+    (response) => response.status === 503 && (
+      faultMode === "dns-unlinked"
+        ? response.resolvedIp !== privateEndpointIp
+        : response.resolvedIp === privateEndpointIp
+    ),
     240_000,
     15_000,
   );
@@ -388,6 +485,7 @@ try {
   if (!failedRead.correlationId) {
     throw new Error("The failed blob read did not return a correlation ID.");
   }
+  await waitForTelemetry(applicationInsightsId, failedRead.correlationId);
 
   const hostPublicNetworkAccess = runAz([
     "storage",
@@ -406,13 +504,15 @@ try {
     throw new Error("Host/deployment storage connectivity changed unexpectedly.");
   }
 
-  log("Fixture is ready: health is 200, storage DNS still resolves privately, and read-blob is 503.");
+  log(
+    `Fixture ${faultMode} is ready: health is 200, read-blob is 503, and storage DNS `
+    + (
+      faultMode === "dns-unlinked"
+        ? "no longer resolves to the private endpoint."
+        : "still resolves privately."
+    )
+  );
 } finally {
   rmSync(temporaryDirectory, { recursive: true, force: true });
 }
 }
-
-void main().catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exitCode = 1;
-});

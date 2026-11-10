@@ -189,8 +189,8 @@ describe("skill improvement configuration", () => {
     expect(() => enforceRunLimits(runSpec, plan)).not.toThrow();
     expect(plan.baselineAnswerGenerations).toBeGreaterThan(0);
     expect(plan.heldOutAnswerGenerations).toBeGreaterThan(0);
-    expect(plan.maximumAnswerGenerations).toBeLessThanOrEqual(536);
-    expect(plan.maximumJudgeCalls).toBeLessThanOrEqual(536);
+    expect(plan.maximumAnswerGenerations).toBeLessThanOrEqual(560);
+    expect(plan.maximumJudgeCalls).toBeLessThanOrEqual(560);
   });
 
   test("keeps the Flex routing fixture narrow and keyless", () => {
@@ -201,6 +201,17 @@ describe("skill improvement configuration", () => {
     const postProvision = fs.readFileSync(fileURLToPath(
       new URL(`${fixtureRoot}post-provision.ts`, import.meta.url)
     ), "utf8");
+    const manifests = [
+      "azure-manifest.json",
+      "azure-manifest-ambiguous.json",
+      "azure-manifest-control.json",
+    ].map(file => JSON.parse(fs.readFileSync(fileURLToPath(
+      new URL(`${fixtureRoot}${file}`, import.meta.url)
+    ), "utf8")) as {
+      id: string;
+      bicepConfigs: Array<{ resourceGroupNameBase: string }>;
+      postProvisionScript: { path: string };
+    });
 
     expect(bicep).toContain("name: 'FC1'");
     expect(bicep).toContain("publicNetworkAccess: 'Enabled'");
@@ -215,7 +226,21 @@ describe("skill improvement configuration", () => {
     expect(postProvision).toContain('"ipConfigurations[0].privateIPAddress"');
     expect(postProvision).not.toContain("customDnsConfigs");
     expect(postProvision).toContain("`${functionAppName}.azurewebsites.net`");
+    expect(postProvision).toContain('"ambiguous-route"');
+    expect(postProvision).toContain('"dns-unlinked"');
+    expect(postProvision).toContain('"192.0.2.10/32"');
+    expect(postProvision).toContain('"private-dns"');
+    expect(new Set(manifests.map(manifest => manifest.id)).size).toBe(3);
+    expect(new Set(
+      manifests.map(manifest => manifest.bicepConfigs[0].resourceGroupNameBase)
+    ).size).toBe(3);
+    expect(manifests.map(manifest => manifest.postProvisionScript.path)).toEqual([
+      "post-provision-route.ts",
+      "post-provision-ambiguous.ts",
+      "post-provision-control.ts",
+    ]);
   });
+
   test("rejects unsupported run-spec environment variables", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "skill-improvement-env-"));
     const configPath = path.join(root, "run.yaml");

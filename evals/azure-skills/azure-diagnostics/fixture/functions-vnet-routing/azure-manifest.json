@@ -1,10 +1,10 @@
 {
   "id": "azure-diagnostics-functions-vnet-routing",
   "schemaVersion": 1,
-  "version": 13,
+  "version": 14,
   "type": "readOnly",
   "persistence": "temporary",
-  "provisioningTimeoutMinutes": 40,
+  "provisioningTimeoutMinutes": 60,
   "description": "A Flex Consumption Function App integrated with a VNet and a private blob endpoint, with a post-provisioned /32 blackhole route that isolates the test storage path.",
   "bicepConfigs": [
     {
@@ -20,6 +20,6 @@
     }
   ],
   "postProvisionScript": {
-    "path": "post-provision.ts"
+    "path": "post-provision-route.ts"
   }
 }
