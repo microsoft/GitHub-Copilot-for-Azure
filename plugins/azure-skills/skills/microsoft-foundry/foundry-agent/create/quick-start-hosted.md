@@ -359,8 +359,11 @@ azd down                                    # tear down all resources when done
 | `azd deploy` postdeploy hook fails with missing `AZURE_TENANT_ID` | Run `az account show --query tenantId -o tsv` and `azd env set AZURE_TENANT_ID <tenant-id>`, then re-run `azd deploy --no-prompt`. The deployed agent version from the first deploy is still valid; the postdeploy hook just registers env vars. |
 | Scaffold sanity check fails (Step 7) | Pick a recovery path from Step 7. If still failing → [create-hosted.md](create-hosted.md). |
 | Local invoke returns model `404` / wrong deployment | Stale `AZURE_AI_MODEL_DEPLOYMENT_NAME` in azd env overrides `.env`. Re-run Step 9 to sync both. |
-| Anything else | Escape to [create-hosted.md](create-hosted.md). |
+| CLI parameter, flag, or working-directory mistake | Fix the command arguments or working directory (check `--help` if needed) and retry the current step in place. |
+| Anything not covered by this quickstart | Follow [create-hosted.md](create-hosted.md). |
 
 ## Escape Hatch
 
-If any step fails in a way not covered above, the output looks unexpected, or the user's request drifts outside what this quickstart covers → **stop improvising**. Read [create-hosted.md](create-hosted.md) and follow its full workflow.
+Do **not** escape to [create-hosted.md](create-hosted.md) for self-correctable mistakes such as wrong CLI flags/parameters, working-directory errors, env-var mismatches, or minor command retries — fix those in place and continue this quickstart.
+
+If a step still fails after targeted recovery, or the user's request drifts outside what this quickstart covers → **stop improvising**. Read [create-hosted.md](create-hosted.md) and follow its full workflow.
