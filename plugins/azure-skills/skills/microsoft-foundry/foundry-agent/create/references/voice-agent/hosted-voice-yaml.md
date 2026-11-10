@@ -46,6 +46,8 @@ services:
     outputModalities: [audio]
 ```
 
+`conversationEngine.version` is optional; the only supported value is `deployed`, which is also the default when omitted.
+
 The wrapper must omit target-owned fields such as `model`, `modelType`, `instructions`, `tools`, `protocols`, `codeConfiguration`, environment settings, and session policies.
 
 When requested wrapper settings require YAML edits, load [Voice Agent YAML settings](prompt-and-hosted-voice-settings.md). Preserve unrelated existing wrapper fields, keep target and wrapper names distinct, and deploy the target before or together with the wrapper.
