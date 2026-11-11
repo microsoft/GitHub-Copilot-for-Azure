@@ -1,10 +1,10 @@
 # Best-Effort Agent Tracing Setup
 
-Use before ordinary prompt/hosted text deployments, including redeploys. Excludes Voice and Managed Harness.
+Use when the user declines default monitoring, uses custom or BYO monitoring, or asks to set up or repair tracing. For a new project, azd enables App Insights by default during `azd provision`, so the standard create, deploy and invoke workflows need no tracing steps. Excludes Voice and Managed Harness.
 
 ## Resolve and Preserve
 
-Use [Common Project Context Resolution](../SKILL.md#agent-common-project-context-resolution). Align environment, project ARM ID, endpoint and agent. Nonsecret azd outputs:
+Use [Common Project Context Resolution](../../../SKILL.md#agent-common-project-context-resolution). Align environment, project ARM ID, endpoint and agent. Nonsecret azd outputs:
 
 | Output | Meaning |
 |---|---|
@@ -35,7 +35,7 @@ Effective-connection discovery and human access checks happen after provisioning
 - **Native azd:** requires matched projects/agents/connections builds that include automatic monitoring; versions alone are insufficient. Confirm after provisioning that `azd env get-values` contains `AZD_FOUNDRY_MONITORING_MODE`. Do not install development builds automatically.
 - In supporting builds, a **new** project gets a workspace-backed App Insights component and an `AppInsights` connection by default, with no flag or authoring change. Monitoring is part of the main provisioning graph, not a best-effort second step: a policy or conflict failure (for example a conflicting connection or restricted ingestion) fails `azd provision` and its message names the cause. Report it, then fix it or set `monitoring.enabled: false`.
 - Existing projects are unchanged unless `monitoring.applicationInsightsResourceId` is set. azd never creates a new component for an existing project.
-- **Private networking:** a **new** project with a `network:` block (BYO or managed egress) gets a private App Insights and Log Analytics workspace with public ingestion and query disabled, both scoped to an Azure Monitor Private Link Scope (Private Only), an `azuremonitor` private endpoint, and the Azure Monitor private DNS zones. Hosted-agent traces were verified end to end on both egress modes; prompt-agent traces on managed egress were not observed. Reading traces (KQL, portal) works only from inside the VNet or a peered network, and the reader needs Log Analytics Reader.
+- **Private networking:** with a build that includes azd#10819, a **new** project with a `network:` block (BYO or managed egress) gets a private App Insights and Log Analytics workspace with public ingestion and query disabled, both scoped to an Azure Monitor Private Link Scope (Private Only), an `azuremonitor` private endpoint, and the Azure Monitor private DNS zones. Builds that only include azd#10743 skip monitoring (`monitoringMode = none`) with a warning and do not fail `azd provision`; `AZD_FOUNDRY_MONITORING_MODE` shows which happened. Hosted-agent traces were verified end to end on both egress modes; prompt-agent traces on managed egress were not observed. Reading traces (KQL, portal) works only from inside the VNet or a peered network, and the reader needs Log Analytics Reader.
   - An existing project whose account is private is rejected unless it already has an `AppInsights` connection (preserved) or `monitoring.enabled: false` is set. A new project on an existing account is not supported.
   - Do not weaken public ingestion or query access to make tracing work; set `monitoring.enabled: false` instead.
 - **Ejected IaC:** azd-ejected Bicep and Terraform include monitoring (`modules/monitoring.bicep`, `monitoring.tf`). After ejection, those files are authoritative, not `azure.yaml`.

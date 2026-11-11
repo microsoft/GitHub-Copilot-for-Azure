@@ -1,6 +1,6 @@
 # Verify the Requested Invocation's Stored Trace
 
-Use after the requested remote smoke invocation of an ordinary prompt or hosted text agent. Setup follows [Agent Tracing Setup](agent-tracing-setup.md); never make deployment success contingent on optional tracing.
+Use after the requested remote smoke invocation of an ordinary prompt or hosted text agent, when the user asks to verify traces. Setup follows [Agent Tracing Setup](agent-tracing-setup.md); never make deployment success contingent on optional tracing.
 
 ## Capture Once
 
@@ -10,7 +10,7 @@ Use the installed tool's supported output, not debug logging. Hosted azd raw out
 
 ## Query the Effective Destination
 
-Read [Trace Analysis](../foundry-agent/trace/trace.md) and [Search Traces](../foundry-agent/trace/references/search-traces.md) before constructing KQL. Prefer `monitor_resource_log_query` with explicit subscription and the resolved component resource ID. Display the query; select metadata only, not prompt/response content.
+Read [Trace Analysis](../trace.md) and [Search Traces](search-traces.md) before constructing KQL. Prefer `monitor_resource_log_query` with explicit subscription and the resolved component resource ID. Display the query; select metadata only, not prompt/response content.
 
 Scope to the captured UTC window with a small clock allowance, then match the returned response/conversation ID and selected agent. For hosted agents, resolve the Foundry-facing identity from `requests` using `gen_ai.agent.name`, `azure.ai.agentserver.agent_name`, or the name portion of `gen_ai.agent.id`. Carry matching `operation_Id` values into `dependencies`/other tables; dependency agent names can describe sub-agents instead.
 

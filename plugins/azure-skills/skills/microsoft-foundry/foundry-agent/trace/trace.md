@@ -44,7 +44,7 @@ For generated insights, follow [Agent Insights](../insights/insights.md) directl
 4. Confirm the selected App Insights resource and environment with the user before querying.
 5. Use **`monitor_resource_log_query`** (Azure MCP tool) to execute KQL queries against the App Insights resource. This is preferred over delegating to the `azure-kusto` skill. Pass the App Insights resource ID and the KQL query directly.
 
-For missing setup, use [best-effort tracing readiness](../../references/agent-tracing-setup.md); discovery/querying does not authorize repairs. Deployment smoke checks use [fresh invocation verification](../../references/agent-tracing-verification.md), not older traces or setup status. Persist nonsecret resource IDs only, never new connection-string copies.
+For missing setup or a monitoring opt-out, use [best-effort tracing readiness](references/agent-tracing-setup.md); discovery/querying does not authorize repairs. To verify that a specific invocation produced a stored trace, use [fresh invocation verification](references/agent-tracing-verification.md), not older traces or setup status. Persist nonsecret resource IDs only, never new connection-string copies.
 
 | Metadata field | Purpose | Example |
 |----------------|---------|---------|
