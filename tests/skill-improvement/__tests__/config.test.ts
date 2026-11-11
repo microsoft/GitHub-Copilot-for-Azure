@@ -185,13 +185,14 @@ describe("skill improvement configuration", () => {
     const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 
     expect(runSpec.evaluations.development).toContain("functions-vnet-routing.eval.yaml");
+    expect(runSpec.evaluations.development).toContain("functions-vnet-routing-repair.eval.yaml");
     expect(runSpec.evaluations.development).toContain("functions-vnet-snat.eval.yaml");
     const plan = createRunPlan(repoRoot, runSpec);
     expect(() => enforceRunLimits(runSpec, plan)).not.toThrow();
     expect(plan.baselineAnswerGenerations).toBeGreaterThan(0);
     expect(plan.heldOutAnswerGenerations).toBeGreaterThan(0);
-    expect(plan.maximumAnswerGenerations).toBeLessThanOrEqual(584);
-    expect(plan.maximumJudgeCalls).toBeLessThanOrEqual(584);
+    expect(plan.maximumAnswerGenerations).toBeLessThanOrEqual(596);
+    expect(plan.maximumJudgeCalls).toBeLessThanOrEqual(596);
   });
 
   test("keeps the Flex routing fixture narrow and keyless", () => {
@@ -209,11 +210,14 @@ describe("skill improvement configuration", () => {
       "azure-manifest.json",
       "azure-manifest-ambiguous.json",
       "azure-manifest-control.json",
+      "azure-manifest-repair.json",
       "azure-manifest-snat.json",
     ].map(file => JSON.parse(fs.readFileSync(fileURLToPath(
       new URL(`${fixtureRoot}${file}`, import.meta.url)
     ), "utf8")) as {
       id: string;
+      type: string;
+      persistence: string;
       bicepConfigs: Array<{ resourceGroupNameBase: string }>;
       postProvisionScript: { path: string };
     });
@@ -224,6 +228,7 @@ describe("skill improvement configuration", () => {
     expect(bicep).toContain("privateEndpointNetworkPolicies: 'RouteTableEnabled'");
     expect(bicep.match(/allowSharedKeyAccess: false/g)).toHaveLength(2);
     expect(bicep).toContain("type: 'SystemAssignedIdentity'");
+    expect(bicep).not.toContain("alwaysReady");
     expect(bicep).not.toMatch(/WEBSITE_(?:VNET_ROUTE_ALL|CONTENTOVERVNET|CONTENTAZUREFILECONNECTIONSTRING)/);
     expect(postProvision).toContain("`${privateEndpointIp}/32`");
     expect(postProvision).toMatch(/"--next-hop-type",\s+"None"/);
@@ -242,14 +247,21 @@ describe("skill improvement configuration", () => {
     expect(outboundApi).toContain("EADDRNOTAVAIL");
     expect(outboundApi).toContain("newConnectionCount");
     expect(outboundApi).toContain("reusedConnectionCount");
-    expect(new Set(manifests.map(manifest => manifest.id)).size).toBe(4);
+    expect(new Set(manifests.map(manifest => manifest.id)).size).toBe(5);
     expect(new Set(
       manifests.map(manifest => manifest.bicepConfigs[0].resourceGroupNameBase)
-    ).size).toBe(4);
+    ).size).toBe(5);
+    expect(manifests.find(manifest =>
+      manifest.id === "azure-diagnostics-functions-vnet-repair"
+    )).toMatchObject({
+      type: "readWrite",
+      persistence: "never",
+    });
     expect(manifests.map(manifest => manifest.postProvisionScript.path)).toEqual([
       "post-provision-route.ts",
       "post-provision-ambiguous.ts",
       "post-provision-control.ts",
+      "post-provision-repair.ts",
       "post-provision-snat.ts",
     ]);
   });

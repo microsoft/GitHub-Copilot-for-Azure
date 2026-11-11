@@ -52,6 +52,11 @@ one of four modes in `post-provision.ts`:
   seeded for a public dependency while the private-storage `/32` route remains
   an unrelated competing failure.
 
+`azure-manifest-repair.json` uses the `route-blackhole` mode with
+`type: readWrite` and `persistence: never`. Each repair trial therefore receives
+a fresh resource group and may remove only the injected `storage-path` route
+without changing the reusable read-only fixtures used by other scenarios.
+
 The shared post-provision logic:
 
 1. Packages and remotely builds the Function app.
