@@ -22,10 +22,10 @@ Run before any `azd provision` that could create a new project, and before a red
 
 A missing `monitoring` setting on a new project means monitoring is on by default, not "open to configure".
 
-1. If the project has a `network:` block, stop here: set `monitoring.enabled: false` (automatic monitoring does not configure private ingestion, and provisioning fails otherwise). Do not ask for monitoring approval or try to enable monitoring.
-2. Check capability and path (below). Older tooling and custom IaC create no monitoring.
-3. Check for an existing opt-out (`monitoring.enabled: false`) and respect it.
-4. For a new project without a `network:` block, get approval covering monitoring charges and privacy before provisioning.
+1. Check capability and path (below). Older tooling and custom IaC create no monitoring.
+2. Check for an existing opt-out (`monitoring.enabled: false`) and respect it.
+3. For a new project, including one with a `network:` block, get approval covering monitoring charges and privacy before provisioning. For a `network:` block, also tell the user the App Insights resource is private (see Private networking below) and that reading traces needs access from inside the VNet.
+4. If the project has a `network:` block and the VNet already has an `azuremonitor` private endpoint (a VNet can use only one Azure Monitor Private Link Scope), provisioning fails with a clear message. Offer `monitoring.enabled: false` or a different VNet.
 5. For an existing project, do nothing unless the user supplies `applicationInsightsResourceId` and approves the connection write.
 
 Effective-connection discovery and human access checks happen after provisioning (and on redeploys that skip it).
@@ -35,7 +35,9 @@ Effective-connection discovery and human access checks happen after provisioning
 - **Native azd:** requires matched projects/agents/connections builds that include automatic monitoring; versions alone are insufficient. Confirm after provisioning that `azd env get-values` contains `AZD_FOUNDRY_MONITORING_MODE`. Do not install development builds automatically.
 - In supporting builds, a **new** project gets a workspace-backed App Insights component and an `AppInsights` connection by default, with no flag or authoring change. Monitoring is part of the main provisioning graph, not a best-effort second step: a policy or conflict failure (for example a conflicting connection or restricted ingestion) fails `azd provision` and its message names the cause. Report it, then fix it or set `monitoring.enabled: false`.
 - Existing projects are unchanged unless `monitoring.applicationInsightsResourceId` is set. azd never creates a new component for an existing project.
-- **Private networking:** automatic monitoring does not configure private ingestion. A new project with a `network:` block fails unless `monitoring.enabled: false`, and an existing network-isolated project is rejected. Do not try to work around this; tell the user tracing needs a private-link design.
+- **Private networking:** a **new** project with a `network:` block (BYO or managed egress) gets a private App Insights and Log Analytics workspace with public ingestion and query disabled, both scoped to an Azure Monitor Private Link Scope (Private Only), an `azuremonitor` private endpoint, and the Azure Monitor private DNS zones. Hosted-agent traces were verified end to end on both egress modes; prompt-agent traces on managed egress were not observed. Reading traces (KQL, portal) works only from inside the VNet or a peered network, and the reader needs Log Analytics Reader.
+  - An existing project whose account is private is rejected unless it already has an `AppInsights` connection (preserved) or `monitoring.enabled: false` is set. A new project on an existing account is not supported.
+  - Do not weaken public ingestion or query access to make tracing work; set `monitoring.enabled: false` instead.
 - **Ejected IaC:** azd-ejected Bicep and Terraform include monitoring (`modules/monitoring.bicep`, `monitoring.tf`). After ejection, those files are authoritative, not `azure.yaml`.
 - **Starter Bicep:** `azd-ai-starter-basic` has monitoring and a connection and exports `APPLICATIONINSIGHTS_RESOURCE_ID`. Inspect actual outputs/connections; do not duplicate.
 - **Older tooling and custom IaC:** do not assume automatic monitoring. Reuse an existing working connection or warn that setup is unavailable and continue the agent workflow.
