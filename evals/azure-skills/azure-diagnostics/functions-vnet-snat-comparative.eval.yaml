@@ -59,13 +59,15 @@ stimuli:
       support-bundle/summary.md and support-bundle/evidence.json. Include the
       failing component, UTC evidence timeline, likely cause, alternatives ruled
       out, prioritized remediation, and recovery verification. Do not include
-      secrets, tokens, connection strings, or function keys.
+      secrets, tokens, connection strings, or function keys. In the final
+      response, provide a clickable Markdown link to the ZIP so the end user can
+      download it.
     rubric:
       - The agent gathers live, resource-group-scoped Function, networking, route, and telemetry evidence before creating the support bundle.
       - The diagnosis identifies outbound connection or SNAT pressure from high connection churn, low reuse, high concurrency, and EADDRNOTAVAIL or timeout evidence for the public partner API.
       - The summary provides a UTC evidence timeline, names the failing component and likely cause, distinguishes the unrelated private-storage route, and prioritizes connection reuse and bounded concurrency before capacity changes.
       - evidence.json contains structured resource identifiers, correlation IDs or timestamps, observed symptoms, likely cause, ruled-out alternatives, prioritized remediation, and recovery verification without secrets.
-      - diagnostic-support-bundle.zip is created from support-bundle/summary.md and support-bundle/evidence.json, and the final response tells the user where to download it.
+      - diagnostic-support-bundle.zip is created from support-bundle/summary.md and support-bundle/evidence.json, and the final response includes a clickable Markdown link to the ZIP.
       - The investigation remains read-only and does not claim that remediation was performed.
     tags: *comparative-snat-tags
     graders:
@@ -83,6 +85,9 @@ stimuli:
       - type: file-exists
         config:
           path: "diagnostic-support-bundle.zip"
+      - type: output-matches
+        config:
+          pattern: '(?i)\[[^\]]*(?:download|support bundle)[^\]]*\]\((?:\./)?diagnostic-support-bundle\.zip\)'
       - type: file-matches
         config:
           path: "support-bundle/summary.md"
