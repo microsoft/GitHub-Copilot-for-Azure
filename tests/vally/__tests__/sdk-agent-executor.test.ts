@@ -3,6 +3,9 @@ import type {
   Stimulus,
   Trajectory,
 } from "@microsoft/vally";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type {
   AgentMetadata,
@@ -126,10 +129,13 @@ describe("SdkAgentExecutor", { concurrent: false }, () => {
   let runner: FakeAgentRunner;
   let executor: TestSdkAgentExecutor;
   let originalExactSkill: string | undefined;
+  let originalPreserveWorkspaceRoot: string | undefined;
 
   beforeEach(() => {
     originalExactSkill = process.env.VALLY_RUNNER_EXACT_SKILL;
+    originalPreserveWorkspaceRoot = process.env.VALLY_PRESERVE_WORKSPACE_ROOT;
     delete process.env.VALLY_RUNNER_EXACT_SKILL;
+    delete process.env.VALLY_PRESERVE_WORKSPACE_ROOT;
 
     vi.clearAllMocks();
     mocks.convertToTrajectoryEvents.mockReturnValue(convertedEvents);
@@ -167,6 +173,11 @@ describe("SdkAgentExecutor", { concurrent: false }, () => {
     } else {
       process.env.VALLY_RUNNER_EXACT_SKILL = originalExactSkill;
     }
+    if (originalPreserveWorkspaceRoot === undefined) {
+      delete process.env.VALLY_PRESERVE_WORKSPACE_ROOT;
+    } else {
+      process.env.VALLY_PRESERVE_WORKSPACE_ROOT = originalPreserveWorkspaceRoot;
+    }
   });
 
   test("builds the run configuration and trajectory for multiple turns", async () => {
@@ -184,7 +195,7 @@ describe("SdkAgentExecutor", { concurrent: false }, () => {
     expect(runner.run).toHaveBeenCalledWith({
       workspace: defaultOptions.workDir,
       env: {
-        UV_CACHE_DIR: `${defaultOptions.workDir}/.uv-cache`,
+        UV_CACHE_DIR: path.join(defaultOptions.workDir, ".uv-cache"),
       },
       model: defaultOptions.model,
       prompt: "First turn",
@@ -248,6 +259,35 @@ describe("SdkAgentExecutor", { concurrent: false }, () => {
         ],
       }),
     );
+  });
+
+  test("copies prepared files into a persistent workspace for deferred grading", async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "deferred-grading-"));
+    const source = path.join(root, "source");
+    const persistentRoot = path.join(root, "preserved");
+    fs.mkdirSync(source);
+    fs.writeFileSync(path.join(source, "seed.txt"), "prepared workspace", "utf8");
+    process.env.VALLY_PRESERVE_WORKSPACE_ROOT = persistentRoot;
+
+    try {
+      const trajectory = await executor.execute(defaultStimulus, {
+        ...defaultOptions,
+        workDir: source,
+      });
+      const runConfig = runner.run.mock.calls[0][0];
+
+      expect(runConfig.workspace).not.toBe(source);
+      expect(runConfig.workspace).toMatch(
+        new RegExp(`^${persistentRoot.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`)
+      );
+      expect(fs.readFileSync(
+        path.join(runConfig.workspace!, "seed.txt"),
+        "utf8"
+      )).toBe("prepared workspace");
+      expect(trajectory.workDir).toBe(runConfig.workspace);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   });
 
   test("exports evaluation-answer billing from SDK usage events", async () => {

@@ -121,6 +121,7 @@ type GeneratedAnswers = GenerationTask & {
   answerFile: string;
   evalSpecFile: string;
   runDirectory: string;
+  workspaceRoot: string;
   count: number;
 };
 
@@ -214,16 +215,19 @@ async function generateAnswers(
   );
   const answerFile = path.join(taskDirectory, "answers.jsonl");
   const stderrFile = path.join(taskDirectory, "vally.stderr.log");
+  const workspaceRoot = path.join(taskDirectory, "workspaces");
   const env: NodeJS.ProcessEnv = {
     MODEL_OVERRIDE: "",
     NO_SKILLS: task.condition.skill === "disabled" ? "true" : "",
     VALLY_RUNNER_DISABLE_AZURE_MCP: task.condition.mcp === "disabled" ? "true" : "",
     VALLY_RUNNER_EXACT_SKILL: task.condition.skill === "enabled" ? "true" : "",
     VALLY_PLUGIN_OUTPUT_ROOT: path.join(worktree, "output"),
+    VALLY_PRESERVE_WORKSPACE_ROOT: workspaceRoot,
     TEST_RUN_ID:
       `skill-improvement-${slug(task.condition.name)}-${slug(task.answerModel)}-${slug(task.evalFile)}`,
   };
 
+  let billingRecorded = false;
   try {
     await runProcess(commandName("npx"), [
       "-y",
@@ -255,33 +259,37 @@ async function generateAnswers(
       stderrFile,
       timeoutMs: Math.max(deadline - Date.now(), 1),
     });
-  } catch (error) {
-    try {
-      recordBilling(fs.existsSync(answerFile) ? readJsonl(answerFile, true) : []);
-    } catch (billingError) {
-      console.warn(`Failed to collect answer billing from ${answerFile}: ${
-        billingError instanceof Error ? billingError.message : String(billingError)
-      }`);
+    const records = readJsonl(answerFile);
+    recordBilling(records);
+    billingRecorded = true;
+    const runDirectory = findVallyRunDirectory(taskDirectory);
+    const count = records
+      .filter(record => record.type === "trial-result" || record.trajectory)
+      .length;
+    if (count === 0) {
+      throw new Error(`No generated trajectories found in ${answerFile}.`);
     }
+    return {
+      ...task,
+      answerFile,
+      evalSpecFile,
+      runDirectory,
+      workspaceRoot,
+      count,
+    };
+  } catch (error) {
+    if (!billingRecorded) {
+      try {
+        recordBilling(fs.existsSync(answerFile) ? readJsonl(answerFile, true) : []);
+      } catch (billingError) {
+        console.warn(`Failed to collect answer billing from ${answerFile}: ${
+          billingError instanceof Error ? billingError.message : String(billingError)
+        }`);
+      }
+    }
+    fs.rmSync(workspaceRoot, { recursive: true, force: true });
     throw error;
   }
-
-  const records = readJsonl(answerFile);
-  recordBilling(records);
-  const runDirectory = findVallyRunDirectory(taskDirectory);
-  const count = records
-    .filter(record => record.type === "trial-result" || record.trajectory)
-    .length;
-  if (count === 0) {
-    throw new Error(`No generated trajectories found in ${answerFile}.`);
-  }
-  return {
-    ...task,
-    answerFile,
-    evalSpecFile,
-    runDirectory,
-    count,
-  };
 }
 
 async function gradeAnswers(
@@ -440,22 +448,28 @@ export async function runEvaluationBatch(
     spec.models.judges.map(judgeModel => ({ item, judgeModel }))
   );
   const judged: JudgedTrial[][] = new Array(gradingTasks.length);
-  await runWithConcurrency(
-    gradingTasks,
-    spec.limits.maxConcurrentVallyProcesses,
-    async ({ item, judgeModel }, index) => {
-      judged[index] = await gradeAnswers(
-        evalRepoRoot,
-        outputRoot,
-        spec,
-        phase,
-        iteration,
-        item,
-        judgeModel,
-        deadline
-      );
+  try {
+    await runWithConcurrency(
+      gradingTasks,
+      spec.limits.maxConcurrentVallyProcesses,
+      async ({ item, judgeModel }, index) => {
+        judged[index] = await gradeAnswers(
+          evalRepoRoot,
+          outputRoot,
+          spec,
+          phase,
+          iteration,
+          item,
+          judgeModel,
+          deadline
+        );
+      }
+    );
+  } finally {
+    for (const item of generated) {
+      fs.rmSync(item.workspaceRoot, { recursive: true, force: true });
     }
-  );
+  }
 
   billing.finalized = true;
   onBilling?.(billing);

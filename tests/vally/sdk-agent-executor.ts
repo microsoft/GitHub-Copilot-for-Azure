@@ -5,6 +5,7 @@ import {
   type Stimulus,
   type Trajectory,
 } from "@microsoft/vally";
+import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -47,6 +48,22 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const modelOverride = process.env.MODEL_OVERRIDE?.trim() || undefined;
 
+function prepareWorkspace(source: string): string {
+  const persistentRoot = process.env.VALLY_PRESERVE_WORKSPACE_ROOT?.trim();
+  if (!persistentRoot) {
+    return source;
+  }
+
+  fs.mkdirSync(persistentRoot, { recursive: true });
+  const target = fs.mkdtempSync(path.join(persistentRoot, "workspace-"));
+  for (const entry of fs.readdirSync(source)) {
+    fs.cpSync(path.join(source, entry), path.join(target, entry), {
+      recursive: true,
+    });
+  }
+  return target;
+}
+
 type BilledTrajectory = Trajectory & {
   metadata: Trajectory["metadata"] & {
     evaluationAnswerBilling: EvaluationAnswerBilling;
@@ -77,7 +94,7 @@ export abstract class SdkAgentExecutor implements Executor {
     const skillName = getSkillName(tags);
     const normalizedTestName = normalizeTestName(skillName, stimulus.name);
     const agentRunner = this.config.createRunner({ testName: normalizedTestName });
-    const workDir = options.workDir;
+    const workDir = prepareWorkspace(options.workDir);
     const model = modelOverride ?? options.model ?? "claude-sonnet-5";
     const { shouldEarlyTerminate } = getEarlyTerminateCondition(tags);
     const systemPrompt = getSystemPrompt(tags);
