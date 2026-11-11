@@ -30,9 +30,11 @@ These example names are illustrative. Groups record when names were first
 discovered; labels may be arbitrary. Names are matched case-sensitively.
 The generator adds only names absent from every group in the same category.
 It preserves removed tools and historical group memberships in the shared
-source file. When the file does not exist, extension helpers are seeded from
-`telemetry-reporter/resources/allowed-tool-names.json`. Existing helper groups
-are preserved, not replaced by release tools.
+source file. Extension helpers have already been captured in that file and
+are preserved, not replaced by release tools. If the shared file is missing,
+the refresh fails before writing anything: restore it from source control
+to retain the helper baseline and historical groups. There is no embedded
+reporter baseline or automatic recreation.
 
 Commands and namespaces have no MCP client prefixes. Namespace entries permit
 the namespace tool, not arbitrary commands below it. Helpers remain verbatim.
@@ -98,5 +100,6 @@ still maintains only the single shared source, not per-plugin source copies.
 Commits changing the shared allowlist count toward every plugin's stamped
 version and changelog, just like changes to shared hooks.
 
-Passing these packaged files to `ghcfa-telem` is separate; the telemetry hooks,
-embedded reporter lists, and existing snapshot workflow remain unchanged.
+Both telemetry hooks pass all three installed paths to `ghcfa-telem`, which
+requires them and includes no embedded fallback lists. The obsolete reporter
+snapshot synchronization workflow has been retired.

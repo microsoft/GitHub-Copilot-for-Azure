@@ -149,12 +149,10 @@ export function parseDiscovery(value: unknown): Discovery {
 
 /**
  * Adds only previously unseen commands and areas to their release group without mutating existing history.
- * Extension helpers seed a new allowlist only; existing helper groups remain unchanged.
+ * Existing extension helper groups remain unchanged.
  */
-export function mergeAllowlist(existing: Allowlist | undefined, discovery: Discovery, helpers: string[]): Allowlist {
-  const result: Allowlist = existing
-    ? structuredClone(existing)
-    : { commands: {}, areas: {}, extensionTools: helpers.length ? { "Azure extension": [...new Set(helpers)].sort() } : {} };
+export function mergeAllowlist(existing: Allowlist, discovery: Discovery): Allowlist {
+  const result = structuredClone(existing);
   for (const category of ["commands", "areas"] as const) {
     const groups = result[category];
     const known = new Set(Object.values(groups).flat());
@@ -408,13 +406,14 @@ async function optionalRead(path: string): Promise<string | undefined> {
  */
 export async function updatePlugins(root: string, rawDiscovery: unknown): Promise<string[]> {
   const discovery = parseDiscovery(rawDiscovery);
-  const baseline = object(JSON.parse(await readFile(join(root, "telemetry-reporter", "resources", "allowed-tool-names.json"), "utf8")), "Embedded baseline");
-  const helpers = names(baseline.extensionTools, "Extension helper baseline", true);
   const changes: { path: string; content: string }[] = [];
   const allowlistPath = join(root, "plugins", "allowed-azure-tools.json");
   const current = await optionalRead(allowlistPath);
-  const existing = current === undefined ? undefined : parseAllowlist(current);
-  const content = `${JSON.stringify(mergeAllowlist(existing, discovery, helpers), null, 2)}\n`;
+  if (current === undefined) {
+    throw new Error(`Missing shared tool allowlist '${allowlistPath}'. Restore it from source control to preserve extension helper history.`);
+  }
+  const existing = parseAllowlist(current);
+  const content = `${JSON.stringify(mergeAllowlist(existing, discovery), null, 2)}\n`;
   if (current !== content) changes.push({ path: allowlistPath, content });
   const directories = await readdir(join(root, "plugins"), { withFileTypes: true });
   let pluginCount = 0;

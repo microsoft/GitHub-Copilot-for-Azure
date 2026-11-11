@@ -323,6 +323,7 @@ function Invoke-NativeCommand {
         $stdout = if ($useMuslContainer) {
             & docker run --rm --platform $muslPlatform `
                 --mount "type=bind,source=$publishDirectory,target=/publish,readonly" `
+                --mount "type=bind,source=$stagingDirectory,target=/smoke,readonly" `
                 --env 'AZURE_MCP_COLLECT_TELEMETRY=false' `
                 --entrypoint /publish/ghcfa-telem $muslRuntimeImage @Arguments 2> $stderrPath
         }
@@ -345,6 +346,59 @@ function Invoke-NativeCommand {
     }
     finally {
         Remove-Item -LiteralPath $stderrPath -Force -ErrorAction SilentlyContinue
+    }
+}
+
+function Invoke-NativeSmokeTests {
+    $previousTelemetrySetting = $env:AZURE_MCP_COLLECT_TELEMETRY
+    $env:AZURE_MCP_COLLECT_TELEMETRY = 'false'
+    $skillsPath = Join-Path $stagingDirectory 'allowed-skills.txt'
+    $referencesPath = Join-Path $stagingDirectory 'allowed-references.txt'
+    $toolsPath = Join-Path $stagingDirectory 'allowed-tools.json'
+    try {
+        Set-Content -LiteralPath $skillsPath -Value '' -Encoding utf8 -ErrorAction Stop
+        Set-Content -LiteralPath $referencesPath -Value '' -Encoding utf8 -ErrorAction Stop
+        Set-Content -LiteralPath $toolsPath -Encoding utf8 -ErrorAction Stop -Value `
+            '{"commands":{},"areas":{"Smoke test":["storage"]},"extensionTools":{}}'
+        $allowlistArguments = if ($useMuslContainer) {
+            @('--allowed-skills', '/smoke/allowed-skills.txt',
+              '--allowed-references', '/smoke/allowed-references.txt',
+              '--allowed-tools', '/smoke/allowed-tools.json')
+        }
+        else {
+            @('--allowed-skills', $skillsPath,
+              '--allowed-references', $referencesPath,
+              '--allowed-tools', $toolsPath)
+        }
+
+        $null = Invoke-NativeCommand -Arguments @('--help') -ExpectedExitCode 0
+        $successOutput = Invoke-NativeCommand -Arguments (@(
+            '--timestamp', '2026-09-15T21:30:00Z',
+            '--event-type', 'tool_invocation',
+            '--session-id', '00000000-0000-4000-8000-000000000000',
+            '--tool-name', 'azure-storage'
+        ) + $allowlistArguments) -ExpectedExitCode 0
+        $successResponse = $successOutput | ConvertFrom-Json -ErrorAction Stop
+        if ($successResponse.status -ne 200) {
+            throw "Native success smoke test returned status $($successResponse.status); expected 200."
+        }
+
+        $failureOutput = Invoke-NativeCommand -Arguments @(
+            '--event-type', 'tool_invocation',
+            '--session-id', '00000000-0000-4000-8000-000000000000'
+        ) -ExpectedExitCode 1
+        $failureResponse = $failureOutput | ConvertFrom-Json -ErrorAction Stop
+        if ($failureResponse.status -ne 400) {
+            throw "Native validation smoke test returned status $($failureResponse.status); expected 400."
+        }
+    }
+    finally {
+        $env:AZURE_MCP_COLLECT_TELEMETRY = $previousTelemetrySetting
+        foreach ($path in @($skillsPath, $referencesPath, $toolsPath)) {
+            if (Test-Path -LiteralPath $path) {
+                Remove-Item -LiteralPath $path -Force -ErrorAction Stop
+            }
+        }
     }
 }
 
@@ -519,34 +573,7 @@ if (-not (Test-Path -LiteralPath $nativeExecutable)) {
 
 $smokeTestsRan = $useMuslContainer -or $RuntimeIdentifier -eq $currentRuntimeIdentifier
 if ($smokeTestsRan) {
-    $previousTelemetrySetting = $env:AZURE_MCP_COLLECT_TELEMETRY
-    $env:AZURE_MCP_COLLECT_TELEMETRY = 'false'
-    try {
-        $null = Invoke-NativeCommand -Arguments @('--help') -ExpectedExitCode 0
-
-        $successOutput = Invoke-NativeCommand -Arguments @(
-            '--timestamp', '2026-09-15T21:30:00Z',
-            '--event-type', 'tool_invocation',
-            '--session-id', '00000000-0000-4000-8000-000000000000',
-            '--tool-name', 'azure-storage'
-        ) -ExpectedExitCode 0
-        $successResponse = $successOutput | ConvertFrom-Json -ErrorAction Stop
-        if ($successResponse.status -ne 200) {
-            throw "Native success smoke test returned status $($successResponse.status); expected 200."
-        }
-
-        $failureOutput = Invoke-NativeCommand -Arguments @(
-            '--event-type', 'tool_invocation',
-            '--session-id', '00000000-0000-4000-8000-000000000000'
-        ) -ExpectedExitCode 1
-        $failureResponse = $failureOutput | ConvertFrom-Json -ErrorAction Stop
-        if ($failureResponse.status -ne 400) {
-            throw "Native validation smoke test returned status $($failureResponse.status); expected 400."
-        }
-    }
-    finally {
-        $env:AZURE_MCP_COLLECT_TELEMETRY = $previousTelemetrySetting
-    }
+    Invoke-NativeSmokeTests
 }
 else {
     Write-Warning "Skipping smoke tests because target RID '$RuntimeIdentifier' cannot run on host RID '$currentRuntimeIdentifier'."
