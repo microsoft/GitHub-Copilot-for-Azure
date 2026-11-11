@@ -56,11 +56,11 @@ not the client's working directory, and remain single arguments when the
 plugin path contains spaces. The hooks pass the tools JSON filename without
 parsing or rewriting its contents.
 
-Each file replaces its corresponding embedded allowlist; the tools JSON
-replaces all three tool categories together. The hooks pass all three paths
-even if files are missing. Missing or unreadable files and malformed tools JSON
-cause the reporter to fail without publishing telemetry or falling back to
-embedded lists. The host hook still continues, using the existing opt-in
+The reporter requires all three paths and includes no embedded lists. The tools
+JSON supplies all three tool categories together. The hooks pass all three paths
+even if files are missing. Missing options, unreadable files, and malformed tools
+JSON cause the reporter to fail without publishing telemetry or falling back.
+The host hook still continues, using the existing opt-in
 failure logging described below.
 
 ## Copilot CLI
