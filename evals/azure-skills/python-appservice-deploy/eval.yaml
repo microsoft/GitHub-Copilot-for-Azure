@@ -10,8 +10,9 @@
 #   handled by the scheduled job in eng/test-subscription-cleanup/.
 # - Routing (Django/FastAPI/generic Python): cheap, early-terminated checks
 #   that prompts route to this skill.
-# - Negative routing (Java, Container Apps, Functions, Terraform/Bicep):
+# - Negative routing (Container Apps, Functions, Terraform/Bicep):
 #   cheap, early-terminated checks that prompts route to azure-prepare.
+#   Java App Service deploys route to java-appservice-deploy.
 #
 # Global graders (evaluate#125 workaround): completed and no_runtime_failure
 # are duplicated into every stimulus block below.
@@ -21,7 +22,7 @@ description: |
   Evaluation suite for the python-appservice-deploy skill.
   Covers a full Flask end-to-end deployment plus routing for other Python
   web frameworks (Django, FastAPI, generic), and negative routing
-  boundaries that must fall through to azure-prepare (Java, Container Apps,
+  boundaries that must fall through to azure-prepare (Container Apps,
   Functions, Terraform/Bicep).
 
 tags:
@@ -174,7 +175,7 @@ stimuli:
 
   # ── negative: Java on App Service must NOT route here ──
   # Routing boundary: this skill is Python-only. Java/Spring Boot belongs
-  # to azure-prepare. Terminates as soon as azure-prepare is invoked so no
+  # to java-appservice-deploy. Terminates as soon as that skill is invoked so no
   # actual deployment runs.
   - name: "Java App Service prompt does not trigger python skill"
     prompt: "Deploy my Java Spring Boot app to Azure App Service"
@@ -183,14 +184,14 @@ stimuli:
       tier: smoke
       cost: llm
       area: routing-negative
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"java-appservice-deploy"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
           disallowed:
             - python-appservice-deploy
           required:
-            - azure-prepare
+            - java-appservice-deploy
 
   # ── negative: Python on Container Apps must NOT route here ──
   # Routing boundary: this skill is App Service only. Container Apps
