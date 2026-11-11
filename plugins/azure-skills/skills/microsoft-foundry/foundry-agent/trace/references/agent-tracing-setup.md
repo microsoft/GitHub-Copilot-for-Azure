@@ -20,7 +20,7 @@ These describe provisioning configuration, not stored-trace evidence. Inspect wi
 
 Run before any `azd provision` that could create a new project, and before a redeploy that skips provisioning. Provisioning is the step that creates monitoring, so approval cannot wait until afterward.
 
-A missing `monitoring` setting on a new project means monitoring is on by default, not "open to configure".
+A missing `monitoring` setting on a new project without a `network:` block means monitoring is on by default, not "open to configure". A `network:` block overrides this: monitoring is skipped (see Private networking below).
 
 1. Check capability and path (below). Older tooling and custom IaC create no monitoring.
 2. Check for an existing opt-out (`monitoring.enabled: false`) and respect it.
@@ -33,8 +33,8 @@ Effective-connection discovery and human access checks happen after provisioning
 
 - **Native azd:** requires matched projects/agents/connections builds that include automatic monitoring; versions alone are insufficient. Confirm after provisioning that `azd env get-values` contains `AZD_FOUNDRY_MONITORING_MODE`. Do not install development builds automatically.
 - In supporting builds, a **new** project gets a workspace-backed App Insights component and an `AppInsights` connection by default, with no flag or authoring change. Monitoring is part of the main provisioning graph, not a best-effort second step: a policy or conflict failure (for example a conflicting connection or restricted ingestion) fails `azd provision` and its message names the cause. Report it, then fix it or set `monitoring.enabled: false`.
-- Existing projects are unchanged unless `monitoring.applicationInsightsResourceId` is set. azd never creates a new component for an existing project.
-- **Private networking:** a project with a `network:` block skips monitoring (`monitoringMode = none`) with a warning and does not fail `azd provision`; `AZD_FOUNDRY_MONITORING_MODE` shows `none`. Tracing is then not configured. Do not enable public ingestion or query access to work around it; tell the user tracing needs a private-link design.
+- Existing projects are unchanged unless `monitoring.applicationInsightsResourceId` is set, including an existing project with a `network:` block. azd never creates a new component for an existing project.
+- **Private networking:** a project with a `network:` block skips monitoring (`monitoringMode = none`) with a warning and does not fail `azd provision`; `AZD_FOUNDRY_MONITORING_MODE` shows `none`. Tracing is then not configured. This is an intentional skip, not a setup failure: report it as "tracing not configured (skipped for network: block)" with the azd warning, and do not treat it as an error to repair. Do not enable public ingestion or query access to work around it; tell the user tracing needs a private-link design.
   - An existing project whose account is private is rejected unless it already has an `AppInsights` connection (preserved) or `monitoring.enabled: false` is set.
   - Do not weaken public ingestion or query access to make tracing work.
 - **Ejected IaC:** azd-ejected Bicep and Terraform include monitoring (`modules/monitoring.bicep`, `monitoring.tf`). After ejection, those files are authoritative, not `azure.yaml`.
