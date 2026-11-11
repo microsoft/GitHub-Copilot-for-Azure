@@ -15,7 +15,7 @@ if (resourceGroups.length !== 1) {
 const resourceGroup = resourceGroups[0];
 const temporaryDirectory = mkdtempSync(join(tmpdir(), "functions-vnet-routing-"));
 
-export type FaultMode = "route-blackhole" | "ambiguous-route" | "dns-unlinked";
+export type FaultMode = "route-blackhole" | "ambiguous-route" | "dns-unlinked" | "snat-pressure";
 
 function log(message: string): void {
   console.error(`[functions-vnet-routing] ${message}`);
@@ -146,13 +146,23 @@ async function retry<T>(
   throw new Error(`Timed out while ${description}; last result was ${JSON.stringify(lastResult)}`);
 }
 
-async function request(appHostName: string, path: string, functionKey: string): Promise<{
+async function request(
+  appHostName: string,
+  path: string,
+  functionKey: string,
+  query: Record<string, string> = {},
+): Promise<{
   status: number;
   body: string;
   correlationId: string | null;
   resolvedIp: string | null;
 }> {
-  const response = await fetch(`https://${appHostName}/api/${path}?code=${encodeURIComponent(functionKey)}`, {
+  const url = new URL(`https://${appHostName}/api/${path}`);
+  url.searchParams.set("code", functionKey);
+  for (const [name, value] of Object.entries(query)) {
+    url.searchParams.set(name, value);
+  }
+  const response = await fetch(url, {
     signal: AbortSignal.timeout(20_000),
   });
   return {
@@ -196,11 +206,12 @@ async function seedBlob(storageAccountName: string, seedPath: string): Promise<v
 async function waitForTelemetry(
   applicationInsightsId: string,
   correlationId: string,
+  description: string,
   timeoutMs = 360_000,
 ): Promise<void> {
   const queryUrl = `https://management.azure.com${applicationInsightsId}/query?api-version=2018-04-20`;
   await retry(
-    "waiting for the correlated blob-read trace in Application Insights",
+    `waiting for ${description} in Application Insights`,
     async () => {
       const output = runAz([
         "rest",
@@ -411,7 +422,60 @@ try {
     "-o",
     "tsv",
   ]);
-  await waitForTelemetry(applicationInsightsId, baseline.correlationId);
+  await waitForTelemetry(
+    applicationInsightsId,
+    baseline.correlationId,
+    "the successful blob-read trace",
+  );
+
+  if (faultMode === "snat-pressure") {
+    const outboundBaseline = await request(
+      functionAppHostName,
+      "outbound-api",
+      functionKey,
+      { load: "baseline" },
+    );
+    if (outboundBaseline.status !== 200 || !outboundBaseline.correlationId) {
+      throw new Error("The outbound API baseline did not return a correlated 200.");
+    }
+
+    const outboundPressure = await request(
+      functionAppHostName,
+      "outbound-api",
+      functionKey,
+      { load: "pressure" },
+    );
+    if (outboundPressure.status !== 503 || !outboundPressure.correlationId) {
+      throw new Error("The outbound API pressure window did not return a correlated 503.");
+    }
+
+    const outboundRecovery = await request(
+      functionAppHostName,
+      "outbound-api",
+      functionKey,
+      { load: "recovery" },
+    );
+    if (outboundRecovery.status !== 200 || !outboundRecovery.correlationId) {
+      throw new Error("The outbound API recovery window did not return a correlated 200.");
+    }
+
+    await waitForTelemetry(
+      applicationInsightsId,
+      outboundBaseline.correlationId,
+      "the outbound baseline trace",
+    );
+    await waitForTelemetry(
+      applicationInsightsId,
+      outboundPressure.correlationId,
+      "the outbound connection-pressure trace",
+    );
+    await waitForTelemetry(
+      applicationInsightsId,
+      outboundRecovery.correlationId,
+      "the outbound recovery trace",
+    );
+    log("Seeded baseline, connection-pressure, and recovery telemetry for the public partner API.");
+  }
 
   if (faultMode === "ambiguous-route") {
     log("Adding harmless maintenance changes before the actual route fault.");
@@ -426,7 +490,11 @@ try {
     createBlackholeRoute(routeTableName, "monitoring-egress", "192.0.2.10/32");
   }
 
-  if (faultMode === "route-blackhole" || faultMode === "ambiguous-route") {
+  if (
+    faultMode === "route-blackhole"
+    || faultMode === "ambiguous-route"
+    || faultMode === "snat-pressure"
+  ) {
     log(`Adding a blackhole route only for private endpoint ${privateEndpointIp}/32.`);
     createBlackholeRoute(routeTableName, "storage-path", `${privateEndpointIp}/32`);
   } else {
@@ -485,7 +553,11 @@ try {
   if (!failedRead.correlationId) {
     throw new Error("The failed blob read did not return a correlation ID.");
   }
-  await waitForTelemetry(applicationInsightsId, failedRead.correlationId);
+  await waitForTelemetry(
+    applicationInsightsId,
+    failedRead.correlationId,
+    "the failed blob-read trace",
+  );
 
   const hostPublicNetworkAccess = runAz([
     "storage",
@@ -510,6 +582,11 @@ try {
       faultMode === "dns-unlinked"
         ? "no longer resolves to the private endpoint."
         : "still resolves privately."
+    )
+    + (
+      faultMode === "snat-pressure"
+        ? " Baseline, pressure, and recovery telemetry is available for the public partner API."
+        : ""
     )
   );
 } finally {

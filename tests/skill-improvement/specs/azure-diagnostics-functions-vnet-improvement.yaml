@@ -11,6 +11,7 @@ evaluations:
   root: evals/azure-skills/azure-diagnostics
   development:
     - functions-vnet-routing-comparative.eval.yaml
+    - functions-vnet-snat-comparative.eval.yaml
 
 models:
   answers:
@@ -56,9 +57,9 @@ refinement:
 
 limits:
   maxIterations: 2
-  maxAnswerGenerations: 64
-  maxJudgeCalls: 64
-  maxDurationMinutes: 240
+  maxAnswerGenerations: 96
+  maxJudgeCalls: 96
+  maxDurationMinutes: 300
   maxConcurrentVallyProcesses: 4
   generationWorkersPerVallyProcess: 1
   maxSkillTokenIncreasePercent: 15

@@ -185,12 +185,13 @@ describe("skill improvement configuration", () => {
     const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 
     expect(runSpec.evaluations.development).toContain("functions-vnet-routing.eval.yaml");
+    expect(runSpec.evaluations.development).toContain("functions-vnet-snat.eval.yaml");
     const plan = createRunPlan(repoRoot, runSpec);
     expect(() => enforceRunLimits(runSpec, plan)).not.toThrow();
     expect(plan.baselineAnswerGenerations).toBeGreaterThan(0);
     expect(plan.heldOutAnswerGenerations).toBeGreaterThan(0);
-    expect(plan.maximumAnswerGenerations).toBeLessThanOrEqual(560);
-    expect(plan.maximumJudgeCalls).toBeLessThanOrEqual(560);
+    expect(plan.maximumAnswerGenerations).toBeLessThanOrEqual(584);
+    expect(plan.maximumJudgeCalls).toBeLessThanOrEqual(584);
   });
 
   test("keeps the Flex routing fixture narrow and keyless", () => {
@@ -201,10 +202,14 @@ describe("skill improvement configuration", () => {
     const postProvision = fs.readFileSync(fileURLToPath(
       new URL(`${fixtureRoot}post-provision.ts`, import.meta.url)
     ), "utf8");
+    const outboundApi = fs.readFileSync(fileURLToPath(
+      new URL(`${fixtureRoot}app/src/functions/outbound-api.js`, import.meta.url)
+    ), "utf8");
     const manifests = [
       "azure-manifest.json",
       "azure-manifest-ambiguous.json",
       "azure-manifest-control.json",
+      "azure-manifest-snat.json",
     ].map(file => JSON.parse(fs.readFileSync(fileURLToPath(
       new URL(`${fixtureRoot}${file}`, import.meta.url)
     ), "utf8")) as {
@@ -228,16 +233,24 @@ describe("skill improvement configuration", () => {
     expect(postProvision).toContain("`${functionAppName}.azurewebsites.net`");
     expect(postProvision).toContain('"ambiguous-route"');
     expect(postProvision).toContain('"dns-unlinked"');
+    expect(postProvision).toContain('"snat-pressure"');
     expect(postProvision).toContain('"192.0.2.10/32"');
     expect(postProvision).toContain('"private-dns"');
-    expect(new Set(manifests.map(manifest => manifest.id)).size).toBe(3);
+    expect(postProvision).toContain('"outbound-api"');
+    expect(postProvision).toContain('"the outbound connection-pressure trace"');
+    expect(outboundApi).toContain('"PartnerApiConnectionWindow"');
+    expect(outboundApi).toContain("EADDRNOTAVAIL");
+    expect(outboundApi).toContain("newConnectionCount");
+    expect(outboundApi).toContain("reusedConnectionCount");
+    expect(new Set(manifests.map(manifest => manifest.id)).size).toBe(4);
     expect(new Set(
       manifests.map(manifest => manifest.bicepConfigs[0].resourceGroupNameBase)
-    ).size).toBe(3);
+    ).size).toBe(4);
     expect(manifests.map(manifest => manifest.postProvisionScript.path)).toEqual([
       "post-provision-route.ts",
       "post-provision-ambiguous.ts",
       "post-provision-control.ts",
+      "post-provision-snat.ts",
     ]);
   });
 

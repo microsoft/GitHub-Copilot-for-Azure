@@ -25,12 +25,15 @@ only the test-storage role needed to seed the blob.
 
 ## Application
 
-Both endpoints require a function key:
+All endpoints require a function key:
 
 - `/api/health` returns 200 without accessing test storage.
 - `/api/read-blob` uses managed identity and the storage hostname to read
   `sample.txt`. It records the hostname, resolved IP, elapsed time, exception
   type, and correlation ID without logging tokens or connection strings.
+- `/api/outbound-api` records deterministic baseline, pressure, and recovery
+  windows for a public partner API. Pressure telemetry shows high concurrency,
+  almost no connection reuse, `EADDRNOTAVAIL`, timeouts, and 503 responses.
 
 Blob access uses bounded retries and timeouts so the injected routing failure
 returns a logged 503 promptly.
@@ -38,13 +41,16 @@ returns a logged 503 promptly.
 ## Provisioning and fault injection
 
 All variants share the same Bicep and application. Small wrapper scripts select
-one of three modes in `post-provision.ts`:
+one of four modes in `post-provision.ts`:
 
 - `route-blackhole`: the original narrow `/32 -> None` route fault.
 - `ambiguous-route`: harmless Function/storage tag updates and an unrelated
   `192.0.2.10/32 -> None` route precede the real private-endpoint route fault.
 - `dns-unlinked`: the unrelated route is present, but the actual fault is
   removal of the test-storage private DNS zone's VNet link.
+- `snat-pressure`: baseline, connection-pressure, and recovery telemetry is
+  seeded for a public dependency while the private-storage `/32` route remains
+  an unrelated competing failure.
 
 The shared post-provision logic:
 
@@ -54,8 +60,9 @@ The shared post-provision logic:
 4. Warms the app and requires health=200.
 5. Requires a successful blob read whose resolved IP matches the private
    endpoint and waits for its correlated Application Insights trace.
-6. Applies the selected isolated fault and any scenario-specific decoys.
-7. Requires health=200, the mode's expected DNS result, read-blob=503, and a
+6. Seeds public-dependency connection-pressure telemetry when selected.
+7. Applies the selected isolated fault and any scenario-specific decoys.
+8. Requires health=200, the mode's expected DNS result, read-blob=503, and a
    correlated failure trace.
 
 Flex Consumption already sends VNet-integrated outbound traffic through the
