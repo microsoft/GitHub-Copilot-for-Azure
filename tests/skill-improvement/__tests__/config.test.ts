@@ -186,13 +186,14 @@ describe("skill improvement configuration", () => {
 
     expect(runSpec.evaluations.development).toContain("functions-vnet-routing.eval.yaml");
     expect(runSpec.evaluations.development).toContain("functions-vnet-routing-repair.eval.yaml");
+    expect(runSpec.evaluations.development).toContain("functions-vnet-nat-capacity.eval.yaml");
     expect(runSpec.evaluations.development).toContain("functions-vnet-snat.eval.yaml");
     const plan = createRunPlan(repoRoot, runSpec);
     expect(() => enforceRunLimits(runSpec, plan)).not.toThrow();
     expect(plan.baselineAnswerGenerations).toBeGreaterThan(0);
     expect(plan.heldOutAnswerGenerations).toBeGreaterThan(0);
-    expect(plan.maximumAnswerGenerations).toBeLessThanOrEqual(596);
-    expect(plan.maximumJudgeCalls).toBeLessThanOrEqual(596);
+    expect(plan.maximumAnswerGenerations).toBeLessThanOrEqual(608);
+    expect(plan.maximumJudgeCalls).toBeLessThanOrEqual(608);
   });
 
   test("keeps the Flex routing fixture narrow and keyless", () => {
@@ -206,10 +207,14 @@ describe("skill improvement configuration", () => {
     const outboundApi = fs.readFileSync(fileURLToPath(
       new URL(`${fixtureRoot}app/src/functions/outbound-api.js`, import.meta.url)
     ), "utf8");
+    const echoClientIp = fs.readFileSync(fileURLToPath(
+      new URL(`${fixtureRoot}app/src/functions/echo-client-ip.js`, import.meta.url)
+    ), "utf8");
     const manifests = [
       "azure-manifest.json",
       "azure-manifest-ambiguous.json",
       "azure-manifest-control.json",
+      "azure-manifest-nat-capacity.json",
       "azure-manifest-repair.json",
       "azure-manifest-snat.json",
     ].map(file => JSON.parse(fs.readFileSync(fileURLToPath(
@@ -239,6 +244,7 @@ describe("skill improvement configuration", () => {
     expect(postProvision).toContain('"ambiguous-route"');
     expect(postProvision).toContain('"dns-unlinked"');
     expect(postProvision).toContain('"snat-pressure"');
+    expect(postProvision).toContain('"nat-capacity"');
     expect(postProvision).toContain('"192.0.2.10/32"');
     expect(postProvision).toContain('"private-dns"');
     expect(postProvision).toContain('"outbound-api"');
@@ -247,10 +253,19 @@ describe("skill improvement configuration", () => {
     expect(outboundApi).toContain("EADDRNOTAVAIL");
     expect(outboundApi).toContain("newConnectionCount");
     expect(outboundApi).toContain("reusedConnectionCount");
-    expect(new Set(manifests.map(manifest => manifest.id)).size).toBe(5);
+    expect(outboundApi).toContain('"capacity-pressure"');
+    expect(outboundApi).toContain('"nat-recovery"');
+    expect(echoClientIp).toContain('"x-forwarded-for"');
+    expect(new Set(manifests.map(manifest => manifest.id)).size).toBe(6);
     expect(new Set(
       manifests.map(manifest => manifest.bicepConfigs[0].resourceGroupNameBase)
-    ).size).toBe(5);
+    ).size).toBe(6);
+    expect(manifests.find(manifest =>
+      manifest.id === "azure-diagnostics-functions-vnet-nat-capacity"
+    )).toMatchObject({
+      type: "readWrite",
+      persistence: "never",
+    });
     expect(manifests.find(manifest =>
       manifest.id === "azure-diagnostics-functions-vnet-repair"
     )).toMatchObject({
@@ -261,6 +276,7 @@ describe("skill improvement configuration", () => {
       "post-provision-route.ts",
       "post-provision-ambiguous.ts",
       "post-provision-control.ts",
+      "post-provision-nat-capacity.ts",
       "post-provision-repair.ts",
       "post-provision-snat.ts",
     ]);

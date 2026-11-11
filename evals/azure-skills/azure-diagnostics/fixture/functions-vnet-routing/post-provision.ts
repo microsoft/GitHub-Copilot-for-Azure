@@ -15,7 +15,12 @@ if (resourceGroups.length !== 1) {
 const resourceGroup = resourceGroups[0];
 const temporaryDirectory = mkdtempSync(join(tmpdir(), "functions-vnet-routing-"));
 
-export type FaultMode = "route-blackhole" | "ambiguous-route" | "dns-unlinked" | "snat-pressure";
+export type FaultMode =
+  | "route-blackhole"
+  | "ambiguous-route"
+  | "dns-unlinked"
+  | "snat-pressure"
+  | "nat-capacity";
 
 function log(message: string): void {
   console.error(`[functions-vnet-routing] ${message}`);
@@ -475,6 +480,75 @@ try {
       "the outbound recovery trace",
     );
     log("Seeded baseline, connection-pressure, and recovery telemetry for the public partner API.");
+  }
+
+  if (faultMode === "nat-capacity") {
+    const outboundBaseline = await request(
+      functionAppHostName,
+      "outbound-api",
+      functionKey,
+      { load: "baseline" },
+    );
+    if (outboundBaseline.status !== 200 || !outboundBaseline.correlationId) {
+      throw new Error("The capacity fixture baseline did not return a correlated 200.");
+    }
+
+    const capacityPressure = await request(
+      functionAppHostName,
+      "outbound-api",
+      functionKey,
+      { load: "capacity-pressure" },
+    );
+    if (capacityPressure.status !== 503 || !capacityPressure.correlationId) {
+      throw new Error("The persistent capacity-pressure window did not return a correlated 503.");
+    }
+
+    await waitForTelemetry(
+      applicationInsightsId,
+      outboundBaseline.correlationId,
+      "the capacity fixture baseline trace",
+    );
+    await waitForTelemetry(
+      applicationInsightsId,
+      capacityPressure.correlationId,
+      "the persistent outbound-capacity trace",
+    );
+
+    const healthDuringPressure = await request(functionAppHostName, "health", functionKey);
+    if (healthDuringPressure.status !== 200) {
+      throw new Error(`The health endpoint returned ${healthDuringPressure.status} during capacity pressure.`);
+    }
+    const blobDuringPressure = await request(functionAppHostName, "read-blob", functionKey);
+    if (
+      blobDuringPressure.status !== 200
+      || !blobDuringPressure.body.includes("Flex VNet private endpoint baseline is healthy.")
+      || blobDuringPressure.resolvedIp !== privateEndpointIp
+    ) {
+      throw new Error("Private blob access changed during the public outbound-capacity scenario.");
+    }
+
+    const hostPublicNetworkAccess = runAz([
+      "storage",
+      "account",
+      "show",
+      "--resource-group",
+      resourceGroup,
+      "--name",
+      hostStorageName,
+      "--query",
+      "publicNetworkAccess",
+      "-o",
+      "tsv",
+    ]);
+    if (hostPublicNetworkAccess !== "Enabled") {
+      throw new Error("Host/deployment storage connectivity changed unexpectedly.");
+    }
+
+    log(
+      "Fixture nat-capacity is ready: application connection reuse is high, concurrency is bounded, "
+      + "public dependency calls still fail under load, and private storage remains healthy.",
+    );
+    return;
   }
 
   if (faultMode === "ambiguous-route") {

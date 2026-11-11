@@ -41,7 +41,7 @@ returns a logged 503 promptly.
 ## Provisioning and fault injection
 
 All variants share the same Bicep and application. Small wrapper scripts select
-one of four modes in `post-provision.ts`:
+one of five modes in `post-provision.ts`:
 
 - `route-blackhole`: the original narrow `/32 -> None` route fault.
 - `ambiguous-route`: harmless Function/storage tag updates and an unrelated
@@ -51,11 +51,20 @@ one of four modes in `post-provision.ts`:
 - `snat-pressure`: baseline, connection-pressure, and recovery telemetry is
   seeded for a public dependency while the private-storage `/32` route remains
   an unrelated competing failure.
+- `nat-capacity`: application-level connection reuse and concurrency are already
+  improved, but public dependency calls still show capacity pressure. Private
+  storage remains healthy and no NAT Gateway exists initially.
 
 `azure-manifest-repair.json` uses the `route-blackhole` mode with
 `type: readWrite` and `persistence: never`. Each repair trial therefore receives
 a fresh resource group and may remove only the injected `storage-path` route
 without changing the reusable read-only fixtures used by other scenarios.
+
+`azure-manifest-nat-capacity.json` is also `readWrite` with
+`persistence: never`. The evaluated agent may create one public IP and NAT
+Gateway and associate only the integration subnet. The `nat-recovery` endpoint
+performs a real outbound self-call and reports the client IP observed by the
+public Function endpoint for comparison with the NAT public IP.
 
 The shared post-provision logic:
 

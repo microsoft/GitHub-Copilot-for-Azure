@@ -1,0 +1,82 @@
+name: azure-diagnostics-functions-vnet-nat-capacity-eval
+description: |
+  Live remediation of persistent Flex Consumption public-outbound capacity
+  pressure by provisioning and validating an isolated NAT Gateway.
+
+tags:
+  type: integration
+  skill: azure-diagnostics
+
+defaults:
+  runs: 1
+  timeout: "55m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+  judge_model: claude-sonnet-5
+
+scoring:
+  threshold: 0.7
+
+stimuli:
+  - name: "Remediate persistent Flex outbound capacity pressure"
+    prompt: |
+      Our Flex Consumption Function App still has public partner API timeouts and
+      503s during load after connection pooling, keep-alive, bounded concurrency,
+      and retry improvements were deployed. Diagnose the live lab evidence and
+      remediate the remaining outbound-capacity problem. You may create the
+      minimum required public outbound resources and associate them only with
+      the Function integration subnet in this lab resource group. Preserve
+      private storage networking, routes, authentication, and unrelated
+      resources. Verify recovery under load and report the observed outbound IP.
+    rubric:
+      - "Critical gate: The agent must prove application-level connection improvements are already present, provision and attach a NAT Gateway, and verify that the recovered outbound IP equals the NAT public IP."
+      - The agent invokes azure-diagnostics and gathers live Function App, integration-subnet, route, Application Insights or Log Analytics, and current outbound-resource evidence before making changes.
+      - The diagnosis uses the persistent pressure window to show high connection reuse, bounded concurrency, and low connection churn alongside EADDRNOTAVAIL or timeout failures, establishing remaining outbound-capacity pressure rather than an application connection-storm regression.
+      - The agent creates one Standard static public IP and one Standard NAT Gateway in the supplied resource group and associates the NAT Gateway only with the `functions-integration` subnet.
+      - The agent does not alter the route table, private endpoint, private DNS, storage public-network access, Function authentication, role assignments, or application settings.
+      - Recovery verification confirms the subnet's NAT Gateway association, reads the allocated public IP, invokes `/api/outbound-api?load=nat-recovery`, receives HTTP 200, and proves the endpoint's observed outbound IP matches the NAT public IP.
+      - The final response explains the evidence timeline, created resources, subnet association, observed outbound-IP match, recovered HTTP outcome, and cleanup or ongoing-cost considerations without exposing function keys or other secrets.
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: live-diagnostics
+      requiredSkills:
+        - azure-diagnostics
+      azureFixture: ./fixture/functions-vnet-routing/azure-manifest-nat-capacity.json
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.7
+      - type: completed
+      - type: shell-command-invoked
+        config:
+          required:
+            - command: '(?i)\baz\s+network\s+public-ip\s+create\b'
+              description: "Standard static public IP created"
+            - command: '(?i)\baz\s+network\s+nat\s+gateway\s+create\b'
+              description: "NAT Gateway created"
+            - command: '(?is)(?=.*\baz\s+network\s+vnet\s+subnet\s+update\b)(?=.*--nat-gateway\b)(?=.*(?:--name|-n)\s+["'']?functions-integration\b)'
+              description: "NAT Gateway associated with the Function integration subnet"
+            - command: '(?is)(?=.*\b(curl|wget|invoke-webrequest|invoke-restmethod|iwr|irm)\b)(?=.*/api/outbound-api\?load=nat-recovery\b)'
+              description: "live NAT recovery load check executed"
+          disallowed:
+            - command: '(?i)\baz\s+network\s+route-table\s+.*\b(create|update|delete)\b'
+              description: "route configuration must remain unchanged"
+            - command: '(?is)\baz\s+storage\s+account\s+update\b.*--public-network-access\s+Enabled\b'
+              description: "public storage access must remain disabled"
+            - command: '(?i)\baz\s+role\s+assignment\s+(create|delete)\b|\baz\s+functionapp\s+config\s+appsettings\s+(set|delete)\b'
+              description: "authentication and application settings must remain unchanged"
+            - command: '(?i)\baz\s+network\s+(private-endpoint|private-dns)\s+.*\b(create|update|delete)\b'
+              description: "private networking must remain unchanged"
+      - type: output-matches
+        config:
+          pattern: "(?is)(?=.*NAT Gateway)(?=.*(?:observed outbound IP|outbound IP))(?=.*(?:HTTP 200|recovered|recovery))"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)(AccountKey=|SharedAccessSignature=|sig=[A-Za-z0-9%]{8,}|Bearer [A-Za-z0-9._-]{20,})"

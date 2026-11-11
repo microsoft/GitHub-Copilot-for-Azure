@@ -13,6 +13,7 @@ evaluations:
     - eval.yaml
     - fixture-evidence.eval.yaml
     - functions-troubleshooting.eval.yaml
+    - functions-vnet-nat-capacity.eval.yaml
     - functions-vnet-routing.eval.yaml
     - functions-vnet-routing-repair.eval.yaml
     - functions-vnet-snat.eval.yaml
@@ -59,8 +60,8 @@ refinement:
 
 limits:
   maxIterations: 2
-  maxAnswerGenerations: 596
-  maxJudgeCalls: 596
+  maxAnswerGenerations: 608
+  maxJudgeCalls: 608
   maxDurationMinutes: 360
   maxConcurrentVallyProcesses: 5
   generationWorkersPerVallyProcess: 1
