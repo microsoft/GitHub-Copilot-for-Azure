@@ -63,6 +63,18 @@ const TEST_DIR = mkdtempSync(join(tmpdir(), "azure-telemetry-hooks-"));
 const BIN_DIR = join(TEST_DIR, "bin");
 const SCRATCH_DIR = join(TEST_DIR, "scratch");
 const TEMP_ENV = { TMP: SCRATCH_DIR, TEMP: SCRATCH_DIR };
+const HOST_ENV = {
+  COPILOT_CLI: "",
+  COPILOT_CLI_PATH: "",
+  COPILOT_CLI_BINARY_VERSION: "",
+  COPILOT_LOADER_PID: "",
+  COPILOT_CLI_RUN_AS_NODE: "",
+  AZURE_SKILLS_HOOK_CLIENT_FAMILY: "",
+  AI_AGENT: "",
+  VSCODE_PID: "",
+  VSCODE_CRASH_REPORTER_PROCESS_TYPE: "",
+  VSCODE_ESM_ENTRYPOINT: "",
+};
 const CAPTURE_FILE = join(TEST_DIR, "reporter-args.txt");
 const LOG_DIR = join(TEST_DIR, "logs");
 const LOG_FILE = join(LOG_DIR, "telemetry.log");
@@ -105,16 +117,16 @@ const EMPTY_MCP_PLUGIN_ROOT = join(TEST_DIR, "empty-mcp-plugin");
 const EMPTY_MCP_HOOKS_DIR = join(EMPTY_MCP_PLUGIN_ROOT, "hooks", "scripts");
 const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), "fixtures");
 const SESSION_ID = "73e52424-a95d-4e21-b70c-2dffe48fdd86";
-const TELEMETRY_REPORTER_VERSION = "0.1.16-g03871c5229";
+const TELEMETRY_REPORTER_VERSION = "0.1.20-gc133b914e3";
 const TELEMETRY_REPORTER_DIGESTS = {
-  "linux-arm64": "f1a12dd39592b3179b96cf98d1648e15ad7189690484e0fa6d4ebabd74373b59",
-  "linux-musl-arm64": "70d1a09e9c9136417ba00ac78c390517fa4d991082358cd949a996633227f2f8",
-  "linux-musl-x64": "82fcdb2751c9002bd45f44a0a181bcd8a205835ced0260275fff1e2a80295b5e",
-  "linux-x64": "4d35e70d142afaa827f0940c79420f1558edb2b397b11c9fa3c3511bfd0b3326",
-  "osx-arm64": "8af0f060c53088e4298a8939719a89bc25e4f2d751ec10e8ca75da5dd818d073",
-  "osx-x64": "643fa1379a724a3b147da973b7c3c193fe40fdc58739b6a37da5e43a2d6905f9",
-  "win-arm64": "fdd37f4538522099b552284a8029ad586ac6006f44bccdeb8048b60afeac9cf0",
-  "win-x64": "f850546e46777b59373cf3525e65b882056dd8f3d141e2799cbda223d18ff199",
+  "linux-arm64": "00eee4cca1950d96837ebb036445bfbce17e52cf571b3edbb1a8f0946848d9d7",
+  "linux-musl-arm64": "5077d1a24a243542dd35df67c77a055429ae029d3876aaa874a5bc6176122763",
+  "linux-musl-x64": "e84741fec93d78199e376b5ce30d8930bab12a8aef2d1cfc2b08bd2feaf79144",
+  "linux-x64": "a93b332644fac0e9e899f52247bf5d0f1942921f3ee106320fc14b37165e9be5",
+  "osx-arm64": "ab2e2a5aa153b93588cd87dc1782f9d42452359b621366b61217359dd939fd05",
+  "osx-x64": "3b8b43f3385b6a40a0e134d10ba675292c8eddbb225039c5f48fdb106f70a253",
+  "win-arm64": "61d70acc51cb51a112ec81b888c4f847e7d43ea02b836e007fffbe663af26f61",
+  "win-x64": "b826917a20fbb3f5fa14aaab8207eceb5a7ae6491299133285171d47a775ae05",
 } as const;
 const STANDALONE_PUBLISHER = `Standalone ghcfa-telem (version ${TELEMETRY_REPORTER_VERSION})`;
 const PUBLISHER_STDOUT = "test-only-private-publisher-stdout";
@@ -278,13 +290,22 @@ function runHook(
   inputPrefix = "",
   envOverrides: NodeJS.ProcessEnv = {},
   hooksDirectory = STUB_HOOKS_DIR,
+  harness?: string,
+  application?: string,
 ): string[] {
   rmSync(CAPTURE_FILE, { force: true });
   rmSync(LOG_FILE, { force: true });
   rmSync(RAW_INPUT_DIR, { recursive: true, force: true });
   const extension = shell.name === "Bash" ? "sh" : "ps1";
   const scriptPath = join(hooksDirectory, `track-telemetry.${extension}`);
-  const result = spawnSync(shell.command, shell.args(scriptPath), {
+  const harnessArgs = harness === undefined
+    ? []
+    : [shell.name === "Bash" ? "--harness" : "-Harness", harness];
+  const applicationArgs = application === undefined
+    ? []
+    : [shell.name === "Bash" ? "--application" : "-Application", application];
+  const result = spawnSync(shell.command, [...shell.args(scriptPath), ...harnessArgs, ...applicationArgs], {
+    cwd: SCRATCH_DIR,
     encoding: "utf8",
     input: `${inputPrefix}${JSON.stringify(payload)}`,
     env: {
@@ -294,7 +315,7 @@ function runHook(
       AZURE_SKILLS_TELEMETRY_LOG_DIR: LOG_DIR,
       AZURE_SKILLS_TELEMETRY_ZIP_PATH: pathForShell(shell, TELEMETRY_ZIP_PATH),
       AZURE_MCP_COLLECT_TELEMETRY: "true",
-      COPILOT_CLI: "",
+      ...HOST_ENV,
       LOCALAPPDATA: INSTALL_CACHE_DIR,
       XDG_CACHE_HOME: INSTALL_CACHE_DIR,
       TELEMETRY_CAPTURE_FILE: CAPTURE_FILE,
@@ -577,6 +598,7 @@ function installedPathExists(shell: ShellCase, installedPath: string): boolean {
 function runWindowsManifestHook(
   entry: CopilotHookEntry,
   payload: Record<string, unknown>,
+  envOverrides: NodeJS.ProcessEnv = {},
 ): string[] {
   rmSync(CAPTURE_FILE, { force: true });
   rmSync(LOG_FILE, { force: true });
@@ -594,12 +616,13 @@ function runWindowsManifestHook(
         AZURE_SKILLS_TELEMETRY_LOG_DIR: LOG_DIR,
         AZURE_SKILLS_TELEMETRY_ZIP_PATH: TELEMETRY_ZIP_PATH,
         AZURE_MCP_COLLECT_TELEMETRY: "true",
-        COPILOT_CLI: "",
+        ...HOST_ENV,
         LOCALAPPDATA: INSTALL_CACHE_DIR,
         XDG_CACHE_HOME: INSTALL_CACHE_DIR,
         TELEMETRY_CAPTURE_FILE: CAPTURE_FILE,
         TELEMETRY_TEST_REPORTER_PATH: join(BIN_DIR, "ghcfa-telem.cmd"),
         ...entry.env,
+        ...envOverrides,
       },
     },
   );
@@ -626,6 +649,21 @@ function expectArg(args: string[], name: string, value: string): void {
 function expectStandaloneInvocation(args: string[]): void {
   expect(args).not.toContain("server");
   expect(args).not.toContain("plugin-telemetry");
+}
+
+function expectAllowlistArguments(
+  shell: ShellCase,
+  args: string[],
+  pluginRoot = PLUGIN_ROOT,
+): void {
+  for (const [option, filename] of [
+    ["--allowed-skills", "allowed-skills.txt"],
+    ["--allowed-references", "allowed-references.txt"],
+    ["--allowed-tools", "allowed-tools.json"],
+  ]) {
+    expect(args.filter(arg => arg === option)).toHaveLength(1);
+    expectArg(args, option, pathForShell(shell, join(pluginRoot, "hooks", "allowlists", filename)));
+  }
 }
 
 function expectIsoTimestamp(args: string[]): void {
@@ -755,7 +793,8 @@ describe("Telemetry hook manifests", () => {
       readFileSync(join(HOOKS_SOURCE_DIR, "claude-hooks.json"), "utf8"),
     ) as {
       hooks: {
-        SessionStart: Array<{ hooks: unknown[] }>;
+        SessionStart: Array<{ hooks: CursorHookEntry[] }>;
+        PostToolUse: Array<{ hooks: CursorHookEntry[] }>;
       };
     };
     const cursor = JSON.parse(
@@ -769,16 +808,38 @@ describe("Telemetry hook manifests", () => {
     };
 
     expect(copilot.hooks.SessionStart).toHaveLength(1);
-    expect(copilot.hooks.SessionStart[0].env?.AZURE_SKILLS_HOOK_CLIENT_FAMILY).toBe(
-      "copilot-vscode",
-    );
+    for (const entries of Object.values(copilot.hooks)) {
+      expect(entries).toHaveLength(1);
+      const entry = entries[0];
+      expect(entry.env).toBeUndefined();
+      // Preserve the host-expanded token rather than substituting the fixture's PLUGIN_ROOT.
+      expect(entry.windows).toBe(
+        'powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "${PLUGIN_ROOT}/hooks/scripts/track-telemetry.ps1" -Harness copilot-vscode',
+      );
+      for (const key of ["osx", "linux", "bash"] as const) {
+        expect(entry[key]).toBe(
+          "${PLUGIN_ROOT}/hooks/scripts/track-telemetry.sh --harness copilot-vscode",
+        );
+      }
+      expect(entry.powershell).toBe(
+        "${PLUGIN_ROOT}/hooks/scripts/track-telemetry.ps1 -Harness copilot-vscode",
+      );
+    }
     expect(claude.hooks.SessionStart[0].hooks).toHaveLength(1);
+    for (const entries of Object.values(claude.hooks)) {
+      expect(entries).toEqual([{
+        hooks: [{
+          type: "command",
+          command: 'bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/track-telemetry.sh" --harness claude-code',
+        }],
+      }]);
+    }
     expect(cursor.hooks.sessionStart).toHaveLength(1);
     for (const entries of Object.values(cursor.hooks)) {
       expect(entries).toEqual([
         {
           type: "command",
-          command: 'bash "${CURSOR_PLUGIN_ROOT}/hooks/scripts/track-telemetry.sh"',
+          command: 'bash "${CURSOR_PLUGIN_ROOT}/hooks/scripts/track-telemetry.sh" --harness cursor',
         },
       ]);
     }
@@ -791,7 +852,7 @@ describe("Telemetry hook manifests", () => {
         hook_event_name: "SessionStart",
         session_id: SESSION_ID,
         source: "new",
-      });
+      }, { AI_AGENT: "github_copilot_vscode_agent" });
 
       expectArg(args, "--plugin-name", PLUGIN_METADATA.copilot.name);
       expectArg(args, "--plugin-version", PLUGIN_METADATA.copilot.version);
@@ -802,7 +863,7 @@ describe("Telemetry hook manifests", () => {
   );
 });
 
-describe.each(shells)("Generated plugin metadata ($name)", shell => {
+describe.each(shells)("Generated plugin metadata ($name)", { timeout: 30_000 }, shell => {
   it("reads plugin name and version from hooks/metadata.txt", () => {
     const args = runHook(
       shell,
@@ -820,6 +881,7 @@ describe.each(shells)("Generated plugin metadata ($name)", shell => {
 
     expectArg(args, "--plugin-name", "sidecar-plugin");
     expectArg(args, "--plugin-version", "9.8.7");
+    expectAllowlistArguments(shell, args, SIDECAR_METADATA_PLUGIN_ROOT);
   });
 
   it("suppresses session telemetry when generated plugin metadata is missing", () => {
@@ -1213,7 +1275,304 @@ describe.each(shells)("Telemetry reporter installer detection ($name)", shell =>
   });
 });
 
-describe.each(shells)("Session start telemetry hook ($name)", shell => {
+describe.each(shells)("Telemetry harness detection ($name)", { timeout: 30_000 }, shell => {
+  const cases: Array<{
+    name: string;
+    harness?: string;
+    application?: string;
+    payload?: Record<string, unknown>;
+    env?: NodeJS.ProcessEnv;
+    expectedClient: string;
+  }> = [
+    { name: "explicit Claude without host signals", harness: "claude-code", expectedClient: "claude-code" },
+    { name: "explicit Cursor without version", harness: "cursor", expectedClient: "cursor" },
+    {
+      name: "Claude overrides CLI, Cursor, and VS Code signals",
+      harness: "claude-code",
+      payload: { cursor_version: "1.7.2", tool_use_id: "tool__vscode" },
+      env: { COPILOT_CLI: "1", AZURE_SKILLS_HOOK_CLIENT_FAMILY: "copilot-vscode" },
+      expectedClient: "claude-code",
+    },
+    {
+      name: "Cursor overrides CLI and VS Code signals",
+      harness: "cursor",
+      payload: { tool_use_id: "tool__vscode" },
+      env: { COPILOT_CLI: "1", AZURE_SKILLS_HOOK_CLIENT_FAMILY: "copilot-vscode" },
+      expectedClient: "cursor",
+    },
+    {
+      name: "custom harness preserved verbatim despite host signals",
+      harness: "Custom Host (Preview)",
+      payload: { cursor_version: "1.7.2", tool_use_id: "tool__vscode" },
+      env: { COPILOT_CLI: "1" },
+      expectedClient: "Custom Host (Preview)",
+    },
+    { name: "custom harness casing preserved", harness: "Claude", expectedClient: "Claude" },
+    { name: "claude is no longer a special alias", harness: "claude", expectedClient: "claude" },
+    { name: "Copilot family alone does not identify an application", harness: "copilot-vscode", expectedClient: "unknown" },
+    {
+      name: "Copilot family recognizes Insiders",
+      harness: "copilot-vscode",
+      payload: { transcript_path: "C:\\Users\\test\\AppData\\Roaming\\Code - Insiders\\User\\session.json" },
+      expectedClient: "Visual Studio Code - Insiders",
+    },
+    {
+      name: "Copilot family retains CLI precedence",
+      harness: "copilot-vscode",
+      env: { COPILOT_CLI: "1", COPILOT_CLI_PATH: "/usr/bin/copilot" },
+      expectedClient: "copilot-cli",
+    },
+    {
+      name: "Copilot family retains Cursor payload detection",
+      harness: "copilot-vscode",
+      payload: { cursor_version: "1.7.2" },
+      expectedClient: "cursor",
+    },
+    {
+      name: "Copilot-shaped payload alone does not establish CLI",
+      harness: "copilot-vscode",
+      payload: { hook_event_name: undefined, toolName: "azure-documentation", toolArgs: {} },
+      expectedClient: "unknown",
+    },
+    { name: "SessionStart event alone does not establish Claude", expectedClient: "unknown" },
+    {
+      name: "no harness retains Cursor fallback",
+      payload: { cursor_version: "1.7.2" },
+      expectedClient: "cursor",
+    },
+    {
+      name: "no harness identifies standalone CLI",
+      env: { COPILOT_CLI: "1", COPILOT_CLI_BINARY_VERSION: "1.0.106-2" },
+      expectedClient: "copilot-cli",
+    },
+    {
+      name: "no harness does not infer CLI from toolArgs",
+      payload: { hook_event_name: undefined, toolName: "azure-documentation", toolArgs: {} },
+      expectedClient: "unknown",
+    },
+    {
+      name: "no harness retains VS Code tool ID detection",
+      payload: { tool_use_id: "tool__vscode" },
+      expectedClient: "Visual Studio Code",
+    },
+    {
+      name: "no harness retains Insiders transcript detection",
+      payload: { transcript_path: "/Users/test/Code - Insiders/User/session.json" },
+      expectedClient: "Visual Studio Code - Insiders",
+    },
+    {
+      name: "external family environment variable alone is inconclusive",
+      env: { AZURE_SKILLS_HOOK_CLIENT_FAMILY: "copilot-vscode" },
+      expectedClient: "unknown",
+    },
+    {
+      name: "runtime and external family signals alone are inconclusive",
+      env: { AZURE_SKILLS_HOOK_CLIENT_FAMILY: "copilot-vscode", COPILOT_CLI: "1" },
+      expectedClient: "unknown",
+    },
+    {
+      name: "no harness retains unknown fallback",
+      payload: { hook_event_name: undefined, tool_name: "mcp_azure_mcp_documentation" },
+      expectedClient: "unknown",
+    },
+    {
+      name: "VS Code using the Copilot runtime is not the CLI",
+      harness: "copilot-vscode",
+      env: { AI_AGENT: "github_copilot_vscode_agent", COPILOT_CLI: "1", COPILOT_CLI_RUN_AS_NODE: "1" },
+      expectedClient: "Visual Studio Code",
+    },
+    {
+      name: "VS Code application marker works without hook_event_name",
+      payload: { hook_event_name: undefined, tool_name: "mcp_azure_mcp_documentation" },
+      env: { AI_AGENT: "github_copilot_vscode_agent", COPILOT_CLI: "1" },
+      expectedClient: "Visual Studio Code",
+    },
+    {
+      name: "VS Code application marker retains Insiders path detection",
+      payload: { transcript_path: "/Users/test/Code - Insiders/User/session.json" },
+      env: { AI_AGENT: "github_copilot_vscode_agent", COPILOT_CLI: "1" },
+      expectedClient: "Visual Studio Code - Insiders",
+    },
+    {
+      name: "VS Code local extension-host capture",
+      env: {
+        VSCODE_PID: "123",
+        VSCODE_CRASH_REPORTER_PROCESS_TYPE: "extensionHost",
+        VSCODE_ESM_ENTRYPOINT: "vs/workbench/api/node/extensionHostProcess",
+      },
+      expectedClient: "Visual Studio Code",
+    },
+    {
+      name: "extension-host entrypoint suffices with VS Code PID",
+      env: { VSCODE_PID: "123", VSCODE_ESM_ENTRYPOINT: "vs/workbench/api/node/extensionHostProcess" },
+      expectedClient: "Visual Studio Code",
+    },
+    {
+      name: "CLI in a VS Code terminal remains CLI despite inherited ancestry",
+      harness: "copilot-vscode",
+      payload: { transcript_path: "/Users/test/Code - Insiders/User/session.json", tool_use_id: "tool__vscode" },
+      env: {
+        COPILOT_CLI: "1",
+        COPILOT_CLI_PATH: "/usr/bin/copilot",
+        VSCODE_PID: "123",
+        VSCODE_CRASH_REPORTER_PROCESS_TYPE: "extensionHost",
+        VSCODE_ESM_ENTRYPOINT: "vs/workbench/api/node/extensionHostProcess",
+      },
+      expectedClient: "copilot-cli",
+    },
+    {
+      name: "CLI loader evidence wins over inherited VS Code PID",
+      env: { COPILOT_CLI: "1", COPILOT_LOADER_PID: "456", VSCODE_PID: "123" },
+      expectedClient: "copilot-cli",
+    },
+    {
+      name: "Copilot-shaped payload does not override the VS Code application marker",
+      payload: { hook_event_name: undefined, toolName: "azure-documentation", toolArgs: {} },
+      env: { AI_AGENT: "github_copilot_vscode_agent", VSCODE_PID: "123" },
+      expectedClient: "Visual Studio Code",
+    },
+    { name: "Copilot runtime alone is unknown", env: { COPILOT_CLI: "1" }, expectedClient: "unknown" },
+    { name: "embedded-runtime execution flag alone is unknown", env: { COPILOT_CLI_RUN_AS_NODE: "1" }, expectedClient: "unknown" },
+    { name: "standalone launcher without runtime marker is inconclusive", env: { COPILOT_CLI_PATH: "/usr/bin/copilot" }, expectedClient: "unknown" },
+    { name: "VS Code PID alone is inconclusive", env: { VSCODE_PID: "123" }, expectedClient: "unknown" },
+    {
+      name: "VS Code application marker requires exact casing",
+      harness: "copilot-vscode",
+      env: { AI_AGENT: "GITHUB_COPILOT_VSCODE_AGENT" },
+      expectedClient: "unknown",
+    },
+    {
+      name: "external family variable still allows positive VS Code detection",
+      env: { AZURE_SKILLS_HOOK_CLIENT_FAMILY: "copilot-vscode", AI_AGENT: "github_copilot_vscode_agent" },
+      expectedClient: "Visual Studio Code",
+    },
+    {
+      name: "explicit launcher application overrides ambient host evidence",
+      harness: "copilot-vscode",
+      application: "Custom Copilot App",
+      env: { COPILOT_CLI: "1", COPILOT_CLI_PATH: "/usr/bin/copilot", AI_AGENT: "github_copilot_vscode_agent" },
+      expectedClient: "Custom Copilot App",
+    },
+    {
+      name: "explicit launcher CLI application overrides VS Code ancestry",
+      harness: "copilot-vscode",
+      application: "copilot-cli",
+      env: { AI_AGENT: "github_copilot_vscode_agent", VSCODE_PID: "123" },
+      expectedClient: "copilot-cli",
+    },
+    {
+      name: "Cursor product marker overrides inherited CLI launcher variables",
+      payload: { cursor_version: "1.7.2" },
+      env: { COPILOT_CLI: "1", COPILOT_CLI_PATH: "/usr/bin/copilot", AI_AGENT: "github_copilot_vscode_agent" },
+      expectedClient: "cursor",
+    },
+    {
+      name: "Cursor product marker does not require hook_event_name",
+      payload: { hook_event_name: undefined, cursor_version: "1.7.2", tool_name: "mcp_azure_mcp_documentation" },
+      env: { COPILOT_CLI: "1", COPILOT_LOADER_PID: "456" },
+      expectedClient: "cursor",
+    },
+    {
+      name: "VS Code application marker overrides ambient CLI launcher variables",
+      env: { AI_AGENT: "github_copilot_vscode_agent", COPILOT_CLI: "1", COPILOT_CLI_PATH: "/usr/bin/copilot" },
+      expectedClient: "Visual Studio Code",
+    },
+    {
+      name: "strong VS Code application marker retains Insiders despite CLI variables",
+      payload: { transcript_path: "/Users/test/Code - Insiders/User/session.json" },
+      env: { AI_AGENT: "github_copilot_vscode_agent", COPILOT_CLI: "1", COPILOT_CLI_BINARY_VERSION: "1.0.106-2" },
+      expectedClient: "Visual Studio Code - Insiders",
+    },
+    {
+      name: "Codex-shaped SessionStart without explicit identity is unknown",
+      payload: { source: "startup", model: "gpt-5", permission_mode: "default" },
+      expectedClient: "unknown",
+    },
+    {
+      name: "Claude-shaped PostToolUse without explicit identity is unknown",
+      payload: {
+        hook_event_name: "PostToolUse",
+        tool_name: "mcp_azure_mcp_documentation",
+        tool_input: {},
+        tool_response: {},
+        tool_use_id: "toolu_01ABC",
+      },
+      expectedClient: "unknown",
+    },
+    {
+      name: "nested toolArgs cannot establish a CLI identity",
+      payload: {
+        hook_event_name: undefined,
+        tool_name: "mcp_azure_mcp_documentation",
+        tool_input: { toolArgs: {} },
+      },
+      expectedClient: "unknown",
+    },
+    {
+      name: "nested hook_event_name cannot establish a Claude identity",
+      payload: {
+        hook_event_name: undefined,
+        tool_name: "mcp_azure_mcp_documentation",
+        tool_input: { hook_event_name: "PostToolUse" },
+      },
+      expectedClient: "unknown",
+    },
+  ];
+
+  it.each(cases)("$name", ({ harness, application, payload, env, expectedClient }) => {
+    const args = runHook(shell, {
+      hook_event_name: "SessionStart",
+      session_id: SESSION_ID,
+      ...payload,
+    }, "", env, STUB_HOOKS_DIR, harness, application);
+
+    expectArg(args, "--client-name", expectedClient);
+  });
+
+  it.each([
+    { harness: "claude-code", expectedClient: "claude-code" },
+    { harness: "cursor", expectedClient: "cursor" },
+    { harness: "copilot-vscode", expectedClient: "unknown" },
+    { harness: "custom-host", expectedClient: "custom-host" },
+  ])("applies $harness to tool telemetry", ({ harness, expectedClient }) => {
+    const args = runHook(shell, {
+      hook_event_name: "PostToolUse",
+      session_id: SESSION_ID,
+      tool_name: "mcp_azure_mcp_documentation",
+      tool_input: {},
+    }, "", {}, STUB_HOOKS_DIR, harness);
+
+    expectArg(args, "--client-name", expectedClient);
+    expectArg(args, "--event-type", "tool_invocation");
+  });
+
+  it("uses explicit Cursor for afterMCPExecution without cursor_version", () => {
+    const payload = fixture("cursor-mcp-invocation.json");
+    delete payload.cursor_version;
+    const args = runHook(shell, payload, "", {}, STUB_HOOKS_DIR, "cursor");
+
+    expectArg(args, "--client-name", "cursor");
+    expectArg(args, "--event-type", "tool_invocation");
+  });
+
+  it.skipIf(shell.name !== "Bash").each([
+    { args: ["--harness"], error: "Missing value for --harness." },
+    { args: ["--application"], error: "Missing value for --application." },
+    { args: ["--unknown"], error: "Unknown argument: --unknown" },
+  ])("rejects malformed Bash arguments $args", ({ args, error }) => {
+    const result = spawnSync(shell.command, [
+      ...shell.args(join(STUB_HOOKS_DIR, "track-telemetry.sh")),
+      ...args,
+    ], { encoding: "utf8", input: "" });
+
+    expect(result.error).toBeUndefined();
+    expect(result.status).toBe(2);
+    expect(result.stdout).toBe("");
+    expect(result.stderr).toContain(error);
+  });
+});
+
+describe.each(shells)("Session start telemetry hook ($name)", { timeout: 30_000 }, shell => {
   it.each([
     {
       client: "Copilot CLI",
@@ -1223,9 +1582,10 @@ describe.each(shells)("Session start telemetry hook ($name)", shell => {
         source: "resume",
       },
       env: {
-        AZURE_SKILLS_HOOK_CLIENT_FAMILY: "copilot-vscode",
         COPILOT_CLI: "1",
+        COPILOT_CLI_PATH: "/usr/bin/copilot",
       },
+      harness: "copilot-vscode",
       expectedClient: "copilot-cli",
       expectedPlugin: PLUGIN_METADATA.copilot,
     },
@@ -1236,9 +1596,8 @@ describe.each(shells)("Session start telemetry hook ($name)", shell => {
         session_id: SESSION_ID,
         source: "new",
       },
-      env: {
-        AZURE_SKILLS_HOOK_CLIENT_FAMILY: "copilot-vscode",
-      },
+      env: { AI_AGENT: "github_copilot_vscode_agent" },
+      harness: "copilot-vscode",
       expectedClient: "Visual Studio Code",
       expectedPlugin: PLUGIN_METADATA.copilot,
     },
@@ -1250,6 +1609,7 @@ describe.each(shells)("Session start telemetry hook ($name)", shell => {
         source: "resume",
       },
       env: {},
+      harness: "claude-code",
       expectedClient: "claude-code",
       expectedPlugin: PLUGIN_METADATA.claude,
     },
@@ -1263,15 +1623,17 @@ describe.each(shells)("Session start telemetry hook ($name)", shell => {
         composer_mode: "agent",
       },
       env: {},
+      harness: "cursor",
       expectedClient: "cursor",
       expectedPlugin: PLUGIN_METADATA.cursor,
     },
   ])(
     "reports $client with client-specific plugin metadata",
-    ({ payload, env, expectedClient, expectedPlugin }) => {
-      const args = runHook(shell, payload, "", env);
+    ({ payload, env, harness, expectedClient, expectedPlugin }) => {
+      const args = runHook(shell, payload, "", env, STUB_HOOKS_DIR, harness);
 
       expectStandaloneInvocation(args);
+      expectAllowlistArguments(shell, args);
       expectArg(args, "--plugin-name", expectedPlugin.name);
       expectArg(args, "--plugin-version", expectedPlugin.version);
       expectArg(args, "--client-name", expectedClient);
@@ -1302,6 +1664,7 @@ describe.each(shells)("Session start telemetry hook ($name)", shell => {
 
     expectStandaloneInvocation(args);
     expectArg(args, "--tool-name", "get_azure_bestpractices");
+    expectAllowlistArguments(shell, args);
   });
 
   it.skipIf(process.platform === "win32")(
@@ -1367,7 +1730,46 @@ describe.each(shells)("Session start telemetry hook ($name)", shell => {
   });
 });
 
-describe.each(shells)("Telemetry publisher debug logs ($name)", shell => {
+describe.each(shells)("Telemetry allowlist arguments ($name)", { timeout: 30_000 }, shell => {
+  it("passes missing allowlist paths without dropping overrides", () => {
+    expect(existsSync(join(PLUGIN_ROOT, "hooks", "allowlists"))).toBe(false);
+
+    const args = runHook(shell, fixture("cursor-mcp-invocation.json"));
+
+    expectAllowlistArguments(shell, args);
+    expectArg(args, "--event-type", "tool_invocation");
+  });
+
+  it.each([
+    JSON.stringify({
+      commands: { Initial: ["get_azure_bestpractices"], "Next release": ["custom_command"] },
+      areas: { Initial: ["storage"] },
+      extensionTools: { "Azure extension": ["azure_auth-set_auth_context"] },
+    }, null, 2),
+    "{ malformed tools JSON",
+  ])("passes spaced installed paths without reading or rewriting tools JSON (%#)", toolsJson => {
+    const allowlistsDir = join(SPACED_PLUGIN_ROOT, "hooks", "allowlists");
+    mkdirSync(allowlistsDir, { recursive: true });
+    writeFileSync(join(allowlistsDir, "allowed-skills.txt"), "custom-skill\n");
+    writeFileSync(join(allowlistsDir, "allowed-references.txt"), "custom-skill/references/example.md\n");
+    const toolsPath = join(allowlistsDir, "allowed-tools.json");
+    writeFileSync(toolsPath, toolsJson);
+
+    const args = runHook(
+      shell,
+      { hook_event_name: "SessionStart", session_id: SESSION_ID },
+      "",
+      { COPILOT_CLI: "1", AZURE_SKILLS_PLUGIN_ROOT: SCRATCH_DIR },
+      SPACED_HOOKS_DIR,
+    );
+
+    expectAllowlistArguments(shell, args, SPACED_PLUGIN_ROOT);
+    expectArg(args, "--event-type", "session_start");
+    expect(readFileSync(toolsPath, "utf8")).toBe(toolsJson);
+  });
+});
+
+describe.each(shells)("Telemetry publisher debug logs ($name)", { timeout: 30_000 }, shell => {
   it("identifies the standalone version, executable, and actual arguments", () => {
     const env = reporterStubEnvironment(shell);
     const args = runHook(shell, fixture("cursor-mcp-invocation.json"), "", env, STUB_HOOKS_DIR);
@@ -1399,6 +1801,8 @@ describe.each(shells)("Telemetry publisher debug logs ($name)", shell => {
 
     expectArg(args, "--tool-name", "get_azure_bestpractices");
     expect(log).toContain(`Publisher: ${STANDALONE_PUBLISHER} | Execution failed with status 17.`);
+    expectAllowlistArguments(shell, args);
+    expect(log.match(/\| Executable:/g)).toHaveLength(1);
     expect(log.indexOf("| Args:")).toBeLessThan(log.indexOf("| Execution failed"));
     expect(log).not.toContain(PUBLISHER_STDOUT);
     expect(log).not.toContain(PUBLISHER_STDERR);
@@ -1424,7 +1828,7 @@ describe.each(shells)("Telemetry publisher debug logs ($name)", shell => {
       `Publisher: ${STANDALONE_PUBLISHER} | Execution failed ${shell.name === "Bash" ? "with status 127." : "to start."
       }`,
     );
-  }, 30_000);
+  });
 
   it("diagnoses a successful installer exit with no executable path", () => {
     const args = runHook(
@@ -1479,7 +1883,7 @@ describe.each(shells)("Telemetry publisher debug logs ($name)", shell => {
   });
 });
 
-describe.each(shells)("Cursor telemetry hook ($name)", shell => {
+describe.each(shells)("Cursor telemetry hook ($name)", { timeout: 30_000 }, shell => {
   const skillRoot = createCursorSkillCache();
 
   it("reports a SKILL.md read as a skill invocation", () => {
@@ -1489,13 +1893,14 @@ describe.each(shells)("Cursor telemetry hook ($name)", shell => {
     const args = runHook(shell, payload);
 
     expectStandaloneInvocation(args);
+    expectAllowlistArguments(shell, args);
     expectArg(args, "--client-name", "cursor");
     expectArg(args, "--event-type", "skill_invocation");
     expectArg(args, "--session-id", SESSION_ID);
     expectArg(args, "--skill-name", "azure-cost");
     expectArg(args, "--skill-version", "1.2.3");
     expect(args).not.toContain("--file-reference");
-  }, 10_000);
+  });
 
   it("reports a bundled file read as a reference read", () => {
     const payload = fixture("cursor-reference-read.json") as CursorPayload & Record<string, unknown>;
@@ -1505,11 +1910,12 @@ describe.each(shells)("Cursor telemetry hook ($name)", shell => {
 
     expectArg(args, "--client-name", "cursor");
     expectArg(args, "--event-type", "reference_file_read");
+    expectAllowlistArguments(shell, args);
     expectArg(args, "--session-id", SESSION_ID);
     expectArg(args, "--skill-version", "1.2.3");
     expectArg(args, "--file-reference", "azure-cost\\cost-query\\guardrails.md");
     expect(args).not.toContain("--skill-name");
-  }, 10_000);
+  });
 
   it.each(["get_azure_bestpractices", "MCP:get_azure_bestpractices"])(
     "reports an Azure MCP invocation without Cursor's display prefix: %s",
@@ -1529,7 +1935,7 @@ describe.each(shells)("Cursor telemetry hook ($name)", shell => {
     const payload = fixture("cursor-mcp-invocation.json");
     payload.mcp_server_name = "github";
 
-    expect(runHook(shell, payload)).toEqual([]);
+    expect(runHook(shell, payload, "", {}, STUB_HOOKS_DIR, "cursor", "Cursor Preview")).toEqual([]);
     expect(readDebugLog()).toBe("");
   });
 
@@ -1539,14 +1945,41 @@ describe.each(shells)("Cursor telemetry hook ($name)", shell => {
     payload.tool_name = "MCP:get_azure_bestpractices";
     delete payload.mcp_server_name;
 
-    expect(runHook(shell, payload)).toEqual([]);
+    expect(runHook(shell, payload, "", {}, STUB_HOOKS_DIR, "cursor", "Cursor Preview")).toEqual([]);
     expect(readDebugLog()).toBe("");
+  });
+
+  it.each([
+    { toolName: "get_azure_bestpractices", cursorVersion: "3.18.9" },
+    { toolName: "MCP:get_azure_bestpractices", cursorVersion: "3.18.9" },
+    { toolName: "get_azure_bestpractices", cursorVersion: undefined },
+    { toolName: "MCP:get_azure_bestpractices", cursorVersion: undefined },
+  ])("preserves MCP telemetry with an application override: $toolName / $cursorVersion", ({ toolName, cursorVersion }) => {
+    const payload = fixture("cursor-mcp-invocation.json");
+    payload.tool_name = toolName;
+    payload.cursor_version = cursorVersion;
+    const args = runHook(shell, payload, "", {}, STUB_HOOKS_DIR, "cursor", "Cursor Preview");
+
+    expectArg(args, "--client-name", "Cursor Preview");
+    expectArg(args, "--event-type", "tool_invocation");
+    expectArg(args, "--session-id", SESSION_ID);
+    expectArg(args, "--tool-name", "get_azure_bestpractices");
+  });
+
+  it("classifies MCP events independently of a custom harness label", () => {
+    const payload = fixture("cursor-mcp-invocation.json");
+    delete payload.cursor_version;
+    const args = runHook(shell, payload, "", {}, STUB_HOOKS_DIR, "Cursor Harness Preview");
+
+    expectArg(args, "--client-name", "Cursor Harness Preview");
+    expectArg(args, "--event-type", "tool_invocation");
+    expectArg(args, "--tool-name", "get_azure_bestpractices");
   });
 });
 
 const powerShell = shellCandidates.find(shell => shell.name === "PowerShell");
 
-describe.skipIf(!powerShell)("PowerShell telemetry input encoding", () => {
+describe.skipIf(!powerShell)("PowerShell telemetry input encoding", { timeout: 30_000 }, () => {
   it.each([
     { name: "without a BOM", prefix: "" },
     { name: "with a BOM", prefix: "\uFEFF" },

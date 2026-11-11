@@ -168,7 +168,7 @@ stimuli:
         config:
           path: "**/.copilot-azure/sessions/**/context.json"
           pattern: '"completedPhases"\s*:\s*\[[^\]]*"deploy"'
-      # After deploy finalizes, currentPhase MUST be null (per deploy/SKILL.md Step 8).
+      # After deploy finalizes, currentPhase MUST be null (per deploy/PHASE.md Step 8).
       - type: file-matches
         config:
           path: "**/.copilot-azure/sessions/**/context.json"

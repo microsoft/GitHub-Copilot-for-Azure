@@ -5,7 +5,7 @@ namespace Ghcfa.Telemetry.Validation;
 /// <summary>
 /// Validates and normalizes telemetry options against the selected allowlists.
 /// </summary>
-public sealed class PluginTelemetryValidator(PluginTelemetryAllowlist allowlist)
+public sealed class PluginTelemetryValidator
 {
     private static readonly string[] s_knownToolNamePrefixes =
     [
@@ -14,14 +14,11 @@ public sealed class PluginTelemetryValidator(PluginTelemetryAllowlist allowlist)
         "azure-"
     ];
 
-    private readonly PluginTelemetryAllowlist _allowlist =
-        allowlist ?? throw new ArgumentNullException(nameof(allowlist));
-
     public PluginTelemetryValidationResult ValidateAndNormalize(PluginTelemetryOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        var allowlist = _allowlist.WithOverrides(
+        var allowlist = PluginTelemetryAllowlist.Load(
             options.AllowedSkills,
             options.AllowedReferences,
             options.AllowedTools);
@@ -54,9 +51,6 @@ public sealed class PluginTelemetryValidator(PluginTelemetryAllowlist allowlist)
 
         return PluginTelemetryValidationResult.Success;
     }
-
-    public string? ValidateAndNormalizeToolName(string toolName) =>
-        ValidateAndNormalizeToolName(toolName, _allowlist);
 
     private static string? ValidateAndNormalizeToolName(string toolName, PluginTelemetryAllowlist allowlist)
     {

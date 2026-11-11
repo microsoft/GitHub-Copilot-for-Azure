@@ -41,7 +41,7 @@ Example: folder `my-flask-app/` → `my-flask-app-a3f9c1d2`.
    $region = az config get defaults.location -o tsv 2>$null; if ($LASTEXITCODE -ne 0) { $region = "" }
    ```
 3. Else default to `eastus2`.
-4. Only call `ask_user` if `az group create` later fails with a region/quota/availability error.
+4. Before creating a plan, invoke `azure-quotas` to check quota and regional availability. Ask before changing a user-specified region; stop if quota is unavailable or unverifiable rather than switching SKU.
 
 ### 1e. Show the defaults summary BEFORE creating
 Print one concise block so the user can interrupt to override.
@@ -113,7 +113,7 @@ The 8-hex-char GUID suffix from §1b is sufficient for global hostname uniquenes
 If `PYTHON:3.14` is unavailable in the region:
 
 ```bash
-az webapp list-runtimes --os linux --query "[?contains(@, 'PYTHON')]" -o tsv
+az webapp list-runtimes --os linux --runtime python --query "[].config" -o tsv
 ```
 
 The output uses the pipe form (e.g., `PYTHON|3.14`) — **convert to colon form** before passing to `--runtime`. Prefer 3.14; fall back to 3.13, then 3.12.

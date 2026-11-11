@@ -40,7 +40,7 @@ writing credentials to disk or exposing them in command arguments. Public
 GitHub verification explicitly uses `nuget.public.config` instead.
 
 Musl legs use the same architecture-specific Linux pools as their glibc
-counterparts. The 1ES container task builds an Alpine 3.23 toolchain image with
+counterparts. The 1ES container task builds an Alpine 3.24 toolchain image with
 the SDK version from `telemetry-reporter/global.json`. Compilation and
 prerequisite probes run inside that image; executable smoke tests run in the
 matching Alpine runtime-deps image with telemetry disabled. Neither musl target
