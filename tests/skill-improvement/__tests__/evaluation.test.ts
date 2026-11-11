@@ -82,6 +82,7 @@ describe("answer billing propagation", () => {
       }, ...(partial ? [{ type: "assistant.usage", data: {} }] : [])], !interrupted);
       const processError = new Error(`${failure} failed`);
       let persistentWorkspaceRoot: string | undefined;
+      const sourceWorkspace = path.join(os.tmpdir(), `vally-eval-${path.basename(root)}`);
       vi.mocked(runProcess).mockImplementation(async (_command, args, options) => {
         if (!options.stdoutFile) {
           throw new Error("Expected output file.");
@@ -90,8 +91,10 @@ describe("answer billing propagation", () => {
           expect(args[args.indexOf("--workers") + 1]).toBe(String(workers ?? 1));
           persistentWorkspaceRoot = options.env?.VALLY_PRESERVE_WORKSPACE_ROOT;
           expect(persistentWorkspaceRoot).toBeTruthy();
-          fs.mkdirSync(persistentWorkspaceRoot!, { recursive: true });
-          fs.writeFileSync(path.join(persistentWorkspaceRoot!, "artifact.txt"), "bundle");
+          const snapshot = path.join(persistentWorkspaceRoot!, "workspace-test");
+          fs.mkdirSync(snapshot, { recursive: true });
+          fs.writeFileSync(path.join(snapshot, ".vally-source-workspace"), sourceWorkspace);
+          fs.writeFileSync(path.join(snapshot, "artifact.txt"), "bundle");
           const runDirectory = path.join(path.dirname(options.stdoutFile), "run");
           fs.mkdirSync(runDirectory);
           fs.writeFileSync(path.join(runDirectory, "eval-results.md"), "# Results\n");
@@ -102,6 +105,7 @@ describe("answer billing propagation", () => {
           }) + "\n" + (truncated ? '{"trajectory":\n{"type":"progress"}\n' : ""));
         } else {
           expect(args).not.toContain("--workers");
+          expect(fs.readFileSync(path.join(sourceWorkspace, "artifact.txt"), "utf8")).toBe("bundle");
           if (!options.stdinFile) {
             throw new Error("Expected saved answers as grading input.");
           }
@@ -126,6 +130,7 @@ describe("answer billing propagation", () => {
         if (failure) {
           await expect(pending).rejects.toBe(processError);
           expect(fs.existsSync(persistentWorkspaceRoot!)).toBe(false);
+          expect(fs.existsSync(sourceWorkspace)).toBe(false);
           expect(captured).toMatchObject({
             finalized: false,
             evaluationAnswers: { expected: truncated ? 2 : 1, observed: 1, fullyMeasured: 1, fullyMeasuredAiCredits: 1.25 },
@@ -140,6 +145,7 @@ describe("answer billing propagation", () => {
         }
         const batch = await pending;
         expect(fs.existsSync(persistentWorkspaceRoot!)).toBe(false);
+        expect(fs.existsSync(sourceWorkspace)).toBe(false);
         expect(vi.mocked(runWithConcurrency).mock.calls.map(call => call[1])).toEqual([2, 2]);
         const reportedCredits = nanoAiu === undefined ? undefined : nanoAiu / 1_000_000_000;
         const credits = partial || interrupted ? undefined : reportedCredits;

@@ -261,7 +261,7 @@ describe("SdkAgentExecutor", { concurrent: false }, () => {
     );
   });
 
-  test("copies prepared files into a persistent workspace for deferred grading", async () => {
+  test("snapshots the provided workspace for deferred grading", async () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "deferred-grading-"));
     const source = path.join(root, "source");
     const persistentRoot = path.join(root, "preserved");
@@ -275,16 +275,18 @@ describe("SdkAgentExecutor", { concurrent: false }, () => {
         workDir: source,
       });
       const runConfig = runner.run.mock.calls[0][0];
+      const snapshots = fs.readdirSync(persistentRoot);
 
-      expect(runConfig.workspace).not.toBe(source);
-      expect(runConfig.workspace).toMatch(
-        new RegExp(`^${persistentRoot.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`)
-      );
+      expect(runConfig.workspace).toBe(source);
       expect(fs.readFileSync(
-        path.join(runConfig.workspace!, "seed.txt"),
+        path.join(persistentRoot, snapshots[0], "seed.txt"),
         "utf8"
       )).toBe("prepared workspace");
-      expect(trajectory.workDir).toBe(runConfig.workspace);
+      expect(fs.readFileSync(
+        path.join(persistentRoot, snapshots[0], ".vally-source-workspace"),
+        "utf8"
+      )).toBe(source);
+      expect(trajectory.workDir).toBe(source);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }

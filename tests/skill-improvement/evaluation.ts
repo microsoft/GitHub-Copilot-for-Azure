@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import { emptyBilling, type EvaluationAnswerBilling, type PhaseBilling } from "./billing.ts";
+import os from "node:os";
 import path from "node:path";
 import type {
   EvaluationSet,
@@ -122,8 +123,11 @@ type GeneratedAnswers = GenerationTask & {
   evalSpecFile: string;
   runDirectory: string;
   workspaceRoot: string;
+  restoredWorkspaces: string[];
   count: number;
 };
+
+const SOURCE_WORKSPACE_MARKER = ".vally-source-workspace";
 
 function slug(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9.-]+/g, "-").replace(/^-|-$/g, "");
@@ -189,6 +193,56 @@ function assertBeforeDeadline(deadline: number): void {
   }
 }
 
+function restoreWorkspaces(workspaceRoot: string): string[] {
+  if (!fs.existsSync(workspaceRoot)) {
+    return [];
+  }
+
+  const restored: string[] = [];
+  try {
+    for (const entry of fs.readdirSync(workspaceRoot, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      const snapshot = path.join(workspaceRoot, entry.name);
+      const marker = path.join(snapshot, SOURCE_WORKSPACE_MARKER);
+      if (!fs.existsSync(marker)) continue;
+      const source = path.resolve(fs.readFileSync(marker, "utf8").trim());
+      const relativeToTemp = path.relative(path.resolve(os.tmpdir()), source);
+      if (
+        relativeToTemp.startsWith(`..${path.sep}`)
+        || path.isAbsolute(relativeToTemp)
+        || !path.basename(source).startsWith("vally-eval-")
+      ) {
+        throw new Error(`Invalid deferred-grading workspace path: ${source}`);
+      }
+      if (fs.existsSync(source)) {
+        throw new Error(`Deferred-grading workspace still exists after generation: ${source}`);
+      }
+      fs.mkdirSync(source, { recursive: true });
+      restored.push(source);
+      for (const child of fs.readdirSync(snapshot)) {
+        if (child === SOURCE_WORKSPACE_MARKER) continue;
+        fs.cpSync(path.join(snapshot, child), path.join(source, child), {
+          recursive: true,
+          force: true,
+        });
+      }
+    }
+    return restored;
+  } catch (error) {
+    for (const workspace of restored) {
+      fs.rmSync(workspace, { recursive: true, force: true });
+    }
+    throw error;
+  }
+}
+
+function cleanupWorkspaces(workspaceRoot: string, restoredWorkspaces: string[]): void {
+  for (const workspace of restoredWorkspaces) {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+  fs.rmSync(workspaceRoot, { recursive: true, force: true });
+}
+
 async function generateAnswers(
   worktree: string,
   evalRepoRoot: string,
@@ -228,6 +282,7 @@ async function generateAnswers(
   };
 
   let billingRecorded = false;
+  let restoredWorkspaces: string[] = [];
   try {
     await runProcess(commandName("npx"), [
       "-y",
@@ -259,6 +314,7 @@ async function generateAnswers(
       stderrFile,
       timeoutMs: Math.max(deadline - Date.now(), 1),
     });
+    restoredWorkspaces = restoreWorkspaces(workspaceRoot);
     const records = readJsonl(answerFile);
     recordBilling(records);
     billingRecorded = true;
@@ -275,6 +331,7 @@ async function generateAnswers(
       evalSpecFile,
       runDirectory,
       workspaceRoot,
+      restoredWorkspaces,
       count,
     };
   } catch (error) {
@@ -287,7 +344,7 @@ async function generateAnswers(
         }`);
       }
     }
-    fs.rmSync(workspaceRoot, { recursive: true, force: true });
+    cleanupWorkspaces(workspaceRoot, restoredWorkspaces);
     throw error;
   }
 }
@@ -467,7 +524,7 @@ export async function runEvaluationBatch(
     );
   } finally {
     for (const item of generated) {
-      fs.rmSync(item.workspaceRoot, { recursive: true, force: true });
+      cleanupWorkspaces(item.workspaceRoot, item.restoredWorkspaces);
     }
   }
 

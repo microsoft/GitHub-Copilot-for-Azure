@@ -47,11 +47,12 @@ import { normalizeTestName } from "./utils.ts";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const modelOverride = process.env.MODEL_OVERRIDE?.trim() || undefined;
+const SOURCE_WORKSPACE_MARKER = ".vally-source-workspace";
 
-function prepareWorkspace(source: string): string {
+function preserveWorkspace(source: string): void {
   const persistentRoot = process.env.VALLY_PRESERVE_WORKSPACE_ROOT?.trim();
   if (!persistentRoot) {
-    return source;
+    return;
   }
 
   fs.mkdirSync(persistentRoot, { recursive: true });
@@ -61,7 +62,7 @@ function prepareWorkspace(source: string): string {
       recursive: true,
     });
   }
-  return target;
+  fs.writeFileSync(path.join(target, SOURCE_WORKSPACE_MARKER), source, "utf8");
 }
 
 type BilledTrajectory = Trajectory & {
@@ -94,7 +95,7 @@ export abstract class SdkAgentExecutor implements Executor {
     const skillName = getSkillName(tags);
     const normalizedTestName = normalizeTestName(skillName, stimulus.name);
     const agentRunner = this.config.createRunner({ testName: normalizedTestName });
-    const workDir = prepareWorkspace(options.workDir);
+    const workDir = options.workDir;
     const model = modelOverride ?? options.model ?? "claude-sonnet-5";
     const { shouldEarlyTerminate } = getEarlyTerminateCondition(tags);
     const systemPrompt = getSystemPrompt(tags);
@@ -251,6 +252,7 @@ export abstract class SdkAgentExecutor implements Executor {
         );
       }
 
+      preserveWorkspace(workDir);
       return trajectory!;
     } finally {
       if (!persistFixture) {
