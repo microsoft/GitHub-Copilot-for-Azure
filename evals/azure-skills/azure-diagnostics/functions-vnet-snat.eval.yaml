@@ -95,7 +95,7 @@ stimuli:
           path: "diagnostic-support-bundle.zip"
       - type: output-matches
         config:
-          pattern: '(?i)\[[^\]]*(?:download|support bundle)[^\]]*\]\((?:\./)?diagnostic-support-bundle\.zip\)'
+          pattern: '(?i)\[[^\]]*(?:download|support bundle)[^\]]*\]\((?:sandbox:)?(?:[^\s)]*/)?diagnostic-support-bundle\.zip\)'
       - type: file-matches
         config:
           path: "support-bundle/summary.md"
@@ -103,7 +103,7 @@ stimuli:
       - type: file-matches
         config:
           path: "support-bundle/evidence.json"
-          pattern: '(?is)(?=.*"failing_?component"\s*:)(?=.*"likely_?cause"\s*:)(?=.*"timeline(?:_?utc)?"\s*:)(?=.*"ruled_?out_?alternatives"\s*:)(?=.*"(?:prioritized_?remediation|remediation_?priority)"\s*:)(?=.*"recovery_?verification"\s*:)'
+          pattern: '(?is)(?=.*"(?:failing|affected)_?component"\s*:)(?=.*"likely_?cause"\s*:)(?=.*"timeline(?:_?utc)?"\s*:)(?=.*"(?:ruled_?out_?alternatives|alternatives_?ruled_?out|alternatives)"\s*:)(?=.*"(?:prioritized_?remediation|remediation_?priority)"\s*:)(?=.*"recovery_?verification"\s*:)'
       - type: file-not-matches
         config:
           path: "support-bundle/summary.md"
