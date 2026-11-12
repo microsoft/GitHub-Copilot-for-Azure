@@ -10,7 +10,7 @@ target:
 evaluations:
   root: evals/azure-skills/azure-diagnostics
   development:
-    - functions-vnet-nat-capacity.eval.yaml
+    - functions-vnet-nat-capacity-comparative.eval.yaml
 
 models:
   answers:
