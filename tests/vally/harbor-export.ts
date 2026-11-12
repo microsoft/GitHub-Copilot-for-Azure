@@ -4,10 +4,12 @@ cd tests && npx --no-install vally export --eval-spec ../evals/azure-skills/azur
 
 import { execFileSync } from "node:child_process";
 import { existsSync, lstatSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = fileURLToPath(new URL("../../", import.meta.url));
+const require = createRequire(import.meta.url);
 
 /**
  * Export all vally stimuli from an eval yaml file to Harbor tasks and patch the task files with necessary changes.
@@ -36,6 +38,12 @@ export function harborExport(evalYamlPath: string): void {
     throw new Error(`Built skills directory is missing: ${skillsPath}`);
   }
 
+  const vallyEntry = path.join(
+    path.dirname(require.resolve("@microsoft/vally-cli/package.json")),
+    "dist",
+    "index.js",
+  );
+
   // Step 0: Delete existing task directories under harbor/{skill}/ before exporting new tasks.
   const outputDir = path.join(repoRoot, "harbor", skill);
   if (existsSync(outputDir)) {
@@ -53,8 +61,8 @@ export function harborExport(evalYamlPath: string): void {
   // e.g. in tests/,
   // npx --no-install vally export --eval-spec {evalYamlPath} --exporter @microsoft/vally-exporter-harbor --output-dir ../harbor/{skill-name}
   // The {skill-name} is the name of the parent directory of the file at {evalYamlPath}.
-  execFileSync(process.platform === "win32" ? "npx.cmd" : "npx", [
-    "--no-install", "vally", "export",
+  execFileSync(process.execPath, [
+    vallyEntry, "export",
     "--eval-spec", evalPath,
     "--exporter", "@microsoft/vally-exporter-harbor",
     "--output-dir", outputDir,
@@ -87,13 +95,13 @@ export function harborExport(evalYamlPath: string): void {
     });
     // Step 3: Patch the Dockerfile generated at harbor/{skill-name}/{normalized-stimuli-name}/environment/Dockerfile to include these additional lines right after USER root
     // - ENV npm_config_registry=https://packagefeedproxy.microsoft.io/npm/
-    // - RUN command apt-get update && apt-get install -y --no-install-recommends build-essential python3
+    // - RUN command apt-get update && apt-get install -y --no-install-recommends build-essential python3 libicu74
     // - COPY output/{plugin}/skills/ /skills/
     // {plugin} can be extracted from the end of evalYamlPath {plugin}/{skill}/eval.yaml
     const patched = rebased.replace(/^USER root\s*$/m, [
       "USER root",
       "ENV npm_config_registry=https://packagefeedproxy.microsoft.io/npm/",
-      "RUN command apt-get update && apt-get install -y --no-install-recommends build-essential python3",
+      "RUN command apt-get update && apt-get install -y --no-install-recommends build-essential python3 libicu74",
       `COPY ${JSON.stringify([`output/${plugin}/skills/`, "/skills/"])}`,
     ].join("\n"));
     writeFileSync(dockerfilePath, patched);
@@ -105,9 +113,10 @@ export function harborExport(evalYamlPath: string): void {
       "build", "--file", dockerfilePath, "--tag", image, repoRoot,
     ], { cwd: repoRoot, stdio: "inherit" });
 
-    // STep 5: Patch the harbor/{skill}/{normalized-task-name}/task.toml to use the docker image just built
+    // Step 5: Configure the built image, skills directory, and Azure MCP server in task.toml.
     // [environment]
     // docker_image = "apple/unix-os:latest"
+    // skills_dir = "/skills"
     const tomlPath = path.join(taskDir, "task.toml");
     const toml = readFileSync(tomlPath, "utf8");
     const environmentSection = /^\[environment\][^\S\n]*\r?\n([\s\S]*?)(?=^\[|(?![\s\S]))/m;
@@ -115,8 +124,10 @@ export function harborExport(evalYamlPath: string): void {
       throw new Error(`Missing [environment] section in ${tomlPath}`);
     }
     writeFileSync(tomlPath, toml.replace(environmentSection, (_section, body: string) => {
-      const withoutImage = body.replace(/^docker_image\s*=.*\r?\n?/gm, "");
-      return `[environment]\ndocker_image = ${JSON.stringify(image)}\n${withoutImage}`;
+      const withoutOverrides = body.replace(/^[ \t]*(?:docker_image|skills_dir)[ \t]*=.*\r?\n?/gm, "");
+      return `[environment]\ndocker_image = ${JSON.stringify(image)}\nskills_dir = "/skills"\n${withoutOverrides.trimEnd()}\n\n`
+        + '[[environment.mcp_servers]]\nname = "azmcp"\ntransport = "stdio"\n'
+        + 'command = "npx"\nargs = ["-y", "@azure/mcp@4.0.0-beta.6", "server", "start"]\n\n';
     }));
   }
 }

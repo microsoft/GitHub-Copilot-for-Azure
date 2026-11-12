@@ -380,3 +380,4 @@ coverage.*
 Thumbs.db
 
 harbor/
+jobs/

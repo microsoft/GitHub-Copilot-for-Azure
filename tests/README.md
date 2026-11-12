@@ -90,3 +90,7 @@ Use [AGENTS.md](./AGENTS.md) as the primary guide for how to create, update, and
 - Vally eval suites: [../evals](../evals)
 - Vally migration context: [../evals/README.md](../evals/README.md)
 - Test authoring guide: [AGENTS.md](./AGENTS.md)
+
+## Export Harbor tasks
+
+Set-Location tests; npx --no-install tsx vally\harbor-export.ts ".\evals\azure-skills\azure-kusto\eval.yaml"
