@@ -38,6 +38,12 @@ For in-process tests, enter `app.router.lifespan_context(app)` around `httpx.ASG
 
 Prefer configuration-only hosting when configuration expresses the required behavior. Use host-server integration only for custom request/protocol/lifecycle behavior that requires it, not merely because agent code already exists.
 
+For a compiled LangGraph, use the integrated `langchain_azure_ai.agents.hosting.ResponsesHostServer` with `langchain-azure-ai[hosting]` unless a concrete protocol requirement prevents it. A lower-level handler that calls `ainvoke` and returns only `TextResponse` is not an equivalent adapter: it can discard tool events, graph state and conversation/thread routing.
+
+Inspect the original launch configuration before interpreting a graph without an explicit checkpointer as stateless. LangGraph's development server can supply persistence outside `agent.py`. Preserve that existing behavior when moving runtimes; a small executable host integration is justified if configuration-only hosting cannot express the required checkpointer lifetime. Preserve explicit existing backends, isolation keys and public development exports; this does not authorize replacing an established backend or migrating historical checkpoints.
+
+For requested state that must survive a new hosted session, use the installed SDK's supported durable backend, such as `FoundryCheckpointSaver`, with its context alive for the entire server lifetime. Do not initialize and immediately close it at import time. Use native hosted credential defaults, not developer credentials. Keep an explicit in-memory local composition separate from the durable hosted path; local continuity is not cloud durability or cross-user isolation evidence.
+
 | Existing contract | Decision |
 |---|---|
 | Compatible message inputs/outputs and graph state | Responses runner; preserve graph selection |
@@ -50,7 +56,7 @@ For deployment, read [deploy](../../deploy/deploy.md) for the selected azd envir
 
 Response history is not a graph checkpoint. Preserve the existing checkpointer unless change is authorized. For requested cross-compute graph/file durability or unfinished-request recovery, use existing SDK guidance: durable graph progress plus host `resilient_background=true` and request `background=true, store=true`; streaming is not categorically excluded. Retrieving the original response is not resubmitting work.
 
-Preserve acceptance constraints through existing delegation, including saved-file format and supported inline citations. Do not rewrite application prompts, inject fabricated output or relax criteria to pass. Verify actual terminal/tool/file results and only the requested state/identity boundaries; an active deployment or Echo response is insufficient. Untested boundaries remain unverified.
+Separate migration acceptance from business-output quality. Verify retained instructions/tools, real model/tool calls, actual saved-file readback, later revision and required state boundaries. Citation style or report wording is an application contract, not a generic Foundry hosting assertion; assess it separately unless explicitly in scope. Do not rewrite prompts, add repair middleware, fabricate artifacts or strengthen business validators to pass a hosting check. An active deployment or Echo response is insufficient. Untested boundaries remain unverified.
 
 ## Sample Selection: Scaffolding Only
 

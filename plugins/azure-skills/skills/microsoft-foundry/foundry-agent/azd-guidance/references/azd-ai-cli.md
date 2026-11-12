@@ -111,7 +111,7 @@ services:
         value: ${AZURE_AI_MODEL_DEPLOYMENT_NAME}
     protocols:
       - protocol: responses
-        version: 1.0.0
+        version: "2.0.0"
 ```
 
 - `protocols` -- `responses`, `invocations`, `invocations_ws`, or `activity`. Editing requires `azd deploy`.
