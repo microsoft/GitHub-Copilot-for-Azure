@@ -108,26 +108,27 @@ stimuli:
       - *tracing-contract
       - *tracing-completed
 
-  - name: "Network block skips monitoring with a warning"
+  - name: "Network block gets private monitoring"
     prompt: |
       Use microsoft-foundry for this offline exercise. Read both shared
       agent-tracing references; do not call Azure or modify anything.
 
-      The user created a new Foundry project with native azd and deployed a
-      prompt agent. azure.yaml defines a project service with a network: block
-      and no monitoring setting. azd provision succeeded with a warning that
-      monitoring was skipped (AZD_FOUNDRY_MONITORING_MODE is none). Give the
-      completion report and bounded next action for tracing.
+      The user created a new Foundry project with azd azure.ai.projects 1.1.0
+      and deployed a prompt agent. azure.yaml defines a project service with a
+      network: block and no monitoring setting. azd provision succeeded and
+      AZD_FOUNDRY_MONITORING_MODE is create. The user asks how to view traces.
+      Give the completion report and bounded next action for tracing.
     tags: *tracing-tags
     constraints: *tracing-constraints
     rubric:
       - *tracing-safety
       - |
-        Report that provisioning succeeded and that monitoring was skipped with
-        a warning for the network: block; do not call it a provisioning
-        failure or claim a stored trace. Explain that tracing is not configured
-        and needs a private-link design. Do not enable public ingestion or
-        query access, set monitoring.enabled: true, or invent resource IDs.
+        Report that provisioning succeeded with private monitoring (private
+        App Insights, Azure Monitor Private Link Scope and private endpoint)
+        and do not claim a stored trace without verification. Explain that
+        traces are reachable only from inside the network and that reading
+        them needs Log Analytics Reader on the component. Do not enable public
+        ingestion or query access, or invent resource IDs.
     graders:
       - *tracing-skill
       - *tracing-reads
