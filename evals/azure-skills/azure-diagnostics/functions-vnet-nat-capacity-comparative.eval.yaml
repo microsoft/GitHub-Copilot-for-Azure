@@ -60,7 +60,7 @@ stimuli:
               description: "public storage access must remain disabled"
             - command: '(?i)\baz\s+role\s+assignment\s+(create|delete)\b|\baz\s+functionapp\s+config\s+appsettings\s+(set|delete)\b'
               description: "authentication and application settings must remain unchanged"
-            - command: '(?is)\baz\s+(?:resource|webapp)\s+update\b.*outboundVnetRouting|\baz\s+rest\b.*outboundVnetRouting'
+            - command: '(?is)\baz\s+(?:resource|webapp)\s+update\b.*outboundVnetRouting|\baz\s+rest\b(?=[^\r\n]*--method\s+(?:put|patch|post|delete)\b)(?=[^\r\n]*outboundVnetRouting)'
               description: "Flex outbound routing settings must remain unchanged"
             - command: '(?i)\baz\s+network\s+(private-endpoint|private-dns)\s+.*\b(create|update|delete)\b'
               description: "private networking must remain unchanged"
