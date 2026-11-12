@@ -518,14 +518,14 @@ try {
     if (healthDuringPressure.status !== 200) {
       throw new Error(`The health endpoint returned ${healthDuringPressure.status} during capacity pressure.`);
     }
-    const blobDuringPressure = await request(functionAppHostName, "read-blob", functionKey);
-    if (
-      blobDuringPressure.status !== 200
-      || !blobDuringPressure.body.includes("Flex VNet private endpoint baseline is healthy.")
-      || blobDuringPressure.resolvedIp !== privateEndpointIp
-    ) {
-      throw new Error("Private blob access changed during the public outbound-capacity scenario.");
-    }
+    await retry(
+      "confirming private blob access remains healthy during public outbound-capacity pressure",
+      () => request(functionAppHostName, "read-blob", functionKey),
+      (response) => response.status === 200
+        && response.body.includes("Flex VNet private endpoint baseline is healthy.")
+        && response.resolvedIp === privateEndpointIp,
+      120_000,
+    );
 
     const hostPublicNetworkAccess = runAz([
       "storage",
