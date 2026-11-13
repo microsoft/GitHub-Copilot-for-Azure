@@ -1,0 +1,17 @@
+version = "1.0"
+
+[metadata]
+vally_eval = "azure-diagnostics-harbor-smoke"
+vally_stimulus = "Container App restart troubleshooting"
+tags = ["area=routing", "cost=llm", "tier=smoke", "type=integration"]
+vally_requires = {}
+vally_exporter_version = "0.1.0-alpha.9"
+
+[verifier]
+timeout_sec = 600
+
+[agent]
+timeout_sec = 600
+
+[environment]
+build_timeout_sec = 600.0

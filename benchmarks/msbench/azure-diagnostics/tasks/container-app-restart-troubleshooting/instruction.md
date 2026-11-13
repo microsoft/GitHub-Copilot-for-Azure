@@ -1,0 +1,1 @@
+My Azure Container App keeps restarting, how do I troubleshoot it?

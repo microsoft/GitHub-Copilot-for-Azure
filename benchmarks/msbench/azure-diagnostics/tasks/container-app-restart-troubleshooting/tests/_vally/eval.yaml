@@ -1,0 +1,14 @@
+name: azure-diagnostics-harbor-smoke
+scoring:
+  threshold: 0.8
+stimuli:
+  - name: Container App restart troubleshooting
+    prompt: My Azure Container App keeps restarting, how do I troubleshoot it?
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      - type: output-not-matches
+        config:
+          pattern: (?im)^(?:fatal error|unhandled exception)(?:\s|:)

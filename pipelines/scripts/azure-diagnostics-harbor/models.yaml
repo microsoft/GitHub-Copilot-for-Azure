@@ -1,0 +1,10 @@
+# Invoke-Smoke.ps1 adds a profile for the selected model to this index-only template.
+version: 2
+indexes:
+  capi-direct:
+    provider: copilot-direct
+    endpoint: https://api.githubcopilot.com
+    auth:
+      type: env
+      api_key_env: CAPI_HMAC_KEY
+      integration_id_env: GITHUB_COPILOT_INTEGRATION_ID

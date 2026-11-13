@@ -1,5 +1,13 @@
 # Azure DevOps pipelines
 
+## Azure Diagnostics Harbor smoke test
+
+[`azure-diagnostics-harbor.yml`](azure-diagnostics-harbor.yml) is a manual,
+dry-run-first MSBench submission starter for the genuine Vally-exported task in
+[`benchmarks/msbench/azure-diagnostics`](../benchmarks/msbench/azure-diagnostics/README.md).
+That README covers ADO variables, GitHub CES App access, local checks and live-run
+boundaries. It does not change the existing scheduled benchmark pipeline.
+
 ## Telemetry reporter nightly build
 
 The independent

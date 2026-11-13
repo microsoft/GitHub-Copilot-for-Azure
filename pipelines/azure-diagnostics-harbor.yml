@@ -1,0 +1,74 @@
+# Manual submission starter; see benchmarks/msbench/azure-diagnostics/README.md.
+trigger: none
+pr: none
+
+parameters:
+  - name: dryRun
+    displayName: Resolve configuration only (do not submit a remote run)
+    type: boolean
+    default: true
+  - name: model
+    displayName: Approved MSBench model ID
+    type: string
+    default: claude-opus-4.6
+  - name: backend
+    type: string
+    default: ces-staging
+    values:
+      - ces-staging
+      - ces-dev1
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+  - stage: RunBenchmark
+    displayName: Submit Azure Diagnostics Harbor smoke test
+    jobs:
+      - job: RunBenchmark
+        timeoutInMinutes: 30
+        steps:
+          - checkout: self
+            fetchDepth: 1
+            lfs: false
+            submodules: false
+
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: '3.12'
+
+          - task: PipAuthenticate@1
+            displayName: Authenticate to the MSBench package feed
+            inputs:
+              artifactFeeds: $(MSBENCH_ARTIFACT_FEED)
+
+          - script: |
+              set -euo pipefail
+              python -m pip install --no-input "msbench-cli==$(MSBENCH_CLI_VERSION)"
+              msbench-cli version
+            displayName: Install pinned MSBench CLI
+
+          - task: AzureCLI@2
+            name: RunBenchmarks
+            displayName: Prepare local dataset and resolve or submit MSBench run
+            inputs:
+              azureSubscription: $(AZURE_SERVICE_CONNECTION)
+              scriptType: pscore
+              scriptLocation: scriptPath
+              scriptPath: $(Build.SourcesDirectory)/pipelines/scripts/azure-diagnostics-harbor/Invoke-Smoke.ps1
+            env:
+              HARBOR_DRY_RUN: ${{ parameters.dryRun }}
+              HARBOR_MODEL: ${{ parameters.model }}
+              HARBOR_BACKEND: ${{ parameters.backend }}
+              HARBOR_OUTPUT_PATH: $(Build.ArtifactStagingDirectory)/azure-diagnostics-harbor
+              HARBOR_TASK_REPO: $(Build.Repository.Uri)
+              HARBOR_TASK_COMMIT: $(Build.SourceVersion)
+              HARBOR_CONTAINER_REGISTRY: $(HARBOR_CONTAINER_REGISTRY)
+              ${{ if eq(parameters.dryRun, false) }}:
+                GITHUB_COPILOT_INTEGRATION_ID: $(GITHUB_COPILOT_INTEGRATION_ID)
+                CAPI_HMAC_KEY: $(CAPI_HMAC_KEY)
+
+          - publish: $(Build.ArtifactStagingDirectory)/azure-diagnostics-harbor
+            artifact: azure-diagnostics-harbor
+            displayName: Publish dataset, submission log and run IDs
+            condition: succeededOrFailed()

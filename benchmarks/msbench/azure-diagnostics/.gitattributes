@@ -1,0 +1,4 @@
+* text=auto eol=lf
+# Preserve the exported task and upstream license byte-for-byte.
+tasks/** -text
+UPSTREAM-LICENSE -text
