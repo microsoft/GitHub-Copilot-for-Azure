@@ -32,7 +32,7 @@ Source: [Microsoft Entra Agent ID — known issues and gaps](https://learn.micro
 
 18. **No SSO to web apps** — Agent IDs can't sign in via Entra ID sign-in pages (no OpenID Connect or SAML); use web APIs instead.
 19. **Admin consent workflow (ACW) broken** for permissions requested by Agent IDs — contact tenant admin directly.
-20. **Cannot grant app permissions to BlueprintPrincipals** — grant to individual Agent Identities.
+20. **Inherited permissions are not visible on Agent Identities** — permissions granted to the BlueprintPrincipal for inheritable resource apps appear only in runtime tokens, not in Graph or the Entra admin center.
 21. **Cannot assign app roles where target resource is an Agent Identity** — use the BlueprintPrincipal as target resource.
 22. **Risk-based step-up blocks consent silently** — no "risky" indication in the UX.
 
