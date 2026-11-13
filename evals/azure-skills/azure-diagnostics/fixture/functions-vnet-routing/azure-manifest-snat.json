@@ -1,7 +1,7 @@
 {
   "id": "azure-diagnostics-functions-vnet-snat",
   "schemaVersion": 1,
-  "version": 1,
+  "version": 2,
   "type": "readOnly",
   "persistence": "temporary",
   "provisioningTimeoutMinutes": 60,

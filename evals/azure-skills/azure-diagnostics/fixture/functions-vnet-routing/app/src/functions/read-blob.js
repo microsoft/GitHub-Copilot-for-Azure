@@ -23,6 +23,9 @@ app.http("read-blob", {
 
       resolvedIp = (await dns.lookup(hostname)).address;
       const blobClient = new BlobClient(blobUrl, credential, {
+        keepAliveOptions: {
+          enable: false,
+        },
         retryOptions: {
           maxTries: 2,
           tryTimeoutInMs: 3000,
