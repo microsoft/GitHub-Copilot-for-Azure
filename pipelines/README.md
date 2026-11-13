@@ -49,8 +49,11 @@ uses cross-architecture emulation or a skipped glibc-host smoke test.
 The YAML schedule runs from `main` at 06:00 UTC. Manual runs always build and
 verify the full matrix. Scheduled runs skip the Build and Verify stages when
 changes are limited to unrelated, documentation, release automation, or test
-files. Changes to the musl Dockerfile and shared packaging module also trigger
-the build because they affect its executable verification.
+files. Windows executables are Authenticode-signed and macOS executables are
+Developer ID-signed and notarized before their runtime archives and checksums
+are created; Linux executables remain unsigned. Changes to the musl Dockerfile
+and shared packaging module also trigger the build because they affect its
+executable verification.
 Manually queued runs from branches other than `main` build and verify but
 do not include the Release stage.
 
@@ -98,7 +101,10 @@ pipelines/telemetry-reporter-nightly.yml
 
 The nightly pipeline is authorized to use `1ESPipelineTemplates`,
 `azsdk-pool`, `azsdk-pool-arm64`, the Azure Pipelines macOS pool, and the build
-service identity's read access to prior builds. Its initializer maps
+service identity's read access to prior builds. The pinned
+`azure-sdk-build-tools` repository and `Azure SDK PME Managed Identity`
+service connection must also be authorized for ESRP binary signing and
+macOS notarization. Its initializer maps
 `System.AccessToken` so scheduled change detection can query the Builds API.
 
 The pipeline also requires permission to deploy through the protected

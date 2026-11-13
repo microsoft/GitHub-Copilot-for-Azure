@@ -1,6 +1,6 @@
 #!/usr/bin/env pwsh
 #Requires -Version 7
-# Builds and packages the telemetry reporter as a Native AOT executable for one supported runtime identifier, including host validation, optional smoke testing, runtime and symbol archives, and SHA-256 checksums.
+# Builds the telemetry reporter as a Native AOT executable for one supported runtime identifier, including host validation and optional smoke testing.
 # Exit codes: 0 = success, 1 = build, validation, or packaging failure.
 
 [CmdletBinding()]
@@ -17,7 +17,9 @@ param(
 
     [string] $MuslBuildImage,
 
-    [switch] $NoClean
+    [switch] $NoClean,
+
+    [switch] $DeferPackaging
 )
 
 Set-StrictMode -Version Latest
@@ -66,10 +68,7 @@ if ($null -ne $restoreConfigFilePath -and -not (Test-Path -LiteralPath $restoreC
 }
 
 $publishDirectory = Join-Path $outputRootPath 'publish' $RuntimeIdentifier
-$packageDirectory = Join-Path $outputRootPath 'packages'
 $stagingDirectory = Join-Path $outputRootPath 'staging' $RuntimeIdentifier
-$runtimeStagingDirectory = Join-Path $stagingDirectory 'runtime'
-$symbolsStagingDirectory = Join-Path $stagingDirectory 'symbols'
 $executableName = if ($targetOperatingSystem -eq 'win') {
     'ghcfa-telem.exe'
 }
@@ -348,46 +347,6 @@ function Invoke-NativeCommand {
     }
 }
 
-function Test-IsSymbolFile {
-    param(
-        [System.IO.FileInfo] $File
-    )
-
-    if ($null -eq $File) {
-        throw 'A published file is required.'
-    }
-
-    if ($File.Extension -in @('.pdb', '.dbg')) {
-        return $true
-    }
-
-    $relativePath = [System.IO.Path]::GetRelativePath($publishDirectory, $File.FullName)
-    return @($relativePath -split '[\\/]' | Where-Object { $_.EndsWith('.dSYM', [System.StringComparison]::OrdinalIgnoreCase) }).Count -gt 0
-}
-
-function Copy-PublishFiles {
-    param(
-        [scriptblock] $Include,
-        [string] $Destination
-    )
-
-    if ($null -eq $Include -or [string]::IsNullOrWhiteSpace($Destination)) {
-        throw 'A file filter and destination are required.'
-    }
-
-    foreach ($file in Get-ChildItem -LiteralPath $publishDirectory -File -Recurse -ErrorAction Stop) {
-        if (-not (& $Include $file)) {
-            continue
-        }
-
-        $relativePath = [System.IO.Path]::GetRelativePath($publishDirectory, $file.FullName)
-        $destinationPath = Join-Path $Destination $relativePath
-        $destinationParent = Split-Path -Parent $destinationPath
-        New-Item -ItemType Directory -Path $destinationParent -Force -ErrorAction Stop | Out-Null
-        Copy-Item -LiteralPath $file.FullName -Destination $destinationPath -ErrorAction Stop
-    }
-}
-
 function Assert-PlatformPrerequisites {
     if ($useMuslContainer) {
         Initialize-MuslContainer
@@ -459,9 +418,7 @@ Write-Host "Target runtime identifier: $RuntimeIdentifier"
 Remove-DirectoryIfPresent -Path $publishDirectory
 Remove-DirectoryIfPresent -Path $stagingDirectory
 New-Item -ItemType Directory -Path $publishDirectory -Force -ErrorAction Stop | Out-Null
-New-Item -ItemType Directory -Path $packageDirectory -Force -ErrorAction Stop | Out-Null
-New-Item -ItemType Directory -Path $runtimeStagingDirectory -Force -ErrorAction Stop | Out-Null
-New-Item -ItemType Directory -Path $symbolsStagingDirectory -Force -ErrorAction Stop | Out-Null
+New-Item -ItemType Directory -Path $stagingDirectory -Force -ErrorAction Stop | Out-Null
 
 if (-not $NoClean) {
     $cleanArguments = @(
@@ -565,80 +522,18 @@ if ([string]::IsNullOrWhiteSpace($version)) {
     throw 'The evaluated NBGV package version was empty.'
 }
 
-$runtimeArchive = Join-Path $packageDirectory "ghcfa-telem-$version-$RuntimeIdentifier.zip"
-$symbolsArchive = Join-Path $packageDirectory "ghcfa-telem-$version-$RuntimeIdentifier-symbols.zip"
-foreach ($artifactPath in @(
-    $runtimeArchive,
-    $symbolsArchive,
-    "$runtimeArchive.sha256",
-    "$symbolsArchive.sha256"
-)) {
-    Remove-Item -LiteralPath $artifactPath -Force -ErrorAction SilentlyContinue
+$packageVersionPath = Join-Path $outputRootPath 'package-version.txt'
+if ($DeferPackaging) {
+    Set-Content -LiteralPath $packageVersionPath -Value $version -Encoding ascii -ErrorAction Stop
+    Write-Host "Native AOT build completed; packaging deferred for signing. Version: $version"
+    return
 }
 
-Copy-PublishFiles -Include { param($file) -not (Test-IsSymbolFile -File $file) } `
-    -Destination $runtimeStagingDirectory
-Copy-PublishFiles -Include { param($file) Test-IsSymbolFile -File $file } `
-    -Destination $symbolsStagingDirectory
+& (Join-Path $PSScriptRoot 'Package-Native.ps1') `
+    -RuntimeIdentifier $RuntimeIdentifier `
+    -OutputRoot $outputRootPath `
+    -Version $version
 
-$runtimeFiles = @(Get-ChildItem -LiteralPath $runtimeStagingDirectory -File -Recurse -ErrorAction Stop)
-if ($runtimeFiles.Count -eq 0) {
-    throw 'The runtime package staging directory is empty.'
-}
-
-$stagedExecutable = Join-Path $runtimeStagingDirectory $executableName
-if (-not (Test-Path -LiteralPath $stagedExecutable)) {
-    throw "The runtime package did not contain '$executableName'."
-}
-
-$symbolFiles = @(Get-ChildItem -LiteralPath $symbolsStagingDirectory -File -Recurse -ErrorAction Stop)
-if ($symbolFiles.Count -eq 0) {
-    throw 'The symbols package staging directory is empty.'
-}
-
-$nativeSymbolFound = switch ($targetOperatingSystem) {
-    'win' {
-        $symbolFiles.Name -contains 'ghcfa-telem.pdb'
-    }
-    'linux' {
-        $symbolFiles.Name -contains 'ghcfa-telem.dbg'
-    }
-    'osx' {
-        @($symbolFiles | Where-Object {
-            $relativePath = [System.IO.Path]::GetRelativePath($symbolsStagingDirectory, $_.FullName)
-            @($relativePath -split '[\\/]' | Where-Object { $_ -eq 'ghcfa-telem.dSYM' }).Count -gt 0
-        }).Count -gt 0
-    }
-}
-if (-not $nativeSymbolFound) {
-    throw "The native publish did not produce the expected $targetOperatingSystem symbol artifact for ghcfa-telem."
-}
-
-Compress-Archive -Path (Join-Path $runtimeStagingDirectory '*') `
-    -DestinationPath $runtimeArchive `
-    -CompressionLevel Optimal `
-    -ErrorAction Stop
-Compress-Archive -Path (Join-Path $symbolsStagingDirectory '*') `
-    -DestinationPath $symbolsArchive `
-    -CompressionLevel Optimal `
-    -ErrorAction Stop
-
-foreach ($archive in @($runtimeArchive, $symbolsArchive)) {
-    $hash = Get-FileHash -LiteralPath $archive -Algorithm SHA256 -ErrorAction Stop
-    "$($hash.Hash.ToLowerInvariant())  $([System.IO.Path]::GetFileName($archive))" |
-        Set-Content -LiteralPath "$archive.sha256" -Encoding ascii -ErrorAction Stop
-}
-
-$null = Get-ValidatedNativePackage -ArchivePath $runtimeArchive -RuntimeIdentifier $RuntimeIdentifier
-$null = Get-ValidatedNativePackage -ArchivePath $symbolsArchive -RuntimeIdentifier $RuntimeIdentifier -Symbols
-
-Remove-DirectoryIfPresent -Path $stagingDirectory
-
-Write-Host ''
-Write-Host 'Native AOT build completed successfully.'
-Write-Host "Publish directory: $publishDirectory"
-Write-Host "Runtime archive:   $runtimeArchive"
-Write-Host "Symbols archive:   $symbolsArchive"
 if ($smokeTestsRan) {
     Write-Host 'Smoke tests:       passed'
 }
