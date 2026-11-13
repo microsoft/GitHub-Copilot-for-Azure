@@ -83,7 +83,7 @@ Activate this skill when user wants to:
 ### Common Diagnostic Commands
 
 ```bash
-# Check resource health
+# Inspect resource configuration and provisioning metadata (not Resource Health)
 az resource show --ids RESOURCE_ID
 # View activity log
 az monitor activity-log list -g RG --max-events 20
@@ -141,12 +141,20 @@ mcp_azure_mcp_resourcehealth
 ### Using CLI
 
 ```bash
-# Check specific resource health
-az resource show --ids RESOURCE_ID
+# Query the current Azure Resource Health availability status
+RESOURCE_ID="/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/<provider>/<resource-type>/<resource-name>"
+az rest --method get \
+  --url "${RESOURCE_ID}/providers/Microsoft.ResourceHealth/availabilityStatuses/current?api-version=2025-05-01"
 
 # Check recent activity
 az monitor activity-log list -g RG --max-events 20
 ```
+
+`az resource show` returns resource configuration and provisioning metadata; it does not query Azure Resource Health and cannot by itself establish that a resource is healthy or `Available`.
+
+The Resource Health request requires Azure authentication and the `Microsoft.ResourceHealth/AvailabilityStatuses/current/read` operation at the applicable scope. It applies only to resource types supported by Azure Resource Health. Interpret `availabilityState` as Azure platform availability evidence (`Available`, `Unavailable`, `Degraded`, or `Unknown`), not as application or workload health. `Available` does not prove the guest, application, dependencies, or user path are healthy, and `Unknown` must not be treated as healthy.
+
+If the resource type is unsupported, the status is unavailable, permission is denied, or the health query fails, report that limitation and leave Resource Health availability unestablished; do not substitute provisioning success or invent a healthy result.
 
 ---
 
