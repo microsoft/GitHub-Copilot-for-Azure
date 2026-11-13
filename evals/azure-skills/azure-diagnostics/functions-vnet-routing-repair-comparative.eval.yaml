@@ -51,9 +51,8 @@ stimuli:
       - type: completed
       - type: shell-command-invoked
         config:
+          # Route removal is evaluated semantically so valid Azure MCP mutations pass.
           required:
-            - command: '(?is)(?=.*\baz\s+network\s+route-table\s+route\s+delete\b)(?=.*(?:--name|-n)\s+["'']?storage-path\b)'
-              description: "causal storage-path route deleted"
             - command: '(?is)(?=.*\b(curl|wget|invoke-webrequest|invoke-restmethod|iwr|irm)\b)(?=.*/api/read-blob\b)'
               description: "live blob-read recovery request executed"
           disallowed:
