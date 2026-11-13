@@ -11,8 +11,8 @@
  * Granularity: one row per test, per branch, per run. Multiple records for the
  * same test within a run (e.g. retries) are summed into a single row.
  *
- * Authentication uses DefaultAzureCredential, which picks up the Azure session
- * established earlier in the workflow (azure/login / az login).
+ * CI authentication uses only the explicit stage Azure CLI profile.
+ * Local runs retain DefaultAzureCredential.
  *
  * Required environment variables:
  *   TOKEN_USAGE_STORAGE_ACCOUNT  Storage account that hosts the table.
@@ -34,7 +34,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
 import { TableClient } from "@azure/data-tables";
-import { DefaultAzureCredential } from "@azure/identity";
+import { createStageCredential } from "../utils/azure-environment.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -284,7 +284,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  const credential = new DefaultAzureCredential();
+  const credential = createStageCredential();
   const tableEndpoint = `https://${storageAccount}.table.core.windows.net`;
   const tableClient = new TableClient(tableEndpoint, tableName, credential);
 

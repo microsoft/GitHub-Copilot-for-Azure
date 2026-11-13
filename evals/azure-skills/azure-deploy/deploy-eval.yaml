@@ -56,6 +56,7 @@ stimuli:
     constraints:
       max_turns: 100
     tags:
+      azurePermission: admin
       type: integration
       tier: full
       cost: llm
@@ -87,6 +88,7 @@ stimuli:
     constraints:
       max_turns: 100
     tags:
+      azurePermission: admin
       type: integration
       tier: full
       cost: llm
@@ -123,6 +125,7 @@ stimuli:
     constraints:
       max_turns: 100
     tags:
+      azurePermission: admin
       type: integration
       tier: full
       cost: llm
@@ -154,6 +157,7 @@ stimuli:
     constraints:
       max_turns: 100
     tags:
+      azurePermission: admin
       type: integration
       tier: full
       cost: llm
@@ -190,6 +194,7 @@ stimuli:
     constraints:
       max_turns: 100
     tags:
+      azurePermission: admin
       type: integration
       tier: full
       cost: llm
@@ -220,6 +225,7 @@ stimuli:
     constraints:
       max_turns: 100
     tags:
+      azurePermission: admin
       type: integration
       tier: full
       cost: llm
@@ -250,6 +256,7 @@ stimuli:
     constraints:
       max_turns: 100
     tags:
+      azurePermission: admin
       type: integration
       tier: full
       cost: llm
@@ -285,6 +292,7 @@ stimuli:
     constraints:
       max_turns: 100
     tags:
+      azurePermission: admin
       type: integration
       tier: full
       cost: llm
@@ -329,6 +337,7 @@ stimuli:
     constraints:
       max_turns: 100
     tags:
+      azurePermission: admin
       type: integration
       tier: full
       cost: llm
@@ -375,6 +384,7 @@ stimuli:
     constraints:
       max_turns: 100
     tags:
+      azurePermission: admin
       type: integration
       tier: full
       cost: llm
@@ -418,6 +428,7 @@ stimuli:
     constraints:
       max_turns: 100
     tags:
+      azurePermission: admin
       type: integration
       tier: full
       cost: llm
@@ -455,6 +466,7 @@ stimuli:
     constraints:
       max_turns: 100
     tags:
+      azurePermission: admin
       type: integration
       tier: full
       cost: llm
@@ -497,6 +509,7 @@ stimuli:
     constraints:
       max_turns: 100
     tags:
+      azurePermission: admin
       type: integration
       tier: full
       cost: llm
@@ -534,6 +547,7 @@ stimuli:
     constraints:
       max_turns: 100
     tags:
+      azurePermission: admin
       type: integration
       tier: full
       cost: llm
@@ -576,6 +590,7 @@ stimuli:
     constraints:
       max_turns: 100
     tags:
+      azurePermission: admin
       type: integration
       tier: full
       cost: llm
@@ -612,6 +627,7 @@ stimuli:
     constraints:
       max_turns: 100
     tags:
+      azurePermission: admin
       type: integration
       tier: full
       cost: llm
@@ -648,6 +664,7 @@ stimuli:
     constraints:
       max_turns: 100
     tags:
+      azurePermission: admin
       type: integration
       tier: full
       cost: llm
@@ -683,6 +700,7 @@ stimuli:
     constraints:
       max_turns: 100
     tags:
+      azurePermission: admin
       type: integration
       tier: full
       cost: llm
@@ -733,6 +751,7 @@ stimuli:
     constraints:
       max_turns: 100
     tags:
+      azurePermission: admin
       type: integration
       tier: full
       cost: llm
@@ -771,6 +790,7 @@ stimuli:
     constraints:
       max_turns: 100
     tags:
+      azurePermission: admin
       type: integration
       tier: full
       cost: llm
@@ -822,6 +842,7 @@ stimuli:
     constraints:
       max_turns: 100
     tags:
+      azurePermission: admin
       type: integration
       tier: full
       cost: llm
@@ -865,6 +886,7 @@ stimuli:
     constraints:
       max_turns: 100
     tags:
+      azurePermission: admin
       type: integration
       tier: full
       cost: llm
@@ -908,6 +930,7 @@ stimuli:
     constraints:
       max_turns: 100
     tags:
+      azurePermission: admin
       type: integration
       tier: full
       cost: llm
@@ -951,6 +974,7 @@ stimuli:
     constraints:
       max_turns: 100
     tags:
+      azurePermission: admin
       type: integration
       tier: full
       cost: llm
@@ -995,6 +1019,7 @@ stimuli:
     constraints:
       max_turns: 100
     tags:
+      azurePermission: admin
       type: integration
       tier: full
       cost: llm
@@ -1039,6 +1064,7 @@ stimuli:
     constraints:
       max_turns: 100
     tags:
+      azurePermission: admin
       type: integration
       tier: full
       cost: llm
@@ -1077,6 +1103,7 @@ stimuli:
     constraints:
       max_turns: 100
     tags:
+      azurePermission: admin
       type: integration
       tier: full
       cost: llm
@@ -1119,6 +1146,7 @@ stimuli:
     constraints:
       max_turns: 100
     tags:
+      azurePermission: admin
       type: integration
       tier: full
       cost: llm
@@ -1166,6 +1194,7 @@ stimuli:
     constraints:
       max_turns: 100
     tags:
+      azurePermission: admin
       type: integration
       tier: full
       cost: llm
@@ -1209,6 +1238,7 @@ stimuli:
     constraints:
       max_turns: 100
     tags:
+      azurePermission: admin
       type: integration
       tier: full
       cost: llm
@@ -1252,6 +1282,7 @@ stimuli:
     constraints:
       max_turns: 100
     tags:
+      azurePermission: admin
       type: integration
       tier: full
       cost: llm
@@ -1295,6 +1326,7 @@ stimuli:
     constraints:
       max_turns: 100
     tags:
+      azurePermission: admin
       type: integration
       tier: full
       cost: llm
@@ -1338,6 +1370,7 @@ stimuli:
     constraints:
       max_turns: 100
     tags:
+      azurePermission: admin
       type: integration
       tier: full
       cost: llm

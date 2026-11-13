@@ -2,10 +2,10 @@ import { resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createBudget, runAz, type FixtureManifest } from "../fixture-common.ts";
-import { provision } from "../provision-fixture.ts";
+import { provision, runPostTestScript } from "../provision-fixture.ts";
 
 const { execFileSync } = vi.hoisted(() => ({
-  execFileSync: vi.fn<(command: string, args: string[], options: { timeout?: number }) => string>(),
+  execFileSync: vi.fn<(command: string, args: string[], options: { timeout?: number; env?: NodeJS.ProcessEnv }) => string>(),
 }));
 
 vi.mock("node:child_process", () => ({ execFileSync }));
@@ -71,6 +71,7 @@ function commandOutput(command: string, args: string[]): string {
 }
 
 beforeEach(() => {
+  vi.stubEnv("CI", "false");
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(start);
   vi.stubEnv("AZURE_FIXTURE_COORDINATION_STORAGE_ACCOUNT", "storage");
@@ -88,6 +89,33 @@ afterEach(() => {
 });
 
 describe("per-invocation provisioning budgets", () => {
+  it.each([
+    { permission: "read", clientId: "read-client" },
+    { permission: "", clientId: "admin-client" },
+  ])("uses the write profile for provisioning and resolves the test principal for permission '$permission'", async ({ permission, clientId }) => {
+    vi.stubEnv("CI", "true");
+    vi.stubEnv("AZURE_CONFIG_DIR", "/tmp/stage");
+    vi.stubEnv("AZURE_CLIENT_ID", "stage-client");
+    vi.stubEnv("AZURE_WRITE_CONFIG_DIR", "/tmp/write");
+    vi.stubEnv("AZURE_WRITE_CLIENT_ID", "write-client");
+    vi.stubEnv("TEST_PERMISSION", permission);
+    vi.stubEnv("AZURE_READ_CLIENT_ID", "read-client");
+    vi.stubEnv("AZURE_ADMIN_CLIENT_ID", "admin-client");
+    const config: FixtureManifest = {
+      ...manifest, persistence: "never", postTestScript: { path: "./post-test.ts" },
+      bicepConfigs: manifest.bicepConfigs.map(config => ({
+        ...config, parameters: [{ key: "testPrincipalId" }],
+      })),
+    };
+    const result = await provision(manifestPath, config, { ...process.env, AZURE_CLIENT_ID: clientId });
+    runPostTestScript(result.context, config, "/fixtures/budget");
+    for (const [, , options] of execFileSync.mock.calls) {
+      expect(options.env).toMatchObject({ AZURE_CONFIG_DIR: "/tmp/write", AZURE_CLIENT_ID: "write-client" });
+    }
+    expect(execFileSync.mock.calls.some(([, args]) => args.includes(clientId))).toBe(true);
+    expect(execFileSync.mock.calls.filter(([command]) => command === "npx" || command === "npx.cmd"))
+      .toHaveLength(2);
+  });
   it.each([5, 10])("does not reset a pending run's budget when another starts %i minutes later", async (minutes) => {
     let deployed: () => void = () => {};
     const firstDeployment = new Promise<void>((resolvePromise) => {

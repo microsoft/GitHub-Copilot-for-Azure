@@ -42,6 +42,7 @@ stimuli:
       Prefer AVM+AZD patterns where available, with fallback to AVM resource modules and AVM utility modules.
       Use azd as the deployment tool.
     tags:
+      azurePermission: admin
       type: integration
       skill: azure-deploy
       tier: full
@@ -82,6 +83,7 @@ stimuli:
       What module order should I follow if no pattern module exists and fallback must stay AVM resource modules then AVM utility modules?
       Use azd as the deployment tool.
     tags:
+      azurePermission: admin
       type: integration
       skill: azure-deploy
       tier: full
@@ -124,6 +126,7 @@ stimuli:
       Use AVM modules and prefer AZD pattern modules over resource modules.
       Use azd as the deployment tool.
     tags:
+      azurePermission: admin
       type: integration
       skill: azure-deploy
       tier: full

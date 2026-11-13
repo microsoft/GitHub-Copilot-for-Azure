@@ -20,6 +20,7 @@ stimuli:
   - name: "Find an Azure plugin"
     prompt: "Search the Azure skills catalog and tell me which plugin contains a skill for configuring Azure Load Testing."
     tags:
+      azurePermission: none
       type: integration
       tier: smoke
       cost: llm
@@ -39,6 +40,7 @@ stimuli:
   - name: "Find a skill to generate Azure Kusto graph"
     prompt: "Find an Azure agent skill that can generate an Azure Kusto graph."
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -59,6 +61,7 @@ stimuli:
   - name: "How-to question should not trigger skill discovery"
     prompt: "How do I set up an Azure Chaos Studio fault-injection experiment against my VM scale set?"
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm
@@ -79,6 +82,7 @@ stimuli:
   - name: "High-level AKS troubleshooting question"
     prompt: "Enumerate Azure resources across my subscription and give me the count of resources per type"
     tags:
+      azurePermission: none
       type: integration
       tier: full
       cost: llm

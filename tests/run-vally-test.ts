@@ -12,6 +12,7 @@ import { fileURLToPath } from "node:url";
 import { ChildProcess, spawn } from "node:child_process";
 import { normalizeTestName } from "./vally/utils";
 import { isSkillInvocationTest } from "./vally/tag-helpers";
+import { readEvalSuites } from "./discover-azure-permissions.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -345,13 +346,7 @@ async function main(): Promise<void> {
   forwardedArgs.splice(0, 0, "--grader-plugin", path.join(__dirname, "vally", "vally-graders.ts"));
   if (options.skill) {
     const evalSpecDir = path.join(__dirname, `../evals/${pluginDirname}/${options.skill}/`);
-    const evalSpecPaths: string[] = [];
-    const allFiles = await fs.readdir(evalSpecDir);
-    for (const file of allFiles) {
-      if (file.endsWith(".yaml")) {
-        evalSpecPaths.push(path.join(evalSpecDir, file));
-      }
-    }
+    const evalSpecPaths = (await readEvalSuites(evalSpecDir)).map(({ file }) => file);
 
     forwardedArgs.splice(0, 0, ...evalSpecPaths.map(v => ["--eval-spec", v]).flat());
   }
