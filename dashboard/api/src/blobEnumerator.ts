@@ -200,6 +200,7 @@ export function getPerSkillReports(root: BlobTree, date: string): Record<string,
 const NON_INTEGRATION_CONTAINER = "non-integration";
 const HEALTH_BLOB_PATH = "data/latest.json";
 const PLUGIN_SKILLS_BLOB_PATH = "data/plugin-skills.json";
+const FIXTURE_MANIFESTS_BLOB_PATH = "data/fixtureManifests.json";
 
 /**
  * Read the non-integration health dashboard blob (data/latest.json)
@@ -224,6 +225,24 @@ export async function getPluginSkills(): Promise<PluginSkills | null> {
     );
     const data = raw ? (JSON.parse(raw) as PluginSkills) : null;
     return data;
+}
+
+export type FixtureManifestInventory = {
+    fixtureManifests: Array<{
+        id: string;
+        fixtures: Array<{
+            fixtureId: string;
+            fixtureVersion: number;
+        }>;
+    }>;
+};
+
+export async function getFixtureManifests(): Promise<FixtureManifestInventory | null> {
+    const raw = await downloadBlobContent(
+        getContainerClient(NON_INTEGRATION_CONTAINER),
+        FIXTURE_MANIFESTS_BLOB_PATH
+    );
+    return raw ? (JSON.parse(raw) as FixtureManifestInventory) : null;
 }
 
 /**

@@ -31,6 +31,7 @@ type Stimuli = {
     systemPrompt?: string;
     takeScreenshot?: string;
     requiredSkills?: string[];
+    azureFixture?: string;
   };
 };
 
@@ -156,6 +157,18 @@ export function validateRubric(value: unknown): string | undefined {
     )
   ) {
     return "rubric must be a non-empty array of non-empty strings";
+  }
+
+  return undefined;
+}
+
+export function validateAzureFixtureTag(value: unknown): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (typeof value !== "string" || !value.endsWith(".manifest.json")) {
+    return "tags.azureFixture must match **/*.manifest.json";
   }
 
   return undefined;
@@ -503,6 +516,17 @@ export function validateStimulus(rootDir: string, _args: string[]): void {
           );
           fileHasErrors = true;
         }
+      }
+
+      const azureFixtureError = validateAzureFixtureTag(typedStimulus.tags?.azureFixture);
+      if (azureFixtureError) {
+        reportValidationError(
+          displayPath,
+          stimulusIndex,
+          typedStimulus.name,
+          azureFixtureError,
+        );
+        fileHasErrors = true;
       }
 
       if (!validateJsonObjectTag(
