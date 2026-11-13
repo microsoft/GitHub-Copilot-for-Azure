@@ -5,6 +5,7 @@ import {
   type Stimulus,
   type Trajectory,
 } from "@microsoft/vally";
+import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -46,6 +47,23 @@ import { normalizeTestName } from "./utils.ts";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const modelOverride = process.env.MODEL_OVERRIDE?.trim() || undefined;
+const SOURCE_WORKSPACE_MARKER = ".vally-source-workspace";
+
+function preserveWorkspace(source: string): void {
+  const persistentRoot = process.env.VALLY_PRESERVE_WORKSPACE_ROOT?.trim();
+  if (!persistentRoot) {
+    return;
+  }
+
+  fs.mkdirSync(persistentRoot, { recursive: true });
+  const target = fs.mkdtempSync(path.join(persistentRoot, "workspace-"));
+  for (const entry of fs.readdirSync(source)) {
+    fs.cpSync(path.join(source, entry), path.join(target, entry), {
+      recursive: true,
+    });
+  }
+  fs.writeFileSync(path.join(target, SOURCE_WORKSPACE_MARKER), source, "utf8");
+}
 
 type BilledTrajectory = Trajectory & {
   metadata: Trajectory["metadata"] & {
@@ -234,6 +252,7 @@ export abstract class SdkAgentExecutor implements Executor {
         );
       }
 
+      preserveWorkspace(workDir);
       return trajectory!;
     } finally {
       if (!persistFixture) {

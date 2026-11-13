@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import { emptyBilling, type EvaluationAnswerBilling, type PhaseBilling } from "./billing.ts";
+import os from "node:os";
 import path from "node:path";
 import type {
   EvaluationSet,
@@ -121,8 +122,12 @@ type GeneratedAnswers = GenerationTask & {
   answerFile: string;
   evalSpecFile: string;
   runDirectory: string;
+  workspaceRoot: string;
+  restoredWorkspaces: string[];
   count: number;
 };
+
+const SOURCE_WORKSPACE_MARKER = ".vally-source-workspace";
 
 function slug(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9.-]+/g, "-").replace(/^-|-$/g, "");
@@ -188,6 +193,56 @@ function assertBeforeDeadline(deadline: number): void {
   }
 }
 
+function restoreWorkspaces(workspaceRoot: string): string[] {
+  if (!fs.existsSync(workspaceRoot)) {
+    return [];
+  }
+
+  const restored: string[] = [];
+  try {
+    for (const entry of fs.readdirSync(workspaceRoot, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      const snapshot = path.join(workspaceRoot, entry.name);
+      const marker = path.join(snapshot, SOURCE_WORKSPACE_MARKER);
+      if (!fs.existsSync(marker)) continue;
+      const source = path.resolve(fs.readFileSync(marker, "utf8").trim());
+      const relativeToTemp = path.relative(path.resolve(os.tmpdir()), source);
+      if (
+        relativeToTemp.startsWith(`..${path.sep}`)
+        || path.isAbsolute(relativeToTemp)
+        || !path.basename(source).startsWith("vally-eval-")
+      ) {
+        throw new Error(`Invalid deferred-grading workspace path: ${source}`);
+      }
+      if (fs.existsSync(source)) {
+        throw new Error(`Deferred-grading workspace still exists after generation: ${source}`);
+      }
+      fs.mkdirSync(source, { recursive: true });
+      restored.push(source);
+      for (const child of fs.readdirSync(snapshot)) {
+        if (child === SOURCE_WORKSPACE_MARKER) continue;
+        fs.cpSync(path.join(snapshot, child), path.join(source, child), {
+          recursive: true,
+          force: true,
+        });
+      }
+    }
+    return restored;
+  } catch (error) {
+    for (const workspace of restored) {
+      fs.rmSync(workspace, { recursive: true, force: true });
+    }
+    throw error;
+  }
+}
+
+function cleanupWorkspaces(workspaceRoot: string, restoredWorkspaces: string[]): void {
+  for (const workspace of restoredWorkspaces) {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+  fs.rmSync(workspaceRoot, { recursive: true, force: true });
+}
+
 async function generateAnswers(
   worktree: string,
   evalRepoRoot: string,
@@ -214,16 +269,20 @@ async function generateAnswers(
   );
   const answerFile = path.join(taskDirectory, "answers.jsonl");
   const stderrFile = path.join(taskDirectory, "vally.stderr.log");
+  const workspaceRoot = path.join(taskDirectory, "workspaces");
   const env: NodeJS.ProcessEnv = {
     MODEL_OVERRIDE: "",
     NO_SKILLS: task.condition.skill === "disabled" ? "true" : "",
     VALLY_RUNNER_DISABLE_AZURE_MCP: task.condition.mcp === "disabled" ? "true" : "",
     VALLY_RUNNER_EXACT_SKILL: task.condition.skill === "enabled" ? "true" : "",
     VALLY_PLUGIN_OUTPUT_ROOT: path.join(worktree, "output"),
+    VALLY_PRESERVE_WORKSPACE_ROOT: workspaceRoot,
     TEST_RUN_ID:
       `skill-improvement-${slug(task.condition.name)}-${slug(task.answerModel)}-${slug(task.evalFile)}`,
   };
 
+  let billingRecorded = false;
+  let restoredWorkspaces: string[] = [];
   try {
     await runProcess(commandName("npx"), [
       "-y",
@@ -255,33 +314,39 @@ async function generateAnswers(
       stderrFile,
       timeoutMs: Math.max(deadline - Date.now(), 1),
     });
-  } catch (error) {
-    try {
-      recordBilling(fs.existsSync(answerFile) ? readJsonl(answerFile, true) : []);
-    } catch (billingError) {
-      console.warn(`Failed to collect answer billing from ${answerFile}: ${
-        billingError instanceof Error ? billingError.message : String(billingError)
-      }`);
+    restoredWorkspaces = restoreWorkspaces(workspaceRoot);
+    const records = readJsonl(answerFile);
+    recordBilling(records);
+    billingRecorded = true;
+    const runDirectory = findVallyRunDirectory(taskDirectory);
+    const count = records
+      .filter(record => record.type === "trial-result" || record.trajectory)
+      .length;
+    if (count === 0) {
+      throw new Error(`No generated trajectories found in ${answerFile}.`);
     }
+    return {
+      ...task,
+      answerFile,
+      evalSpecFile,
+      runDirectory,
+      workspaceRoot,
+      restoredWorkspaces,
+      count,
+    };
+  } catch (error) {
+    if (!billingRecorded) {
+      try {
+        recordBilling(fs.existsSync(answerFile) ? readJsonl(answerFile, true) : []);
+      } catch (billingError) {
+        console.warn(`Failed to collect answer billing from ${answerFile}: ${
+          billingError instanceof Error ? billingError.message : String(billingError)
+        }`);
+      }
+    }
+    cleanupWorkspaces(workspaceRoot, restoredWorkspaces);
     throw error;
   }
-
-  const records = readJsonl(answerFile);
-  recordBilling(records);
-  const runDirectory = findVallyRunDirectory(taskDirectory);
-  const count = records
-    .filter(record => record.type === "trial-result" || record.trajectory)
-    .length;
-  if (count === 0) {
-    throw new Error(`No generated trajectories found in ${answerFile}.`);
-  }
-  return {
-    ...task,
-    answerFile,
-    evalSpecFile,
-    runDirectory,
-    count,
-  };
 }
 
 async function gradeAnswers(
@@ -440,22 +505,28 @@ export async function runEvaluationBatch(
     spec.models.judges.map(judgeModel => ({ item, judgeModel }))
   );
   const judged: JudgedTrial[][] = new Array(gradingTasks.length);
-  await runWithConcurrency(
-    gradingTasks,
-    spec.limits.maxConcurrentVallyProcesses,
-    async ({ item, judgeModel }, index) => {
-      judged[index] = await gradeAnswers(
-        evalRepoRoot,
-        outputRoot,
-        spec,
-        phase,
-        iteration,
-        item,
-        judgeModel,
-        deadline
-      );
+  try {
+    await runWithConcurrency(
+      gradingTasks,
+      spec.limits.maxConcurrentVallyProcesses,
+      async ({ item, judgeModel }, index) => {
+        judged[index] = await gradeAnswers(
+          evalRepoRoot,
+          outputRoot,
+          spec,
+          phase,
+          iteration,
+          item,
+          judgeModel,
+          deadline
+        );
+      }
+    );
+  } finally {
+    for (const item of generated) {
+      cleanupWorkspaces(item.workspaceRoot, item.restoredWorkspaces);
     }
-  );
+  }
 
   billing.finalized = true;
   onBilling?.(billing);

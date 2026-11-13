@@ -203,6 +203,11 @@ describe("temporary fixture cold start", () => {
     expect(Object.keys(parsed.resourceGroupIdsByComponent ?? {})).toEqual(["storage", "search"]);
     expect(writes(fake).map((record) => record.state)).toEqual(["Preparing", "Ready"]);
     expect(writes(fake).at(-1)).toMatchObject({ ownerWorkflowRunId: "42:3" });
+    const progressLogs = fake.logs.filter((entry) =>
+      entry.message.includes("workflow fixture")
+    );
+    expect(progressLogs).toHaveLength(2);
+    expect(progressLogs.every((entry) => entry.level === "warn")).toBe(true);
     const creates = commands.filter((args) => args[0] === "group" && args[1] === "create");
     expect(creates).toHaveLength(2);
     for (const args of creates) {
@@ -384,6 +389,36 @@ describe("deterministic contenders", () => {
     )).rejects.toThrow("Timed out acquiring resource lock");
     expect(azCommands(fake).filter((args) => ["create", "update", "delete"].includes(args[1]))).toHaveLength(0);
     await lease.release();
+  });
+
+  it("extends follower acquisition for a manifest provisioning timeout", async () => {
+    const fake = environment();
+    fake.onOperation({
+      actor: "owner",
+      operation: "deployment group create",
+      invocation: 1,
+      run: () => fake.advance(20_000),
+    });
+    const extendedManifest: FixtureManifest = {
+      ...manifest,
+      provisioningTimeoutMinutes: 1,
+    };
+
+    const [owner, follower] = await Promise.all([
+      provisionWithDependencies(
+        manifestPath,
+        extendedManifest,
+        fake.createDependencies("owner"),
+      ),
+      provisionWithDependencies(
+        manifestPath,
+        extendedManifest,
+        fake.createDependencies("follower"),
+      ),
+    ]);
+
+    expect(output(follower).fixtureInstanceId).toBe(output(owner).fixtureInstanceId);
+    expect(fake.deploymentCount).toBe(manifest.bicepConfigs.length);
   });
 });
 
@@ -1009,6 +1044,29 @@ describe("additional failure modes", () => {
     expect(fake.groups.size).toBe(1);
     expect(fake.postProvisionRuns).toHaveLength(0);
     expect(azCommands(fake).filter((args) => args[1] === "update")).toHaveLength(0);
+  });
+
+  it("retries Azure network operations that are still in progress", async () => {
+    const fake = environment();
+    fake.fail({
+      actor: "retry",
+      operation: "deployment group create",
+      invocation: 1,
+      error: new Error("AnotherOperationInProgress"),
+    });
+
+    await expect(provisionWithDependencies(
+      manifestPath,
+      { ...manifest, provisioningTimeoutMinutes: 1 },
+      fake.createDependencies("retry"),
+    )).resolves.toBeDefined();
+
+    expect(fake.deploymentCount).toBe(2);
+    expect(fake.logs).toContainEqual(expect.objectContaining({
+      actor: "retry",
+      level: "warn",
+      message: expect.stringContaining("retrying in 15 seconds (attempt 2/4)"),
+    }));
   });
 });
 

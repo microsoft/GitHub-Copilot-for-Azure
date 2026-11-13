@@ -1,0 +1,70 @@
+name: azure-diagnostics-functions-vnet-routing-repair-comparative-eval
+description: |
+  Temporary comparative scoring for live repair of an isolated Flex Consumption
+  private-storage routing failure. Skill invocation is reported separately.
+
+tags:
+  type: integration
+  skill: azure-diagnostics
+
+defaults:
+  runs: 1
+  timeout: "50m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+  judge_model: claude-sonnet-5
+
+scoring:
+  threshold: 0.7
+
+stimuli:
+  - name: "Repair Flex Function private storage route"
+    prompt: |
+      The Flex Consumption Function App's blob-read endpoint previously worked
+      and now fails with storage connectivity errors. Diagnose and fix the issue
+      within this lab resource group. Preserve private-only storage access and
+      existing authentication. Explain the evidence for the root cause and
+      verify recovery with an actual blob read. You are authorized to remove or
+      correct only the causal route in this isolated lab; do not make unrelated
+      changes.
+    rubric:
+      - "Critical gate: The agent must identify the incorrect UDR and its timing, actually remove the causal route, and prove recovery with the expected blob contents."
+      - The agent gathers live Function App, integration subnet, route-table, private DNS or endpoint, Application Insights or Log Analytics, and Activity Log evidence before changing the route.
+      - The diagnosis identifies the `storage-path` route whose `/32` prefix equals the test-storage blob private endpoint IP and whose next hop is `None`, and correlates its creation or write time with the start of blob-read failures.
+      - The agent removes only the causal `storage-path` route from the integration subnet's route table; it does not delete the route table, private endpoint, private DNS zone or link, or unrelated resources.
+      - The agent preserves the Function App's managed-identity authentication and Storage Blob Data Reader assignment and does not enable public access on test or host storage.
+      - Recovery verification confirms the route is absent, storage DNS still resolves to the private endpoint IP, `/api/health` remains healthy, and a real `/api/read-blob` request returns HTTP 200 with `Flex VNet private endpoint baseline is healthy.`
+      - The final response explains the evidence timeline, exact repair, unchanged private-access and authentication controls, recovered blob contents, and any correlation ID or recovery telemetry observed without exposing function keys or other secrets.
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: live-diagnostics
+      requiredSkills:
+        - azure-diagnostics
+      azureFixture: ./fixture/functions-vnet-routing/azure-manifest-repair.json
+    graders:
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.7
+      - type: completed
+      - type: shell-command-invoked
+        config:
+          # Route removal is evaluated semantically so valid Azure MCP mutations pass.
+          required:
+            - command: '(?is)(?=.*\b(curl|wget|invoke-webrequest|invoke-restmethod|iwr|irm)\b)(?=.*/api/read-blob\b)'
+              description: "live blob-read recovery request executed"
+          disallowed:
+            - command: '(?is)\baz\s+storage\s+account\s+update\b.*--public-network-access\s+Enabled\b'
+              description: "public storage access must remain disabled"
+            - command: '(?i)\baz\s+role\s+assignment\s+(create|delete)\b|\baz\s+functionapp\s+config\s+appsettings\s+(set|delete)\b'
+              description: "authentication and role assignments must remain unchanged"
+            - command: '(?i)\baz\s+network\s+(private-endpoint|private-dns)\s+.*\bdelete\b|\baz\s+network\s+route-table\s+delete\b'
+              description: "private networking and the route table must be preserved"
+      - type: output-matches
+        config:
+          pattern: "(?i)Flex VNet private endpoint baseline is healthy\\."
+      - type: output-not-matches
+        config:
+          pattern: "(?i)(AccountKey=|SharedAccessSignature=|sig=[A-Za-z0-9%]{8,}|Bearer [A-Za-z0-9._-]{20,})"

@@ -1,0 +1,68 @@
+name: azure-diagnostics-functions-vnet-hillclimb
+
+target:
+  plugin: azure-skills
+  skill: azure-diagnostics
+  baselineRef: kaghiya/diagnostics-functions-vnet-live-evals
+  editablePaths:
+    - plugins/azure-skills/skills/azure-diagnostics/**
+
+evaluations:
+  root: evals/azure-skills/azure-diagnostics
+  development:
+    - functions-vnet-routing.eval.yaml
+    - functions-vnet-routing-repair.eval.yaml
+    - functions-vnet-snat.eval.yaml
+    - functions-vnet-nat-capacity.eval.yaml
+  heldOut:
+    - held-out.eval.yaml
+    - functions-troubleshooting.eval.yaml
+
+models:
+  answers:
+    - gpt-5.6-sol
+  judges:
+    - claude-sonnet-5
+
+experiment:
+  repetitions: 2
+  conditions:
+    - name: Skill only
+      skill: enabled
+      mcp: disabled
+    - name: Skill + MCP
+      skill: enabled
+      mcp: enabled
+
+improvementAgent:
+  enabled: true
+  model: claude-sonnet-5
+
+acceptance:
+  minimumQualityImprovementPoints: 2
+  maximumEvalRegressionPoints: 15
+  maximumModelRegressionPoints: 5
+  minimumSkillInvocationRate: 0.8
+
+heldOutAcceptance:
+  enabled: true
+  minimumQualityImprovementPoints: 0
+  maximumEvalRegressionPoints: 0
+  maximumModelRegressionPoints: 0
+
+refinement:
+  minimumScoreImprovementPoints: 1
+  maximumQualityRegressionPoints: 0
+
+limits:
+  maxIterations: 2
+  maxAnswerGenerations: 200
+  maxJudgeCalls: 200
+  maxDurationMinutes: 360
+  maxConcurrentVallyProcesses: 4
+  generationWorkersPerVallyProcess: 1
+  maxSkillTokenIncreasePercent: 15
+
+output:
+  issue: never
+  draftPullRequest: accepted-candidate-only

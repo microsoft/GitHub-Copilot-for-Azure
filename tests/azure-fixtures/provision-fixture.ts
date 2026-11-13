@@ -88,6 +88,9 @@ const STORAGE_CONTAINER_ENV = "AZURE_FIXTURE_COORDINATION_CONTAINER";
  */
 const TOTAL_BUDGET_MS = 10 * 60 * 1000;
 const PROVISIONING_RETRY_DELAY_MS = 2 * TOTAL_BUDGET_MS;
+const MAX_PROVISIONING_TIMEOUT_MINUTES = 60;
+const DEPLOYMENT_RETRY_ATTEMPTS = 4;
+const DEPLOYMENT_RETRY_DELAY_MS = 15_000;
 
 export type WorkflowResourceLockLease = Pick<
   ResourceLockLease,
@@ -143,6 +146,19 @@ function defaultProvisioningDependencies(): ProvisioningDependencies {
     provisioningRetryDelayMs: PROVISIONING_RETRY_DELAY_MS,
     readyRetentionMs: READY_RETENTION_MS,
   };
+}
+
+function provisioningBudgetMs(manifest: FixtureManifest, defaultBudgetMs: number): number {
+  const minutes = manifest.provisioningTimeoutMinutes;
+  if (minutes === undefined) {
+    return defaultBudgetMs;
+  }
+  if (!Number.isInteger(minutes) || minutes < 1 || minutes > MAX_PROVISIONING_TIMEOUT_MINUTES) {
+    throw new Error(
+      `provisioningTimeoutMinutes must be a whole number from 1 through ${MAX_PROVISIONING_TIMEOUT_MINUTES}`
+    );
+  }
+  return minutes * 60 * 1000;
 }
 
 /** Formats as "MM/DD/YYYY HH:mm:ss" in UTC, the form the cleanup script expects. */
@@ -318,7 +334,7 @@ export function runPostTestScript(context: FixtureRunContext, manifest: FixtureM
   }
 }
 
-function provisionBicepConfig(
+async function provisionBicepConfig(
   context: FixtureRunContext,
   manifest: FixtureManifest,
   bicepConfig: BicepConfig,
@@ -326,7 +342,9 @@ function provisionBicepConfig(
   additionalTags: string[] = [],
   runCommand: ProvisioningDependencies["runAz"] = runAz,
   now: () => number = Date.now,
-) {
+  sleep: ProvisioningDependencies["sleep"] = (ms) => new Promise((resolvePromise) => setTimeout(resolvePromise, ms)),
+  log: Pick<Console, "warn"> = console,
+): Promise<void> {
   const resourceGroupName = context.resourceGroupNames[bicepConfig.resourceGroupNameBase];
   if (!resourceGroupName) {
     throw new Error(`No resource group name was computed for base ${bicepConfig.resourceGroupNameBase}`);
@@ -381,7 +399,7 @@ function provisionBicepConfig(
 
   const deploymentName = `${basename(bicepConfig.path, ".bicep")}-${context.runId.slice(0, 8)}`;
 
-  runCommand([
+  const deploymentArgs = [
     "deployment",
     "group",
     "create",
@@ -395,7 +413,24 @@ function provisionBicepConfig(
     ...parameterArgs,
     "-o",
     "none",
-  ]);
+  ];
+  for (let attempt = 1; attempt <= DEPLOYMENT_RETRY_ATTEMPTS; attempt++) {
+    try {
+      runCommand(deploymentArgs);
+      return;
+    } catch (error) {
+      if (!errorText(error).includes("AnotherOperationInProgress")
+        || attempt === DEPLOYMENT_RETRY_ATTEMPTS) {
+        throw error;
+      }
+      const delayMs = DEPLOYMENT_RETRY_DELAY_MS * attempt;
+      log.warn(
+        `Azure deployment ${deploymentName} reported AnotherOperationInProgress; `
+        + `retrying in ${delayMs / 1000} seconds (attempt ${attempt + 1}/${DEPLOYMENT_RETRY_ATTEMPTS}).`,
+      );
+      await sleep(delayMs);
+    }
+  }
 }
 
 function markFixturesCompleted(
@@ -667,7 +702,7 @@ export async function provisionWithDependencies(
     if (manifest.persistence !== undefined && manifest.persistence !== "never" && manifest.persistence !== "permanent") {
       throw new Error(`Unsupported fixture persistence: ${String(manifest.persistence)}`);
     }
-    dependencies.budget.set(dependencies.totalBudgetMs);
+    dependencies.budget.set(provisioningBudgetMs(manifest, dependencies.totalBudgetMs));
 
     const context = computeRunContext(manifest, dependencies);
     const manifestDir = dirname(manifestPath);
@@ -679,7 +714,17 @@ export async function provisionWithDependencies(
         ? []
         : [deleteAfterTag(new Date(dependencies.now() + DEFAULT_TIME_TO_LIVE_SEC * 1000))];
       for (const bicepConfig of manifest.bicepConfigs) {
-        provisionBicepConfig(context, manifest, bicepConfig, manifestDir, retentionTags, dependencies.runAz, dependencies.now);
+        await provisionBicepConfig(
+          context,
+          manifest,
+          bicepConfig,
+          manifestDir,
+          retentionTags,
+          dependencies.runAz,
+          dependencies.now,
+          dependencies.sleep,
+          dependencies.log,
+        );
       }
       markFixturesCompleted(context, dependencies.runAz);
     }
@@ -705,9 +750,16 @@ async function provisionTemporaryFixture(
   manifest: FixtureManifest,
   dependencies: ProvisioningDependencies,
 ): Promise<ProvisionManifestOutput> {
+  const totalBudgetMs = provisioningBudgetMs(manifest, dependencies.totalBudgetMs);
+  const leaseAcquisitionBudgetMs = manifest.provisioningTimeoutMinutes === undefined
+    ? dependencies.leaseAcquisitionBudgetMs
+    : Math.max(dependencies.leaseAcquisitionBudgetMs, totalBudgetMs + 5 * 60 * 1000);
+  const provisioningRetryDelayMs = manifest.provisioningTimeoutMinutes === undefined
+    ? dependencies.provisioningRetryDelayMs
+    : Math.max(dependencies.provisioningRetryDelayMs, 2 * totalBudgetMs);
   const accountName = requiredEnvironment(STORAGE_ACCOUNT_ENV, dependencies.environment);
   const containerName = requiredEnvironment(STORAGE_CONTAINER_ENV, dependencies.environment);
-  const acquisitionDeadline = dependencies.now() + dependencies.leaseAcquisitionBudgetMs;
+  const acquisitionDeadline = dependencies.now() + leaseAcquisitionBudgetMs;
   const ownerWorkflowRunId = dependencies.environment.GITHUB_RUN_ID
     ? `${dependencies.environment.GITHUB_RUN_ID}:${dependencies.environment.GITHUB_RUN_ATTEMPT ?? "1"}`
     : `local:${dependencies.processId}:${dependencies.randomUUID()}`;
@@ -723,7 +775,7 @@ async function provisionTemporaryFixture(
     }
   };
   try {
-    dependencies.budget.set(dependencies.leaseAcquisitionBudgetMs + dependencies.totalBudgetMs);
+    dependencies.budget.set(leaseAcquisitionBudgetMs + totalBudgetMs);
     let context = computeRunContext(manifest, dependencies);
     const blobName = coordinationBlobName(context, manifest);
     const lock = dependencies.createResourceLock(accountName, containerName, blobName, acquisitionDeadline);
@@ -732,8 +784,8 @@ async function provisionTemporaryFixture(
     while (true) {
       dependencies.budget.set(Math.max(1, acquisitionDeadline - dependencies.now()));
       lease = await lock.acquire();
-      dependencies.budget.set(dependencies.totalBudgetMs);
-      dependencies.log.log(`Acquired workflow fixture lease for ${manifest.id}@${manifest.version}; owner ${ownerWorkflowRunId}`);
+      dependencies.budget.set(totalBudgetMs);
+      dependencies.log.warn(`Acquired workflow fixture lease for ${manifest.id}@${manifest.version}; owner ${ownerWorkflowRunId}`);
 
       const record = parseCoordinationRecord(await lease.read(), manifest);
       const recordedExpiration = record.state === "Ready"
@@ -793,19 +845,29 @@ async function provisionTemporaryFixture(
         instanceId: context.runId,
         ownerWorkflowRunId,
         resourceGroups: recordResourceGroups(context),
-        nextAttemptNotBefore: new Date(dependencies.now() + dependencies.provisioningRetryDelayMs).toISOString(),
+        nextAttemptNotBefore: new Date(dependencies.now() + provisioningRetryDelayMs).toISOString(),
       };
       await lease.write(preparingRecord);
-      dependencies.log.log(`Provisioning workflow fixture ${manifest.id} instance ${context.runId}`);
+      dependencies.log.warn(`Provisioning workflow fixture ${manifest.id} instance ${context.runId}`);
 
       const expiration = new Date(Math.floor((dependencies.now() + dependencies.readyRetentionMs) / 1000) * 1000);
       const retentionTag = deleteAfterTag(expiration);
       for (const config of manifest.bicepConfigs) {
         lease.assertHealthy();
-        provisionBicepConfig(context, manifest, config, dirname(manifestPath), [
-          `${FIXTURE_COMPONENT_TAG}=${config.resourceGroupNameBase}`,
-          retentionTag,
-        ], dependencies.runAz, dependencies.now);
+        await provisionBicepConfig(
+          context,
+          manifest,
+          config,
+          dirname(manifestPath),
+          [
+            `${FIXTURE_COMPONENT_TAG}=${config.resourceGroupNameBase}`,
+            retentionTag,
+          ],
+          dependencies.runAz,
+          dependencies.now,
+          dependencies.sleep,
+          dependencies.log,
+        );
         await dependencies.immediate();
         lease.assertHealthy();
       }

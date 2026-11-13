@@ -3,8 +3,10 @@ import type {
   Stimulus,
   Trajectory,
 } from "@microsoft/vally";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import * as path from "node:path";
 import type {
   AgentMetadata,
   AgentRunConfig,
@@ -127,10 +129,13 @@ describe("SdkAgentExecutor", { concurrent: false }, () => {
   let runner: FakeAgentRunner;
   let executor: TestSdkAgentExecutor;
   let originalExactSkill: string | undefined;
+  let originalPreserveWorkspaceRoot: string | undefined;
 
   beforeEach(() => {
     originalExactSkill = process.env.VALLY_RUNNER_EXACT_SKILL;
+    originalPreserveWorkspaceRoot = process.env.VALLY_PRESERVE_WORKSPACE_ROOT;
     delete process.env.VALLY_RUNNER_EXACT_SKILL;
+    delete process.env.VALLY_PRESERVE_WORKSPACE_ROOT;
 
     vi.clearAllMocks();
     mocks.convertToTrajectoryEvents.mockReturnValue(convertedEvents);
@@ -167,6 +172,11 @@ describe("SdkAgentExecutor", { concurrent: false }, () => {
       delete process.env.VALLY_RUNNER_EXACT_SKILL;
     } else {
       process.env.VALLY_RUNNER_EXACT_SKILL = originalExactSkill;
+    }
+    if (originalPreserveWorkspaceRoot === undefined) {
+      delete process.env.VALLY_PRESERVE_WORKSPACE_ROOT;
+    } else {
+      process.env.VALLY_PRESERVE_WORKSPACE_ROOT = originalPreserveWorkspaceRoot;
     }
   });
 
@@ -249,6 +259,37 @@ describe("SdkAgentExecutor", { concurrent: false }, () => {
         ],
       }),
     );
+  });
+
+  test("snapshots the provided workspace for deferred grading", async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "deferred-grading-"));
+    const source = path.join(root, "source");
+    const persistentRoot = path.join(root, "preserved");
+    fs.mkdirSync(source);
+    fs.writeFileSync(path.join(source, "seed.txt"), "prepared workspace", "utf8");
+    process.env.VALLY_PRESERVE_WORKSPACE_ROOT = persistentRoot;
+
+    try {
+      const trajectory = await executor.execute(defaultStimulus, {
+        ...defaultOptions,
+        workDir: source,
+      });
+      const runConfig = runner.run.mock.calls[0][0];
+      const snapshots = fs.readdirSync(persistentRoot);
+
+      expect(runConfig.workspace).toBe(source);
+      expect(fs.readFileSync(
+        path.join(persistentRoot, snapshots[0], "seed.txt"),
+        "utf8"
+      )).toBe("prepared workspace");
+      expect(fs.readFileSync(
+        path.join(persistentRoot, snapshots[0], ".vally-source-workspace"),
+        "utf8"
+      )).toBe(source);
+      expect(trajectory.workDir).toBe(source);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   });
 
   test("exports evaluation-answer billing from SDK usage events", async () => {
