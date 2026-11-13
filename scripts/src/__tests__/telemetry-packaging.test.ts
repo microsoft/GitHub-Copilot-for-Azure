@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   renameSync,
@@ -209,6 +210,65 @@ describe.skipIf(!powerShellAvailable)("Telemetry Native AOT packaging", () => {
     }
   });
 
+  it("packages the published executable after signing and preserves other runtime packages", () => {
+    const outputRoot = join(fixtureRoot, "native-output");
+    const publishDirectory = join(outputRoot, "publish", "win-x64");
+    const packageDirectory = join(outputRoot, "packages");
+    const existingPackage = join(packageDirectory, "another-runtime.zip");
+    const archive = join(packageDirectory, `ghcfa-telem-${version}-win-x64.zip`);
+    mkdirSync(publishDirectory, { recursive: true });
+    mkdirSync(packageDirectory, { recursive: true });
+    writeFileSync(join(publishDirectory, "ghcfa-telem.exe"), "signed-executable");
+    writeFileSync(join(publishDirectory, "ghcfa-telem.pdb"), "symbols");
+    writeFileSync(existingPackage, "preserve");
+
+    const result = runPowerShell(`
+      & ${psQuote(join(scriptRoot, "Package-Native.ps1"))}
+        -RuntimeIdentifier 'win-x64'
+        -OutputRoot ${psQuote(outputRoot)}
+        -Version '${version}'
+    `.replaceAll("\n        -", " -"));
+    expectSuccess(result);
+    expect(readFileSync(existingPackage, "utf8")).toBe("preserve");
+
+    const inspectArchive = runPowerShell(`
+      $zip = [System.IO.Compression.ZipFile]::OpenRead(${psQuote(archive)})
+      try {
+        $entry = $zip.GetEntry('ghcfa-telem.exe')
+        $reader = [System.IO.StreamReader]::new($entry.Open())
+        try { $reader.ReadToEnd() } finally { $reader.Dispose() }
+      } finally { $zip.Dispose() }
+    `);
+    expectSuccess(inspectArchive);
+    expect(String(inspectArchive.stdout).trim()).toBe("signed-executable");
+    expect(readFileSync(`${archive}.sha256`, "utf8")).toContain(basename(archive));
+  });
+
+  it("wires Azure DevOps signing before packaging and leaves GitHub PR builds unsigned", () => {
+    const nightly = readFileSync(join(repoRoot, "pipelines", "telemetry-reporter-nightly.yml"), "utf8");
+    const buildTemplate = readFileSync(
+      join(repoRoot, "pipelines", "templates", "jobs", "telemetry-reporter-build.yml"),
+      "utf8",
+    );
+    const githubWorkflow = readFileSync(
+      join(repoRoot, ".github", "workflows", "telemetry-reporter-build.yml"),
+      "utf8",
+    );
+
+    expect(nightly).toContain("repository: azure-sdk-build-tools");
+    expect(nightly).toContain("refs/tags/azure-sdk-build-tools_20260702.2");
+    expect(buildTemplate).toContain("-DeferPackaging");
+    expect(buildTemplate).toContain("binary-signing.yml@azure-sdk-build-tools");
+    expect(buildTemplate).toContain("azd-cli-mac-signing.yml@azure-sdk-build-tools");
+    expect(buildTemplate).toContain("Notarize: true");
+    expect(buildTemplate.indexOf("binary-signing.yml@azure-sdk-build-tools"))
+      .toBeLessThan(buildTemplate.indexOf("Package signed $(BuildRuntimeIdentifier) executable"));
+    expect(buildTemplate.indexOf("azd-cli-mac-signing.yml@azure-sdk-build-tools"))
+      .toBeLessThan(buildTemplate.indexOf("Package signed $(BuildRuntimeIdentifier) executable"));
+    expect(githubWorkflow).not.toContain("binary-signing.yml");
+    expect(githubWorkflow).not.toContain("azd-cli-mac-signing.yml");
+  });
+
   it("verifies sixteen archives and releases exactly eight runtime assets", () => {
     expectSuccess(verifyArtifacts());
     const manifest = JSON.parse(readFileSync(manifestPath, "utf8").replace(/^\uFEFF/, "")) as Manifest;
@@ -375,7 +435,8 @@ describe.skipIf(!powerShellAvailable)("Telemetry Native AOT packaging", () => {
       . ([scriptblock]::Create($function.Extent.Text))
       foreach ($path in @(
         'telemetry-reporter/eng/native-musl/Dockerfile',
-        'telemetry-reporter/eng/scripts/NativePackaging.psm1'
+        'telemetry-reporter/eng/scripts/NativePackaging.psm1',
+        'telemetry-reporter/eng/scripts/Package-Native.ps1'
       )) {
         if (-not (Test-RelevantPath $path)) { throw "Missing change-detection path: $path" }
       }
