@@ -46,9 +46,9 @@ If the user volunteers a deep signal mid-flow, append the relevant matrix questi
 
 ### Step 4 — Validate
 
-> **GATE — do not present the Plan Card until validation passes.**
+> **GATE — do not present the Plan Card until validation passes.** If the Azure CLI isn't available, the checks didn't run: mark those rows unverified; the artifact is still allowed.
 
-Use the Azure MCP read-only tools listed in [validation-gates.md](references/validation-gates.md) (SKU exists in region / image is current / quota headroom / region availability). Required path; CLI fallback is documented in [mcp-tools.md](references/mcp-tools.md).
+Run the read-only checks in [validation-gates.md](references/validation-gates.md) (SKU exists in region / image is current / quota headroom / region availability). Azure MCP has no SKU, image or region command, so these use the Azure CLI; see [mcp-tools.md](references/mcp-tools.md).
 
 Outcomes:
 
@@ -97,12 +97,12 @@ If the user later says "also save it locally" or "open the PR now", re-run deliv
 
 | Scenario | Action |
 |---|---|
-| Azure MCP not connected | Skip MCP pre-flight; warn that quota / SKU availability is unverified; offer CLI fallback |
-| `compute_vm_list-skus` returns empty | Broaden filter (drop `familyPrefix`, lower `minVCpus`); if still empty, suggest another region |
+| Azure CLI not available | The checks didn't run: tell the user, mark the SKU, image and quota rows unverified; the artifact is still allowed |
+| `az vm list-skus` returns no rows | Pick another size listed in that region; if none fits, suggest another region |
 | Quota insufficient | Show the gap; offer (a) smaller SKU, (b) different family, (c) different region, (d) quota-increase link |
 | User wants Windows but supplies SSH key | Switch auth to password (with strength check) or RDP + cert; do not generate broken artifact |
 | User asks "what was that az CLI again?" after picking Bicep | Re-render via Adapter 1; do not re-ask questions |
-| Custom image / Shared Image Gallery | Pass full resource ID to `compute_vm_list-images`; do not try to map to an alias |
+| Custom image / Shared Image Gallery | Pass a `/sharedGalleries/` image ID or a `publisher:offer:sku:version` URN; do not try to map to an alias. `compute_vm_create` doesn't accept a managed-image resource ID |
 | User requests confidential / FedRAMP / HIPAA controls mid-flow | Append Security-deep questions; flag any defaults that fail the compliance bar |
 
 ## Routing back / handoff
