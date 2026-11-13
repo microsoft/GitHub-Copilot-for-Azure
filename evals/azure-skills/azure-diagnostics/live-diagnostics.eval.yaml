@@ -1,0 +1,66 @@
+name: azure-diagnostics-live-eval
+description: |
+  Read-only diagnosis of real App Service and Functions configuration faults.
+  Uses the shared temporary Azure fixture across repetitions and improvement arms.
+
+tags:
+  type: integration
+  skill: azure-diagnostics
+
+defaults:
+  runs: 1
+  timeout: "20m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+  judge_model: claude-sonnet-5
+
+scoring:
+  threshold: 0.7
+
+stimuli:
+  - name: "Diagnose a disabled live App Service"
+    prompt: |
+      Our App Service web app is refusing requests after a configuration rollout.
+      Diagnose the issue in the supplied resource group and recommend a fix.
+      Do not modify Azure resources.
+    rubric:
+      - The agent invokes azure-diagnostics, selects the App Service web app rather than the Function App, and actually reads its live state or enabled property using Azure tools, CLI, or the bundled diagnostic script; hypothetical commands or access failures alone are not a successful diagnosis.
+      - The agent checks resource health and the app's administrative state before blaming code, capacity, authentication, or access restrictions.
+      - The response identifies the discovered web app by name and resource group, and attributes its unavailability to its disabled or stopped administrative state using observed enabled=false or Stopped evidence.
+      - The response distinguishes the administrative state from platform health and does not invent an application exception, capacity issue, authentication failure, or IP restriction as the root cause.
+      - The response recommends enabling or starting only the affected app after approval, checks whether the deployment source would disable it again, and proposes verifying Running state and an HTTP response without claiming the repair has been performed.
+      - All Azure operations remain read-only and scoped to the injected fixture resource group; the agent does not start, restart, redeploy, or reconfigure either app.
+    tags: &live-tags
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: live-diagnostics
+      requiredSkills:
+        - azure-diagnostics
+      azureFixture: ./fixture/live-diagnostics/azure-manifest.json
+    graders: &live-graders
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.7
+      - type: completed
+
+  - name: "Diagnose a live Functions telemetry destination mismatch"
+    prompt: |
+      Our Azure Function App's telemetry is missing from the intended Application
+      Insights resource after an application-settings rollout. Diagnose the issue
+      in the supplied resource group and recommend a fix. Do not modify Azure
+      resources or invoke functions.
+    rubric:
+      - The agent invokes azure-diagnostics and actually reads the live Function App's relevant application settings, ExpectedApplicationInsightsResourceId tag, and Application Insights resource metadata; a generic checklist or access failure alone does not pass.
+      - The response identifies the Function App and both Application Insights resources by name or resource ID, and establishes from live evidence that APPLICATIONINSIGHTS_CONNECTION_STRING identifies the previous component rather than the expected component recorded in the tag.
+      - The response diagnoses a configured telemetry destination mismatch rather than assuming the Function host, storage, network, or workspace is broken, and distinguishes configuration evidence from proof that telemetry has actually been ingested by either component.
+      - The response proposes correcting only the telemetry destination in the deployment source of truth after approval, preserving unrelated application settings and credentials, without claiming to have applied the correction.
+      - Recovery verification would emit a uniquely correlated invocation or telemetry event after an approved repair, allow for ingestion delay, and query the intended component for that event; it does not treat an unchanged connection setting or resource existence as proof of delivery.
+      - Azure operations remain read-only and within the supplied resource group, and the response does not reveal storage keys or complete connection strings.
+    tags: *live-tags
+    graders: *live-graders
