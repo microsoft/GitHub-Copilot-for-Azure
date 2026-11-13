@@ -116,21 +116,20 @@ describe("strict grouped JSON", () => {
       areas: { "Next release": ["old_area"] },
       extensionTools: { Helpers: ["custom_helper"] },
     };
-    const merged = mergeAllowlist(original, discovery, ["baseline_helper"]);
+    const merged = mergeAllowlist(original, discovery);
     expect(merged.commands.Initial).toEqual(original.commands.Initial);
     expect(merged.commands[discovery.version]).toEqual(["storage_get", "subscription_list"]);
     expect(merged.areas["Next release"]).toEqual(["old_area"]);
     expect(merged.extensionTools).toEqual(original.extensionTools);
-    expect(mergeAllowlist(merged, discovery, ["baseline_helper"])).toEqual(merged);
+    expect(mergeAllowlist(merged, discovery)).toEqual(merged);
     expect(original.commands[discovery.version]).toEqual(["subscription_list"]);
   });
 
-  it("creates every section without empty groups and seeds helpers only on creation", () => {
-    expect(mergeAllowlist(undefined, { ...discovery, commands: [], areas: [] }, [])).toEqual(empty());
-    expect(mergeAllowlist(undefined, discovery, ["helper"]).extensionTools).toEqual({ "Azure extension": ["helper"] });
-    expect(mergeAllowlist(empty(), discovery, ["helper"]).extensionTools).toEqual({});
+  it("preserves empty sections and historical groups without seeding helpers", () => {
+    expect(mergeAllowlist(empty(), { ...discovery, commands: [], areas: [] })).toEqual(empty());
+    expect(mergeAllowlist(empty(), discovery).extensionTools).toEqual({});
     const historical = { ...empty(), commands: { Initial: ["storage_get"], "Some release": ["subscription_list"] }, areas: { Initial: ["storage"] } };
-    expect(mergeAllowlist(historical, discovery, ["helper"])).toEqual(historical);
+    expect(mergeAllowlist(historical, discovery)).toEqual(historical);
   });
 
   it.each([
@@ -237,9 +236,6 @@ readline.createInterface({input: process.stdin}).on("line", line => {
 describe("shared source refresh", () => {
   async function fixture(): Promise<string> {
     const root = await temp();
-    const baseline = join(root, "telemetry-reporter", "resources");
-    await mkdir(baseline, { recursive: true });
-    await writeFile(join(baseline, "allowed-tool-names.json"), JSON.stringify({ extensionTools: ["azure_helper"] }));
     for (const name of ["first", "second", "without-azure"]) {
       const plugin = join(root, "plugins", name);
       await mkdir(plugin, { recursive: true });
@@ -301,17 +297,15 @@ describe("shared source refresh", () => {
     }
   });
 
-  it("creates the single source file from discovery and the extension baseline", async () => {
+  it("requires restoring a missing shared source without changing MCP pins", async () => {
     const root = await fixture();
     const path = join(root, "plugins", "allowed-azure-tools.json");
     await rm(path);
-    const changes = await updatePlugins(root, discovery);
-    expect(changes).toHaveLength(6);
-    const created = parseAllowlist(await readFile(path, "utf8"));
-    expect(created.commands).toEqual({ [discovery.version]: discovery.commands });
-    expect(created.areas).toEqual({ [discovery.version]: discovery.areas });
-    expect(created.extensionTools).toEqual({ "Azure extension": ["azure_helper"] });
-    expect(await updatePlugins(root, discovery)).toEqual([]);
+    const pin = join(root, "plugins", "first", ".mcp.json");
+    const before = await readFile(pin, "utf8");
+    await expect(updatePlugins(root, discovery)).rejects.toThrow("Restore it from source control");
+    expect(await readFile(pin, "utf8")).toBe(before);
+    await expect(readFile(path)).rejects.toThrow();
   });
 
   it("does not reseed an intentionally empty helper section in the shared source", async () => {

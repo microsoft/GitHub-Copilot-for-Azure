@@ -11,8 +11,12 @@ namespace Ghcfa.Telemetry.Tests;
 /// <summary>
 /// Contains tests for the telemetry reporting application.
 /// </summary>
-public sealed class PluginTelemetryApplicationTests
+public sealed class PluginTelemetryApplicationTests : IDisposable
 {
+    private readonly TemporaryAllowlists _files = new();
+
+    public void Dispose() => _files.Dispose();
+
     private readonly IPluginTelemetryPublisher _publisher =
         Substitute.For<IPluginTelemetryPublisher>();
 
@@ -27,6 +31,7 @@ public sealed class PluginTelemetryApplicationTests
             "--timestamp", "timestamp",
             "--event-type", "event",
             "--session-id", "session",
+            .. _files.Arguments,
             "--tool-name", "azure-storage"
         ],
         output,
@@ -57,7 +62,7 @@ public sealed class PluginTelemetryApplicationTests
         using var response = JsonDocument.Parse(output.ToString());
         Assert.Equal(400, response.RootElement.GetProperty("status").GetInt32());
         Assert.Equal(
-            "Missing Required options: --timestamp, --session-id",
+            "Missing Required options: --timestamp, --session-id, --allowed-skills, --allowed-references, --allowed-tools",
             response.RootElement.GetProperty("message").GetString());
         await _publisher.DidNotReceiveWithAnyArgs().PublishAsync(
             default!,
@@ -75,6 +80,7 @@ public sealed class PluginTelemetryApplicationTests
             "--timestamp", "timestamp",
             "--event-type", "event",
             "--session-id", "session",
+            .. _files.Arguments,
             "--skill-name", "custom-skill"
         ],
         output,
@@ -101,7 +107,8 @@ public sealed class PluginTelemetryApplicationTests
         [
             "--timestamp", "timestamp",
             "--event-type", "event",
-            "--session-id", "session"
+            "--session-id", "session",
+            .. _files.Arguments
         ],
         output,
         TestContext.Current.CancellationToken);
@@ -131,7 +138,7 @@ public sealed class PluginTelemetryApplicationTests
     }
 
     [Fact]
-    public async Task RunAsync_PublishesUsingAllFileOverrides()
+    public async Task RunAsync_PublishesUsingAllConfiguredFiles()
     {
         using var skills = new TemporaryAllowlistFile("custom-skill");
         using var references = new TemporaryAllowlistFile("custom-skill/references/new.md");
@@ -261,7 +268,7 @@ public sealed class PluginTelemetryApplicationTests
     }
 
     [Fact]
-    public async Task RunAsync_DoesNotRetainToolOverridesBetweenInvocations()
+    public async Task RunAsync_DoesNotRetainToolsBetweenInvocations()
     {
         using var file = new TemporaryAllowlistFile("""
             {"commands":{"1.0.1":["custom_tool"]},"areas":{},"extensionTools":{}}
@@ -270,11 +277,11 @@ public sealed class PluginTelemetryApplicationTests
 
         var custom = await ExecuteAsync(application,
             "--allowed-tools", file.Path, "--tool-name", "azure-custom_tool");
-        var embedded = await ExecuteAsync(application, "--tool-name", "azure-storage");
+        var otherFiles = await ExecuteAsync(application, "--tool-name", "azure-storage");
         var rejected = await ExecuteAsync(application, "--tool-name", "azure-custom_tool");
 
         Assert.Equal(0, custom.ExitCode);
-        Assert.Equal(0, embedded.ExitCode);
+        Assert.Equal(0, otherFiles.ExitCode);
         Assert.Equal(1, rejected.ExitCode);
         using var response = JsonDocument.Parse(rejected.Output);
         Assert.Equal(403, response.RootElement.GetProperty("status").GetInt32());
@@ -286,7 +293,7 @@ public sealed class PluginTelemetryApplicationTests
     [InlineData("--allowed-skills", "--skill-name", "azure-storage")]
     [InlineData("--allowed-references", "--file-reference", "azure-ai\\references\\auth-best-practices.md")]
     [InlineData("--allowed-tools", "--tool-name", "azure-storage")]
-    public async Task RunAsync_EmptyOverrideRejectsBuiltInValues(string option, string eventOption, string value)
+    public async Task RunAsync_EmptyFileRejectsFormerBuiltInValues(string option, string eventOption, string value)
     {
         using var file = new TemporaryAllowlistFile(option == "--allowed-tools"
             ? """{"commands":{},"areas":{},"extensionTools":{}}"""
@@ -301,18 +308,21 @@ public sealed class PluginTelemetryApplicationTests
     }
 
     [Fact]
-    public async Task RunAsync_DoesNotRetainOverridesBetweenInvocations()
+    public async Task RunAsync_RereadsFilesBetweenInvocations()
     {
         using var file = new TemporaryAllowlistFile("custom-skill");
         var application = CreateApplication();
 
         var custom = await ExecuteAsync(application,
             "--allowed-skills", file.Path, "--skill-name", "custom-skill");
-        var embedded = await ExecuteAsync(application, "--skill-name", "azure-storage");
-        var rejected = await ExecuteAsync(application, "--skill-name", "custom-skill");
+        File.WriteAllText(file.Path, "changed-skill");
+        var changed = await ExecuteAsync(application,
+            "--allowed-skills", file.Path, "--skill-name", "changed-skill");
+        var rejected = await ExecuteAsync(application,
+            "--allowed-skills", file.Path, "--skill-name", "custom-skill");
 
         Assert.Equal(0, custom.ExitCode);
-        Assert.Equal(0, embedded.ExitCode);
+        Assert.Equal(0, changed.ExitCode);
         Assert.Equal(1, rejected.ExitCode);
         using var response = JsonDocument.Parse(rejected.Output);
         Assert.Equal(403, response.RootElement.GetProperty("status").GetInt32());
@@ -320,12 +330,50 @@ public sealed class PluginTelemetryApplicationTests
             Arg.Any<PluginTelemetryOptions>(), Arg.Any<CancellationToken>());
     }
 
-    private static async Task<(int ExitCode, string Output)> ExecuteAsync(
+    [Theory]
+    [InlineData("--allowed-skills")]
+    [InlineData("--allowed-references")]
+    [InlineData("--allowed-tools")]
+    public async Task RunAsync_MissingAllowlistOptionDoesNotPublish(string missing)
+    {
+        using var output = new StringWriter();
+        var paths = _files.Arguments.Chunk(2).Where(pair => pair[0] != missing).SelectMany(pair => pair);
+
+        var exitCode = await CreateApplication().RunAsync(
+            ["--timestamp", "timestamp", "--event-type", "event", "--session-id", "session", .. paths],
+            output, TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, exitCode);
+        using var response = JsonDocument.Parse(output.ToString());
+        Assert.Equal(400, response.RootElement.GetProperty("status").GetInt32());
+        Assert.Equal($"Missing Required options: {missing}", response.RootElement.GetProperty("message").GetString());
+        await _publisher.DidNotReceiveWithAnyArgs().PublishAsync(default!, TestContext.Current.CancellationToken);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("# No entries\n \t")]
+    public async Task RunAsync_EmptyAllowlistsAcceptEventWithoutOptionalValues(string contents)
+    {
+        using var file = new TemporaryAllowlistFile(contents);
+        using var tools = new TemporaryAllowlistFile("""{"commands":{},"areas":{},"extensionTools":{}}""");
+
+        var result = await ExecuteAsync(CreateApplication(),
+            "--allowed-skills", file.Path, "--allowed-references", file.Path, "--allowed-tools", tools.Path);
+
+        Assert.Equal(0, result.ExitCode);
+        await _publisher.Received(1).PublishAsync(Arg.Any<PluginTelemetryOptions>(), Arg.Any<CancellationToken>());
+    }
+
+    private async Task<(int ExitCode, string Output)> ExecuteAsync(
         PluginTelemetryApplication application, params string[] additionalArgs)
     {
         using var output = new StringWriter();
+        var defaultPaths = _files.Arguments.Chunk(2)
+            .Where(pair => !additionalArgs.Contains(pair[0])).SelectMany(pair => pair);
         var exitCode = await application.RunAsync(
-            ["--timestamp", "timestamp", "--event-type", "event", "--session-id", "session", .. additionalArgs],
+            ["--timestamp", "timestamp", "--event-type", "event", "--session-id", "session",
+                .. defaultPaths, .. additionalArgs],
             output,
             TestContext.Current.CancellationToken);
         return (exitCode, output.ToString());
@@ -334,6 +382,6 @@ public sealed class PluginTelemetryApplicationTests
     private PluginTelemetryApplication CreateApplication() =>
         new(
             new PluginTelemetryCommandLineParser(),
-            new PluginTelemetryValidator(PluginTelemetryAllowlist.LoadEmbedded()),
+            new PluginTelemetryValidator(),
             _publisher);
 }

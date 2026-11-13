@@ -116,7 +116,7 @@ function muslHelperCommand({
   return `
     $ast = [System.Management.Automation.Language.Parser]::ParseFile(
       ${psQuote(join(scriptRoot, "Build-Native.ps1"))}, [ref]$null, [ref]$null)
-    foreach ($name in @('Initialize-MuslContainer', 'Invoke-BuildDotNet', 'Invoke-NativeCommand')) {
+    foreach ($name in @('Initialize-MuslContainer', 'Invoke-BuildDotNet', 'Invoke-NativeCommand', 'Invoke-NativeSmokeTests')) {
       $function = $ast.Find({ param($node)
         $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $name
       }, $true)
@@ -489,7 +489,62 @@ describe.skipIf(!powerShellAvailable)("Telemetry Native AOT packaging", () => {
       expect(call).not.toContain("fixture-toolchain");
       expect(call).toContain(platform);
       expect(call).toContain("AZURE_MCP_COLLECT_TELEMETRY=false");
+      expect(call).toContain(`type=bind,source=${fixtureRoot},target=/smoke,readonly`);
     }
+  });
+
+  it.each([false, true])("passes readable smoke allowlists and cleans them up (musl=%s)", musl => {
+    const result = runPowerShell(muslHelperCommand() + `
+      $useMuslContainer = $${musl}
+      $script:calls = [System.Collections.Generic.List[object]]::new()
+      function Invoke-NativeCommand {
+        param([string[]] $Arguments, [int] $ExpectedExitCode)
+        if ($env:AZURE_MCP_COLLECT_TELEMETRY -ne 'false') { throw 'Telemetry must be disabled.' }
+        $script:calls.Add($Arguments)
+        if ($Arguments -contains '--allowed-tools') {
+          foreach ($option in @('--allowed-skills', '--allowed-references', '--allowed-tools')) {
+            $index = [Array]::IndexOf($Arguments, $option)
+            if ($index -lt 0) { throw "Missing $option" }
+            $path = $Arguments[$index + 1]
+            if ($useMuslContainer) {
+              if (-not $path.StartsWith('/smoke/')) { throw 'Expected container-visible path.' }
+              $path = Join-Path $stagingDirectory ([System.IO.Path]::GetFileName($path))
+            }
+            if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Unreadable fixture: $path" }
+          }
+          $tools = Get-Content (Join-Path $stagingDirectory 'allowed-tools.json') -Raw | ConvertFrom-Json
+          if ($tools.areas.'Smoke test'[0] -ne 'storage') { throw 'Missing smoke tool.' }
+        }
+        if ($ExpectedExitCode -eq 1) { return '{"status":400}' }
+        return '{"status":200}'
+      }
+      Invoke-NativeSmokeTests
+      foreach ($name in @('allowed-skills.txt', 'allowed-references.txt', 'allowed-tools.json')) {
+        if (Test-Path (Join-Path $stagingDirectory $name)) { throw "Fixture was not cleaned: $name" }
+      }
+      $script:calls.ToArray() | ConvertTo-Json -Depth 5 -Compress
+    `);
+    expectSuccess(result);
+    const calls = JSON.parse(String(result.stdout)) as string[][];
+    expect(calls).toHaveLength(3);
+    const success = calls.find(call => call.includes("--allowed-tools"))!;
+    expect(success).toContain("--allowed-skills");
+    expect(success).toContain("--allowed-references");
+    expect(success).toContain("--tool-name");
+  });
+
+  it("cleans smoke fixtures and restores telemetry settings when a command fails", () => {
+    const result = runPowerShell(muslHelperCommand() + `
+      $env:AZURE_MCP_COLLECT_TELEMETRY = 'original'
+      function Invoke-NativeCommand { throw 'smoke command failed' }
+      try { Invoke-NativeSmokeTests; throw 'Expected failure' }
+      catch { if ($_.Exception.Message -ne 'smoke command failed') { throw } }
+      if ($env:AZURE_MCP_COLLECT_TELEMETRY -ne 'original') { throw 'Telemetry setting not restored.' }
+      foreach ($name in @('allowed-skills.txt', 'allowed-references.txt', 'allowed-tools.json')) {
+        if (Test-Path (Join-Path $stagingDirectory $name)) { throw "Fixture was not cleaned: $name" }
+      }
+    `);
+    expectSuccess(result);
   });
 
   it("rejects a Docker engine of the wrong architecture before compiling", () => {

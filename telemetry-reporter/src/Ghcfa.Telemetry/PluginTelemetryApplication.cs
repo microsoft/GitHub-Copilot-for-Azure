@@ -28,7 +28,7 @@ public sealed class PluginTelemetryApplication(
     public static PluginTelemetryApplication CreateDefault() =>
         new(
             new PluginTelemetryCommandLineParser(),
-            new PluginTelemetryValidator(PluginTelemetryAllowlist.LoadEmbedded()),
+            new PluginTelemetryValidator(),
             new OpenTelemetryPluginTelemetryPublisher());
 
     public async Task<int> RunAsync(
