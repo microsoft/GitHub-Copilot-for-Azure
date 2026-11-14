@@ -1,0 +1,55 @@
+# Converted from the source behavioral scenario specifications in
+# nuzhatminhaz_microsoft/ignite-plugin-observability-v1 @ 18f482ad23660251933e91fd7d61e61d76b876ef
+# (skills/*/references/*-cases.json, acceptance.json). Prompts, context, evidence,
+# expected labels and forbidden actions are carried verbatim; only the Vally
+# wrapper (stimulus names, tags, graders) was added. The source marks these as
+# synthetic specifications that were never executed in a host; no baseline exists.
+# License review for this imported content is pending; see the plugin NOTICE.md.
+# Solver claude-sonnet-5; judge gpt-6.1-sol (repo convention). Never silently
+# fall back to the solver as judge.
+name: assess-observability-health-eval
+description: "Source scenario specifications for assess-observability-health, converted to Vally format."
+
+tags:
+  type: integration
+  skill: assess-observability-health
+
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+  judge_model: gpt-6.1-sol
+
+scoring:
+  threshold: 1
+
+stimuli:
+  - name: "next-action-cases: health-selection"
+    prompt: "Synthetic prior context:\n- Synthetic ranked assessment is complete; no finding is selected.\n\nWhat should we look at next?"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: response-quality
+      case_id: "health-selection"
+      source: "next-action-cases.json"
+      requiredSkills:
+        - assess-observability-health
+    rubric:
+      - "Expected stage from source case troubleshoot-observability/references/next-action-cases.json#health-selection: Detect health issues"
+      - "Expected next action from source case troubleshoot-observability/references/next-action-cases.json#health-selection: Ask for finding selection, never automatically investigate rank 1 or offer remediation."
+      - "Expected question from source case troubleshoot-observability/references/next-action-cases.json#health-selection: Which finding would you like to investigate?"
+      - "Expected permission from source case troubleshoot-observability/references/next-action-cases.json#health-selection: selection only"
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - assess-observability-health
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

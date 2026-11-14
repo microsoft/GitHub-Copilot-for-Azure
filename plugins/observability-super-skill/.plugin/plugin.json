@@ -1,0 +1,22 @@
+{
+  "name": "observability-super-skill",
+  "description": "Guide read-only Azure application and agent troubleshooting, approved fixes, and evidence-based recovery validation.",
+  "version": "0.0.0-placeholder",
+  "author": {
+    "name": "Microsoft",
+    "url": "https://www.microsoft.com"
+  },
+  "homepage": "https://github.com/microsoft/github-copilot-for-azure",
+  "repository": "https://github.com/microsoft/GitHub-Copilot-for-Azure",
+  "license": "MIT",
+  "keywords": [
+    "azure",
+    "observability",
+    "troubleshooting",
+    "monitor",
+    "foundry"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "hooks": "./hooks/copilot-hooks.json"
+}

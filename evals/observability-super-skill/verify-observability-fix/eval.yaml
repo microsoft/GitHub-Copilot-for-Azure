@@ -1,0 +1,139 @@
+# Converted from the source behavioral scenario specifications in
+# nuzhatminhaz_microsoft/ignite-plugin-observability-v1 @ 18f482ad23660251933e91fd7d61e61d76b876ef
+# (skills/*/references/*-cases.json, acceptance.json). Prompts, context, evidence,
+# expected labels and forbidden actions are carried verbatim; only the Vally
+# wrapper (stimulus names, tags, graders) was added. The source marks these as
+# synthetic specifications that were never executed in a host; no baseline exists.
+# License review for this imported content is pending; see the plugin NOTICE.md.
+# Solver claude-sonnet-5; judge gpt-6.1-sol (repo convention). Never silently
+# fall back to the solver as judge.
+name: verify-observability-fix-eval
+description: "Source scenario specifications for verify-observability-fix, converted to Vally format."
+
+tags:
+  type: integration
+  skill: verify-observability-fix
+
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+  judge_model: gpt-6.1-sol
+
+scoring:
+  threshold: 1
+
+stimuli:
+  - name: "next-action-cases: planned-only"
+    prompt: "Synthetic prior context:\n- Synthetic fix plan approved, but no actual change is confirmed.\n\nDid that fix work?"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: response-quality
+      case_id: "planned-only"
+      source: "next-action-cases.json"
+      requiredSkills:
+        - verify-observability-fix
+    rubric:
+      - "Expected stage from source case troubleshoot-observability/references/next-action-cases.json#planned-only: Guide an approved fix"
+      - "Expected next action from source case troubleshoot-observability/references/next-action-cases.json#planned-only: Explain no actual change exists; request actual change confirmation, not verification or a recovery verdict."
+      - "Expected question from source case troubleshoot-observability/references/next-action-cases.json#planned-only: Has the approved change actually been applied?"
+      - "Expected permission from source case troubleshoot-observability/references/next-action-cases.json#planned-only: none"
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - verify-observability-fix
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "next-action-cases: accepted-verification"
+    prompt: "Synthetic prior context:\n- An actual approved change and sufficient comparable fresh original/post evidence and criteria are explicitly supplied. Comparison was already accepted.\n\nContinue."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      case_id: "accepted-verification"
+      source: "next-action-cases.json"
+      requiredSkills:
+        - verify-observability-fix
+    rubric:
+      - "Expected stage from source case troubleshoot-observability/references/next-action-cases.json#accepted-verification: Validate recovery"
+      - "Expected next action from source case troubleshoot-observability/references/next-action-cases.json#accepted-verification: Compare supplied evidence without another prompt, reads, jobs, traffic or saving; compute only the supported verdict."
+      - "Expected question from source case troubleshoot-observability/references/next-action-cases.json#accepted-verification: None"
+      - "Expected permission from source case troubleshoot-observability/references/next-action-cases.json#accepted-verification: supplied comparison only"
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - verify-observability-fix
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "next-action-cases: missing-post-evidence"
+    prompt: "Synthetic prior context:\n- Comparison accepted after an actual approved change, but post evidence is absent or stale.\n\nYes, continue."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      case_id: "missing-post-evidence"
+      source: "next-action-cases.json"
+      requiredSkills:
+        - verify-observability-fix
+    rubric:
+      - "Expected stage from source case troubleshoot-observability/references/next-action-cases.json#missing-post-evidence: Validate recovery"
+      - "Expected next action from source case troubleshoot-observability/references/next-action-cases.json#missing-post-evidence: Report INCONCLUSIVE and request the minimal missing fresh supplied post-change summary or propose separately approved collection."
+      - "Expected question from source case troubleshoot-observability/references/next-action-cases.json#missing-post-evidence: Can you supply a fresh version-filtered post-change summary for the agreed checks?"
+      - "Expected permission from source case troubleshoot-observability/references/next-action-cases.json#missing-post-evidence: supplied comparison only"
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - verify-observability-fix
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "next-action-cases: deployment-only"
+    prompt: "Synthetic prior context:\n- Actual deployment succeeded; comparison accepted but no recovery evidence is supplied.\n\nVerify recovery."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      case_id: "deployment-only"
+      source: "next-action-cases.json"
+      requiredSkills:
+        - verify-observability-fix
+    rubric:
+      - "Expected stage from source case troubleshoot-observability/references/next-action-cases.json#deployment-only: Validate recovery"
+      - "Expected next action from source case troubleshoot-observability/references/next-action-cases.json#deployment-only: Deployment success is not recovery; report INCONCLUSIVE and request missing evidence without collection."
+      - "Expected question from source case troubleshoot-observability/references/next-action-cases.json#deployment-only: Can you supply the existing post-change symptom and guardrail summary?"
+      - "Expected permission from source case troubleshoot-observability/references/next-action-cases.json#deployment-only: supplied comparison only"
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - verify-observability-fix
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

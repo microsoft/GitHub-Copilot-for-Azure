@@ -1,0 +1,325 @@
+{
+  "provenance": "Synthetic instruction/host acceptance specification only; not executed model or host evidence.",
+  "cases": [
+    {
+      "id": "completed-plan-missing-source",
+      "entry": "troubleshoot-observability",
+      "context": "Synthetic semantic tool failure supports target validation in an adapter. Minimal plan, acceptance and rollback reviewed; source unknown.",
+      "prompt": "Yes, review the minimal fix and rollback plan.",
+      "stage": "Guide an approved fix",
+      "next_action": "Finish the supported plan then obtain missing source with one actionable question, not only a prerequisite disclaimer or verification.",
+      "question": "Where is the source/config for the affected agent/tool adapter? Open the workspace or share the relevant files with secrets removed.",
+      "permission": "planning only"
+    },
+    {
+      "id": "completed-plan-known-source",
+      "entry": "azure-diagnostics",
+      "context": "Synthetic supplied adapter.py shows tool errors returned as success. Concrete diff checks result status before returning success; acceptance and rollback reviewed.",
+      "prompt": "The relevant sanitized source is attached; continue.",
+      "stage": "Guide an approved fix",
+      "next_action": "Review the concrete diff and acceptance/rollback, then request exact edit approval; supplied source is not edit consent.",
+      "question": "May I edit adapter.py to return a tool failure when result status is error, leaving other behavior unchanged?",
+      "permission": "exact edit approval required"
+    },
+    {
+      "id": "plan-approval-only",
+      "entry": "azure-diagnostics/obs-return",
+      "context": "Synthetic completed supported plan with unknown adapter source; only plan review accepted, no reads approved.",
+      "prompt": "Yes to reviewing the plan, no edits or new reads.",
+      "stage": "Guide an approved fix",
+      "next_action": "Ask for minimal sanitized supplied source; no local inspection, remote read, unsupported Obs follow-up, edit or verify.",
+      "question": "Where is the source/config for the affected agent/tool adapter? Open the workspace or share the relevant files with secrets removed.",
+      "permission": "planning only"
+    },
+    {
+      "id": "permitted-local-source",
+      "entry": "microsoft-foundry/trace",
+      "context": "Synthetic supported plan reviewed. Developer permitted reading only the named nonsecret workspace adapter.py, not edits.",
+      "prompt": "Inspect adapter.py in my open application workspace to prepare the diff.",
+      "stage": "Guide an approved fix",
+      "next_action": "Inspect only the permitted relevant source before asking for files; review concrete diff, acceptance/rollback, then exact edit consent. No broad scans, .env, credentials or plugin cache edits.",
+      "question": "May I apply the reviewed status-check diff to adapter.py?",
+      "permission": "scoped source read only"
+    },
+    {
+      "id": "remote-source-separate-read",
+      "entry": "microsoft-foundry/troubleshoot",
+      "context": "Synthetic completed plan; adapter source is remote-only. Telemetry reads were authorized, source fetch/export was not.",
+      "prompt": "The source is only in the remote repository.",
+      "stage": "Guide an approved fix",
+      "next_action": "Propose a bounded separately approved source read or sanitized supplied files; no automatic fetch, clone, cloud export or install.",
+      "question": "May I read only the identified nonsecret adapter.py file at the confirmed revision using the existing repository read operation?",
+      "permission": "separate source read approval required"
+    },
+    {
+      "id": "local-edit-not-production",
+      "entry": "microsoft-foundry/troubleshoot",
+      "context": "Synthetic approved local adapter edit completed; deployed target remains unchanged. No tests or traffic approved.",
+      "prompt": "The local edit is done. Is production recovered?",
+      "stage": "Guide an approved fix",
+      "next_action": "Distinguish local unit validation from deployed behavior; no production recovery claim or automatic tests, traffic, jobs or deployment. Propose existing validation workflow only as needed.",
+      "question": "May I run the existing local adapter unit test for the edited path?",
+      "permission": "local validation approval required"
+    },
+    {
+      "id": "local-only-effective-change",
+      "entry": "microsoft-foundry/analyze-results",
+      "context": "Synthetic local-only adapter fix is effective; developer supplies original and post-change unit results with agreed thresholds.",
+      "prompt": "Compare these supplied local results.",
+      "stage": "Validate recovery",
+      "next_action": "Compare supplied evidence within local-only scope; no cloud deployment required, new tests or production recovery claim.",
+      "question": null,
+      "permission": "supplied comparison only"
+    },
+    {
+      "id": "historical-effective-version",
+      "entry": "azure-diagnostics",
+      "context": "Synthetic historical failure supports an old-version fix. Current effective code/version and target are uncertain; no current reads approved.",
+      "prompt": "Apply the historical fix from this plan.",
+      "stage": "Guide an approved fix",
+      "next_action": "Confirm effective current code/version and target before applying historical fix; do not assume old version deployed or create missing resources.",
+      "question": "Can you share the current effective adapter version and target confirmation, with secrets removed?",
+      "permission": "current confirmation required"
+    },
+    {
+      "id": "completed-plan-decline",
+      "entry": "troubleshoot-observability",
+      "context": "Synthetic supported plan reviewed, source absent; developer declines continuation.",
+      "prompt": "Stop here; no follow-up.",
+      "stage": "Guide an approved fix",
+      "next_action": "Stop without asking for source, edit consent or verification.",
+      "question": null,
+      "permission": "none"
+    },
+    {
+      "id": "completed-plan-unresolved-cause",
+      "entry": "microsoft-foundry/analyze-results",
+      "context": "Synthetic plan draft speculates about adapter failure, but evidence still does not establish cause.",
+      "prompt": "Continue from that plan.",
+      "stage": "Investigate the affected path",
+      "next_action": "Ask for smallest missing supplied observation, not speculative implementation or verification.",
+      "question": "Can you share the existing sanitized tool result showing whether this failure occurred?",
+      "permission": "supplied evidence only"
+    },
+    {
+      "id": "coordinator-actionable",
+      "entry": "troubleshoot-observability",
+      "context": "Supplied synthetic spans demonstrate deliberate retry-delay injection. Retrieval size is large but its effect is unproven.",
+      "prompt": "Why is this API slow? Use only the supplied evidence.",
+      "stage": "Investigate the affected path",
+      "next_action": "Offer review of disabling the injector and rollback; retrieval tuning stays a separate optional quality-risk experiment.",
+      "question": "Would you like me to review the smallest fix and rollback plan?",
+      "permission": "planning only"
+    },
+    {
+      "id": "direct-foundry-trace",
+      "entry": "microsoft-foundry/trace",
+      "context": "Supplied synthetic agent trace demonstrates deliberate retry-delay injection.",
+      "prompt": "Explain this slow agent trace.",
+      "stage": "Investigate the affected path",
+      "next_action": "Offer the narrowest fix/rollback plan review without invoking a coordinator or optimization loop.",
+      "question": "Would you like me to review the smallest fix and rollback plan?",
+      "permission": "planning only"
+    },
+    {
+      "id": "direct-foundry-runtime",
+      "entry": "microsoft-foundry/troubleshoot",
+      "context": "Supplied synthetic runtime evidence demonstrates an injected retry loop.",
+      "prompt": "Troubleshoot the agent runtime failure using this evidence.",
+      "stage": "Investigate the affected path",
+      "next_action": "Offer smallest supported plan review, not session creation, jobs or deployment.",
+      "question": "Would you like me to review the smallest fix and rollback plan?",
+      "permission": "planning only"
+    },
+    {
+      "id": "direct-foundry-existing-results",
+      "entry": "microsoft-foundry/analyze-results",
+      "context": "Existing synthetic evaluation aggregates cluster failures but provide no runtime causal evidence.",
+      "prompt": "Analyze these existing results without rerunning anything.",
+      "stage": "Investigate the affected path",
+      "next_action": "Request the smallest missing supplied runtime observation, not an optimization or evaluation job.",
+      "question": "Can you supply the existing runtime summary for the affected operation?",
+      "permission": "supplied evidence only"
+    },
+    {
+      "id": "direct-diagnostics",
+      "entry": "azure-diagnostics",
+      "context": "Supplied synthetic API evidence demonstrates a deliberate retry delay.",
+      "prompt": "Diagnose this API latency.",
+      "stage": "Investigate the affected path",
+      "next_action": "Return evidence, then offer smallest fix/rollback plan review.",
+      "question": "Would you like me to review the smallest fix and rollback plan?",
+      "permission": "planning only"
+    },
+    {
+      "id": "nested-obs-return",
+      "entry": "azure-diagnostics/obs-return",
+      "context": "An explicitly selected and separately approved synthetic service result has completed; caller evidence supports its injected-delay finding.",
+      "prompt": "Summarize the result.",
+      "stage": "Investigate the affected path",
+      "next_action": "Offer plan review in chat, no unsupported follow-up service message or new conversation.",
+      "question": "Would you like me to review the smallest fix and rollback plan?",
+      "permission": "planning only"
+    },
+    {
+      "id": "read-only",
+      "entry": "azure-diagnostics",
+      "context": "Synthetic supplied evidence demonstrates injected delay. No execution permission.",
+      "prompt": "Read-only diagnosis; no changes.",
+      "stage": "Investigate the affected path",
+      "next_action": "Offer optional plan review without reads, edits, deployment, traffic or saving.",
+      "question": "Would you like me to review the smallest fix and rollback plan?",
+      "permission": "planning only"
+    },
+    {
+      "id": "diagnosis-only",
+      "entry": "microsoft-foundry",
+      "context": "Synthetic supplied evidence supports disabling an intentional delay.",
+      "prompt": "Diagnosis only for now.",
+      "stage": "Investigate the affected path",
+      "next_action": "Complete diagnosis and offer optional plan review; do not begin planning without acceptance.",
+      "question": "Would you like me to review the smallest fix and rollback plan?",
+      "permission": "planning only"
+    },
+    {
+      "id": "recommendations-only",
+      "entry": "microsoft-foundry",
+      "context": "Synthetic actionable finding.",
+      "prompt": "Recommendations only.",
+      "stage": "Investigate the affected path",
+      "next_action": "Return recommendations and stop as requested.",
+      "question": null,
+      "permission": "none"
+    },
+    {
+      "id": "explicit-stop",
+      "entry": "troubleshoot-observability",
+      "context": "Synthetic actionable finding.",
+      "prompt": "Stop after diagnosis; no follow-up.",
+      "stage": "Investigate the affected path",
+      "next_action": "Return diagnosis and stop without a question.",
+      "question": null,
+      "permission": "none"
+    },
+    {
+      "id": "uncertain-cause",
+      "entry": "azure-diagnostics",
+      "context": "Synthetic latency overlaps a configuration change; causation remains unresolved. Live reads not yet approved.",
+      "prompt": "What caused the latency?",
+      "stage": "Investigate the affected path",
+      "next_action": "Propose one bounded discriminating evidence read with source, target, window and finite budget.",
+      "question": "May I read the bounded dependency timing summary for this operation and window?",
+      "permission": "separate bounded read approval"
+    },
+    {
+      "id": "accepted-review-handoff",
+      "entry": "azure-diagnostics",
+      "context": "Developer already accepted smallest fix/rollback plan review in the prior specialist handoff.",
+      "prompt": "Continue.",
+      "stage": "Guide an approved fix",
+      "next_action": "Review the retained plan without reprompting; no action execution.",
+      "question": null,
+      "permission": "planning only"
+    },
+    {
+      "id": "declined-review-handoff",
+      "entry": "microsoft-foundry",
+      "context": "Developer declined continuation in the prior specialist handoff.",
+      "prompt": "Summarize what we found.",
+      "stage": "Investigate the affected path",
+      "next_action": "Summarize retained diagnosis without another offer or action.",
+      "question": null,
+      "permission": "none"
+    },
+    {
+      "id": "covered-approved-plan",
+      "entry": "troubleshoot-observability",
+      "context": "A retained change plan and exact local edit have explicit unexpired approval; deployment is excluded.",
+      "prompt": "Proceed with that approved local edit.",
+      "stage": "Guide an approved fix",
+      "next_action": "Use the eligible workflow only for the covered local edit without redundant approval; do not deploy.",
+      "question": null,
+      "permission": "covered approved action only"
+    },
+    {
+      "id": "planned-only",
+      "entry": "verify-observability-fix",
+      "context": "Synthetic fix plan approved, but no actual change is confirmed.",
+      "prompt": "Did that fix work?",
+      "stage": "Guide an approved fix",
+      "next_action": "Explain no actual change exists; request actual change confirmation, not verification or a recovery verdict.",
+      "question": "Has the approved change actually been applied?",
+      "permission": "none"
+    },
+    {
+      "id": "actual-change",
+      "entry": "microsoft-foundry",
+      "context": "Developer confirms an actual approved change and its version/time; original baseline and agreed symptom/quality guardrails are retained.",
+      "prompt": "The approved change has been applied.",
+      "stage": "Guide an approved fix",
+      "next_action": "Proactively offer bounded verification using existing explicitly supplied evidence.",
+      "question": "Would you like me to compare the post-change evidence with the retained baseline and agreed guardrails?",
+      "permission": "supplied comparison only"
+    },
+    {
+      "id": "accepted-verification",
+      "entry": "verify-observability-fix",
+      "context": "An actual approved change and sufficient comparable fresh original/post evidence and criteria are explicitly supplied. Comparison was already accepted.",
+      "prompt": "Continue.",
+      "stage": "Validate recovery",
+      "next_action": "Compare supplied evidence without another prompt, reads, jobs, traffic or saving; compute only the supported verdict.",
+      "question": null,
+      "permission": "supplied comparison only"
+    },
+    {
+      "id": "missing-post-evidence",
+      "entry": "verify-observability-fix",
+      "context": "Comparison accepted after an actual approved change, but post evidence is absent or stale.",
+      "prompt": "Yes, continue.",
+      "stage": "Validate recovery",
+      "next_action": "Report INCONCLUSIVE and request the minimal missing fresh supplied post-change summary or propose separately approved collection.",
+      "question": "Can you supply a fresh version-filtered post-change summary for the agreed checks?",
+      "permission": "supplied comparison only"
+    },
+    {
+      "id": "deployment-only",
+      "entry": "verify-observability-fix",
+      "context": "Actual deployment succeeded; comparison accepted but no recovery evidence is supplied.",
+      "prompt": "Verify recovery.",
+      "stage": "Validate recovery",
+      "next_action": "Deployment success is not recovery; report INCONCLUSIVE and request missing evidence without collection.",
+      "question": "Can you supply the existing post-change symptom and guardrail summary?",
+      "permission": "supplied comparison only"
+    },
+    {
+      "id": "health-selection",
+      "entry": "assess-observability-health",
+      "context": "Synthetic ranked assessment is complete; no finding is selected.",
+      "prompt": "What should we look at next?",
+      "stage": "Detect health issues",
+      "next_action": "Ask for finding selection, never automatically investigate rank 1 or offer remediation.",
+      "question": "Which finding would you like to investigate?",
+      "permission": "selection only"
+    },
+    {
+      "id": "topic-switch",
+      "entry": "troubleshoot-observability",
+      "context": "An incident was previously investigated.",
+      "prompt": "Now explain a general coding pattern.",
+      "stage": null,
+      "next_action": "Answer the new topic without journey presentation or continuation.",
+      "question": null,
+      "permission": "none"
+    },
+    {
+      "id": "conceptual",
+      "entry": "troubleshoot-observability",
+      "context": "No operational incident.",
+      "prompt": "What is tracing?",
+      "stage": null,
+      "next_action": "Answer the concept directly without onboarding, journey or reads.",
+      "question": null,
+      "permission": "none"
+    }
+  ]
+}

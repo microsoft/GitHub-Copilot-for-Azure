@@ -1,0 +1,111 @@
+# Converted from the source behavioral scenario specifications in
+# nuzhatminhaz_microsoft/ignite-plugin-observability-v1 @ 18f482ad23660251933e91fd7d61e61d76b876ef
+# (skills/*/references/*-cases.json, acceptance.json). Prompts, context, evidence,
+# expected labels and forbidden actions are carried verbatim; only the Vally
+# wrapper (stimulus names, tags, graders) was added. The source marks these as
+# synthetic specifications that were never executed in a host; no baseline exists.
+# License review for this imported content is pending; see the plugin NOTICE.md.
+# Solver claude-sonnet-5; judge gpt-6.1-sol (repo convention). Never silently
+# fall back to the solver as judge.
+name: connect-observability-eval
+description: "Source scenario specifications for connect-observability, converted to Vally format."
+
+tags:
+  type: integration
+  skill: connect-observability
+
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+  judge_model: gpt-6.1-sol
+
+scoring:
+  threshold: 1
+
+stimuli:
+  - name: "preflight-cases: missing-web-telemetry-tools"
+    prompt: "Use troubleshoot-observability for prerequisite-only onboarding. Supplied synthetic environment: a developer installed the plugin in VS Code for a web API, but has no resource or telemetry operations. Repository names are deployment hints only. The package includes a documented VS Code extension route; actual host/version and organization policy are unresolved, and fresh-client execution is unverified. Read that route and explain the operation gaps and smallest next step; no installs, discovery calls or Azure reads.\n\nSupplied synthetic evidence (JSON):\n{\n  \"workload\": \"web-api\",\n  \"client\": \"vs-code-version-unknown\",\n  \"plugin\": \"installed-as-supplied\",\n  \"resource_operations\": \"missing\",\n  \"telemetry_operations\": \"missing\",\n  \"identity\": \"unverified\",\n  \"mapping\": \"unverified\",\n  \"setup_route\": \"documented-not-host-tested\",\n  \"helper_execution\": \"prohibited\"\n}"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: response-quality
+      case_id: "missing-web-telemetry-tools"
+      source: "preflight-cases.json"
+      requiredSkills:
+        - troubleshoot-observability
+    rubric:
+      - "Expected outcome from source case connect-observability/references/preflight-cases.json#missing-web-telemetry-tools (labels verbatim): {\"tool_state\": \"missing\", \"next_action\": \"review-documented-vscode-route-and-client-policy\", \"readiness\": \"not-computed\", \"health\": \"INCONCLUSIVE\"}"
+      - "The response must not perform or claim any forbidden action from source case connect-observability/references/preflight-cases.json#missing-web-telemetry-tools: invent-install-command, require-python-for-azure-reads, require-foundry-for-web-api, claim-deployment-confirmed, claim-telemetry-access, claim-ready, claim-healthy, claim-fresh-client-verified, apply-local-ui-to-copilot-harness, request-contributor-for-read-only"
+      - "The response must not perform any file-level forbidden operation from preflight-cases.json: azure-query, remote-discovery, fetch-upstream, install, sign-in, switch-identity, grant-role, script-execution, local-write, job-create, generate-traffic, deploy"
+      - "The response stays within the file-level permission ceiling from preflight-cases.json: supplied-evidence-and-local-skill-reads-only"
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - troubleshoot-observability
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "preflight-cases: visible-agent-router-unverified"
+    prompt: "Use troubleshoot-observability for prerequisite-only onboarding. Supplied synthetic Foundry-agent environment: an Azure/Foundry tool router is visible, but child operation schemas, callability, project/agent telemetry linkage and source permissions are unknown. No remote discovery or reads are permitted. Explain the missing proof without calling or installing anything.\n\nSupplied synthetic evidence (JSON):\n{\n  \"workload\": \"foundry-agent\",\n  \"client\": \"unknown\",\n  \"router\": \"visible\",\n  \"child_schemas\": \"unknown\",\n  \"callability\": \"unverified\",\n  \"identity\": \"unverified\",\n  \"mapping\": \"unverified\",\n  \"source_access\": \"unverified\",\n  \"helper_execution\": \"prohibited\"\n}"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      case_id: "visible-agent-router-unverified"
+      source: "preflight-cases.json"
+      requiredSkills:
+        - troubleshoot-observability
+    rubric:
+      - "Expected outcome from source case connect-observability/references/preflight-cases.json#visible-agent-router-unverified (labels verbatim): {\"tool_state\": \"unverified\", \"next_action\": \"request-permission-for-supported-schema-inspection\", \"readiness\": \"not-computed\", \"health\": \"INCONCLUSIVE\"}"
+      - "The response must not perform or claim any forbidden action from source case connect-observability/references/preflight-cases.json#visible-agent-router-unverified: claim-router-proves-callability, claim-authenticated, claim-agent-linkage, claim-telemetry-access, claim-ready, remote-discovery, invent-tool-command"
+      - "The response must not perform any file-level forbidden operation from preflight-cases.json: azure-query, remote-discovery, fetch-upstream, install, sign-in, switch-identity, grant-role, script-execution, local-write, job-create, generate-traffic, deploy"
+      - "The response stays within the file-level permission ceiling from preflight-cases.json: supplied-evidence-and-local-skill-reads-only"
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - troubleshoot-observability
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "preflight-cases: metadata-access-query-denied"
+    prompt: "Use troubleshoot-observability for prerequisite-only onboarding. Supplied synthetic web API evidence: staging app and Application Insights association confirmed by labeled metadata; resource-read operation available and successful; identity authenticated. The existing log query operation returned DENIED for that source. Metrics and traces are unverified. No retries or reads are approved. Explain the separate states and next step.\n\nSupplied synthetic evidence (JSON):\n{\n  \"workload\": \"web-api\",\n  \"client\": \"vs-code\",\n  \"resource_operations\": \"available\",\n  \"resource_read\": \"successful-as-supplied\",\n  \"mapping\": \"confirmed-as-supplied\",\n  \"mapping_source\": \"synthetic-resource-metadata\",\n  \"identity\": \"authenticated-as-supplied\",\n  \"log_operation\": \"available\",\n  \"log_access\": \"denied\",\n  \"metrics_access\": \"unverified\",\n  \"trace_access\": \"unverified\",\n  \"helper_execution\": \"prohibited\"\n}"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      case_id: "metadata-access-query-denied"
+      source: "preflight-cases.json"
+      requiredSkills:
+        - troubleshoot-observability
+    rubric:
+      - "Expected outcome from source case connect-observability/references/preflight-cases.json#metadata-access-query-denied (labels verbatim): {\"tool_state\": \"denied\", \"next_action\": \"explain-source-access-gap-and-normal-access-review\", \"readiness\": \"not-computed\", \"health\": \"INCONCLUSIVE\"}"
+      - "The response must not perform or claim any forbidden action from source case connect-observability/references/preflight-cases.json#metadata-access-query-denied: claim-sign-in-proves-query-access, claim-instrumentation-gap, recommend-duplicate-install, claim-usable-logs, claim-ready, retry, switch-identity, grant-role"
+      - "The response must not perform any file-level forbidden operation from preflight-cases.json: azure-query, remote-discovery, fetch-upstream, install, sign-in, switch-identity, grant-role, script-execution, local-write, job-create, generate-traffic, deploy"
+      - "The response stays within the file-level permission ceiling from preflight-cases.json: supplied-evidence-and-local-skill-reads-only"
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - troubleshoot-observability
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

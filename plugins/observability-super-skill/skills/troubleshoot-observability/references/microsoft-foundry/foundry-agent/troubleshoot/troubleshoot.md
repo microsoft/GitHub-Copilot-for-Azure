@@ -1,0 +1,163 @@
+# Foundry Agent Troubleshoot
+
+> **Local evidence-first override:** [Execution boundaries](../../references/execution-boundaries.md)
+> supersede all steps below. Reuse supplied sanitized evidence and confirmed
+> deployment context with no setup, scripts, azd, sign-in or writes. CLI examples
+> are optional only for a separately approved eligible workflow, not prerequisites.
+> Never invoke an agent, create a session or use `--follow` to investigate.
+> Missing session logs are a coverage gap; use existing approved telemetry or stop.
+
+## Standalone availability gate
+
+Check availability before reading cross-skill next-action guidance below.
+Use available shared guidance unchanged; never download, install or require a
+missing sibling-file read. If absent, continue this local bounded evidence
+workflow and return one smallest supported fix/rollback plan-review question,
+or the smallest missing evidence. Preserve scope/window, budgets, stops and
+separate approvals; no automatic reads, edits, jobs or recovery claim.
+
+Troubleshoot and debug Foundry agents by collecting Hosted Agent logs with azd, discovering observability connections, and querying Application Insights telemetry.
+
+## Investigation result and next action
+
+After runtime or supplied-evidence analysis, apply
+[the result-to-next-action contract](../../../next-actions.md).
+After completed plan review, use its implementation continuation: ask for missing
+source or propose the exact minimal edit for separate approval, not verification.
+State the stage, narrowest supported change and one fix/rollback plan-review
+question; unresolved material cause needs evidence rather than a manufactured
+fix. Preserve explicit stops and prior decisions. A yes is planning permission,
+not edits, traffic, jobs or deployment. Only an actual approved change supports
+offering verification with existing supplied evidence.
+
+## Quick Reference
+
+| Property | Value |
+|----------|-------|
+| MCP servers | `azure` |
+| Hosted Agent CLI | `azd ai agent show`, `sessions`, `monitor` |
+| Related skills | `trace` (telemetry analysis) |
+| Preferred query tool | `monitor_resource_log_query` (Azure MCP) — preferred over `azure-kusto` for App Insights |
+| CLI references | `azd ai agent show`, `azd ai agent sessions`, `azd ai agent monitor`, `az cognitiveservices account connection` |
+
+## When to Use This Skill
+
+- Agent is not responding or returning errors
+- Hosted agent version is not becoming active
+- Need to view hosted-agent session logs
+- Diagnose latency or timeout issues
+- Query Application Insights for agent traces and exceptions
+- Investigate agent runtime failures
+
+## Workflow
+
+### Step 1: Collect Agent Information
+
+Use the project endpoint and agent name from the project context (see [Common Project Context Resolution](../../SKILL.md#agent-common-project-context-resolution)). Ask the user only for values not already resolved:
+- **Project endpoint** — Microsoft Foundry project endpoint URL
+- **Agent name** — Name of the agent to troubleshoot
+
+### Step 2: Identify the Agent Type (`Hosted`, `Voice`, `Managed Harness Agent`, or `Prompt`)
+
+Inspect `azure.yaml` (`host: azure.ai.agent`) and classify the service in order:
+1. **Voice Agent** (apply the top-level compatibility classification for legacy manifests):
+   - Read [common Voice invariants](../create/references/voice-agent-common.md) and the selected subtype reference from [create-voice](../create/create-voice.md).
+   - Triage in this exact order:
+     1. **Definition & deployment**: Validate the selected subtype and run `azd ai agent show --output json`.
+     2. **Voice WebSocket upgrade & auth**: Confirm the client connects to `wss://<project-host>/api/projects/<project>/agents/<voice-agent>/endpoint/protocols/voice?api-version=v1` with `Foundry-Features: VoiceAgents=V1Preview` and an Entra token for `https://ai.azure.com` (never use `azd ai agent invoke`).
+     3. **Audio & session settings**: Compare audio, voice, greeting, model, and storage settings with the selected subtype reference.
+     4. **Subtype-specific runtime triage**:
+        - **Prompt Voice (`modelType: managed` or `self_deployed`)**: Has no Hosted container, no `azd ai agent sessions`, no `files`, and no `azd ai agent monitor` log stream. Skip Step 3 and proceed to Step 4 (Application Insights telemetry).
+        - **Hosted Voice (`conversationEngine.type: hosted_agent`)**: Separate wrapper configuration/endpoint failures from target Bridge, startup, model, and RBAC failures. Use [Hosted Voice Bridge troubleshooting](../create/references/voice-agent-hosted-bridge.md), then inspect logs on the `kind: hosted` target service.
+     5. **Observability**: Proceed to Step 4 and Step 5 for Application Insights conversation telemetry.
+2. **`kind: hosted` (Hosted Agent or Hosted Voice target)**: Run:
+
+```bash
+azd ai agent show --output json
+```
+
+If azd returns Hosted Agent details, proceed to Step 3. If the command fails for an identified Hosted Agent, diagnose the reported error instead of proceeding to Step 4.
+3. **`kind: prompt` (Managed Harness Agent or ordinary Prompt Agent)**: Has no Hosted container session logs; skip Step 3 and proceed to Step 4.
+
+### Step 3: Retrieve Logs (Hosted Agents Only)
+
+Hosted Agent logs are scoped to sessions. Use azd for session discovery and log retrieval.
+
+> **`invocations_ws` agents:** use the client-supplied `agent_session_id` from the WebSocket upgrade URL. It is not created by `azd ai agent invoke`. Pass it to `azd ai agent monitor --session-id`. See the [invocations-ws skill](../invocations-ws/invocations-ws.md) for the URL contract.
+
+1. **Check agent version status.** Use the result from Step 2 and verify that the deployed version is `active`.
+
+2. **Read logs from the current session.** `monitor` automatically reuses the session saved by the last azd invoke:
+
+   ```bash
+   azd ai agent monitor --tail 100
+   ```
+
+3. **Select another session when needed.** If no session is saved or the user needs a different one, run:
+
+   ```bash
+   azd ai agent sessions list --output table
+   azd ai agent monitor --session-id <session-id> --tail 100
+   ```
+
+   In multi-agent projects, add `--agent-name <service-name>` to `sessions list` and pass the service name positionally to `monitor`. Pass the same `--user-identity` used for invoke when header-based isolation is enabled.
+
+4. **Choose a bounded log stream only if CLI use is explicitly approved.**
+   Do not use `--follow`; use an explicit session, finite tail and time budget:
+
+   ```bash
+   azd ai agent monitor --session-id <session-id> --type system --tail 100
+   ```
+
+5. **Interpret the logs.** Review `stdout`, `stderr`, and system events. Highlight errors and warnings.
+
+If no session exists, report missing session evidence. Agent invocation is new
+traffic/state and requires a separate explicit task and approval, never a fallback.
+
+### Step 4: Discover Observability Connections
+
+List the project connections to find Application Insights or Azure Monitor resources using the Azure CLI command documented at:
+[az cognitiveservices account connection](https://learn.microsoft.com/en-us/cli/azure/cognitiveservices/account/connection?view=azure-cli-latest)
+
+Refer to the documentation above for the exact command syntax and parameters. Look for connections of type `ApplicationInsights` or `AzureMonitor` in the output.
+
+If no observability connection is found, inform the user and suggest setting up Application Insights for the project. Ask if they want to proceed without telemetry data.
+
+### Step 5: Query Application Insights Telemetry
+
+Reuse the confirmed source instead of repeating discovery. Inspect the actual
+query schema; `monitor_resource_log_query` requires `resource-id`, `table`, and
+`query`. Workspace schemas differ. Follow [trace](../trace/trace.md) for a minimal
+approved schema check and bounded noncontent query against the retained scope.
+
+Use verified identifier columns and explicit UTC bounds/row limits, never
+`* contains` wildcard scans. Pass only parameters the discovered operation accepts.
+
+### Step 6: Summarize Findings
+
+Present a summary to the user including:
+- **Agent status** — Hosted Agent version status when available
+- **Log errors** — key errors from hosted-agent session logs
+- **Telemetry insights** — exceptions, failed requests, latency trends
+- **Recommended actions** — specific steps to resolve identified issues
+
+## Error Handling
+
+| Error | Cause | Resolution |
+|-------|-------|------------|
+| Agent not found | Invalid agent name or project endpoint | Verify the `azure.yaml` service name and run `azd ai agent show` |
+| Hosted Agent not active | Hosted Agent is still provisioning or failed | Check deployment status, identity permissions, and system logs, then recheck status |
+| Session logs unavailable | The session does not exist or has not been invoked | Run `azd ai agent sessions list`; invoke with azd when authorized, then retry `monitor` |
+| No saved session ID | azd has not persisted an invoke session | Select one from `azd ai agent sessions list` and pass `--session-id` |
+| No observability connection | Application Insights not configured for the project | Suggest configuring Application Insights for the Foundry project |
+| Kusto query failed | Invalid cluster/database or insufficient permissions | Verify Application Insights resource details and reader permissions |
+| No telemetry data | Agent not instrumented or too recent | Check if Application Insights SDK is configured; data may take a few minutes to appear |
+| `session.rejected` (`protocol_mismatch`) on Hosted Voice startup | Hosted target does not satisfy the selected Bridge contract | Follow [Hosted Voice Bridge troubleshooting](../create/references/voice-agent-hosted-bridge.md), redeploy the target, and retest |
+| `azd ai agent invoke` fails on Voice Agent | `azd ai agent invoke` does not support the Voice protocol | Use the Voice WebSocket smoke-test script ([smoke-test-voice.sh](../create/scripts/smoke-test-voice.sh) / [smoke-test-voice.ps1](../create/scripts/smoke-test-voice.ps1)) or Foundry Voice playground |
+
+## Additional Resources
+
+- [Foundry Hosted Agents](https://learn.microsoft.com/azure/ai-foundry/agents/concepts/hosted-agents?view=foundry)
+- [Account Connection CLI Reference](https://learn.microsoft.com/en-us/cli/azure/cognitiveservices/account/connection?view=azure-cli-latest)
+- [KQL Quick Reference](https://learn.microsoft.com/azure/data-explorer/kusto/query/kql-quick-reference)
+- [Foundry Samples](https://github.com/microsoft-foundry/foundry-samples)
