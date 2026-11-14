@@ -30,3 +30,20 @@ npm --prefix tests test -- azure-skills/azure-ai/speech-sdk.test.ts
 SPEECH_ANALYZER_PATH="$PWD/plugins/azure-skills/skills/azure-ai/scripts/analyze-speech-sdk-log.mjs" \
   npm --prefix tests test -- azure-skills/azure-ai/speech-sdk.test.ts
 ```
+
+## Offline preflight suites
+
+Additional deterministic Vitest suites exercise the bundled `azure-ai` offline
+inspectors under `plugins/azure-skills/skills/azure-ai/scripts/` using
+synthetic inputs only (no Azure sign-in, network, customer data or
+credentials):
+
+- `speech-audio.test.ts` — `inspect-speech-audio.mjs` (`SPEECH_AUDIO_INSPECTOR_PATH`)
+
+Build first so `output/azure-skills/skills/azure-ai/scripts/` is up to date, then
+run all suites from the repository root:
+
+```bash
+npm run build
+npm --prefix tests test -- azure-skills/azure-ai/
+```
