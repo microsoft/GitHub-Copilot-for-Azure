@@ -1,12 +1,3 @@
-# Converted from the source behavioral scenario specifications in
-# nuzhatminhaz_microsoft/ignite-plugin-observability-v1 @ 18f482ad23660251933e91fd7d61e61d76b876ef
-# (skills/*/references/*-cases.json, acceptance.json). Prompts, context, evidence,
-# expected labels and forbidden actions are carried verbatim; only the Vally
-# wrapper (stimulus names, tags, graders) was added. The source marks these as
-# synthetic specifications that were never executed in a host; no baseline exists.
-# License review for this imported content is pending; see the plugin NOTICE.md.
-# Solver claude-sonnet-5; judge gpt-6.1-sol (repo convention). Never silently
-# fall back to the solver as judge.
 name: troubleshoot-observability-eval
 description: "Source scenario specifications for troubleshoot-observability, converted to Vally format."
 
