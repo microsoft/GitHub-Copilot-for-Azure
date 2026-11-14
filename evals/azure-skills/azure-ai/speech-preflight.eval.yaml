@@ -61,7 +61,7 @@ stimuli:
         config:
           required:
             - command: >-
-                (?i)(?:^|[;&|\r\n])\s*(?:&\s*)?node(?:\.exe)?\s+(?:"[^"\r\n]*inspect-speech-audio\.mjs"|'[^'\r\n]*inspect-speech-audio\.mjs'|[^\s"';&|\r\n]*inspect-speech-audio\.mjs)\b
+                (?i)(?:^|[;&|\r\n])\s*(?:&\s*)?node(?:\.exe)?\s+(?:"[^"\r\n]*inspect-speech-audio\.mjs"|'[^'\r\n]*inspect-speech-audio\.mjs'|[^\s"';&|\r\n]*inspect-speech-audio\.mjs)(?=$|[\s;&|])
       - type: prompt
         config:
           scoring: scale_1_5

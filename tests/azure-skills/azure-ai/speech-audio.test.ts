@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { chmod, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdtemp, rm, truncate, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { delimiter, dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -104,6 +104,19 @@ it("validates 16kHz PCM WAV and catches silence, float WAV, truncation, and MP3-
     const silent = await inspectSpeechAudio({ file: silentWav, mode: "realtime-sdk" });
     expect(silent.findings.map((f) => f.code)).toContain("LEADING_DIGITAL_SILENCE");
 
+    // Unsigned 8-bit PCM silence is 0x80; 0x00 is full negative scale, not digital silence.
+    const pcm8Loud = join(dir, "pcm8-zero-bytes.wav");
+    await writeFile(pcm8Loud, makeWav({ bitsPerSample: 8, fillByte: 0x00 }));
+    const pcm8LoudRes = await inspectSpeechAudio({ file: pcm8Loud, mode: "realtime-sdk" });
+    expect(pcm8LoudRes.audio?.dataChunk?.firstWindowAllZero).toBe(false);
+    expect(pcm8LoudRes.findings.map((f) => f.code)).not.toContain("LEADING_DIGITAL_SILENCE");
+
+    const pcm8Silent = join(dir, "pcm8-midpoint-silence.wav");
+    await writeFile(pcm8Silent, makeWav({ bitsPerSample: 8, fillByte: 0x80 }));
+    const pcm8SilentRes = await inspectSpeechAudio({ file: pcm8Silent, mode: "realtime-sdk" });
+    expect(pcm8SilentRes.audio?.dataChunk?.firstWindowAllZero).toBe(true);
+    expect(pcm8SilentRes.findings.map((f) => f.code)).toContain("LEADING_DIGITAL_SILENCE");
+
     const floatWav = join(dir, "float.wav");
     await writeFile(floatWav, makeWav({ formatTag: 3, bitsPerSample: 32 }));
     const floatRes = await inspectSpeechAudio({ file: floatWav, mode: "realtime-sdk" });
@@ -149,19 +162,58 @@ it("finds WAV data past large chunks and flags header-only or data-less WAV file
     expect(listed.audio?.dataChunk?.declaredBytes).toBe(320);
     expect(listed.findings.map((f) => f.code)).not.toContain("DURATION_NOT_DETERMINED");
 
-    // WAVE_FORMAT_EXTENSIBLE with PCM sub-format is PCM.
-    const ext = Buffer.alloc(68);
-    ext.write("RIFF", 0, "ascii"); ext.writeUInt32LE(60, 4); ext.write("WAVE", 8, "ascii");
-    ext.write("fmt ", 12, "ascii"); ext.writeUInt32LE(40, 16); ext.writeUInt16LE(0xfffe, 20);
-    ext.writeUInt16LE(1, 22); ext.writeUInt32LE(16000, 24); ext.writeUInt32LE(32000, 28);
-    ext.writeUInt16LE(2, 32); ext.writeUInt16LE(16, 34); ext.writeUInt16LE(22, 36);
-    ext.writeUInt16LE(16, 38); ext.writeUInt16LE(0x0001, 44);
-    ext.write("data", 60, "ascii"); ext.writeUInt32LE(0, 64);
+    // WAVE_FORMAT_EXTENSIBLE with complete KSDATAFORMAT_SUBTYPE_PCM GUID is PCM; a modified GUID tail is not.
+    const makeExtensible = (lastGuidByte: number): Buffer => {
+      const ext = Buffer.alloc(68);
+      ext.write("RIFF", 0, "ascii"); ext.writeUInt32LE(64, 4); ext.write("WAVE", 8, "ascii");
+      ext.write("fmt ", 12, "ascii"); ext.writeUInt32LE(40, 16); ext.writeUInt16LE(0xfffe, 20);
+      ext.writeUInt16LE(1, 22); ext.writeUInt32LE(16000, 24); ext.writeUInt32LE(32000, 28);
+      ext.writeUInt16LE(2, 32); ext.writeUInt16LE(16, 34); ext.writeUInt16LE(22, 36);
+      ext.writeUInt16LE(16, 38); ext.writeUInt32LE(4, 40);
+      Buffer.from([
+        0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00,
+        0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, lastGuidByte,
+      ]).copy(ext, 44);
+      ext.write("data", 60, "ascii"); ext.writeUInt32LE(4, 64);
+      return Buffer.concat([ext, Buffer.from([1, 2, 3, 4])]);
+    };
     const extWav = join(dir, "extensible.wav");
-    await writeFile(extWav, Buffer.concat([ext.subarray(0, 64), Buffer.from([4, 0, 0, 0, 1, 2, 3, 4])]));
+    await writeFile(extWav, makeExtensible(0x71));
     const extRes = await inspectSpeechAudio({ file: extWav, mode: "realtime-sdk" });
+    expect(extRes.status).toBe("passed_local_checks");
     expect(extRes.audio?.wavFormat?.codec).toBe("pcm");
     expect(extRes.audio?.wavFormat?.isExtensible).toBe(true);
+
+    const badGuidWav = join(dir, "extensible-bad-guid.wav");
+    await writeFile(badGuidWav, makeExtensible(0x72));
+    const badGuidRes = await inspectSpeechAudio({ file: badGuidWav, mode: "realtime-sdk" });
+    expect(badGuidRes.status).toBe("passed_with_warnings");
+    expect(badGuidRes.audio?.wavFormat?.codec).toBe("extensible_unknown");
+    expect(badGuidRes.findings.map((f) => f.code)).toContain("NON_PCM_WAV_FOR_REALTIME_SDK");
+
+    // Reaching the 4,096-chunk traversal cap before 'data' yields status 'unknown', not MISSING_WAV_DATA_CHUNK.
+    const junkChunk = Buffer.from("JUNK\x00\x00\x00\x00", "latin1");
+    const manyJunks = Buffer.alloc(4096 * 8);
+    for (let i = 0; i < 4096; i += 1) junkChunk.copy(manyJunks, i * 8);
+    const cappedWav = join(dir, "capped-chunks.wav");
+    await writeFile(cappedWav, Buffer.concat([pcm.subarray(0, 36), manyJunks, pcm.subarray(36)]));
+    const cappedRes = await inspectSpeechAudio({ file: cappedWav, mode: "realtime-sdk" });
+    expect(cappedRes.status).toBe("unknown");
+    expect(cappedRes.findings.map((f) => f.code)).toContain("WAV_CHUNK_SCAN_INCOMPLETE");
+    expect(cappedRes.findings.map((f) => f.code)).not.toContain("MISSING_WAV_DATA_CHUNK");
+
+    // Unrounded duration 17,999.9995s (35,999,999 B at 2,000 B/s) rounds to 18,000.000s for display
+    // but is strictly < 5 hours, so it must not fail EXCEEDS_FAST_TRANSCRIPTION_DURATION_LIMIT.
+    const subLimitPayload = 35_999_999;
+    const subHeader = makeWav({ payloadBytes: 1, declaredDataBytes: subLimitPayload });
+    subHeader.writeUInt32LE(36 + subLimitPayload, 4);
+    subHeader.writeUInt32LE(2000, 28);
+    const subLimitWav = join(dir, "just-under-5h.wav");
+    await writeFile(subLimitWav, subHeader);
+    await truncate(subLimitWav, 44 + subLimitPayload);
+    const subLimitRes = await inspectSpeechAudio({ file: subLimitWav, mode: "fast-transcription" });
+    expect(subLimitRes.audio?.dataChunk?.estimatedDurationSeconds).toBe(18000);
+    expect(subLimitRes.findings.map((f) => f.code)).not.toContain("EXCEEDS_FAST_TRANSCRIPTION_DURATION_LIMIT");
 
     const headerOnly = join(dir, "header-only.wav");
     await writeFile(headerOnly, makeWav({ declaredDataBytes: 0, payloadBytes: 0 }));

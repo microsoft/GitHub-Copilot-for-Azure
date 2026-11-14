@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Local allowlist inspector for Azure Speech audio containers and batch status/files JSON.
 // Exit codes: 0 = report written to stdout or --help, 1 = file/read/size/JSON error, 2 = usage/argument error.
-import { openSync, readSync, closeSync, realpathSync } from "node:fs";
-import { readFile, stat } from "node:fs/promises";
+import { realpathSync } from "node:fs";
+import { open } from "node:fs/promises";
 import { extname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -25,6 +25,10 @@ const WAV_TAGS = new Map([
   [0x0055, "mp3"],
   [0xfffe, "extensible"],
 ]);
+// Bytes 2..16 of KSDATAFORMAT_SUBTYPE_WAVEFORMATEX: 00000000-0000-0010-8000-00AA00389B71 (after 2-byte LE tag).
+const KS_WAVEFORMATEX_GUID_TAIL = Buffer.from([
+  0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71,
+]);
 const SAFE_CODE = /^[A-Za-z0-9._:-]{1,80}$/;
 
 function usage() {
@@ -36,20 +40,16 @@ function usage() {
   ].join("\n");
 }
 
-function readSlice(file, offset, length) {
-  const fd = openSync(file, "r");
-  try {
-    const buffer = Buffer.alloc(Math.max(0, length));
-    const bytesRead = readSync(fd, buffer, 0, buffer.length, offset);
-    return buffer.subarray(0, bytesRead);
-  } finally {
-    closeSync(fd);
-  }
+async function readSlice(handle, offset, length) {
+  const buffer = Buffer.alloc(Math.max(0, length));
+  if (buffer.length === 0) return buffer;
+  const { bytesRead } = await handle.read(buffer, 0, buffer.length, offset);
+  return buffer.subarray(0, bytesRead);
 }
 
 const MAX_WAV_CHUNKS = 4096;
 
-function parseWav(file, byteLength) {
+async function parseWav(handle, byteLength) {
   if (byteLength < 12) return { container: "unrecognized" };
   let offset = 12;
   let fmt;
@@ -61,22 +61,36 @@ function parseWav(file, byteLength) {
   // "data" are skipped instead of hiding the data chunk.
   while (offset + 8 <= byteLength && chunksSeen < MAX_WAV_CHUNKS) {
     chunksSeen += 1;
-    const header = readSlice(file, offset, 8);
+    const header = await readSlice(handle, offset, 8);
     if (header.length < 8) break;
     const id = header.toString("ascii", 0, 4);
     const chunkSize = header.readUInt32LE(4);
     const bodyStart = offset + 8;
     if (id === "fmt " && chunkSize >= 16) {
-      const body = readSlice(file, bodyStart, Math.min(chunkSize, 64));
+      const body = await readSlice(handle, bodyStart, Math.min(chunkSize, 64));
       if (body.length >= 16) {
         const formatTag = body.readUInt16LE(0);
-        let subFormatTag;
-        if (formatTag === 0xfffe && chunkSize >= 40 && body.length >= 26) {
-          subFormatTag = body.readUInt16LE(24);
+        let codec;
+        if (formatTag === 0xfffe) {
+          const validExtensible =
+            chunkSize >= 40 &&
+            body.length >= 40 &&
+            body.readUInt16LE(16) >= 22 &&
+            body.subarray(26, 40).equals(KS_WAVEFORMATEX_GUID_TAIL);
+          if (validExtensible) {
+            const subFormatTag = body.readUInt16LE(24);
+            codec = subFormatTag !== 0xfffe
+              ? (WAV_TAGS.get(subFormatTag) ?? `extensible_tag_${subFormatTag}`)
+              : "extensible_unknown";
+          } else {
+            codec = "extensible_unknown";
+          }
+        } else {
+          codec = WAV_TAGS.get(formatTag) ?? `tag_${formatTag}`;
         }
         fmt = {
           formatTag,
-          codec: WAV_TAGS.get(subFormatTag ?? formatTag) ?? `tag_${formatTag}`,
+          codec,
           isExtensible: formatTag === 0xfffe,
           channels: body.readUInt16LE(2),
           sampleRate: body.readUInt32LE(4),
@@ -93,8 +107,11 @@ function parseWav(file, byteLength) {
     offset = bodyStart + chunkSize + (chunkSize % 2);
   }
 
+  const chunkScanIncomplete = dataOffset === undefined && offset + 8 <= byteLength && chunksSeen >= MAX_WAV_CHUNKS;
+
   let actualRemainingBytes;
   let truncated = false;
+  let rawDurationSeconds;
   let durationSeconds;
   let sampledZeroSilence;
   if (dataOffset !== undefined && declaredDataBytes !== undefined) {
@@ -102,17 +119,24 @@ function parseWav(file, byteLength) {
     truncated = declaredDataBytes !== 0xffffffff && actualRemainingBytes < declaredDataBytes;
     const effectiveBytes = Math.min(declaredDataBytes, actualRemainingBytes);
     if (fmt && fmt.byteRate > 0) {
-      durationSeconds = Number((effectiveBytes / fmt.byteRate).toFixed(3));
+      rawDurationSeconds = effectiveBytes / fmt.byteRate;
+      durationSeconds = Number(rawDurationSeconds.toFixed(3));
     }
     if (fmt && fmt.codec === "pcm" && effectiveBytes > 0) {
       const sampleLen = Math.min(effectiveBytes, 64 * 1024);
-      const pcmWindow = readSlice(file, dataOffset, sampleLen);
-      sampledZeroSilence = pcmWindow.every((b) => b === 0);
+      const pcmWindow = await readSlice(handle, dataOffset, sampleLen);
+      if (fmt.bitsPerSample === 8) {
+        sampledZeroSilence = pcmWindow.length > 0 && pcmWindow.every((b) => b === 0x80);
+      } else if (fmt.bitsPerSample >= 16 && fmt.bitsPerSample % 8 === 0) {
+        sampledZeroSilence = pcmWindow.length > 0 && pcmWindow.every((b) => b === 0x00);
+      }
     }
   }
 
   return {
     container: "wav",
+    ...(chunkScanIncomplete ? { chunkScanIncomplete: true } : {}),
+    ...(rawDurationSeconds !== undefined ? { _rawDurationSeconds: rawDurationSeconds } : {}),
     ...(fmt ? { wavFormat: fmt } : {}),
     ...(declaredDataBytes !== undefined
       ? {
@@ -128,11 +152,11 @@ function parseWav(file, byteLength) {
   };
 }
 
-function detectAudioContainer(file, byteLength) {
+async function detectAudioContainer(handle, byteLength) {
   if (byteLength === 0) return { container: "empty" };
-  const head = readSlice(file, 0, Math.min(byteLength, 4096));
+  const head = await readSlice(handle, 0, Math.min(byteLength, 4096));
   if (head.length >= 12 && head.toString("ascii", 0, 4) === "RIFF" && head.toString("ascii", 8, 12) === "WAVE") {
-    return parseWav(file, byteLength);
+    return parseWav(handle, byteLength);
   }
   if (head.length >= 4 && head.toString("ascii", 0, 4) === "fLaC") return { container: "flac" };
   if (head.length >= 4 && head.toString("ascii", 0, 4) === "OggS") return { container: "ogg" };
@@ -298,17 +322,33 @@ export async function inspectSpeechAudio({ file, mode = "realtime-sdk" } = {}) {
   const normalizedMode = String(mode).toLowerCase();
   if (!MODES.has(normalizedMode)) throw new Error("INVALID_MODE");
 
-  const info = await stat(file);
-  if (!info.isFile()) throw new Error("NOT_A_FILE");
-
-  if (normalizedMode === "batch-transcription-files" || normalizedMode === "batch-synthesis-job") {
-    if (info.size > MAX_JSON_BYTES) throw new Error("INPUT_TOO_LARGE");
-    const parsed = JSON.parse(await readFile(file, "utf8"));
-    return inspectBatchJson(parsed, normalizedMode);
+  let handle;
+  try {
+    handle = await open(file, "r");
+  } catch (err) {
+    if (err?.code === "EISDIR") throw new Error("NOT_A_FILE");
+    throw err;
   }
 
+  let info;
+  let parsedAudio;
+  try {
+    info = await handle.stat();
+    if (!info.isFile()) throw new Error("NOT_A_FILE");
+
+    if (normalizedMode === "batch-transcription-files" || normalizedMode === "batch-synthesis-job") {
+      if (info.size > MAX_JSON_BYTES) throw new Error("INPUT_TOO_LARGE");
+      const parsed = JSON.parse(await handle.readFile("utf8"));
+      return inspectBatchJson(parsed, normalizedMode);
+    }
+
+    parsedAudio = await detectAudioContainer(handle, info.size);
+  } finally {
+    await handle.close();
+  }
+
+  const { _rawDurationSeconds: rawDurationSeconds, ...audio } = parsedAudio;
   const extension = extname(file).toLowerCase();
-  const audio = detectAudioContainer(file, info.size);
   const findings = [];
 
   if (audio.container === "empty") {
@@ -336,7 +376,9 @@ export async function inspectSpeechAudio({ file, mode = "realtime-sdk" } = {}) {
 
   if (audio.container === "wav") {
     if (!audio.wavFormat) {
-      findings.push({ code: "MISSING_WAV_FMT_CHUNK", severity: "error", detail: "WAV file has no readable fmt chunk." });
+      if (!audio.chunkScanIncomplete) {
+        findings.push({ code: "MISSING_WAV_FMT_CHUNK", severity: "error", detail: "WAV file has no readable fmt chunk." });
+      }
     } else {
       if (normalizedMode === "realtime-sdk" && audio.wavFormat.codec !== "pcm") {
         findings.push({
@@ -353,7 +395,13 @@ export async function inspectSpeechAudio({ file, mode = "realtime-sdk" } = {}) {
         });
       }
     }
-    if (!audio.dataChunk) {
+    if (audio.chunkScanIncomplete) {
+      findings.push({
+        code: "WAV_CHUNK_SCAN_INCOMPLETE",
+        severity: "warning",
+        detail: `WAV chunk scan stopped after ${MAX_WAV_CHUNKS} chunks before reaching a 'data' chunk; audio data presence and duration remain unknown.`,
+      });
+    } else if (!audio.dataChunk) {
       findings.push({ code: "MISSING_WAV_DATA_CHUNK", severity: "error", detail: "WAV file has no data chunk (header-only or malformed chunk list)." });
     } else if (audio.dataChunk.declaredBytes === 0 || audio.dataChunk.availableBytes === 0) {
       findings.push({ code: "EMPTY_WAV_DATA_CHUNK", severity: "error", detail: "WAV data chunk contains no audio samples." });
@@ -369,7 +417,7 @@ export async function inspectSpeechAudio({ file, mode = "realtime-sdk" } = {}) {
       findings.push({
         code: "LEADING_DIGITAL_SILENCE",
         severity: "warning",
-        detail: "Initial PCM window contains only zero-amplitude bytes; verify microphone/capture routing if NoMatch occurs.",
+        detail: "Initial PCM window contains only digital-silence samples; verify microphone/capture routing if NoMatch occurs.",
       });
     }
   } else if (normalizedMode === "realtime-sdk" && audio.container !== "empty" && audio.container !== "unrecognized") {
@@ -388,18 +436,18 @@ export async function inspectSpeechAudio({ file, mode = "realtime-sdk" } = {}) {
         detail: `File size (${info.size} bytes) meets or exceeds the < 500 MB Fast Transcription limit.`,
       });
     }
-    const duration = audio.dataChunk?.estimatedDurationSeconds;
-    if (duration === undefined) {
+    if (rawDurationSeconds === undefined) {
       findings.push({
         code: "DURATION_NOT_DETERMINED",
         severity: "info",
         detail: "Duration could not be computed locally for this container; the < 5 hour Fast Transcription limit was not checked.",
       });
-    } else if (duration >= FAST_MAX_SECONDS) {
+    } else if (rawDurationSeconds >= FAST_MAX_SECONDS) {
+      const shownDuration = audio.dataChunk?.estimatedDurationSeconds ?? Number(rawDurationSeconds.toFixed(3));
       findings.push({
         code: "EXCEEDS_FAST_TRANSCRIPTION_DURATION_LIMIT",
         severity: "error",
-        detail: `Estimated duration (${duration}s) meets or exceeds the < 5 hour Fast Transcription limit.`,
+        detail: `Estimated duration (${shownDuration}s) meets or exceeds the < 5 hour Fast Transcription limit.`,
       });
     }
   } else if (normalizedMode === "batch-transcription" && info.size > BATCH_MAX_BYTES) {
@@ -413,7 +461,7 @@ export async function inspectSpeechAudio({ file, mode = "realtime-sdk" } = {}) {
   const hasError = findings.some((f) => f.severity === "error");
   const status = hasError
     ? "failed_preflight"
-    : audio.container === "unrecognized"
+    : audio.container === "unrecognized" || audio.chunkScanIncomplete
       ? "unknown"
       : findings.some((f) => f.severity === "warning") ? "passed_with_warnings" : "passed_local_checks";
 
