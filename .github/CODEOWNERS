@@ -50,10 +50,12 @@
 /plugins/azure-skills/skills/azure-app-onboard-prereq/ @vaibbavis @vaibbavisk20 @kunalsuri-microsoft @microsoft/github-copilot-for-azure-writers
 /plugins/azure-advisor/ @aparguptajs @ankiga-MSFT @ravigupta99 @microsoft/github-copilot-for-azure-writers
 /plugins/aks-skills/ @nikhilkaul1234 @brrusino @microsoft/github-copilot-for-azure-writers
-/plugins/observability-super-skill/skills/troubleshoot-observability/ [required-codeowner-1] [required-codeowner-2] @microsoft/github-copilot-for-azure-writers
-/plugins/observability-super-skill/skills/connect-observability/ [required-codeowner-1] [required-codeowner-2] @microsoft/github-copilot-for-azure-writers
-/plugins/observability-super-skill/skills/assess-observability-health/ [required-codeowner-1] [required-codeowner-2] @microsoft/github-copilot-for-azure-writers
-/plugins/observability-super-skill/skills/verify-observability-fix/ [required-codeowner-1] [required-codeowner-2] @microsoft/github-copilot-for-azure-writers
+/plugins/observability-super-skill/ @minhaz-nuzhat @microsoft/github-copilot-for-azure-writers
+/plugins/observability-super-skill/skills/troubleshoot-observability/ @minhaz-nuzhat @microsoft/github-copilot-for-azure-writers
+/plugins/observability-super-skill/skills/connect-observability/ @minhaz-nuzhat @microsoft/github-copilot-for-azure-writers
+/plugins/observability-super-skill/skills/assess-observability-health/ @minhaz-nuzhat @microsoft/github-copilot-for-azure-writers
+/plugins/observability-super-skill/skills/verify-observability-fix/ @minhaz-nuzhat @microsoft/github-copilot-for-azure-writers
+/tests/skills/observability-super-skill/ @minhaz-nuzhat @microsoft/github-copilot-for-azure-writers
 
 # Plugin skills evals owners (multi-plugin)
 /evals/foundry-iq-skills/foundry-iq/ @hustcalm @valangar @kirk-marple @chbradsh @davidm00 @microsoft/github-copilot-for-azure-writers
@@ -86,10 +88,10 @@
 /evals/azure-skills/python-appservice-deploy/ @glaming1 @microsoft/github-copilot-for-azure-writers
 /evals/azure-advisor/ @aparguptajs @ankiga-MSFT @ravigupta99 @microsoft/github-copilot-for-azure-writers
 /evals/aks-skills/ @nikhilkaul1234 @brrusino @microsoft/github-copilot-for-azure-writers
-/evals/observability-super-skill/troubleshoot-observability/ [required-codeowner-1] [required-codeowner-2] @microsoft/github-copilot-for-azure-writers
-/evals/observability-super-skill/connect-observability/ [required-codeowner-1] [required-codeowner-2] @microsoft/github-copilot-for-azure-writers
-/evals/observability-super-skill/assess-observability-health/ [required-codeowner-1] [required-codeowner-2] @microsoft/github-copilot-for-azure-writers
-/evals/observability-super-skill/verify-observability-fix/ [required-codeowner-1] [required-codeowner-2] @microsoft/github-copilot-for-azure-writers
+/evals/observability-super-skill/troubleshoot-observability/ @minhaz-nuzhat @microsoft/github-copilot-for-azure-writers
+/evals/observability-super-skill/connect-observability/ @minhaz-nuzhat @microsoft/github-copilot-for-azure-writers
+/evals/observability-super-skill/assess-observability-health/ @minhaz-nuzhat @microsoft/github-copilot-for-azure-writers
+/evals/observability-super-skill/verify-observability-fix/ @minhaz-nuzhat @microsoft/github-copilot-for-azure-writers
 
 # azure-local-skills plugin owners
 /plugins/azure-local-skills/ @tfrankland2 @cesquedamsft @microsoft/github-copilot-for-azure-writers
