@@ -231,10 +231,7 @@ package describe the source composition and have not yet been refactored.
 
 Contributor: Nuzhat Minhaz.
 
-**Draft for review:** the user confirmed rights-holder approval for public
-release under MIT (see [NOTICE](NOTICE.md)). Receiving-project license acceptance,
-public attribution, CODEOWNERS entries, and the token-limit/guideline refactor
-remain open.
+Licensed under the [MIT License](LICENSE). See [NOTICE](NOTICE.md) for attribution.
 
 ## Telemetry
 
