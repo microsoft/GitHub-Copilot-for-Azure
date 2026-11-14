@@ -231,9 +231,10 @@ package describe the source composition and have not yet been refactored.
 
 Contributor: Nuzhat Minhaz.
 
-**Not ready for publication:** licensing and public attribution require review
-(see [NOTICE](NOTICE.md)). CODEOWNERS entries and the token-limit/guideline
-refactor also remain open.
+**Draft for review:** the user confirmed rights-holder approval for public
+release under MIT (see [NOTICE](NOTICE.md)). Receiving-project license acceptance,
+public attribution, CODEOWNERS entries, and the token-limit/guideline refactor
+remain open.
 
 ## Telemetry
 

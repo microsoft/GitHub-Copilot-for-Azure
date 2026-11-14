@@ -12,11 +12,13 @@ Nuzhat Minhaz.
 ## Licensing and attribution
 
 On 2026-11-13, the user confirmed that the rights holder approved releasing
-the separately supplied health contribution under MIT. The earlier source
-notice recorded permission to ship but did not itself grant an MIT license or
-declare a repository-wide license for the prepared source. Receiving-project
-license acceptance and approved public attribution remain required before
-submission. See
+the separately supplied health contribution under MIT. The user subsequently
+confirmed that the rights holder approved public release under MIT for all
+imported EMU material, including specialist adaptations, tests, evaluations,
+and documentation. The earlier source notice recorded permission to ship but
+did not itself grant an MIT license or declare a repository-wide license for
+the prepared source. Receiving-project license acceptance and public attribution
+remain subject to review. See
 [health provenance](skills/assess-observability-health/references/provenance.md).
 
 ## Microsoft specialist sources
@@ -31,12 +33,11 @@ adapted trees as references under `skills/troubleshoot-observability/references/
 their integration with the receiving repository's existing specialists
 requires review.
 
-## Imported investigation and specialist-derived content (license review pending)
+## Imported investigation and specialist-derived content
 
 The following content was imported from the source repository at revision
-`18f482ad23660251933e91fd7d61e61d76b876ef` and still requires its own license
-review. The MIT confirmation above applies only to the health contribution; it
-does **not** extend to this content:
+`18f482ad23660251933e91fd7d61e61d76b876ef` and is covered by the user's
+subsequent MIT approval confirmation above:
 
 - the nested affected-path investigation workflow, its references and the
   Prometheus helper (`skills/troubleshoot-observability/references/azure-diagnostics/investigation/`);
