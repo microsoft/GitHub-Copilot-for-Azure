@@ -1,0 +1,132 @@
+name: azure-ai-speech-preflight-eval
+description: |
+  Offline Speech audio container preflight, Fast/Batch Transcription and Entra
+  endpoint diagnostics. Synthetic evidence only; no customer audio or secrets.
+
+tags:
+  type: integration
+  skill: azure-ai
+
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+  judge_model: gpt-6.1-sol
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  - name: "Route Fast and Batch Transcription troubleshooting"
+    prompt: "My Azure Speech fast transcription and batch transcription jobs are failing on some audio files. How do I validate the audio container and batch file status?"
+    tags:
+      type: trigger
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills:
+        - azure-ai
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-ai"},{"type":"tool-call-count","count":5}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-ai
+
+  - name: "Inspect a batch transcription report offline without leaking SAS"
+    prompt: |
+      My batch transcription job says Succeeded but one audio file has no
+      result. Inspect this synthetic transcription report file (downloaded from
+      the TranscriptionReport entry) offline using a temporary file and the
+      bundled Speech audio/batch inspector. Do not contact Azure or install anything:
+      {"successfulTranscriptionsCount":1,"failedTranscriptionsCount":1,"details":[{"source":"https://example.blob.core.windows.net/audio/a.wav?sig=SYNTHETIC_SAS_DO_NOT_REPEAT","status":"Succeeded"},{"source":"https://example.blob.core.windows.net/audio/b.wav?sig=SYNTHETIC_SAS_DO_NOT_REPEAT","status":"Failed"}]}
+    rubric:
+      - Runs inspect-speech-audio.mjs with --mode batch-transcription-files on a temporary file.
+      - Reports 1 failed input (failedTranscriptionsCount and the details[] entry with status Failed), and explains that the List Files response has no per-file status, so failures come from the transcription report.
+      - Does not repeat SYNTHETIC_SAS_DO_NOT_REPEAT, ask for keys or SAS tokens, contact Azure or install software.
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: response-quality
+      requiredSkills:
+        - azure-ai
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-ai
+      - type: shell-command-invoked
+        config:
+          required:
+            - command: >-
+                (?i)(?:^|[;&|\r\n])\s*(?:&\s*)?node(?:\.exe)?\s+(?:"[^"\r\n]*inspect-speech-audio\.mjs"|'[^'\r\n]*inspect-speech-audio\.mjs'|[^\s"';&|\r\n]*inspect-speech-audio\.mjs)\b
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "SYNTHETIC_SAS_DO_NOT_REPEAT"
+
+  - name: "Speech audio header check without Node.js"
+    prompt: |
+      Speech SDK FromWavFileInput fails immediately with an invalid header on my
+      local .wav file, and Node.js is not installed on this box. Do not install
+      anything, edit files or contact Azure. How can I check the header safely?
+    rubric:
+      - Notes that inspect-speech-audio.mjs requires Node.js 22+ and does not install anything.
+      - Gives the read-only signature and WAV header commands from audio-without-node.md, which print only a container label and header numbers, to distinguish RIFF/WAVE PCM (formatTag 1) from IEEE float or MP3/FLAC/OGG renamed as .wav.
+      - Never asks to upload audio or share credentials.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      requiredSkills:
+        - azure-ai
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-ai
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "speech[\\\\/]audio-without-node\\.md"
+      - type: shell-command-invoked
+        config:
+          disallowed:
+            - command: '(?i)\b(?:winget|choco|brew|apt(?:-get)?|npm|npx|pnpm|yarn)\s+(?:install|i|add)\b'
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+      - type: completed
+
+  - name: "Route out: Foundry voice agent belongs to microsoft-foundry"
+    prompt: |
+      Create a Foundry voice agent with azd ai agent that answers phone-style
+      questions in real time, and deploy it to my Foundry project.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+      requiredSkills:
+        - azure-ai
+        - microsoft-foundry
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+          disallowed:
+            - azure-ai
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
