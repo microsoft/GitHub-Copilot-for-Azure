@@ -1,0 +1,28 @@
+name: assess-observability-health-eval
+description: "Validates that assess-observability-health is invoked for a representative request."
+
+tags:
+  type: integration
+  skill: assess-observability-health
+
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: copilot-sdk-agent-runner
+
+stimuli:
+  - name: "Invoke assess-observability-health"
+    turns:
+      - "Invoke assess-observability-health skill and describe what it can do"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      requiredSkills:
+        - assess-observability-health
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - assess-observability-health

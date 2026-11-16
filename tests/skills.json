@@ -111,6 +111,21 @@
             "integrationTestSchedule": {
                 "0 12 * * 2-6": "azure-advisor,azure-advisor-actionability,azure-advisor-cost-optimization"
             }
+        },
+        {
+            "name": "observability-super-skill",
+            "dirname": "observability-super-skill",
+            "skills": [
+                "assess-observability-health",
+                "azure-diagnostics",
+                "connect-observability",
+                "microsoft-foundry",
+                "troubleshoot-observability",
+                "verify-observability-fix"
+            ],
+            "integrationTestSchedule": {
+                "0 12 * * 2-6": "assess-observability-health,azure-diagnostics,connect-observability,microsoft-foundry,troubleshoot-observability,verify-observability-fix"
+            }
         }
     ]
 }
