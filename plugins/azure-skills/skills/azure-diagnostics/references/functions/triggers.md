@@ -99,7 +99,7 @@ For Function networking failures, make the final response decision-useful:
 2. **Cause**: Connect route, NSG, DNS, and telemetry evidence to the failure timeline.
 3. **Scope**: Explain which destination is affected, why health checks, host or deployment dependencies, and other destinations remain healthy when supported by evidence, and whether Route All is relevant.
 4. **Fix**: Recommend the smallest reversible correction; don't apply it without authorization.
-5. **Verify**: Recheck DNS, effective routing and security, resource health, the failed operation, and correlated telemetry.
+5. **Verify**: Recheck DNS, effective routing and security, resource health, the failed operation, and correlated telemetry. If the same repro call still fails after a confirmed-correct change, first check whether a distinct parameter, mode, or endpoint is meant to validate recovery (some repro calls are fixed pre-fix evidence probes) before trying further changes like a restart. When citing a recovered identifying property (e.g., an IP), confirm it against the actual resource, not just an earlier narrative mention.
 
 State only verified facts and identify any evidence gaps.
 
