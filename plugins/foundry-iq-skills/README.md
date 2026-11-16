@@ -176,11 +176,11 @@ Open the loopback URL it prints. Type `quit` or press Ctrl+C to stop it.
 
 ## Learn more
 
-- [Foundry IQ skill instructions](skills/foundry-iq/SKILL.md)
+- [Foundry IQ skill instructions](https://learn.microsoft.com/en-us/azure/developer/azure-skills/plugins/foundry-iq/foundry-iq)
 - [Graph workflow](skills/foundry-iq/workflows/graph/graph.md)
 - [Knowledge Graph Playground guide](graph/apps-host/README.md)
 - [Azure AI Search documentation](https://learn.microsoft.com/azure/search/)
 - [Foundry IQ and agentic retrieval](https://learn.microsoft.com/azure/search/agentic-retrieval-overview)
-- [Hybrid search](https://learn.microsoft.com/azure/search/hybrid-search-overview)
+- [Hybrid search](https://learn.microsoft.com/en-us/azure/search/hybrid-search-overview)
 - [Document-level access control](https://learn.microsoft.com/azure/search/search-document-level-access-overview)
 - [Azure AI Search API and SDK versions](https://learn.microsoft.com/azure/search/search-api-versions)
