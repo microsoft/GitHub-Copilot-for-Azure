@@ -10,13 +10,10 @@ helper; stop if the loaded file is unavailable:
 
 ```powershell
 $skillRoot = Split-Path -Parent (Resolve-Path -LiteralPath $loadedSkillPath -ErrorAction Stop).Path
-$snapshotScript = Join-Path $skillRoot 'scripts\snapshot_diagnostics.py'
 ```
 
-Pipe only the response JSON to `python $snapshotScript` with the selected kind
-and a non-sensitive label. Other helpers use `Join-Path $skillRoot` with their
-packaged path, including workflow-owned helpers under
-`workflows\<id>\scripts`.
+Helpers use `Join-Path $skillRoot` with their packaged path, including
+workflow-owned helpers under `workflows\<id>\scripts`.
 
 For shell-neutral examples, replace `<helper>` with the absolute packaged script
 path resolved from that same loaded skill, not the current working directory.
@@ -49,14 +46,7 @@ For agent attachment, select [classic-index binding](https://learn.microsoft.com
 or [official KB MCP integration](https://learn.microsoft.com/azure/foundry/agents/how-to/foundry-iq-connect)
 from the actual retrieval architecture. Apply [existing-agent safety](safety-and-idempotency.md#existing-agent-changes).
 For KB connection reuse, creation or repair, verify the official integration
-contract before writes.
-The optional [KB binding helper](../scripts/bind_prompt_agent.py) provides a
-read-only plan before an approved existing-agent change. Resolve its path as
-above and run `python "<helper>" --help` for inputs; pin `--base-version`.
-It requires `azure-ai-projects>=2.4.0,<3`, `azure-identity` and verified draft support.
-Its optional `--skill-user-agent` accepts only `foundry-iq-skill-v{skillVersion}`
-from the loaded skill metadata, not the multi-label output of
-`request_attribution.py`. Do not copy Search labels into created agents.
+contract before writes. Do not copy Search labels into created agents.
 Delegate new agent creation to `microsoft-foundry`; if unavailable, return
 `microsoft-foundry-required`, not a replacement creation flow.
 
