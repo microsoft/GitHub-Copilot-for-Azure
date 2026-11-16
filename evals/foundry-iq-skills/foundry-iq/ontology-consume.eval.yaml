@@ -1,0 +1,86 @@
+name: ontology-consume-integration-eval
+description: |
+  Integration evaluation for the ontology-consume skill.
+  Tests skill routing: read-only browsing, evidence, diffs and validation of ontologies.
+
+tags:
+  type: integration
+  skill: foundry-iq
+
+defaults:
+  runs: 5
+  timeout: "10m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  - name: "Browse the current ontology"
+    prompt: "Which ontology versions exist, and what classes does my current approved ontology contain?"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      requiredSkills: [foundry-iq]
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - foundry-iq
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Evidence and diff"
+    prompt: "Why does the Organization class exist, and what changed between version 2 and version 3?"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      requiredSkills: [foundry-iq]
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - foundry-iq
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Validate an OWL file"
+    prompt: "Check whether wiki.owl is valid against the flat-owl profile and list every violation."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills: [foundry-iq]
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - foundry-iq
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Negative (ontology-consume): OpenAPI validation request"
+    prompt: "Validate an OpenAPI specification for an Azure API Management service."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+      requiredSkills: [foundry-iq]
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - foundry-iq

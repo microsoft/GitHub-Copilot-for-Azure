@@ -1,6 +1,5 @@
 {
-  "version": "0.2",
-  "pathFilters": [
-    "."
-  ]
+  "$schema": "https://raw.githubusercontent.com/dotnet/Nerdbank.GitVersioning/main/src/NerdBank.GitVersioning/version.schema.json",
+  "version": "1.0",
+  "pathFilters": ["."]
 }

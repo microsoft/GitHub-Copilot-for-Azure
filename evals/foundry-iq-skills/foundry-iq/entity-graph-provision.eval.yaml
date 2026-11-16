@@ -1,0 +1,86 @@
+name: entity-graph-provision-integration-eval
+description: |
+  Integration evaluation for the entity-graph-provision skill.
+  Tests skill routing: provision or connect Azure resources for Entity Graph.
+
+tags:
+  type: integration
+  skill: foundry-iq
+
+defaults:
+  runs: 5
+  timeout: "10m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  - name: "Provision Entity Graph infrastructure"
+    prompt: "Set up the Azure resources for an Enterprise Knowledge Graph: a Search service, storage account and Azure OpenAI. Check quota first and show me the approval before creating anything."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      requiredSkills: [foundry-iq]
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - foundry-iq
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Connect Entity Graph to existing resources"
+    prompt: "Connect Entity Graph to my existing Azure AI Search service, storage account and Azure OpenAI account and check roles read-only."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      requiredSkills: [foundry-iq]
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - foundry-iq
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Check model capacity for Entity Graph"
+    prompt: "Do I have enough Azure OpenAI model capacity and quota to run an Entity Graph build? Don't change anything."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills: [foundry-iq]
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - foundry-iq
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Negative (entity-graph-provision): request outside foundry-iq"
+    prompt: "Provision an Azure SQL Database elastic pool with geo-replication in eastus2."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+      requiredSkills: [foundry-iq]
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - foundry-iq

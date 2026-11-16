@@ -1,0 +1,86 @@
+name: graph-demo-integration-eval
+description: |
+  Integration evaluation for the graph-demo skill.
+  Tests skill routing: walk the end-to-end Azure AI Search graph demo.
+
+tags:
+  type: integration
+  skill: foundry-iq
+
+defaults:
+  runs: 5
+  timeout: "10m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  - name: "Run the graph chain demo"
+    prompt: "Demo the end-to-end Azure AI Search graph chain on the public Wikipedia enterprise-software dataset."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      requiredSkills: [foundry-iq]
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - foundry-iq
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Chain Entity Graph, Topic Graph and ontology"
+    prompt: "Walk me through chaining Entity Graph, Topic Graph communities and the ontology toolkit on one dataset, naming every approval."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills: [foundry-iq]
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - foundry-iq
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Seven multi-hop questions"
+    prompt: "Show the seven multi-hop questions from the graph demo and which skill answers each."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills: [foundry-iq]
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - foundry-iq
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Negative (graph-demo): request outside foundry-iq"
+    prompt: "Write a KQL graph-match query for lateral movement"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+      requiredSkills: [foundry-iq]
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - foundry-iq

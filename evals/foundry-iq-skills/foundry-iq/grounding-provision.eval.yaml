@@ -1,0 +1,86 @@
+name: grounding-provision-integration-eval
+description: |
+  Integration evaluation for the grounding-provision skill.
+  Tests skill routing: Connect to or create the Azure AI Search service that hosts a grounding index.
+
+tags:
+  type: integration
+  skill: foundry-iq
+
+defaults:
+  runs: 5
+  timeout: "10m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  - name: "Connect grounding to an existing Search service"
+    prompt: "Connect grounding to my existing Azure AI Search service."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      requiredSkills: [foundry-iq]
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - foundry-iq
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Check Search roles and preview API for grounding"
+    prompt: "Does my Search service have the roles and preview API needed for a grounding index?"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      requiredSkills: [foundry-iq]
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - foundry-iq
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Create a Basic Search service for grounding"
+    prompt: "Create a Basic Search service in westus2 to host a grounding index."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills: [foundry-iq]
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - foundry-iq
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Negative (grounding-provision): request outside foundry-iq"
+    prompt: "Create an Azure Cache for Redis Enterprise instance with active geo-replication."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+      requiredSkills: [foundry-iq]
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - foundry-iq

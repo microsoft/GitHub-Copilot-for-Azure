@@ -1,0 +1,217 @@
+# Non-graph Azure AI Search and Foundry IQ routing for the rewritten foundry-iq skill.
+# Prompts are self-contained: no live resources, fixtures, files, or credentials.
+# Positive cases assume skill selection before resource discovery or questions.
+# requiredSkills keeps foundry-iq available in negative cases; it does not require invocation.
+# Graders check skill invocation only, not whether the Azure task was completed.
+name: foundry-iq-search-eval
+description: |
+  Routing evaluation for non-graph foundry-iq requests: access and ingestion
+  diagnosis, retrieval relevance, source-aware security, REST and API-version
+  guidance, agent grounding, capacity, networking, and cleanup. Negative cases
+  cover the skill's documented exclusions.
+
+tags:
+  type: integration
+  skill: foundry-iq
+
+defaults:
+  runs: 5
+  timeout: "10m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  - name: "Diagnose knowledge base access denied"
+    prompt: "My Foundry IQ knowledge base returns 403 Forbidden when my agent queries it. Help me find out which identity and role assignment is missing."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      requiredSkills: [foundry-iq]
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [foundry-iq]
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Diagnose stale indexer content"
+    prompt: "My Azure AI Search indexer stopped picking up new blobs two days ago and the index still shows old documents. What read-only checks should I run to find out why?"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      requiredSkills: [foundry-iq]
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [foundry-iq]
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Improve retrieval relevance"
+    prompt: "Answers from my Azure AI Search index miss obvious matches. How should I tune hybrid keyword and vector queries with semantic ranking to improve relevance?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills: [foundry-iq]
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [foundry-iq]
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Secure a protected SharePoint source"
+    prompt: "I want a Foundry IQ knowledge source over our SharePoint site so each user only sees documents they are allowed to open. How should I configure permissions?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills: [foundry-iq]
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [foundry-iq]
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Write a knowledge base REST payload"
+    prompt: "Give me the REST request to create a Foundry IQ knowledge base over my existing search index, and tell me which API version I should use."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills: [foundry-iq]
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [foundry-iq]
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Ground an existing Foundry agent"
+    prompt: "I already have a Foundry agent and a knowledge base. Connect the knowledge base so the agent's answers are grounded in my documents without recreating the agent."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills: [foundry-iq]
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [foundry-iq]
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Handle provisioning throttling"
+    prompt: "Creating knowledge sources in my Azure AI Search service keeps failing with 429 errors. Is it a service limit or capacity problem, and what should I change?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills: [foundry-iq]
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [foundry-iq]
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Diagnose private endpoint connectivity"
+    prompt: "After I enabled a private endpoint on my Azure AI Search service, queries from my VNet fail. How do I check DNS resolution and network access?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills: [foundry-iq]
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [foundry-iq]
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Clean up a test knowledge base"
+    prompt: "Remove the test knowledge base and knowledge source I created in Azure AI Search yesterday, but keep the search service and the original index."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills: [foundry-iq]
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [foundry-iq]
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Negative: Microsoft Graph user listing"
+    prompt: "Use the Microsoft Graph API to list every user in my Microsoft Entra tenant with their job titles."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+      requiredSkills: [foundry-iq]
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed: [foundry-iq]
+
+  - name: "Negative: Cosmos DB throughput"
+    prompt: "My Azure Cosmos DB container is getting 429 errors. How should I change its provisioned throughput?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+      requiredSkills: [foundry-iq]
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed: [foundry-iq]
+
+  - name: "Negative: Continuous agent evaluation"
+    prompt: "Set up continuous evaluation for my Foundry agent so groundedness and coherence scores are tracked in production every day."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+      requiredSkills: [foundry-iq]
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed: [foundry-iq]
