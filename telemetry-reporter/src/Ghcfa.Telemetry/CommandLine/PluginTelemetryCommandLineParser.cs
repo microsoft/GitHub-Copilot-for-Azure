@@ -119,7 +119,8 @@ public sealed class PluginTelemetryCommandLineParser
             values.Add(optionName, value);
         }
 
-        var missingOptions = new[] { "--timestamp", "--event-type", "--session-id" }
+        var missingOptions = new[]
+            { "--timestamp", "--event-type", "--session-id", "--allowed-skills", "--allowed-references", "--allowed-tools" }
             .Where(option => !values.TryGetValue(option, out var value) || string.IsNullOrWhiteSpace(value))
             .ToArray();
 
@@ -141,9 +142,9 @@ public sealed class PluginTelemetryCommandLineParser
             SkillVersion = GetValue(values, "--skill-version"),
             ToolName = GetValue(values, "--tool-name"),
             FileReference = GetValue(values, "--file-reference"),
-            AllowedSkills = GetValue(values, "--allowed-skills"),
-            AllowedReferences = GetValue(values, "--allowed-references"),
-            AllowedTools = GetValue(values, "--allowed-tools"),
+            AllowedSkills = values["--allowed-skills"]!,
+            AllowedReferences = values["--allowed-references"]!,
+            AllowedTools = values["--allowed-tools"]!,
             Debug = values.TryGetValue("--debug", out var debugValue) &&
                 bool.TryParse(debugValue, out var debug) &&
                 debug,

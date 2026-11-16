@@ -57,7 +57,7 @@ This skill includes specialized sub-skills for specific workflows. **When a sub-
 | **troubleshoot** | View hosted agent logs, query telemetry, diagnose failures | [troubleshoot](foundry-agent/troubleshoot/troubleshoot.md) |
 | **validate** | Use only when the user explicitly asks to use this validation sub-skill or to validate Microsoft Foundry hosted-agent code against best practices. Never invoke it proactively or add it to another workflow. | [validate](foundry-agent/validate/validate.md) |
 | **create (quick start)** | Create a new hosted Foundry agent from scratch end-to-end — scaffold, provision or use an existing Foundry project, deploy, and smoke-test. Do not use for any work on existing code. For anything not covered by the quickstart, use **create**. | [create/quick-start-hosted.md](foundry-agent/create/quick-start-hosted.md) |
-| **create** | Use when the standard end-to-end happy path (quick start) doesn't fit. Create a new Foundry agent, update code of an existing agent, continue development of an existing agent, wire connections at scaffold time, use advanced setup or A2A (Agent2Agent), or recover from a failed quickstart run. | [create](foundry-agent/create/create-hosted.md) |
+| **create** | Use when the standard end-to-end happy path (quick start) doesn't fit. Create a new Foundry agent, update code of an existing agent, continue development of an existing agent, wire connections at scaffold time, or use advanced setup or A2A (Agent2Agent). | [create](foundry-agent/create/create-hosted.md) |
 | **create managed harness** | Create or continue developing a Prompt Agent that explicitly uses the Foundry-managed Copilot harness. Uses `azd` and `azure.yaml`, not the ordinary Prompt Agent MCP workflow. | [create-managed-harness](foundry-agent/create/create-managed-harness.md) |
 | **create voice** | Create, configure, or extend a Foundry Voice Agent, defaulting generic requests to managed Prompt Voice and supporting GPT-Live Voice, self-deployed Prompt Voice, or two-agent Hosted Voice. | [create-voice](foundry-agent/create/create-voice.md) |
 | **agent-optimizer** | Make existing Python hosted-agent code optimization-ready, configure eval.yaml, run Agent Optimizer jobs, apply candidates locally, and deploy through azd after review. | [agent-optimizer](foundry-agent/agent-optimizer/agent-optimizer.md) |
@@ -174,7 +174,8 @@ Run `azd env get-values` for the selected environment when project/deployment va
 | `AGENT_<SERVICE>_NAME` | Agent name for the selected azd service |
 | `AGENT_<SERVICE>_VERSION` | Agent version for the selected azd service |
 | `AZURE_CONTAINER_REGISTRY_NAME` or `AZURE_CONTAINER_REGISTRY_ENDPOINT` | ACR registry name / image URL prefix |
-| `APPLICATIONINSIGHTS_CONNECTION_STRING` | App Insights connection string for trace workflows |
+| `AZURE_APPLICATION_INSIGHTS_RESOURCE_ID`, `AZURE_APPLICATION_INSIGHTS_APP_ID`, `AZURE_LOG_ANALYTICS_WORKSPACE_RESOURCE_ID` | Preferred nonsecret tracing destination identifiers |
+| `APPLICATIONINSIGHTS_CONNECTION_STRING` | Legacy read-only fallback; never copy into new metadata or configuration |
 | `AZURE_SUBSCRIPTION_ID`, `AZURE_RESOURCE_GROUP`, `AZURE_AI_ACCOUNT_NAME`, `AZURE_AI_PROJECT_NAME` | Azure resource lookup and Playground links |
 
 When azd supplies these values, use them as the source of truth and do not copy them into `.foundry/agent-metadata*.yaml` on metadata writes.

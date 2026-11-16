@@ -7,12 +7,16 @@ public static class HelpText
 {
     public const string Value = """
         Usage:
-          ghcfa-telem --timestamp <value> --event-type <value> --session-id <value> [options]
+          ghcfa-telem --timestamp <value> --event-type <value> --session-id <value>
+            --allowed-skills <path> --allowed-references <path> --allowed-tools <path> [options]
 
         Required options:
           --timestamp <value>       Timestamp of the telemetry event in ISO 8601 format.
           --event-type <value>      Event type, such as skill_invocation, tool_invocation, or reference_file_read.
           --session-id <value>      Session identifier for correlating related events.
+          --allowed-skills <path>       Skill allowlist as newline-separated text.
+          --allowed-references <path>   Reference-file allowlist as newline-separated text.
+          --allowed-tools <path>        Tool allowlists as grouped JSON.
 
         Optional values:
           --client-type <value>
@@ -23,9 +27,6 @@ public static class HelpText
           --skill-version <value>
           --tool-name <value>
           --file-reference <value>
-          --allowed-skills <path>       Replace the built-in skill allowlist.
-          --allowed-references <path>   Replace the built-in reference-file allowlist.
-          --allowed-tools <path>        Replace all built-in tool allowlists using grouped JSON.
           --dangerously-write-support-logs-to-dir <path>
 
         Allowlist files:
@@ -36,7 +37,8 @@ public static class HelpText
           Tools: JSON with required commands, areas, and extensionTools object sections.
           Each section maps entry labels to non-empty arrays of names.
           Example: {"commands":{"1.0":["subscription_list"]},"areas":{},"extensionTools":{}}
-          Omitted files use built-in lists. Empty text files or JSON sections allow no values.
+          All three file paths are required; no built-in lists are included.
+          Empty text files or JSON sections allow no values.
           Unreadable files or malformed tool JSON fail without publishing telemetry.
           Relative file paths are resolved against the current working directory.
 

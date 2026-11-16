@@ -234,7 +234,29 @@ jobs:
           # Clean up stale copilot-hooks.json from repo root (previously copied there, now lives under hooks/)
           rm -f "target-repo/copilot-hooks.json"
 
-      # 6. Replace repository URLs in synced files
+      # 6. Sync azure plugin identity into the root apm.yml
+      # APM treats plugin.json as the owner of the plugin's portable identity and rejects
+      # installs when apm.yml declares a conflicting name or version.
+      - name: Sync azure plugin name and version to apm.yml
+        working-directory: target-repo
+        run: |
+          set -euo pipefail
+          PLUGIN_JSON=".github/plugins/azure-skills/plugin.json"
+          APM_YML="apm.yml"
+
+          if [ ! -f "$APM_YML" ]; then
+            echo "::error::$APM_YML not found at the root of microsoft/azure-skills"
+            exit 1
+          fi
+
+          PLUGIN_NAME=$(jq -er '.name' "$PLUGIN_JSON")
+          PLUGIN_VERSION=$(jq -er '.version' "$PLUGIN_JSON")
+          export PLUGIN_NAME PLUGIN_VERSION
+
+          yq -i '.name = strenv(PLUGIN_NAME) | .version = strenv(PLUGIN_VERSION)' "$APM_YML"
+          echo "Set $APM_YML name=$PLUGIN_NAME version=$PLUGIN_VERSION"
+
+      # 7. Replace repository URLs in synced files
       # CHANGELOG.md file contains links to PRs in the GitHub-Copilot-for-Azure repo. These links should not be replaced.
       # Otherwise they will all get 404.
       - name: Replace repository URLs
@@ -251,7 +273,7 @@ jobs:
             fi
           done
 
-      # 7. Update marketplace.json
+      # 8. Update marketplace.json
       - name: Update marketplace.json
         id: update-marketplace
         working-directory: source-repo/scripts
@@ -266,7 +288,7 @@ jobs:
           "$TARGET_REPOSITORY"
           "$TARGET_HOMEPAGE"
 
-      # 8. Commit changes and create a PR
+      # 9. Commit changes and create a PR
       - name: Commit and push changes
         id: commit
         working-directory: target-repo

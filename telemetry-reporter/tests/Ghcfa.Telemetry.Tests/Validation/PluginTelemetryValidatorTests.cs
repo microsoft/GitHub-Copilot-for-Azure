@@ -6,28 +6,12 @@ namespace Ghcfa.Telemetry.Tests.Validation;
 /// <summary>
 /// Contains tests for telemetry event validation.
 /// </summary>
-public sealed class PluginTelemetryValidatorTests
+public sealed class PluginTelemetryValidatorTests : IDisposable
 {
-    private readonly PluginTelemetryValidator _validator =
-        new(PluginTelemetryAllowlist.LoadEmbedded());
+    private readonly PluginTelemetryValidator _validator = new();
+    private readonly TemporaryAllowlists _files = new();
 
-    [Fact]
-    public void EmbeddedToolSnapshot_MatchesPinnedAzureMcpRegistrySize()
-    {
-        var assembly = typeof(PluginTelemetryAllowlist).Assembly;
-
-        var commands = PluginTelemetryAllowlist.LoadArray(
-            assembly,
-            "allowed-tool-names.json",
-            "commands");
-        var areas = PluginTelemetryAllowlist.LoadArray(
-            assembly,
-            "allowed-tool-names.json",
-            "areas");
-
-        Assert.Equal(419, commands.Count);
-        Assert.Equal(66, areas.Count);
-    }
+    public void Dispose() => _files.Dispose();
 
     [Theory]
     [InlineData("mcp__plugin_azure_azure__pricing", "pricing")]
@@ -40,7 +24,9 @@ public sealed class PluginTelemetryValidatorTests
         string toolName,
         string expected)
     {
-        Assert.Equal(expected, _validator.ValidateAndNormalizeToolName(toolName));
+        var options = CreateOptions(toolName: toolName);
+        Assert.True(_validator.ValidateAndNormalize(options).IsValid);
+        Assert.Equal(expected, options.ToolName);
     }
 
     [Theory]
@@ -51,17 +37,19 @@ public sealed class PluginTelemetryValidatorTests
         string toolName,
         string expected)
     {
-        Assert.Equal(expected, _validator.ValidateAndNormalizeToolName(toolName));
+        var options = CreateOptions(toolName: toolName);
+        Assert.True(_validator.ValidateAndNormalize(options).IsValid);
+        Assert.Equal(expected, options.ToolName);
     }
 
     [Theory]
     [InlineData("azure-fakeTool")]
     [InlineData("mcp_azure_documentation")]
     [InlineData("completely_unknown")]
-    [InlineData("")]
+    [InlineData("azure-")]
     public void ValidateAndNormalizeToolName_RejectsUnknownTools(string toolName)
     {
-        Assert.Null(_validator.ValidateAndNormalizeToolName(toolName));
+        Assert.False(_validator.ValidateAndNormalize(CreateOptions(toolName: toolName)).IsValid);
     }
 
     [Theory]
@@ -77,14 +65,7 @@ public sealed class PluginTelemetryValidatorTests
     [Fact]
     public void ValidateAndNormalize_RejectsUnknownSkill()
     {
-        var options = CreateOptions();
-        options = new PluginTelemetryOptions
-        {
-            Timestamp = options.Timestamp,
-            EventType = options.EventType,
-            SessionId = options.SessionId,
-            SkillName = "custom-skill"
-        };
+        var options = CreateOptions(skillName: "custom-skill");
 
         var result = _validator.ValidateAndNormalize(options);
 
@@ -97,13 +78,7 @@ public sealed class PluginTelemetryValidatorTests
     [Fact]
     public void ValidateAndNormalize_RejectsUnknownFileReference()
     {
-        var options = new PluginTelemetryOptions
-        {
-            Timestamp = "timestamp",
-            EventType = "event",
-            SessionId = "session",
-            FileReference = "custom\\file.md"
-        };
+        var options = CreateOptions(fileReference: "custom\\file.md");
 
         var result = _validator.ValidateAndNormalize(options);
 
@@ -116,15 +91,10 @@ public sealed class PluginTelemetryValidatorTests
     [Fact]
     public void ValidateAndNormalize_AcceptsKnownValuesAndNormalizesTool()
     {
-        var options = new PluginTelemetryOptions
-        {
-            Timestamp = "timestamp",
-            EventType = "event",
-            SessionId = "session",
-            SkillName = "azure-storage",
-            FileReference = "azure-ai\\references\\auth-best-practices.md",
-            ToolName = "azure-storage"
-        };
+        var options = CreateOptions(
+            skillName: "azure-storage",
+            fileReference: "azure-ai\\references\\auth-best-practices.md",
+            toolName: "azure-storage");
 
         var result = _validator.ValidateAndNormalize(options);
 
@@ -137,13 +107,7 @@ public sealed class PluginTelemetryValidatorTests
     [InlineData("Azure-Storage")]
     public void ValidateAndNormalize_IsCaseSensitive(string skillName)
     {
-        var options = new PluginTelemetryOptions
-        {
-            Timestamp = "timestamp",
-            EventType = "event",
-            SessionId = "session",
-            SkillName = skillName
-        };
+        var options = CreateOptions(skillName: skillName);
 
         Assert.False(_validator.ValidateAndNormalize(options).IsValid);
     }
@@ -153,7 +117,7 @@ public sealed class PluginTelemetryValidatorTests
     [InlineData(false, true, false)]
     [InlineData(false, false, true)]
     [InlineData(true, true, true)]
-    public void ValidateAndNormalize_AppliesIndependentOverrides(bool skills, bool references, bool tools)
+    public void ValidateAndNormalize_UsesEachConfiguredFile(bool skills, bool references, bool tools)
     {
         using var file = new TemporaryAllowlistFile("custom-skill\ncustom/reference.md\ncustom_tool");
         using var toolFile = new TemporaryAllowlistFile("""
@@ -242,7 +206,7 @@ public sealed class PluginTelemetryValidatorTests
             allowedReferences: file.Path)).IsValid);
     }
 
-    private static PluginTelemetryOptions CreateOptions(
+    private PluginTelemetryOptions CreateOptions(
         string? skillName = null,
         string? fileReference = null,
         string? toolName = null,
@@ -256,8 +220,8 @@ public sealed class PluginTelemetryValidatorTests
         SkillName = skillName,
         FileReference = fileReference,
         ToolName = toolName,
-        AllowedSkills = allowedSkills,
-        AllowedReferences = allowedReferences,
-        AllowedTools = allowedTools
+        AllowedSkills = allowedSkills ?? _files.Skills.Path,
+        AllowedReferences = allowedReferences ?? _files.References.Path,
+        AllowedTools = allowedTools ?? _files.Tools.Path
     };
 }

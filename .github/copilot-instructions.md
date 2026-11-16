@@ -21,7 +21,6 @@ hooks/                    # Shared hook sources, built at the output top level
 telemetry-reporter/       # Standalone .NET 10 telemetry reporting executable
   src/                    # Console application and telemetry library
   tests/                  # .NET unit tests
-  resources/              # Embedded Azure MCP compatibility allowlists
   eng/scripts/            # Opt-in cross-platform Native AOT packaging
   ghcfa-telem.slnx        # .NET solution
   version.json            # NBGV version rooted at 0.1
@@ -115,7 +114,7 @@ cd telemetry-reporter
 dotnet test .\ghcfa-telem.slnx --configuration Release
 ```
 
-The executable must preserve the Azure MCP `server plugin-telemetry` command-line contract, JSON responses, allowlist validation, and telemetry properties. The allowlists in `resources/` are embedded into `Ghcfa.Telemetry`; update compatibility metadata and tests when synchronizing them with a new Azure MCP source revision.
+The executable must preserve the Azure MCP `server plugin-telemetry` JSON responses, allowlist validation, and telemetry properties. All three allowlist paths (`--allowed-skills`, `--allowed-references`, and `--allowed-tools`) are required; there are no embedded lists. Plugin builds supply these files under `hooks/allowlists/`. Update compatibility metadata and tests when synchronizing runtime behavior with a new Azure MCP source revision.
 
 ## Adding a New Skill
 

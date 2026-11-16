@@ -27,11 +27,11 @@ public sealed class PluginTelemetryOptions
 
     public string? FileReference { get; init; }
 
-    public string? AllowedSkills { get; init; }
+    public required string AllowedSkills { get; init; }
 
-    public string? AllowedReferences { get; init; }
+    public required string AllowedReferences { get; init; }
 
-    public string? AllowedTools { get; init; }
+    public required string AllowedTools { get; init; }
 
     public bool Debug { get; init; }
 

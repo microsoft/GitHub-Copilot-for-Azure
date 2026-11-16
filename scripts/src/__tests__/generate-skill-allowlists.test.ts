@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 const SCRIPTS_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const GENERATOR = join(SCRIPTS_ROOT, "src", "generate-mcp-allowlists.ts");
+const GENERATOR = join(SCRIPTS_ROOT, "src", "generate-skill-allowlists.ts");
 let root: string;
 let output: string;
 

@@ -2,11 +2,12 @@
 
 `ghcfa-telem` is a stripped-down .NET implementation of the Azure MCP
 `server plugin-telemetry` command. It produces an executable named
-`ghcfa-telem` and embeds telemetry allowlist resources from `resources\`.
+`ghcfa-telem`. All telemetry allowlists are supplied as external files; the
+executable includes no embedded skill, reference, or tool lists.
 
 ## File-based allowlists
 
-Use these optional arguments to override the embedded allowlists independently:
+All invocations reporting an event require these three arguments:
 
 | Argument | Allowed telemetry values |
 |---|---|
@@ -49,13 +50,12 @@ names. Missing, unknown, or duplicate top-level sections, invalid JSON, empty
 entry arrays, and non-string or blank names are rejected. The tools file does
 not accept the newline-separated format or `#` comments.
 
-Supplied files **replace**, rather than extend, the corresponding embedded
-lists. Omitted arguments retain the embedded lists for those categories.
-The tools file replaces all three built-in tool categories together. Every
-supplied file is read before event validation, even if the event has no value
-for that category. A missing or unreadable file, invalid file path, or malformed
-tools file produces a JSON error response with status `400` and process exit
-code `1`; no telemetry is published and no embedded fallback is used.
+Every file is read before event validation, even if the event has no value
+for that category. Required options do not imply non-empty lists. An omitted
+argument, missing or unreadable file, invalid file path, or malformed tools
+file produces a JSON error response with status `400` and process exit code
+`1`; no telemetry is published and there is no fallback. Standalone `--help`
+and `-h` do not require allowlist paths.
 
 Matching remains case-sensitive. Reference entries and reported reference paths
 are normalized for comparison so `/` and `\` separators are interchangeable,
@@ -93,40 +93,24 @@ In Bash:
   --allowed-tools "./allowed-tools.json"
 ```
 
-The skills file in this example must contain `custom-skill`. Generating and
-passing plugin-specific lists from the build and hooks is separate work;
-existing callers continue using embedded lists until they supply these flags.
+The skills file in this example must contain `custom-skill`. The plugin build
+packages these files under `hooks/allowlists/`, and both shared telemetry hooks
+pass their installed paths for every reported event. Other callers must also
+supply all three paths.
 
 ## Allowlist maintenance
 
-The [allowlist synchronization workflow](../.github/workflows/sync-telemetry-reporter-allowlists.yml)
-runs on weekdays or by manual dispatch. It generates `allowed-skill-names.json`
-and `allowed-plugin-file-references.json` once from this repository's plugin
-sources, then proposes a PR in this repository that updates only the two files
-under `telemetry-reporter/resources/`.
-Unchanged lists produce no commit or PR; subsequent changes reuse the open PR
-on the stable bot-owned `sync/telemetry-reporter-allowlists` branch.
+The plugin build generates skill and reference text files from each plugin's
+sources and copies `plugins/allowed-azure-tools.json` unchanged alongside them.
+The [Azure MCP allowlist refresh workflow](../.github/workflows/refresh-azure-mcp-allowlist.yml)
+maintains that shared tools file, including its captured extension-helper
+baseline. See [Azure MCP tool allowlists](../docs/azure-mcp-allowlists.md).
 
-The workflow no longer updates Azure MCP's lists. Only older plugin versions
-still use Azure MCP for telemetry, and current plugin sources no longer
-represent those versions.
-
-The workflow uses `GHCP4A_BOT_APP_ID` and `GHCP4A_BOT_PRIVATE_KEY`. The GitHub
-App must be installed on this repository with Contents and Pull requests
-write access; the publication job requests a token scoped to this repository.
-App tokens allow the resulting PRs to trigger normal validation workflows.
-
-`allowed-tool-names.json` remains a pinned Azure MCP snapshot, as do the runtime
-compatibility values in `CompatibilityConstants`. Generating the skill and
-reference lists does not upgrade that source revision or synchronize tool names.
-Tool-name synchronization is tracked separately in
-[microsoft/GitHub-Copilot-for-Azure-pr#393](https://github.com/microsoft/GitHub-Copilot-for-Azure-pr/issues/393).
-
-Merging an allowlist PR updates the resources embedded by subsequent reporter
-builds, but does not publish a new reporter release. This only partially
-addresses
-[microsoft/GitHub-Copilot-for-Azure-pr#390](https://github.com/microsoft/GitHub-Copilot-for-Azure-pr/issues/390);
-the reporter build and release processes remain unchanged.
+The former embedded-resource synchronization workflow is retired. Allowlist
+updates now reach the reporter with the packaged plugin files, without
+rebuilding or releasing the reporter. `CompatibilityConstants.AzureMcpCommit`
+still identifies the source revision for the copied runtime behavior, not
+the current tool allowlist.
 
 ## Telemetry policy
 
@@ -161,7 +145,7 @@ The event's `McpServerNameV2` property identifies the executable as `ghcfa-telem
 The activity-source name remains `Azure.Mcp.Server`, and the OpenTelemetry
 service name remains `azmcp`.
 `CompatibilityConstants.AzureMcpCommit` separately pins the Azure MCP source
-revision used for implementation and allowlist synchronization.
+revision used for implementation compatibility.
 
 ## Native AOT builds
 
@@ -202,9 +186,11 @@ Platform-specific prerequisites:
   checkout, rather than a linked worktree, so NBGV can read the complete
   history inside the container. The
   [toolchain Dockerfile](eng/native-musl/Dockerfile) uses the exact .NET SDK
-  version from `global.json` on Alpine 3.23 and installs `clang`, `build-base`,
+  version from `global.json` on Alpine 3.24 when invoked by the build script.
+  Direct Docker builds without an SDK build argument default to the floating
+  `10.0` SDK tag. The image installs `clang`, `build-base`,
   `musl-dev`, `binutils`, and `zlib-dev`. The resulting binaries target
-  Alpine 3.23 or compatible newer musl environments. No Alpine PowerShell
+  Alpine 3.24 or compatible newer musl environments. No Alpine PowerShell
   installation is required.
 - macOS: Xcode command-line tools and the macOS SDK. An x64 host can publish
   both `osx-x64` and `osx-arm64`.

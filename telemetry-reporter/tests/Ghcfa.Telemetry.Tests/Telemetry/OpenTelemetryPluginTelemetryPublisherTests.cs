@@ -62,7 +62,10 @@ public sealed class OpenTelemetryPluginTelemetryPublisherTests
             {
                 Timestamp = "timestamp",
                 EventType = "event",
-                SessionId = "session"
+                SessionId = "session",
+                AllowedSkills = "skills.txt",
+                AllowedReferences = "references.txt",
+                AllowedTools = "tools.json"
             },
             TestContext.Current.CancellationToken);
 
@@ -90,6 +93,9 @@ public sealed class OpenTelemetryPluginTelemetryPublisherTests
                     Timestamp = "timestamp",
                     EventType = "event",
                     SessionId = "session",
+                    AllowedSkills = "skills.txt",
+                    AllowedReferences = "references.txt",
+                    AllowedTools = "tools.json",
                     DangerouslyWriteSupportLogsToDir = directory
                 },
                 TestContext.Current.CancellationToken);

@@ -87,7 +87,10 @@ public sealed class PluginTelemetryActivityWriterTests
         {
             Timestamp = "timestamp",
             EventType = "event",
-            SessionId = "session"
+            SessionId = "session",
+            AllowedSkills = "skills.txt",
+            AllowedReferences = "references.txt",
+            AllowedTools = "tools.json"
         });
 
         Assert.NotNull(activity);
@@ -110,7 +113,10 @@ public sealed class PluginTelemetryActivityWriterTests
         {
             Timestamp = "timestamp",
             EventType = "event",
-            SessionId = "session"
+            SessionId = "session",
+            AllowedSkills = "skills.txt",
+            AllowedReferences = "references.txt",
+            AllowedTools = "tools.json"
         }));
     }
 

@@ -50,11 +50,10 @@ What this does:
 5. Opens no client when `--no-client` is set. Without that flag, azd opens Agent Inspector for the Responses and Invocations protocols, and Microsoft 365 Agents Playground for the Activity protocol.
 
 > **Readiness gate — required before local invocation.**
-> - Start checking TCP connections to `localhost:<port>` immediately after launching the agent in the background; retry failed connections every 2–5 seconds.
-> - In the same loop, check whether the `azd ai agent run` process has exited. **If it exited, stop polling immediately**, read its output, and fix that specific cause (for example, a dependency install failure) before restarting.
-> - **Keep each startup wait at 5 seconds or less**, including sleeps and shell-tool output reads.
-> - **Proceed to the smoke invocation as soon as TCP connects**, keeping the server running.
-> - If the startup timeout expires before a connection succeeds, inspect the server logs and resolve the cause before retrying.
+> Run the bundled [Bash helper](../scripts/wait-local-ready.sh) or [PowerShell helper](../scripts/wait-local-ready.ps1) to wait for the local server port (`8088` by default) to accept TCP connections. Keep the working directory at the azd project root; replace `<skill-root>` below with the absolute path to the installed `microsoft-foundry` skill.
+>
+> - macOS / Linux: `bash "<skill-root>/foundry-agent/create/scripts/wait-local-ready.sh" <port>`
+> - PowerShell: `& "<skill-root>/foundry-agent/create/scripts/wait-local-ready.ps1" -Port <port>`
 
 `Ctrl+C` stops the agent and clears the saved local session id in an interactive terminal.
 

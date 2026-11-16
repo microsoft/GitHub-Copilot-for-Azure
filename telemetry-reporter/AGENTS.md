@@ -11,7 +11,8 @@ should modify the project.
 - `src/Ghcfa.Telemetry/` contains command parsing, validation, telemetry, and
   platform-specific machine information behavior.
 - `tests/Ghcfa.Telemetry.Tests/` contains the .NET unit tests.
-- `resources/` contains Azure MCP allowlists embedded by `Ghcfa.Telemetry`.
+- Allowlists come exclusively from the three required command-line file paths;
+  no skill, reference, or tool lists are embedded in `Ghcfa.Telemetry`.
 - `eng/scripts/Build-Native.ps1` creates opt-in Native AOT packages for the
   Azure MCP operating system and architecture matrix plus musl Linux.
 - `eng/native-musl/Dockerfile` supplies the same-architecture Alpine toolchain.
@@ -28,9 +29,9 @@ The repository-level `tests/AGENTS.md` does not apply to this directory.
   divergence. Preserve `AZURE_MCP_COLLECT_TELEMETRY` as the global opt-out, and
   do not add user-configurable Application Insights or OTLP sinks.
 - Treat `CompatibilityConstants.AzureMcpCommit` as the source revision for the
-  copied behavior and allowlists.
+  copied runtime behavior, not the independently maintained allowlist files.
 - When synchronizing with a newer Azure MCP revision, update the compatibility
-  constants, embedded resources, implementation, tests, README, and third-party
+  constants, implementation, tests, README, and third-party
   notices as applicable.
 - Keep telemetry disabled in build or smoke-test scenarios that invoke the
   executable.

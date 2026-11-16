@@ -139,8 +139,13 @@ to the plugin's `skills/` directory and use backslashes, such as
 `azure-deploy\references\workflow.md`. They include supporting scripts and assets,
 but exclude `SKILL.md`, `version.json`, and license files named `LICENSE`,
 `LICENSE.txt`, or `LICENSE.md`. The build regenerates these files from packaged
-skills; do not maintain them in plugin source directories. Generating these files
-does not yet change the telemetry hooks to pass them to the reporter.
+skills; do not maintain them in plugin source directories.
+
+The same directory also contains `allowed-tools.json`, copied byte-for-byte from
+the shared `plugins/allowed-azure-tools.json` source. Unlike the text lists, it
+retains grouped JSON with `commands`, `areas`, and `extensionTools` sections.
+An unreadable source or unwritable destination fails the build. Packaging these
+three files does not yet change the telemetry hooks to pass them to the reporter.
 
 ### Token Management
 

@@ -1,15 +1,12 @@
-using System.Reflection;
 using System.Text.Json;
 
 namespace Ghcfa.Telemetry.Validation;
 
 /// <summary>
-/// Loads and queries embedded or file-based allowlists for telemetry event values.
+/// Loads and queries file-based allowlists for telemetry event values.
 /// </summary>
 public sealed class PluginTelemetryAllowlist
 {
-    private const string ResourcePrefix = "Ghcfa.Telemetry.Resources.";
-
     private readonly HashSet<string> _allowedFileReferences;
     private readonly HashSet<string> _allowedSkillNames;
     private readonly HashSet<string> _allowedCommands;
@@ -30,19 +27,6 @@ public sealed class PluginTelemetryAllowlist
         _allowedExtensionTools = allowedExtensionTools;
     }
 
-    public static PluginTelemetryAllowlist LoadEmbedded()
-    {
-        var assembly = typeof(PluginTelemetryAllowlist).Assembly;
-
-        return new PluginTelemetryAllowlist(
-            LoadNestedValues(assembly, "allowed-plugin-file-references.json", "references")
-                .Select(NormalizeFileReference).ToHashSet(StringComparer.Ordinal),
-            LoadNestedValues(assembly, "allowed-skill-names.json", "skills"),
-            LoadArray(assembly, "allowed-tool-names.json", "commands"),
-            LoadArray(assembly, "allowed-tool-names.json", "areas"),
-            LoadArray(assembly, "allowed-tool-names.json", "extensionTools"));
-    }
-
     public bool IsFileReferenceAllowed(string value) =>
         !string.IsNullOrWhiteSpace(value) && _allowedFileReferences.Contains(NormalizeFileReference(value));
 
@@ -55,18 +39,15 @@ public sealed class PluginTelemetryAllowlist
 
     public bool IsExtensionToolAllowed(string value) => _allowedExtensionTools.Contains(value);
 
-    public PluginTelemetryAllowlist WithOverrides(
-        string? allowedSkills,
-        string? allowedReferences,
-        string? allowedTools)
+    public static PluginTelemetryAllowlist Load(
+        string allowedSkills,
+        string allowedReferences,
+        string allowedTools)
     {
-        var skills = allowedSkills is null ? _allowedSkillNames : LoadFile(allowedSkills);
-        var references = allowedReferences is null
-            ? _allowedFileReferences
-            : LoadFile(allowedReferences).Select(NormalizeFileReference).ToHashSet(StringComparer.Ordinal);
-        var (commands, areas, extensionTools) = allowedTools is null
-            ? (_allowedCommands, _allowedAreas, _allowedExtensionTools)
-            : LoadToolFile(allowedTools);
+        var skills = LoadFile(allowedSkills);
+        var references = LoadFile(allowedReferences)
+            .Select(NormalizeFileReference).ToHashSet(StringComparer.Ordinal);
+        var (commands, areas, extensionTools) = LoadToolFile(allowedTools);
 
         return new PluginTelemetryAllowlist(
             references,
@@ -103,14 +84,7 @@ public sealed class PluginTelemetryAllowlist
         }
     }
 
-    internal static HashSet<string> LoadNestedValues(Assembly assembly, string resourceName, string propertyName)
-    {
-        using var document = LoadDocument(assembly, resourceName);
-        return LoadNestedValues(document.RootElement, propertyName);
-    }
-
-    private static HashSet<string> LoadNestedValues(
-        JsonElement root, string propertyName, bool requireNonEmptyEntries = false)
+    private static HashSet<string> LoadNestedValues(JsonElement root, string propertyName)
     {
         if (!root.TryGetProperty(propertyName, out var section) || section.ValueKind != JsonValueKind.Object)
         {
@@ -122,7 +96,7 @@ public sealed class PluginTelemetryAllowlist
         foreach (var property in section.EnumerateObject())
         {
             if (property.Value.ValueKind != JsonValueKind.Array ||
-                (requireNonEmptyEntries && property.Value.GetArrayLength() == 0))
+                property.Value.GetArrayLength() == 0)
             {
                 throw new JsonException(
                     $"Entry '{propertyName}.{property.Name}' must be a non-empty array of names.");
@@ -168,39 +142,14 @@ public sealed class PluginTelemetryAllowlist
             }
 
             return (
-                LoadNestedValues(root, "commands", requireNonEmptyEntries: true),
-                LoadNestedValues(root, "areas", requireNonEmptyEntries: true),
-                LoadNestedValues(root, "extensionTools", requireNonEmptyEntries: true));
+                LoadNestedValues(root, "commands"),
+                LoadNestedValues(root, "areas"),
+                LoadNestedValues(root, "extensionTools"));
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or
             ArgumentException or NotSupportedException or System.Security.SecurityException or JsonException)
         {
             throw new ArgumentException($"Unable to read allowlist file '{path}': {exception.Message}", exception);
         }
-    }
-
-    internal static HashSet<string> LoadArray(Assembly assembly, string resourceName, string propertyName)
-    {
-        using var document = LoadDocument(assembly, resourceName);
-        var values = new HashSet<string>(StringComparer.Ordinal);
-
-        foreach (var element in document.RootElement.GetProperty(propertyName).EnumerateArray())
-        {
-            if (element.GetString() is { } value)
-            {
-                values.Add(value);
-            }
-        }
-
-        return values;
-    }
-
-    private static JsonDocument LoadDocument(Assembly assembly, string resourceName)
-    {
-        var fullName = ResourcePrefix + resourceName;
-        using var stream = assembly.GetManifestResourceStream(fullName)
-            ?? throw new InvalidOperationException($"Embedded resource '{fullName}' was not found.");
-
-        return JsonDocument.Parse(stream);
     }
 }
