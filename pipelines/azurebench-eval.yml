@@ -17,13 +17,21 @@ parameters:
     type: string
     default: pipelines/azurebench-eval/agent
   - name: model
-    displayName: MSBench model
+    displayName: MSBench model profile (endpoint and auth)
     type: string
     default: claude-opus-4.5-autodev-test
+  - name: copilotModel
+    displayName: Copilot CLI model the agent uses (COPILOT_AGENT_MODEL)
+    type: string
+    default: sweagent-capi:claude-opus-4.5
   - name: backend
     displayName: MSBench backend
     type: string
     default: ces-dev1
+  - name: useRunIdentity
+    displayName: Give the run an Azure identity (BYOI)
+    type: boolean
+    default: true
   - name: runIdentityClientId
     displayName: Run identity (BYOI) client ID
     type: string
@@ -85,6 +93,7 @@ jobs:
 
           # Our scripts (setup.sh, runner.sh, ...) wrap the official ones.
           cp "${{ parameters.agentDir }}"/*.sh "$(packageDir)/"
+          echo "export COPILOT_AGENT_MODEL='${{ parameters.copilotModel }}'" > "$(packageDir)/model.env"
           ls -l "$(packageDir)"
         displayName: Build agent package
 
@@ -102,6 +111,15 @@ jobs:
               inlineScript: |
                 set -euo pipefail
                 export CES_PROXY_BYPASS=true
+                byoi=()
+                if [ "${{ parameters.useRunIdentity }}" = "True" ]; then
+                  byoi=(
+                    --run_identity_client_id "${{ parameters.runIdentityClientId }}"
+                    --run_identity_tenant_id "${{ parameters.runIdentityTenantId }}"
+                    --run_identity_subscription_id "${{ parameters.runIdentitySubscriptionId }}"
+                    --tag harbor.keepIdentityForRun=true
+                  )
+                fi
                 msbench-cli run \
                   --agent "$(packageDir)" \
                   --runner "$(packageDir)/runner.sh" \
@@ -111,10 +129,7 @@ jobs:
                   --model "${{ parameters.model }}" \
                   --backend "${{ parameters.backend }}" \
                   --workers 1 \
-                  --run_identity_client_id "${{ parameters.runIdentityClientId }}" \
-                  --run_identity_tenant_id "${{ parameters.runIdentityTenantId }}" \
-                  --run_identity_subscription_id "${{ parameters.runIdentitySubscriptionId }}" \
-                  --tag harbor.keepIdentityForRun=true \
+                  "${byoi[@]}" \
                   --tag purpose=azurebench-eval \
                   --no-kusto \
                   --no-wait \

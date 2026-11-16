@@ -20,18 +20,30 @@ as pipeline parameters. The defaults run the example below.
 2. Make sure the submitting service connection (`serviceConnection`, default
    `azure_msbench_eval`) is allowed to submit to the CES backend. A run that
    worked with your own account does not prove the pipeline identity is allowed.
-3. The run identity (BYOI) must already have the Azure access the test needs.
+3. If `useRunIdentity` is on (default), the run identity (BYOI) must already
+   have the Azure access the test needs. BYOI is optional and only works on
+   supported Corp Linux backends; turn it off for tests that don't need Azure.
    The pipeline does not create identities or role assignments.
+
+## Models
+
+- `model`: MSBench model profile. It picks the model endpoint and auth only.
+- `copilotModel`: model the Copilot CLI agent actually uses. The pipeline
+  writes it to `model.env` as `COPILOT_AGENT_MODEL`. Change both together.
 
 ## Run
 
 1. Queue the pipeline with **Submit** unchecked. It only builds and publishes the
-   `agent-package` artifact, so you can inspect it.
+   `agent-package` artifact; it does not contact MSBench or validate the run.
 2. Queue again with **Submit** checked to send the run (`--no-wait`). Track it
    on the MSBench site.
 
-Agent and benchmark code can read anything passed to the run. Use only approved
-test identities and subscriptions; deployment tests can create billable resources.
+Agent and benchmark code can read anything passed to the run. With BYOI on, the
+pipeline sets `harbor.keepIdentityForRun=true`, which keeps the run identity
+logged in while agent and grading code run, so they can use it. MSBench docs say
+this tag is temporary and will be removed after November 2026; the example
+depends on it. Use only approved test identities and subscriptions; deployment
+tests can create billable resources.
 
 The example's settings come from a successful manual MSBench run
 (1/1 resolved). This pipeline itself has not submitted a run yet.
