@@ -1,6 +1,6 @@
 # Voice Live Bridge `1.0` for Hosted Voice
 
-A Hosted Voice configuration is a voice-based agent using a hosted text agent as its conversation engine. It pairs a managed **Voice wrapper** (`kind: voice`) with a **hosted target** (`kind: hosted`). Route the target through `voice_conversation_engine/1.0.0` unless the user explicitly selects the legacy transport.
+A Hosted Voice configuration is a voice-based agent using a hosted text agent as its conversation engine. It pairs a managed **Voice wrapper** (`kind: voice`) with a **hosted target** (`kind: hosted`). Route the target through `voice_conversation_engine/1.0.0` unless the user explicitly selects `invocations_ws` or the manifest already declares the complete legacy shape.
 
 ## Two-Agent Ownership Model
 

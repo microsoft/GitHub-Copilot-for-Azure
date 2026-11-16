@@ -69,7 +69,7 @@ See [prompt-and-hosted-voice-smoke-test.md](../create/references/voice-agent/pro
 
 ### Optional Step 3: Hosted Voice Target Bridge `1.0` Diagnostic
 
-When a **Hosted Voice Agent** fails or needs target-level isolation, run `azd ai agent run <target-service> --no-client`, then test the `kind: hosted` target with the selected sample's protocol-aware smoke client. Use `/voice_conversation_engine` unless the user explicitly selected the preserved legacy `/invocations_ws` transport. `azd ai agent invoke` and Agent Inspector do not invoke either target protocol. Target-only testing does **not** replace end-to-end wrapper verification in Step 2.
+When a **Hosted Voice Agent** fails or needs target-level isolation, run `azd ai agent run <target-service> --no-client`, then test the `kind: hosted` target with the selected sample's protocol-aware smoke client. Use `/voice_conversation_engine` unless the user explicitly selected `/invocations_ws` or the manifest already declares the complete legacy shape. `azd ai agent invoke` and Agent Inspector do not invoke either target protocol. Target-only testing does **not** replace end-to-end wrapper verification in Step 2.
 
 ## Managed Harness Agent Workflow with azd
 
