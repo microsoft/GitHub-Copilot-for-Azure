@@ -38,7 +38,8 @@ stimuli:
       - The agent creates one Standard static public IP and one Standard NAT Gateway in the supplied resource group and associates the NAT Gateway only with the `functions-integration` subnet.
       - The agent does not alter the route table, private endpoint, private DNS, storage public-network access, Function authentication, role assignments, application settings, `vnetRouteAllEnabled`, or `outboundVnetRouting`; Flex Consumption already routes application traffic through the integrated VNet.
       - Recovery verification confirms the subnet's NAT Gateway association, reads the allocated public IP, invokes `/api/outbound-api?load=nat-recovery`, receives HTTP 200, and proves the endpoint's observed outbound IP matches the NAT public IP.
-      - The final response explains the evidence timeline, created resources, subnet association, observed outbound-IP match, recovered HTTP outcome, and cleanup or ongoing-cost considerations without exposing function keys or other secrets.
+      - The agent verifies recovery without restarting, stopping, or starting the Function App; the `nat-recovery` probe makes fresh outbound calls, so a restart is unnecessary and disrupts the running app.
+      - The final response explains the evidence timeline, created resources, subnet association, observed outbound-IP match, recovered HTTP outcome, the ongoing cost of the NAT Gateway and public IP, and how to remove them, without exposing function keys or other secrets.
     tags:
       type: integration
       tier: full
@@ -64,9 +65,22 @@ stimuli:
               description: "Flex outbound routing settings must remain unchanged"
             - command: '(?i)\baz\s+network\s+(private-endpoint|private-dns)\s+.*\b(create|update|delete)\b'
               description: "private networking must remain unchanged"
+            - command: '(?i)\baz\s+(?:functionapp|webapp)\s+(?:restart|stop|start)\b|\baz\s+rest\b(?=[^\r\n]*(?:--method|-m)\s+post\b)(?=[^\r\n]*Microsoft\.Web/sites/[^/\s"'']+/(?:restart|stop|start)\b)'
+              description: "the Function App must not be restarted, stopped, or started"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)appservice_webapp_change-state$"
+            - name: "(?i)^azure-appservice$"
+              pattern: '"command"\s*:\s*"appservice_webapp_change-state"'
+            - name: "(?i)(?:^azure-arm$|execute_resource_action$)"
+              pattern: '(?i)"actionName"\s*:\s*"(?:restart|stop|start)"'
       - type: output-matches
         config:
           pattern: "(?is)(?=.*NAT Gateway)(?=.*(?:observed outbound IP|outbound IP))(?=.*(?:HTTP 200|recovered|recovery))"
+      - type: output-matches
+        config:
+          pattern: '(?is)(?=.*\b(?:costs?|billed|billing|charges?|pricing)\b)(?=.*(?:(?:delete|remov|clean\s*up|tear\s*down|disassociat)[^\n]{0,160}(?:NAT|public IP)|(?:NAT|public IP)[^\n]{0,160}(?:delete|remov|clean\s*up|tear\s*down|disassociat)))'
       - type: output-not-matches
         config:
           pattern: "(?i)(AccountKey=|SharedAccessSignature=|sig=[A-Za-z0-9%]{8,}|Bearer [A-Za-z0-9._-]{20,})"
