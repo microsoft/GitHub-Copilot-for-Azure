@@ -110,7 +110,7 @@ jobs:
                 Write-Host '##vso[task.setvariable variable=MuslBuildImage]ghcfa-telem-musl-build:$(Build.BuildId)-$(BuildRuntimeIdentifier)'
 
       - task: PowerShell@2
-        displayName: Build and package $(BuildRuntimeIdentifier)
+        displayName: Build and smoke-test $(BuildRuntimeIdentifier)
         inputs:
           pwsh: true
           filePath: $(Build.SourcesDirectory)/telemetry-reporter/eng/scripts/Build-Native.ps1
@@ -120,9 +120,97 @@ jobs:
             -OutputRoot '$(Build.ArtifactStagingDirectory)/native'
             -RestoreConfigFile '$(Build.SourcesDirectory)/telemetry-reporter/nuget.config'
             -MuslBuildImage '$(MuslBuildImage)'
+            -DeferPackaging
         env:
           # Build-Native smoke-tests host-compatible binaries; CI executions must not emit product telemetry.
           AZURE_MCP_COLLECT_TELEMETRY: "false"
+
+      - ${{ if eq(parameters.OSName, 'windows') }}:
+          - template: pipelines/steps/binary-signing.yml@azure-sdk-build-tools
+            parameters:
+              SigningKeyCode: CP-230012
+              BinaryPath: $(Build.ArtifactStagingDirectory)/native/publish/$(BuildRuntimeIdentifier)
+              BinaryPattern: '**/ghcfa-telem.exe'
+
+          - task: PowerShell@2
+            displayName: Verify Windows executable signature
+            inputs:
+              pwsh: true
+              targetType: inline
+              script: |
+                $binaryPath = Join-Path '$(Build.ArtifactStagingDirectory)' 'native/publish/$(BuildRuntimeIdentifier)/ghcfa-telem.exe'
+                $signature = Get-AuthenticodeSignature -FilePath $binaryPath -ErrorAction Stop
+                if ($signature.Status -ne 'Valid') {
+                  throw "Authenticode signature for '$binaryPath' is '$($signature.Status)'."
+                }
+
+      - ${{ if eq(parameters.OSName, 'macOS') }}:
+          - task: PowerShell@2
+            displayName: Prepare macOS executable for signing
+            inputs:
+              pwsh: true
+              targetType: inline
+              script: |
+                $publishDirectory = Join-Path '$(Build.ArtifactStagingDirectory)' 'native/publish/$(BuildRuntimeIdentifier)'
+                $binaryPath = Join-Path $publishDirectory 'ghcfa-telem'
+                $signingDirectory = Join-Path '$(Build.ArtifactStagingDirectory)' 'mac-signing'
+                New-Item -ItemType Directory -Path $signingDirectory -Force -ErrorAction Stop | Out-Null
+                & codesign --force --sign - --options runtime $binaryPath
+                if ($LASTEXITCODE -ne 0) {
+                  throw "Ad-hoc codesign failed with exit code $LASTEXITCODE."
+                }
+                $archivePath = Join-Path $signingDirectory 'ghcfa-telem-$(BuildRuntimeIdentifier).zip'
+                Compress-Archive -LiteralPath $binaryPath -DestinationPath $archivePath -CompressionLevel Optimal -ErrorAction Stop
+
+          - template: pipelines/steps/azd-cli-mac-signing.yml@azure-sdk-build-tools
+            parameters:
+              MacPath: $(Build.ArtifactStagingDirectory)/mac-signing
+              MacPattern: ghcfa-telem-$(BuildRuntimeIdentifier).zip
+              BundleId: com.microsoft.ghcfa-telem
+              Notarize: true
+
+          - task: PowerShell@2
+            displayName: Verify macOS executable signature
+            inputs:
+              pwsh: true
+              targetType: inline
+              script: |
+                $publishDirectory = Join-Path '$(Build.ArtifactStagingDirectory)' 'native/publish/$(BuildRuntimeIdentifier)'
+                $binaryPath = Join-Path $publishDirectory 'ghcfa-telem'
+                $archivePath = Join-Path '$(Build.ArtifactStagingDirectory)' 'mac-signing/ghcfa-telem-$(BuildRuntimeIdentifier).zip'
+                $extractDirectory = Join-Path '$(Build.ArtifactStagingDirectory)' 'mac-signing/extracted'
+                if (-not (Test-Path -LiteralPath $archivePath -PathType Leaf)) {
+                  throw "The signed macOS archive '$archivePath' is missing."
+                }
+                Expand-Archive -LiteralPath $archivePath -DestinationPath $extractDirectory -Force -ErrorAction Stop
+                $signedBinaryPath = Join-Path $extractDirectory 'ghcfa-telem'
+                if (-not (Test-Path -LiteralPath $signedBinaryPath -PathType Leaf)) {
+                  throw "The signed macOS executable '$signedBinaryPath' is missing."
+                }
+                Copy-Item -LiteralPath $signedBinaryPath -Destination $binaryPath -Force -ErrorAction Stop
+                & chmod +x $binaryPath
+                if ($LASTEXITCODE -ne 0) {
+                  throw "Restoring executable permissions failed with exit code $LASTEXITCODE."
+                }
+                & codesign --verify --deep --strict --verbose=2 $binaryPath
+                if ($LASTEXITCODE -ne 0) {
+                  throw "codesign verification failed with exit code $LASTEXITCODE."
+                }
+                Remove-Item -LiteralPath (Join-Path '$(Build.ArtifactStagingDirectory)' 'mac-signing') -Recurse -Force -ErrorAction Stop
+
+      - task: PowerShell@2
+        displayName: Package signed $(BuildRuntimeIdentifier) executable
+        inputs:
+          pwsh: true
+          targetType: inline
+          script: |
+            $outputRoot = Join-Path '$(Build.ArtifactStagingDirectory)' 'native'
+            $versionPath = Join-Path $outputRoot 'package-version.txt'
+            $version = (Get-Content -LiteralPath $versionPath -Raw -ErrorAction Stop).Trim()
+            & '$(Build.SourcesDirectory)/telemetry-reporter/eng/scripts/Package-Native.ps1' `
+              -RuntimeIdentifier '$(BuildRuntimeIdentifier)' `
+              -OutputRoot $outputRoot `
+              -Version $version
 
       - task: PowerShell@2
         displayName: Verify package output
