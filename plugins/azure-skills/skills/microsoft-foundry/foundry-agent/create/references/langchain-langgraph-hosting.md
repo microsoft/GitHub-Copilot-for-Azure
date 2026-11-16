@@ -21,7 +21,7 @@ Preserve the application's state semantics, including capabilities supplied by i
 
 Before initializing or editing a migration, fetch and read the linked walkthrough and its applicable local-hosting, deployment-packaging and persistence chapters. This reference routes the workflow; samples do not replace the walkthrough. If the documentation cannot be read, report that limitation instead of treating sample startup as migration verification. Then choose the least invasive supported path for the actual application's requirements; existing agent code alone is not a reason to add host integration.
 
-Complete the walkthrough's applicable verification gates before declaring the migration ready. The parent workflow's sample checks, imports and server readiness do not replace verification of the preserved application through its delivered boundary.
+**Required migration verification:** Complete the walkthrough's gates for every delivered entry point and the workflow connecting the preserved operations, and record the actual requests and observed results. Generic sample checks, imports and server readiness do not replace these application-boundary checks; report blocked gates separately.
 
 ## Sample Selection
 
