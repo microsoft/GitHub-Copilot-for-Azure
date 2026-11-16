@@ -114,7 +114,7 @@ services:
         version: 1.0.0
 ```
 
-- `protocols` -- `responses`, `invocations`, `invocations_ws`, or `activity`. Editing requires `azd deploy`.
+- `protocols` -- `responses`, `invocations`, `invocations_ws`, `voice_conversation_engine`, or `activity`. Editing requires `azd deploy`. `voice_conversation_engine/1.0.0` is Voice-preview-only and requires its protocol-aware client; `azd ai agent invoke` does not invoke it.
 - `container.resources` -- valid tiers: `0.25/0.5Gi`, `1/2Gi`, `2/4Gi`.
 - `environmentVariables` -- `${VAR}` resolves from the active azd env. Not for secrets.
 - `codeConfiguration` present -> code deploy (ZIP, Foundry builds).
