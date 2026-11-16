@@ -2,7 +2,7 @@
 
 Use this guidance when creating, migrating, or re-hosting a LangChain or LangGraph agent on Foundry.
 
-For an end-to-end walkthrough of hosting an existing LangGraph, LangChain, or Deep Agents application on Foundry, see [Host LangGraph applications on Microsoft Foundry](https://raw.githubusercontent.com/Jiahui-Gu/langchain-azure/80773ee1284e1ade0b2adf5338d0fb65b94251e6/libs/azure-ai/docs/hosting/host-langgraph-on-foundry.md).
+For an end-to-end walkthrough of hosting an existing LangGraph, LangChain, or Deep Agents application on Foundry, see [Host LangGraph applications on Microsoft Foundry](https://raw.githubusercontent.com/Jiahui-Gu/langchain-azure/c639002618727eb4fc91577a094c924ca8fab724/libs/azure-ai/docs/hosting/host-langgraph-on-foundry.md).
 
 ## Design Intent
 
@@ -19,7 +19,7 @@ Preserve the application's state semantics, including capabilities supplied by i
 | The selected protocol's default mapping preserves the application's required interface | **Configuration-only** |
 | Required input, configuration, operations or runtime capabilities are not covered by that mapping | **Host server integration** or another verified supported entry point |
 
-Before selecting a path, read the walkthrough's interface-mapping guidance and verify the actual application's requirements. Prefer the least invasive supported path; existing agent code alone is not a reason to add host integration.
+Before initializing or editing a migration, fetch and read the linked walkthrough and its applicable local-hosting, deployment-packaging and persistence chapters. This reference routes the workflow; samples do not replace the walkthrough. If the documentation cannot be read, report that limitation instead of treating sample startup as migration verification. Then choose the least invasive supported path for the actual application's requirements; existing agent code alone is not a reason to add host integration.
 
 ## Sample Selection
 
