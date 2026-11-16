@@ -1,7 +1,7 @@
 # Azure Diagnostics Harbor smoke test
 
 One genuine Vally-exported Harbor task and a manual MSBench **submission starter**:
-[`pipelines/azure-diagnostics-harbor.yml`](../../../pipelines/azure-diagnostics-harbor.yml).
+[`pipelines/azurebench-eval.yml`](../../../pipelines/azurebench-eval.yml).
 It uses the task in this repository, not a clone of another benchmark repo or the
 upstream eval suite at runtime. There is no CI/PR trigger or schedule. This ad-hoc
 `--dataset` example does not need a managed Registry publication.
@@ -36,7 +36,7 @@ This tests routing, not live resource diagnostics.
 
 1. Review, commit and publish these files to this GitHub repository yourself.
    The cloud worker cannot read this uncommitted worktree.
-2. Create a YAML pipeline selecting `pipelines/azure-diagnostics-harbor.yml`.
+2. Create a YAML pipeline selecting `pipelines/azurebench-eval.yml`.
    Use an approved Linux agent with Python 3.12 and PowerShell Core; replace
    `pool.vmImage` if hosted agents are unavailable. Authorize the package feed
    and ARM service connection only for the intended pipeline.

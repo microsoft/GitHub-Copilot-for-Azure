@@ -13,7 +13,7 @@ const prompt = "My Azure Container App keeps restarting, how do I troubleshoot i
 
 test("pipeline is manual-only, defaults to dry run and consumes the local task", async () => {
   const pipeline = parse(await readFile(resolve(sourceDir,
-    "../../../../pipelines/azure-diagnostics-harbor.yml"), "utf8"));
+    "../../../../pipelines/azurebench-eval.yml"), "utf8"));
   assert.equal(pipeline.trigger, "none");
   assert.equal(pipeline.pr, "none");
   assert.equal(pipeline.schedules, undefined);
