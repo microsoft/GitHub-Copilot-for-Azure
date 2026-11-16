@@ -1,74 +1,121 @@
-# Manual submission starter; see benchmarks/msbench/azure-diagnostics/README.md.
+# Manually run an MSBench Harbor benchmark with the GitHub Copilot CLI agent.
+# How to set up and run: pipelines/azurebench-eval/README.md
 trigger: none
 pr: none
 
 parameters:
-  - name: dryRun
-    displayName: Resolve configuration only (do not submit a remote run)
-    type: boolean
-    default: true
+  - name: benchmark
+    displayName: Benchmark to run (<benchmark>.<instance_id>)
+    type: string
+    default: azure-functions-harbor.function_deployment_skill
+  - name: dataset
+    displayName: Dataset JSONL file (path in this repo)
+    type: string
+    default: pipelines/azurebench-eval/datasets/azure-functions-deployment.jsonl
+  - name: agentDir
+    displayName: Agent scripts folder (path in this repo)
+    type: string
+    default: pipelines/azurebench-eval/agent
   - name: model
-    displayName: Approved MSBench model ID
+    displayName: MSBench model
     type: string
-    default: claude-opus-4.6
+    default: claude-opus-4.5-autodev-test
   - name: backend
+    displayName: MSBench backend
     type: string
-    default: ces-staging
-    values:
-      - ces-staging
-      - ces-dev1
+    default: ces-dev1
+  - name: runIdentityClientId
+    displayName: Run identity (BYOI) client ID
+    type: string
+    default: eec01da3-e9f5-48ee-a366-8e85811a4eeb
+  - name: runIdentityTenantId
+    displayName: Run identity (BYOI) tenant ID
+    type: string
+    default: 72f988bf-86f1-41af-91ab-2d7cd011db47
+  - name: runIdentitySubscriptionId
+    displayName: Run identity (BYOI) subscription ID
+    type: string
+    default: cda6aeab-6dec-4567-a4d8-3770583a13f0
+  - name: serviceConnection
+    displayName: Azure service connection that submits the run
+    type: string
+    default: azure_msbench_eval
+  - name: submit
+    displayName: Submit the run (unchecked = only build the agent package)
+    type: boolean
+    default: false
 
-pool:
-  vmImage: ubuntu-latest
+variables:
+  - template: /pipelines/templates/variables/image.yml
+  - name: packageDir
+    value: $(Agent.TempDirectory)/agent-package
 
-stages:
-  - stage: RunBenchmark
-    displayName: Submit Azure Diagnostics Harbor smoke test
-    jobs:
-      - job: RunBenchmark
-        timeoutInMinutes: 30
-        steps:
-          - checkout: self
-            fetchDepth: 1
-            lfs: false
-            submodules: false
+jobs:
+  - job: AzureBenchEval
+    displayName: Run ${{ parameters.benchmark }}
+    pool:
+      name: $(LINUXPOOL)
+      image: $(LINUXVMIMAGE)
+      os: linux
+    steps:
+      - checkout: self
 
-          - task: UsePythonVersion@0
-            inputs:
-              versionSpec: '3.12'
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: '3.12'
 
-          - task: PipAuthenticate@1
-            displayName: Authenticate to the MSBench package feed
-            inputs:
-              artifactFeeds: $(MSBENCH_ARTIFACT_FEED)
+      - task: PipAuthenticate@1
+        displayName: Authenticate pip with MicrosoftSweBench feed
+        inputs:
+          artifactFeeds: internal/MicrosoftSweBench
 
-          - script: |
-              set -euo pipefail
-              python -m pip install --no-input "msbench-cli==$(MSBENCH_CLI_VERSION)"
-              msbench-cli version
-            displayName: Install pinned MSBench CLI
+      - script: python -m pip install --no-input msbench-cli==0.3.70 msbench-agent-github-copilot-cli==0.0.28
+        displayName: Install MSBench CLI and Copilot CLI agent generator
 
+      - script: |
+          set -euo pipefail
+          prep="$(Agent.TempDirectory)/prepare"
+          rm -rf "$prep" "$(packageDir)"
+          mkdir -p "$prep/work" "$prep/out" "$(packageDir)"
+
+          # Official Copilot CLI agent files: package downloader, entry.sh, setup.sh, agent_profile.yml.
+          msbench-agent-github-copilot-cli prepare --work_dir "$prep/work" --output_dir "$prep/out" --backend "${{ parameters.backend }}"
+          cp "$prep/work/agent/agent-downloader.sh" "$prep/work/agent/entry.sh" "$prep/work/agent/agent_profile.yml" "$(packageDir)/"
+          cp "$prep/work/agent/setup.sh" "$(packageDir)/setup-base.sh"
+
+          # Our scripts (setup.sh, runner.sh, ...) wrap the official ones.
+          cp "${{ parameters.agentDir }}"/*.sh "$(packageDir)/"
+          ls -l "$(packageDir)"
+        displayName: Build agent package
+
+      - publish: $(packageDir)
+        artifact: agent-package
+        displayName: Publish agent package
+
+      - ${{ if eq(parameters.submit, true) }}:
           - task: AzureCLI@2
-            name: RunBenchmarks
-            displayName: Prepare local dataset and resolve or submit MSBench run
+            displayName: Submit MSBench run
             inputs:
-              azureSubscription: $(AZURE_SERVICE_CONNECTION)
-              scriptType: pscore
-              scriptLocation: scriptPath
-              scriptPath: $(Build.SourcesDirectory)/pipelines/scripts/azure-diagnostics-harbor/Invoke-Smoke.ps1
-            env:
-              HARBOR_DRY_RUN: ${{ parameters.dryRun }}
-              HARBOR_MODEL: ${{ parameters.model }}
-              HARBOR_BACKEND: ${{ parameters.backend }}
-              HARBOR_OUTPUT_PATH: $(Build.ArtifactStagingDirectory)/azure-diagnostics-harbor
-              HARBOR_TASK_REPO: $(Build.Repository.Uri)
-              HARBOR_TASK_COMMIT: $(Build.SourceVersion)
-              HARBOR_CONTAINER_REGISTRY: $(HARBOR_CONTAINER_REGISTRY)
-              ${{ if eq(parameters.dryRun, false) }}:
-                GITHUB_COPILOT_INTEGRATION_ID: $(GITHUB_COPILOT_INTEGRATION_ID)
-                CAPI_HMAC_KEY: $(CAPI_HMAC_KEY)
-
-          - publish: $(Build.ArtifactStagingDirectory)/azure-diagnostics-harbor
-            artifact: azure-diagnostics-harbor
-            displayName: Publish dataset, submission log and run IDs
-            condition: succeededOrFailed()
+              azureSubscription: ${{ parameters.serviceConnection }}
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+                export CES_PROXY_BYPASS=true
+                msbench-cli run \
+                  --agent "$(packageDir)" \
+                  --runner "$(packageDir)/runner.sh" \
+                  --runner_type harbor \
+                  --benchmark "${{ parameters.benchmark }}" \
+                  --dataset "${{ parameters.dataset }}" \
+                  --model "${{ parameters.model }}" \
+                  --backend "${{ parameters.backend }}" \
+                  --workers 1 \
+                  --run_identity_client_id "${{ parameters.runIdentityClientId }}" \
+                  --run_identity_tenant_id "${{ parameters.runIdentityTenantId }}" \
+                  --run_identity_subscription_id "${{ parameters.runIdentitySubscriptionId }}" \
+                  --tag harbor.keepIdentityForRun=true \
+                  --tag purpose=azurebench-eval \
+                  --no-kusto \
+                  --no-wait \
+                  -y
