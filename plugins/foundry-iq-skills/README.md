@@ -1,121 +1,186 @@
-# foundry-iq-skills
+# Foundry IQ Skills
 
-Diagnose Foundry IQ and Azure AI Search access and ingestion issues, and configure Azure AI Search and Foundry IQ with source-aware security and verified API guidance. Build and query entity graphs, topic graphs and ontologies over your documents.
+Get help with Foundry IQ (Azure AI Search), build agents that answer questions
+using your documents, and explore connections across your data.
 
-## Skills
+## Get started
 
-- [`foundry-iq`](skills/foundry-iq/SKILL.md)
-
-## Try the graph demo
-
-After installing, paste this prompt:
-
-> Show me what Foundry IQ graph can do.
-
-The demo asks its questions once, then shows each approval before it changes Azure or spends money.
-
-## Install in Codex
-
-Codex loads the portable `plugin.json`, `mcp.json` and `skills/` at this package root.
-Register a local marketplace, install from it, then check the graph server starts:
-
-1. Place this folder at `<marketplace-root>/foundry-iq-skills` and create
-   `<marketplace-root>/.agents/plugins/marketplace.json`:
-
-   ```json
-   {"name": "foundry-iq-local", "plugins": [{"name": "foundry-iq-skills",
-     "source": {"source": "local", "path": "./foundry-iq-skills"},
-     "policy": {"installation": "AVAILABLE", "authentication": "ON_INSTALL"},
-     "category": "Productivity"}]}
-   ```
-
-2. Register and install:
-
-   ```text
-   codex plugin marketplace add <marketplace-root>
-   codex plugin add foundry-iq-skills@foundry-iq-local
-   codex mcp list
-   ```
-
-   Codex copies the plugin to `~/.codex/plugins/cache/foundry-iq-local/foundry-iq-skills/local/`.
-3. Check the server's launch command from that installed copy. It prints `"status": "ready"`
-   once the entity runtime is prepared (the first run prepares it):
-
-   ```text
-   node "<installed-plugin>/graph/runtime/launch-python.mjs" status entity
-   ```
-
-Then start a new Codex session; the `foundry-iq-graph` tools should be listed.
-
-## Harness-independent Python runtimes
-
-Use an absolute installed or extracted package root from your chosen harness.
-No `copilot plugin list`, global tool install or PATH change is required.
-Bootstrap discovers an existing local Python 3.12, 3.13 or 3.14 with standard venv and pip; it never installs Python.
-Run preflight or setup directly for the user to prepare only the chosen route:
+In Copilot CLI, install the plugin:
 
 ```text
-python -I "<package-root>\graph\runtime\bootstrap.py" setup entity
-python -I "<package-root>\graph\runtime\bootstrap.py" setup topicgraph
-python -I "<package-root>\graph\runtime\bootstrap.py" setup ontology
-python -I "<package-root>\graph\runtime\bootstrap.py" setup grounding
-python -I "<package-root>\graph\runtime\bootstrap.py" run entity entity-graph-build --help
+/plugin marketplace add microsoft/azure-skills
+/plugin install foundry-iq-skills@azure-skills
 ```
 
-Use `run <domain> <entry-point>` for later commands. Successful setup records its exact
-interpreter per domain/artifact in the external cache; later callers re-enter that interpreter
-even when the MCP launcher starts another Python version.
-For explicit selection, set FOUNDRY_IQ_PYTHON to an absolute Python 3.12, 3.13 or 3.14 executable.
-Without an override/binding, bootstrap uses its caller when that is a supported version,
-otherwise it auto-discovers the newest supported local Python.
-Each Python version gets its own isolated runtime environment and matching dependency lock.
-Cold run/status auto-prepare an absent isolated runtime on first launch or wheel update.
-Generated MCP servers start `node <plugin-root>/graph/runtime/launch-python.mjs`, which runs bootstrap
-with the first working supported `python3.X`, `python3`, `python` or (Windows) `py`; no per-host paths.
-If none is on the host's PATH, set FOUNDRY_IQ_PYTHON to an absolute Python 3.12, 3.13 or 3.14 executable
-in the environment the host starts from.
-Do not change global PATH/defaults. Corrupt bindings and incomplete/tampered caches fail closed.
-Require initialize, notifications/initialized and nonempty tools/list before MCP use;
-startup exits or unavailable tools are blocked even in autopilot, not a passing readiness check.
-Bare executable names in skills are shorthand. Warm run/status never install or repair.
-Setup honors configured package sources and verifies the complete hashed dependency lock.
-The plugin-owned external cache is keyed by wheel, dependency and Python/platform fingerprints.
-Updates select a new environment without changing active older sessions or project dependencies.
-Python 3.12, 3.13 or 3.14 locks cover Windows x64, Linux x64/ARM64 and macOS Apple Silicon; macOS Intel is unsupported.
-Other interpreter/platform combinations fail explicitly; lock resolution is not execution acceptance.
-No global commands, PATH changes, virtual environments or site-packages ship in this plugin.
-`graph/runtime/manifest.json` records wheel, source revision/tree/hash, dependency and asset provenance.
-Source stays inspectable at the recorded repository/revision/path; wheels replace source copies.
-Set PLUGIN_ROOT for optional doctor artifact-version checks, not Azure readiness.
-See [route checks](skills/foundry-iq/workflows/graph/graph-guide/references/install-and-checks.md) for details.
+Then try: **"Show me what Foundry IQ graph can do."** Copilot runs a preflight
+and guides you through prerequisites, resource selection and approvals.
 
-## Optional MCP Apps host
+To update an installed plugin:
 
-The plugin includes the localhost MCP Apps viewer; no separate archive,
-source checkout, npm install or frontend build is required.
-Localhost uses small HTML plus packaged JS/CSS; embedded hosts retain single-file HTML.
-Complete the [runtime and private configuration prerequisites](graph/apps-host/README.md),
-then run with an explicit Node 22.13+ executable:
+```text
+/plugin update foundry-iq-skills@azure-skills
+```
+
+### Install in Codex
+
+Codex loads the portable `plugin.json`, `mcp.json` and `skills/` at the plugin
+root. Place this plugin folder at `<marketplace-root>/foundry-iq-skills` and
+create `<marketplace-root>/.agents/plugins/marketplace.json`:
+
+```json
+{"name": "foundry-iq-local", "plugins": [{"name": "foundry-iq-skills",
+  "source": {"source": "local", "path": "./foundry-iq-skills"},
+  "policy": {"installation": "AVAILABLE", "authentication": "ON_INSTALL"},
+  "category": "Productivity"}]}
+```
+
+Then register and install it, and start a new Codex session:
+
+```text
+codex plugin marketplace add <marketplace-root>
+codex plugin add foundry-iq-skills@foundry-iq-local
+codex mcp list
+```
+
+The `foundry-iq-graph` tools should be listed.
+
+## What's included
+
+| Need | How the plugin helps |
+|---|---|
+| Azure AI Search and Foundry IQ | Get guidance on indexes, keyword, vector and semantic search, access, ingestion, retrieval quality and grounded agents. |
+| Try graphs end to end | A guided demo takes sample documents or your data through graph creation and questions. |
+| Entity graphs | Provision or connect resources, extract entities and relationships, and answer multi-hop questions. |
+| Topic graphs | Build and explore corpus-wide themes and publish topics for retrieval. |
+| Ontologies | Draft, refine, review and export an ontology, or inspect versions and validate an OWL file. |
+| Graph-backed grounding | Provision, build and query a grounding index. |
+
+Graph and ontology requests use guided graph capabilities.
+Ordinary skills remain CLI-first; MCP hosts that support Apps can also show
+Entity Graph, Topic Graph, ontology and grounding Apps resources over MCP.
+Other Search requests use shared context, security and API guidance with
+official Azure documentation. This plugin is not for Microsoft Graph API,
+other Azure products or continuous evaluation.
+
+## Prerequisites
+
+- [Git](https://git-scm.com/) and an installed, signed-in
+  [GitHub Copilot CLI](https://github.com/github/copilot-cli).
+- [Node.js](https://nodejs.org/) and npm for Azure MCP Server. The graph MCP
+  launcher also uses Node.js; the optional viewer needs **22.13 or later**.
+- For graph workflows, [Python](https://www.python.org/downloads/) **3.12, 3.13
+  or 3.14**, with standard `venv` and `pip`. Runtime setup needs access to your
+  configured Python package sources; the plugin does not install Python.
+- For live graph operations, [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli)
+  and an identity signed in to the intended tenant:
+
+  ```powershell
+  az login --tenant "<tenant-id-or-domain>"
+  ```
+
+- Access to the target subscription and resources, including the permissions
+  needed for the requested operation. Creating role assignments requires
+  additional authority; being signed in is not sufficient.
+
+**For the complete graph demo, use Windows x64 or Linux x64/ARM64.** Python
+runtime setup also supports macOS Apple Silicon, but the native Topic Graph
+build executable does not support macOS; do not expect the full demo there.
+
+For graph builds, have documents or use the supplied Microsoft earnings-call
+sample. You can connect compatible existing Search, Storage and chat/embedding
+model deployments, or approve creation of new resources. Graph features must
+be available in the chosen Search region and service; model availability,
+quota and permissions are checked for your selected resources. A Free-tier or
+key-only Search service is not compatible with the existing-resource graph path.
+
+You can ask for explanations and planning without Azure access. Live builds,
+queries and resource changes require the corresponding access and services.
+
+## Prepare the graph runtime
+
+No source checkout, manual runtime archive, global Python package installation
+or frontend build is required.
+
+For explicit setup, replace `<installed-plugin>` with the installed plugin
+folder containing `graph` and `skills`. Run from your workspace:
+
+```powershell
+python -I "<installed-plugin>\graph\runtime\bootstrap.py" setup entity
+```
+
+On macOS and Linux, use forward slashes in the path.
+
+Set up `topicgraph`, `ontology` or `grounding` in place of `entity` when the
+chosen procedure needs that domain. Setup verifies bundled artifacts and
+dependency locks and prepares an isolated external cache using configured
+package sources; it makes no Azure or model calls. First use may also prepare
+an absent cache. Topic Graph may download its native builder with your approval.
+
+If Python discovery picks the wrong interpreter, set `FOUNDRY_IQ_PYTHON` to an
+absolute Python 3.12, 3.13 or 3.14 executable and rerun setup. The graph MCP
+server starts through `graph/runtime/launch-python.mjs`, which looks for Python
+on the host's PATH; if none is found, set `FOUNDRY_IQ_PYTHON` in the
+environment your host starts from. The plugin never changes your global PATH
+or project dependencies. Runtime locks cover Windows x64, Linux x64/ARM64 and
+macOS Apple Silicon; macOS Intel is not supported. See
+[route checks](skills/foundry-iq/workflows/graph/graph-guide/references/install-and-checks.md)
+for details.
+
+## Example prompts
+
+- "Show me what Foundry IQ graph can do."
+- "Continue my Foundry IQ demo."
+- "Build a graph from the documents in my local folder."
+- "Check whether my existing Search, Storage and OpenAI resources are ready for Entity Graph."
+- "Which entities connect these two events? Show the supporting sources."
+- "Find the main themes across my document collection."
+- "Draft an ontology from these topics and help me review it."
+- "Validate this OWL file and explain its classes."
+- "Why are new documents missing from my Azure AI Search index?"
+- "How can I combine keyword and vector search?"
+- "Help me prepare a REST request for this Azure AI Search operation."
+
+### Optional: explore in a browser
+
+After a verified graph publication or cited answer, ask to open the Knowledge
+Graph Playground. It is a local, read-only, selected-context viewer, not a
+separate model-backed chat. Complete the
+[viewer prerequisites](graph/apps-host/README.md), then run it with Node.js
+22.13 or later:
 
 ```powershell
 node "<installed-plugin>\graph\apps-host\launch.mjs" --config "<operator-config.json>"
 ```
 
-Open the exact loopback URL printed when ready. Type `quit` or press Ctrl+C
-to stop the host and its owned Apps servers before relaunching.
-The host uses the actual Entity Graph, Topic Graph, ontology and grounding Apps resources over MCP.
-It is a selected-context viewer, not an agent conversation or model backend.
-Entity Graph Ask supports traversal, server-side Knowledge Base (KB / NL→GQL) and raw GQL modes;
-scalar GQL results render as tables rather than fabricated graphs.
-Ordinary skills remain CLI-first.
+Open the loopback URL it prints. Type `quit` or press Ctrl+C to stop it.
 
-## Provenance
+## Important callouts
 
-Generated by release/scripts/package_plugin.py from skills/, graph/runtime/ and graph/apps-host/. Do not edit by hand.
+- **Preview APIs.** Graph builds and some queries use `2026-11-01-preview`;
+  other steps may use different fixed versions. You can't change these through
+  the general skill. Check the graph guide for the version each workflow uses;
+  not every Search service or region supports preview APIs.
+- **Costs and approval.** Creating resources, indexing documents and asking
+  model-backed questions can cost money, even with sample documents. Review
+  and approve the specific resource, data and cost plan before changes. A
+  changed plan needs new approval; approval to run a demo does not include
+  cleanup or deletion.
+- **Data access.** Graphs, summaries, topic indexes and caches are copies of
+  source data, and do not automatically keep its access permissions. Check who
+  can access them, keep links to the source, and plan for updates and revoked
+  access. Never put keys, tokens or private document content in prompts or logs.
+- **Resource reuse and cleanup.** Confirm which resources will be reused or
+  created. Cleanup needs explicit approval and must leave shared or reused
+  resources intact. Setup or connection checks alone don't prove that a build
+  or end-to-end query succeeded.
 
-Generating this package does not establish release assurance or approval.
-Publication requires separate approval. The internal repository retains
-manifests, release records, private fixtures,
-approvals, security evidence, and benchmark exports; only the files here
-are contributed to `microsoft/GitHub-Copilot-for-Azure` at
-`plugins/foundry-iq-skills`.
+## Learn more
+
+- [Foundry IQ skill instructions](skills/foundry-iq/SKILL.md)
+- [Graph workflow](skills/foundry-iq/workflows/graph/graph.md)
+- [Knowledge Graph Playground guide](graph/apps-host/README.md)
+- [Azure AI Search documentation](https://learn.microsoft.com/azure/search/)
+- [Foundry IQ and agentic retrieval](https://learn.microsoft.com/azure/search/agentic-retrieval-overview)
+- [Hybrid search](https://learn.microsoft.com/azure/search/hybrid-search-overview)
+- [Document-level access control](https://learn.microsoft.com/azure/search/search-document-level-access-overview)
+- [Azure AI Search API and SDK versions](https://learn.microsoft.com/azure/search/search-api-versions)
