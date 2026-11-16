@@ -47,10 +47,10 @@ Alternatively, run `azd deploy --no-prompt` to deploy all services in dependency
    - Prompt Voice or Hosted Voice wrapper: `/endpoint/protocols/voice`
 
    For Hosted Voice, report target and wrapper status separately. The target must be active, `kind: hosted`, in the same Foundry project, and declare exact `voice_conversation_engine/1.0.0`, or complete legacy `invocations_ws/1.0.0` compatibility metadata. Run target `endpoint show` and verify:
-   - new target: `/endpoint/protocols/voice_conversation_engine?api-version=v1`
+   - conversation engine: `/endpoint/protocols/voice_conversation_engine?api-version=v1`
    - legacy target: `/endpoint/protocols/invocations_ws?api-version=v1`
 
-   For a new target, confirm the endpoint also matches `AGENT_<TARGET_SERVICE_KEY>_VOICE_CONVERSATION_ENGINE_ENDPOINT`. Run wrapper endpoint verification against the wrapper service key. These `show` commands use local service keys. The wrapper smoke helper uses the resolved remote Voice Agent name when it differs.
+   For `voice_conversation_engine`, confirm the endpoint also matches `AGENT_<TARGET_SERVICE_KEY>_VOICE_CONVERSATION_ENGINE_ENDPOINT`. Run wrapper endpoint verification against the wrapper service key. These `show` commands use local service keys. The wrapper smoke helper uses the resolved remote Voice Agent name when it differs.
 2. Do not run `azd ai agent invoke`; it does not support the `voice` protocol. Do not use generic `azd ai agent eval generate` as a Voice smoke test; transcript evaluation has separate limits in [observe](../../observe/observe.md).
 3. **Automated technical gate:** for GPT-Live Voice, run the dedicated helper from [GPT-Live Voice smoke testing](../../create/references/voice-agent/gpt-live-voice-smoke-test.md) over `/protocols/voice/live/sessions`; the default gate verifies session startup and clean closure. For Prompt Voice and Hosted Voice, run [smoke-test-voice.sh](../../create/scripts/smoke-test-voice.sh) or [smoke-test-voice.ps1](../../create/scripts/smoke-test-voice.ps1). Deployment is technically verified only when the service version(s) are active and the selected gate succeeds.
 4. **Manual experience acceptance:** provide the Voice Agent Playground URL from the service-specific readback and recommend a complete microphone/audio-to-audio test in the Foundry portal.

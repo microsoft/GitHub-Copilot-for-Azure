@@ -50,7 +50,7 @@ The wrapper's `uses` entry establishes target-before-wrapper deployment order.
 
 ## Legacy Target Compatibility
 
-Existing targets remain compatible when they declare `invocations_ws/1.0.0` **and** both metadata values:
+Use the legacy shape only when the user explicitly selects `invocations_ws` or the manifest already declares `invocations_ws/1.0.0` **and** both metadata values:
 
 ```yaml
 protocols:

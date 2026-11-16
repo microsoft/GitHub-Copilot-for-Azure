@@ -74,8 +74,8 @@ azd opens Microsoft 365 Agents Playground for Activity traffic. If Activity coex
 ### Voice Agents and Hosted Voice targets
 
 - **Prompt Voice Agents** have no local container runtime. Skip local run and deploy to Azure, then verify over the managed `voice` WebSocket endpoint (see [Prompt and Hosted Voice smoke testing](voice-agent/prompt-and-hosted-voice-smoke-test.md)).
-- **New Hosted Voice targets** declare `voice_conversation_engine/1.0.0` and expose `ws://127.0.0.1:8088/voice_conversation_engine` plus `GET /readiness`. Start the selected target with `azd ai agent run <target-service> --no-client`, then run that sample's protocol-aware smoke client. `azd ai agent invoke` and Agent Inspector are not conversation-engine clients.
-- **Legacy Hosted Voice targets** preserve `invocations_ws/1.0.0`, both compatibility metadata values, and the `/invocations_ws` route. Use the legacy sample's protocol-aware client; do not treat the routes as interchangeable.
+- **Hosted Voice targets** use `voice_conversation_engine/1.0.0` and expose `ws://127.0.0.1:8088/voice_conversation_engine` plus `GET /readiness`. Start the selected target with `azd ai agent run <target-service> --no-client`, then run that sample's protocol-aware smoke client. `azd ai agent invoke` and Agent Inspector are not conversation-engine clients.
+- **Legacy `invocations_ws` targets** are used only when explicitly selected or already declared with both compatibility metadata values. Preserve `/invocations_ws` and use the matching protocol-aware client; do not treat the routes as interchangeable.
 - Local target testing validates only the Hosted target's Bridge `1.0` handler, not the managed Foundry Voice audio pipeline (`kind: voice` wrapper), which must be smoke-tested after deployment.
 
 ## Useful flags

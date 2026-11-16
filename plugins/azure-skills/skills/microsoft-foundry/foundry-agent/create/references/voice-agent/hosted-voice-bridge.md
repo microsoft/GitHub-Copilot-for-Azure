@@ -1,6 +1,6 @@
 # Voice Live Bridge `1.0` for Hosted Voice
 
-A Hosted Voice configuration is a voice-based agent using a hosted text agent as its conversation engine. It pairs a managed **Voice wrapper** (`kind: voice`) with a **hosted target** (`kind: hosted`). New targets implement Voice Live Bridge Protocol `1.0` over `voice_conversation_engine/1.0.0`.
+A Hosted Voice configuration is a voice-based agent using a hosted text agent as its conversation engine. It pairs a managed **Voice wrapper** (`kind: voice`) with a **hosted target** (`kind: hosted`). Route the target through `voice_conversation_engine/1.0.0` unless the user explicitly selects the legacy transport.
 
 ## Two-Agent Ownership Model
 
@@ -16,7 +16,7 @@ A Hosted Voice configuration is a voice-based agent using a hosted text agent as
 
 ## Voice Live Bridge Protocol `1.0` Event Flow
 
-The Voice wrapper's Voice Live layer connects to the hosted target through the selected transport. New targets use `/voice_conversation_engine` (`ws://127.0.0.1:8088/voice_conversation_engine` locally). Bridge messages still use `session.start.protocol_version: "1.0"`; transport version `1.0.0` and Bridge protocol version `"1.0"` are distinct. The hosted target **never** processes raw audio frames—Voice Live handles audio input, speech recognition, turn detection, synthesis, playback interruption, and proactive-response admission.
+The Voice wrapper's Voice Live layer connects to the hosted target through the selected transport. `voice_conversation_engine` uses `/voice_conversation_engine` (`ws://127.0.0.1:8088/voice_conversation_engine` locally). Bridge messages still use `session.start.protocol_version: "1.0"`; transport version `1.0.0` and Bridge protocol version `"1.0"` are distinct. The hosted target **never** processes raw audio frames—Voice Live handles audio input, speech recognition, turn detection, synthesis, playback interruption, and proactive-response admission.
 
 The typed Voice SDK keeps the same callbacks and Bridge events on the dedicated route. After deployment, the target endpoint is `wss://<project-host>/api/projects/<project>/agents/<target>/endpoint/protocols/voice_conversation_engine?api-version=v1`.
 
@@ -114,7 +114,7 @@ Use the protocol-aware smoke client shipped by the selected conversation-engine 
 
 ## Legacy Transport
 
-Existing `invocations_ws/1.0.0` targets remain compatible only with `voiceLiveCompatible: "true"` and `bridgeProtocolVersion: "1.0"` metadata. They use `/invocations_ws`; preserve that route and metadata on ordinary edits. Migrating old code requires an SDK that exposes `/voice_conversation_engine`; changing YAML alone is not universally safe.
+Use `invocations_ws/1.0.0` only when the user explicitly selects it or the manifest already contains `voiceLiveCompatible: "true"` and `bridgeProtocolVersion: "1.0"`. It uses `/invocations_ws`; preserve that route and metadata on ordinary edits. Migrating legacy code requires an SDK that exposes `/voice_conversation_engine`; changing YAML alone is not universally safe.
 
 ---
 
