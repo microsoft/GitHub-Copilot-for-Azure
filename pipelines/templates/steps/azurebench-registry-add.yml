@@ -1,0 +1,55 @@
+# Runs `msbench-cli registry add benchmark` (used by pipelines/azurebench-release.yml).
+parameters:
+  - name: benchmark
+    type: string
+  - name: version
+    type: string
+  - name: metadata
+    type: string
+  - name: dataset
+    type: string
+  - name: private
+    type: boolean
+  - name: backend
+    type: string
+  - name: serviceConnection
+    type: string
+  - name: validateOnly
+    type: boolean
+
+steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.12'
+
+  - task: PipAuthenticate@1
+    displayName: Authenticate pip with MicrosoftSweBench feed
+    inputs:
+      artifactFeeds: internal/MicrosoftSweBench
+
+  - script: python -m pip install --no-input msbench-cli==0.3.70
+    displayName: Install MSBench CLI
+
+  - task: AzureCLI@2
+    ${{ if eq(parameters.validateOnly, true) }}:
+      displayName: Validate release (writes nothing)
+    ${{ else }}:
+      displayName: Publish release
+    inputs:
+      azureSubscription: ${{ parameters.serviceConnection }}
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        set -euo pipefail
+        export CES_PROXY_BYPASS=true
+        extra=()
+        if [ "${{ parameters.private }}" = "True" ]; then extra+=(--private); fi
+        if [ "${{ parameters.validateOnly }}" = "True" ]; then extra+=(--validate-only); fi
+        msbench-cli registry add benchmark "${{ parameters.benchmark }}@${{ parameters.version }}" \
+          --metadata "${{ parameters.metadata }}" \
+          --dataset "${{ parameters.dataset }}" \
+          --management-mode self \
+          --source-repository "$(Build.Repository.Uri)" \
+          --source-commit "$(Build.SourceVersion)" \
+          --backend "${{ parameters.backend }}" \
+          "${extra[@]}"

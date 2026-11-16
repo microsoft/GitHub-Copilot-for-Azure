@@ -1,0 +1,122 @@
+# Manually validate, then (optionally) publish a benchmark release to the MSBench Registry.
+# How to set up and run: pipelines/azurebench-eval/README.md
+trigger: none
+pr: none
+
+parameters:
+  - name: benchmark
+    displayName: Benchmark name in the Registry
+    type: string
+    default: azurebench
+  - name: version
+    displayName: Version to publish (new, never reused)
+    type: string
+    default: 1.0.0
+  - name: metadata
+    displayName: registry.json (path in this repo)
+    type: string
+    default: benchmarks/azurebench/registry.json
+  - name: dataset
+    displayName: Dataset JSONL (path in this repo)
+    type: string
+    default: benchmarks/azurebench/dataset.jsonl
+  - name: private
+    displayName: Only people you grant can read and run it
+    type: boolean
+    default: true
+  - name: backend
+    displayName: MSBench backend
+    type: string
+    default: ces-dev1
+  - name: serviceConnection
+    displayName: Azure service connection with Registry Editor/Owner rights
+    type: string
+    default: azure_msbench_eval
+  - name: publish
+    displayName: Publish (unchecked = validate only, nothing is written)
+    type: boolean
+    default: false
+
+variables:
+  - template: /pipelines/templates/variables/image.yml
+
+stages:
+  - stage: Validate
+    jobs:
+      - job: Validate
+        pool:
+          name: $(LINUXPOOL)
+          image: $(LINUXVMIMAGE)
+          os: linux
+        steps:
+          - checkout: self
+            fetchDepth: 0
+
+          - script: |
+              set -euo pipefail
+              python3 - "${{ parameters.benchmark }}" "${{ parameters.metadata }}" "${{ parameters.dataset }}" <<'EOF'
+              import json, re, subprocess, sys
+              name, metadata, dataset = sys.argv[1:]
+              meta = json.load(open(metadata))
+              rows = [json.loads(line) for line in open(dataset) if line.strip()]
+              errors = []
+              if meta["id"] != name:
+                  errors.append(f"{metadata}: id is {meta['id']}, expected {name}")
+              if "REPLACE" in meta.get("contactEmail", ""):
+                  errors.append(f"{metadata}: set contactEmail to the owner mailbox")
+              if len({r["instance_id"] for r in rows}) != len(rows):
+                  errors.append("duplicate instance_id")
+              for r in rows:
+                  where = f"{dataset}: {r['instance_id']}"
+                  commit, path = r.get("task_repo_commit", ""), r.get("task_path", "")
+                  if r["benchmark"] != name:
+                      errors.append(f"{where}: benchmark is {r['benchmark']}, expected {name}")
+                  if not re.fullmatch(r"[0-9a-f]{40}", commit):
+                      errors.append(f"{where}: task_repo_commit must be a full commit SHA")
+                  elif subprocess.run(["git", "branch", "-r", "--contains", commit], capture_output=True, text=True).stdout.strip() == "":
+                      errors.append(f"{where}: commit {commit} is not pushed to this repo")
+                  elif subprocess.run(["git", "cat-file", "-e", f"{commit}:{path}/task.toml"]).returncode != 0:
+                      errors.append(f"{where}: {path}/task.toml not found at {commit}")
+              print("\n".join(errors) or f"{len(rows)} task(s) OK")
+              sys.exit(1 if errors else 0)
+              EOF
+            displayName: Check dataset and task pins
+
+          - template: /pipelines/templates/steps/azurebench-registry-add.yml
+            parameters:
+              benchmark: ${{ parameters.benchmark }}
+              version: ${{ parameters.version }}
+              metadata: ${{ parameters.metadata }}
+              dataset: ${{ parameters.dataset }}
+              private: ${{ parameters.private }}
+              backend: ${{ parameters.backend }}
+              serviceConnection: ${{ parameters.serviceConnection }}
+              validateOnly: true
+
+  - ${{ if eq(parameters.publish, true) }}:
+      - stage: Publish
+        dependsOn: Validate
+        jobs:
+          - deployment: Publish
+            displayName: Publish ${{ parameters.benchmark }}@${{ parameters.version }}
+            # Add an approval check to this environment in Azure DevOps.
+            environment: azurebench-release
+            pool:
+              name: $(LINUXPOOL)
+              image: $(LINUXVMIMAGE)
+              os: linux
+            strategy:
+              runOnce:
+                deploy:
+                  steps:
+                    - checkout: self
+                    - template: /pipelines/templates/steps/azurebench-registry-add.yml
+                      parameters:
+                        benchmark: ${{ parameters.benchmark }}
+                        version: ${{ parameters.version }}
+                        metadata: ${{ parameters.metadata }}
+                        dataset: ${{ parameters.dataset }}
+                        private: ${{ parameters.private }}
+                        backend: ${{ parameters.backend }}
+                        serviceConnection: ${{ parameters.serviceConnection }}
+                        validateOnly: false

@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "1.0.0",
+  "id": "azurebench",
+  "name": "AzureBench",
+  "owner": "Microsoft",
+  "description": "Harbor-native tasks that measure how well coding agents with Azure skills build and deploy to Azure. Version 1 has one task: create and deploy an HTTP-triggered JavaScript Azure Functions app.",
+  "contactEmail": "REPLACE-WITH-OWNER-MAILBOX@microsoft.com",
+  "source": "proprietary",
+  "format": "Harbor",
+  "quality": "No Trust Data",
+  "category": "Cloud Development",
+  "license": "MIT",
+  "platforms": ["Linux"],
+  "languages": ["JavaScript"],
+  "notes": "Deployment tasks need an Azure run identity (BYOI) with access to the target subscription and can create billable resources.",
+  "private": false,
+  "createdDate": "2026-11-03",
+  "lastUpdated": "2026-11-03"
+}

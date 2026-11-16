@@ -1,17 +1,13 @@
-# Manually run an MSBench Harbor benchmark with the GitHub Copilot CLI agent.
+# Manually run a published MSBench Registry benchmark with the GitHub Copilot CLI agent.
 # How to set up and run: pipelines/azurebench-eval/README.md
 trigger: none
 pr: none
 
 parameters:
   - name: benchmark
-    displayName: Benchmark to run (<benchmark>.<instance_id>)
+    displayName: Published benchmark release (<name>@<version>, optionally .<instance_id>)
     type: string
-    default: azure-functions-harbor.function_deployment_skill
-  - name: dataset
-    displayName: Dataset JSONL file (path in this repo)
-    type: string
-    default: pipelines/azurebench-eval/datasets/azure-functions-deployment.jsonl
+    default: azurebench@1.0.0
   - name: agentDir
     displayName: Agent scripts folder (path in this repo)
     type: string
@@ -49,7 +45,7 @@ parameters:
     type: string
     default: azure_msbench_eval
   - name: submit
-    displayName: Submit the run (unchecked = only build the agent package)
+    displayName: Submit the run and wait for results (unchecked = only build the agent package)
     type: boolean
     default: false
 
@@ -57,10 +53,13 @@ variables:
   - template: /pipelines/templates/variables/image.yml
   - name: packageDir
     value: $(Agent.TempDirectory)/agent-package
+  - name: resultsDir
+    value: $(Agent.TempDirectory)/results
 
 jobs:
   - job: AzureBenchEval
     displayName: Run ${{ parameters.benchmark }}
+    timeoutInMinutes: 360
     pool:
       name: $(LINUXPOOL)
       image: $(LINUXVMIMAGE)
@@ -103,7 +102,7 @@ jobs:
 
       - ${{ if eq(parameters.submit, true) }}:
           - task: AzureCLI@2
-            displayName: Submit MSBench run
+            displayName: Run benchmark and check results
             inputs:
               azureSubscription: ${{ parameters.serviceConnection }}
               scriptType: bash
@@ -120,17 +119,44 @@ jobs:
                     --tag harbor.keepIdentityForRun=true
                   )
                 fi
+                mkdir -p "$(resultsDir)"
+                # Waits for the run to finish; the run ID is in events.jsonl.
+                status=0
                 msbench-cli run \
                   --agent "$(packageDir)" \
                   --runner "$(packageDir)/runner.sh" \
                   --runner_type harbor \
                   --benchmark "${{ parameters.benchmark }}" \
-                  --dataset "${{ parameters.dataset }}" \
                   --model "${{ parameters.model }}" \
                   --backend "${{ parameters.backend }}" \
                   --workers 1 \
                   "${byoi[@]}" \
                   --tag purpose=azurebench-eval \
                   --no-kusto \
-                  --no-wait \
-                  -y
+                  --events "$(resultsDir)/events.jsonl" \
+                  --output "$(resultsDir)/report.json" \
+                  -y || status=$?
+
+                # A submitted or finished run is not a pass: every requested task must be resolved.
+                python3 - "$(resultsDir)" "$status" <<'EOF'
+                import json, os, sys
+                folder, status = sys.argv[1], int(sys.argv[2])
+                events = os.path.join(folder, "events.jsonl")
+                run_ids = [e["data"].get("run_id") for e in map(json.loads, open(events))
+                           if e.get("event") == "run_started"] if os.path.exists(events) else []
+                print("Run ID:", run_ids[-1] if run_ids else "not started")
+                report = os.path.join(folder, "report.json")
+                if not os.path.exists(report):
+                    sys.exit(f"No results (msbench-cli exit code {status}).")
+                data = json.load(open(report))
+                totals = [b["totals"] for b in data["summary"]["benchmarks_overview"].values()]
+                passed = sum(t["num_passed_cases"] for t in totals)
+                requested = data["requested_instance_count"]
+                print(f"Resolved {passed}/{requested}")
+                sys.exit(0 if status == 0 and requested > 0 and passed == requested else 1)
+                EOF
+
+          - publish: $(resultsDir)
+            artifact: results
+            displayName: Publish results
+            condition: succeededOrFailed()

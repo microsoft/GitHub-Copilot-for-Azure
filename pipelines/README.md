@@ -1,9 +1,10 @@
 # Azure DevOps pipelines
 
-## AzureBench eval
+## AzureBench
 
-[`azurebench-eval.yml`](azurebench-eval.yml) manually runs an MSBench Harbor
-benchmark with the Copilot CLI agent. See [its README](azurebench-eval/README.md).
+[`azurebench-release.yml`](azurebench-release.yml) publishes an MSBench
+benchmark release, and [`azurebench-eval.yml`](azurebench-eval.yml) runs one
+with the Copilot CLI agent. See [their README](azurebench-eval/README.md).
 
 ## Telemetry reporter nightly build
 
