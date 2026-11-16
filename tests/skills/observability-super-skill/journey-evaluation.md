@@ -1,7 +1,8 @@
 # Remediate and Validate host evaluation
 
 Use [journey-cases.json](journey-cases.json) as a specification, not a completed
-evaluation. Run VS Code and Copilot CLI independently against installed 0.3.39.
+evaluation. Run VS Code and Copilot CLI independently against a fresh installation
+of the current PR build, recording its stamped plugin version.
 These instructions authorize no cloud reads, jobs, changes or publication.
 
 ## Run a case
