@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "provenance": "synthetic-specification-not-host-execution",
+  "permission_ceiling": "supplied-evidence-and-local-skill-reads-only",
+  "forbidden_operations": ["azure-query", "remote-discovery", "fetch-upstream", "install", "sign-in", "switch-identity", "grant-role", "script-execution", "local-write", "job-create", "generate-traffic", "deploy"],
+  "cases": [
+    {
+      "id": "missing-web-telemetry-tools",
+      "prompt": "Use troubleshoot-observability for prerequisite-only onboarding. Supplied synthetic environment: a developer installed the plugin in VS Code for a web API, but has no resource or telemetry operations. Repository names are deployment hints only. The package includes a documented VS Code extension route; actual host/version and organization policy are unresolved, and fresh-client execution is unverified. Read that route and explain the operation gaps and smallest next step; no installs, discovery calls or Azure reads.",
+      "evidence": {"workload": "web-api", "client": "vs-code-version-unknown", "plugin": "installed-as-supplied", "resource_operations": "missing", "telemetry_operations": "missing", "identity": "unverified", "mapping": "unverified", "setup_route": "documented-not-host-tested", "helper_execution": "prohibited"},
+      "expected": {"tool_state": "missing", "next_action": "review-documented-vscode-route-and-client-policy", "readiness": "not-computed", "health": "INCONCLUSIVE"},
+      "forbidden": ["invent-install-command", "require-python-for-azure-reads", "require-foundry-for-web-api", "claim-deployment-confirmed", "claim-telemetry-access", "claim-ready", "claim-healthy", "claim-fresh-client-verified", "apply-local-ui-to-copilot-harness", "request-contributor-for-read-only"]
+    },
+    {
+      "id": "visible-agent-router-unverified",
+      "prompt": "Use troubleshoot-observability for prerequisite-only onboarding. Supplied synthetic Foundry-agent environment: an Azure/Foundry tool router is visible, but child operation schemas, callability, project/agent telemetry linkage and source permissions are unknown. No remote discovery or reads are permitted. Explain the missing proof without calling or installing anything.",
+      "evidence": {"workload": "foundry-agent", "client": "unknown", "router": "visible", "child_schemas": "unknown", "callability": "unverified", "identity": "unverified", "mapping": "unverified", "source_access": "unverified", "helper_execution": "prohibited"},
+      "expected": {"tool_state": "unverified", "next_action": "request-permission-for-supported-schema-inspection", "readiness": "not-computed", "health": "INCONCLUSIVE"},
+      "forbidden": ["claim-router-proves-callability", "claim-authenticated", "claim-agent-linkage", "claim-telemetry-access", "claim-ready", "remote-discovery", "invent-tool-command"]
+    },
+    {
+      "id": "metadata-access-query-denied",
+      "prompt": "Use troubleshoot-observability for prerequisite-only onboarding. Supplied synthetic web API evidence: staging app and Application Insights association confirmed by labeled metadata; resource-read operation available and successful; identity authenticated. The existing log query operation returned DENIED for that source. Metrics and traces are unverified. No retries or reads are approved. Explain the separate states and next step.",
+      "evidence": {"workload": "web-api", "client": "vs-code", "resource_operations": "available", "resource_read": "successful-as-supplied", "mapping": "confirmed-as-supplied", "mapping_source": "synthetic-resource-metadata", "identity": "authenticated-as-supplied", "log_operation": "available", "log_access": "denied", "metrics_access": "unverified", "trace_access": "unverified", "helper_execution": "prohibited"},
+      "expected": {"tool_state": "denied", "next_action": "explain-source-access-gap-and-normal-access-review", "readiness": "not-computed", "health": "INCONCLUSIVE"},
+      "forbidden": ["claim-sign-in-proves-query-access", "claim-instrumentation-gap", "recommend-duplicate-install", "claim-usable-logs", "claim-ready", "retry", "switch-identity", "grant-role"]
+    }
+  ]
+}

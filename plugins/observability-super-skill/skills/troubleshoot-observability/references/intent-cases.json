@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "provenance": "synthetic-specification-not-host-execution",
+  "host_status": {"vscode": "unrun", "copilot_cli": "unrun"},
+  "permission_ceiling": "no-cloud-no-execution-no-writes",
+  "cases": [
+    {"id": "create-resource-group", "context": [], "prompt": "Create a resource group in West US.", "expected": {"route": "normal-task", "journey": false, "onboarding": false, "observability_discovery": false}},
+    {"id": "create-app", "context": [], "prompt": "Create a new Azure web app for my project.", "expected": {"route": "normal-task", "journey": false, "onboarding": false, "observability_discovery": false}},
+    {"id": "create-agent", "context": [], "prompt": "Build me a new Foundry agent.", "expected": {"route": "normal-task", "journey": false, "onboarding": false, "observability_discovery": false}},
+    {"id": "deploy-model", "context": [], "prompt": "Deploy a model in Foundry.", "expected": {"route": "normal-task", "journey": false, "onboarding": false, "observability_discovery": false}},
+    {"id": "fix-coding", "context": [], "prompt": "Fix the sorting bug in this Python function.", "expected": {"route": "normal-task", "journey": false, "onboarding": false, "observability_discovery": false}},
+    {"id": "slow-unrelated", "context": [], "prompt": "This animation is slow; make it snappier.", "expected": {"route": "normal-task", "journey": false, "onboarding": false, "observability_discovery": false}},
+    {"id": "rbac", "context": [], "prompt": "Assign Reader to my teammate on this resource group.", "expected": {"route": "normal-task", "journey": false, "onboarding": false, "observability_discovery": false}},
+    {"id": "subscription", "context": [], "prompt": "Help me choose the subscription for this deployment.", "expected": {"route": "normal-task", "journey": false, "onboarding": false, "observability_discovery": false}},
+    {"id": "cost", "context": [], "prompt": "Estimate the cost of a new App Service.", "expected": {"route": "normal-task", "journey": false, "onboarding": false, "observability_discovery": false}},
+    {"id": "documentation", "context": [], "prompt": "Update the README with the new API examples.", "expected": {"route": "normal-task", "journey": false, "onboarding": false, "observability_discovery": false}},
+    {"id": "deployment-readiness", "context": [], "prompt": "Check whether this app is ready to deploy.", "expected": {"route": "normal-task", "journey": false, "onboarding": false, "observability_discovery": false}},
+    {"id": "deployment-failure", "context": [], "prompt": "My Azure app deployment failed. Help me diagnose why.", "expected": {"route": "observability", "journey": true, "onboarding": true, "observability_discovery": true}},
+    {"id": "app-slow", "context": [], "prompt": "My API is slow. Help me investigate.", "expected": {"route": "observability", "journey": true, "onboarding": true, "observability_discovery": true}},
+    {"id": "agent-runtime", "context": [], "prompt": "My Foundry agent's tools keep timing out.", "expected": {"route": "observability", "journey": true, "onboarding": true, "observability_discovery": true}},
+    {"id": "alert-setup", "context": [], "prompt": "Help me set up alerts for failed API requests.", "expected": {"route": "observability", "journey": true, "onboarding": false, "observability_discovery": true}},
+    {"id": "new-app-instrumentation", "context": [], "prompt": "Add OpenTelemetry instrumentation to the new API I'm building.", "expected": {"route": "observability", "journey": true, "onboarding": false, "observability_discovery": true}},
+    {"id": "collection-design", "context": [], "prompt": "Design log collection for my new Azure app.", "expected": {"route": "observability", "journey": true, "onboarding": false, "observability_discovery": true}},
+    {"id": "concept-monitoring", "context": [], "prompt": "Explain how Azure Monitor works.", "expected": {"route": "answer-concept", "journey": false, "onboarding": false, "observability_discovery": false}},
+    {"id": "concept-alerts", "context": [], "prompt": "What's the difference between log alerts and metric alerts?", "expected": {"route": "answer-concept", "journey": false, "onboarding": false, "observability_discovery": false}},
+    {"id": "topic-switch", "context": ["My API is slow. Help me investigate.", "Synthetic prior state: investigation paused; no reads approved."], "prompt": "Now create a resource group for a different project.", "expected": {"route": "normal-task", "journey": false, "onboarding": false, "observability_discovery": false}},
+    {"id": "topic-resume", "context": ["Synthetic prior state: API investigation paused.", "Now create a resource group for a different project."], "prompt": "Back to the slow API investigation.", "expected": {"route": "observability", "journey": true, "onboarding": true, "observability_discovery": true}},
+    {"id": "direct-health", "context": [], "prompt": "Use assess-observability-health to check my API's health.", "expected": {"route": "direct-specialist", "journey": false, "onboarding": true, "observability_discovery": true}},
+    {"id": "recovery", "context": ["Synthetic prior state: approved API timeout fix applied; evidence comparison pending."], "prompt": "Did that timeout fix restore API performance?", "expected": {"route": "observability", "journey": true, "onboarding": false, "observability_discovery": false}},
+    {"id": "ambiguous", "context": [], "prompt": "It's slow. Can you fix it?", "expected": {"route": "clarify-intent", "journey": false, "onboarding": false, "observability_discovery": false}}
+  ]
+}

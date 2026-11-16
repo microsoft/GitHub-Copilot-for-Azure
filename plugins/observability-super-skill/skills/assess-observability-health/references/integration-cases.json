@@ -1,0 +1,36 @@
+{
+  "provenance": "synthetic-specification-not-host-execution",
+  "permission_ceiling": "supplied-evidence-only-no-cloud-scripts-saves",
+  "cases": [
+    {
+      "id": "handled-failure",
+      "evidence": {"parent_success": true, "requests": 200, "child_http_503": 12, "pressure": "denied", "resource_health": "unknown"},
+      "expected": ["rank-degraded-success", "retain-pressure-gap", "no-competing-assessment"]
+    },
+    {
+      "id": "stale-empty-partial",
+      "evidence": {"requests": "partial", "dependencies": "empty", "latest": "stale", "metrics": "throttled"},
+      "expected": ["overall-inconclusive", "preserve-distinct-outcomes", "no-instrumentation-gap-inference"]
+    },
+    {
+      "id": "existing-budget",
+      "evidence": {"window": "fixed-15-minutes", "remaining_calls": 0, "schema_correction": "prohibited"},
+      "expected": ["no-extra-reads", "no-24-hour-expansion", "retain-budget"]
+    },
+    {
+      "id": "renderer-declined",
+      "evidence": {"quantitative_kpis": 4, "write_consent": false, "approved_interpreter": false},
+      "expected": ["chat-findings-complete", "no-render-save-install", "no-graphics-queries"]
+    },
+    {
+      "id": "explicit-stable-entry",
+      "evidence": {"requested_skill": "assess-observability-health"},
+      "expected": ["honor-stable-entry", "no-selection-loop", "no-competing-assessment"]
+    },
+    {
+      "id": "selected-rank-2",
+      "evidence": {"prior_assessment": "complete", "selected_rank": 2, "state": "degraded_success", "workload": "web-api"},
+      "expected": ["retain-original-rank-state", "direct-diagnostics-or-coordinator-investigation", "no-reassessment-or-service-delegation"]
+    }
+  ]
+}
