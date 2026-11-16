@@ -2,14 +2,16 @@
 
 Use this when iterating on a hosted agent before deploying.
 
-> **Prerequisite:** Local run does NOT require `azd provision` or any deployed Azure infrastructure. The agent runs on your machine and calls the Foundry model endpoint directly using your local credentials (`DefaultAzureCredential` — falls back to `az login` / VS Code identity). You only need a `.env` file in the agent directory with:
+> **Prerequisites depend on the application.** Running the agent locally does not require deploying the agent to Foundry, but it does require the services and credentials used by its model, tools, and state. Determine these dependencies from the existing application and selected hosting path; do not change a working model integration to match a sample's environment setup.
+>
+> For an agent that uses a Foundry model, configure an existing model deployment and local credentials (`DefaultAzureCredential`, for example Azure CLI or VS Code identity). Its `.env` file includes:
 > ```env
 > FOUNDRY_PROJECT_ENDPOINT=https://<account>.services.ai.azure.com/api/projects/<project>
 > AZURE_AI_MODEL_DEPLOYMENT_NAME=<model-deployment-name>
 > ```
 > If you already ran `azd provision`, extract these from `azd env get-values`.
 >
-> 🚦 **If no project endpoint is configured (not in the message, `azd env`, or `.env`) and the user hasn't asked to create one, stop and ask them to pick an existing project or confirm creating a new one — don't silently select or `azd provision` one.** Once they choose, follow [deploy.md Step 2](../../deploy/deploy.md#step-2----provision-azure-resources-one-time-per-env) to provision or resolve the project, then return here for local iteration before deploying the agent.
+> 🚦 **When a required Foundry service needs a project endpoint and none is configured (not in the message, `azd env`, or `.env`), ask the user to pick an existing project or confirm creating a new one — don't silently select or provision one.** This does not require moving an existing model provider to Foundry. Once they choose, follow [deploy.md Step 2](../../deploy/deploy.md#step-2----provision-azure-resources-one-time-per-env) to provision or resolve the project, then return here for local iteration before deploying the agent.
 >
 > **Critical: keep `.env` and `azd env` in sync.** `azd ai agent run` injects the active `azd env` values into the agent process before Python loads `.env`. Many samples use `load_dotenv(override=False)`, so an existing process environment value wins over `.env`. If you change the project endpoint or model deployment, update both `.env` and `azd env`:
 > ```bash
