@@ -2,7 +2,7 @@
 
 Use this guidance when creating, migrating, or re-hosting a LangChain or LangGraph agent on Foundry.
 
-For an end-to-end walkthrough of hosting an existing LangGraph, LangChain, or Deep Agents application on Foundry, see [Host LangGraph applications on Microsoft Foundry](https://raw.githubusercontent.com/Jiahui-Gu/langchain-azure/1ba64de68e0d2ba0536181ebb79a5f59e82b34ec/libs/azure-ai/docs/hosting/host-langgraph-on-foundry.md).
+For an end-to-end walkthrough of hosting an existing LangGraph, LangChain, or Deep Agents application on Foundry, see [Host LangGraph applications on Microsoft Foundry](https://raw.githubusercontent.com/Jiahui-Gu/langchain-azure/2300c1538396c842541fcde17d87816bca46262d/libs/azure-ai/docs/hosting/host-langgraph-on-foundry.md).
 
 ## Design Intent
 
