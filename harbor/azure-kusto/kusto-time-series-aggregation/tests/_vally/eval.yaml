@@ -1,0 +1,15 @@
+name: azure-kusto-integration-eval
+scoring:
+  threshold: 0.8
+stimuli:
+  - name: Kusto time series aggregation
+    prompt: Query my Kusto database to show events aggregated by hour for the last
+      24 hours
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kusto
+      - type: output-not-matches
+        config:
+          pattern: (?i)fatal error|unhandled exception|stack trace

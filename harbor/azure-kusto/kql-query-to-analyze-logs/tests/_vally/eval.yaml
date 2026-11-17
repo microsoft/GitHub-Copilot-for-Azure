@@ -1,0 +1,14 @@
+name: azure-kusto-integration-eval
+scoring:
+  threshold: 0.8
+stimuli:
+  - name: KQL query to analyze logs
+    prompt: Write a KQL query to analyze logs in my Azure Data Explorer database
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kusto
+      - type: output-not-matches
+        config:
+          pattern: (?i)fatal error|unhandled exception|stack trace

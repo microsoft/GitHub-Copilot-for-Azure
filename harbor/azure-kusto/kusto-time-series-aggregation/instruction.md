@@ -1,0 +1,1 @@
+Query my Kusto database to show events aggregated by hour for the last 24 hours

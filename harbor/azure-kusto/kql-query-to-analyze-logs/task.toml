@@ -1,0 +1,25 @@
+version = "1.0"
+
+[metadata]
+vally_eval = "azure-kusto-integration-eval"
+vally_stimulus = "KQL query to analyze logs"
+tags = ["area=routing", "cost=llm", "earlyTerminate=[{\"type\":\"skill-call\",\"skill\":\"azure-kusto\"},{\"type\":\"tool-call-count\",\"count\":3}]", "skill=azure-kusto", "tier=smoke", "type=integration"]
+vally_requires = {}
+vally_exporter_version = "0.1.0-alpha.9"
+
+[verifier]
+timeout_sec = 600
+
+[agent]
+timeout_sec = 600
+
+[environment]
+docker_image = "msbenchacr.azurecr.io/harbor/azure-kusto:kql-query-to-analyze-logs"
+skills_dir = "/skills"
+build_timeout_sec = 600.0
+
+[[environment.mcp_servers]]
+name = "azmcp"
+transport = "stdio"
+command = "npx"
+args = ["-y", "@azure/mcp@4.0.0-beta.6", "server", "start"]

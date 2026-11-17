@@ -1,0 +1,1 @@
+Write a KQL query to analyze logs in my Azure Data Explorer database
