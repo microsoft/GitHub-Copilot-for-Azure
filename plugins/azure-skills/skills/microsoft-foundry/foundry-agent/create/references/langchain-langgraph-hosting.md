@@ -14,12 +14,12 @@ Preserve the application's state semantics, including capabilities supplied by i
 
 ## Hosting Decision
 
+Read the linked walkthrough and its applicable chapters before selecting a hosting path or sample. If it cannot be read, report that limitation rather than silently substituting a sample for framework guidance.
+
 | Need | Hosting path |
 |------|--------------|
 | The selected protocol's default mapping preserves the application's required interface | **Configuration-only** |
 | Required input, configuration, operations or runtime capabilities are not covered by that mapping | **Host server integration** or another verified supported entry point |
-
-Follow the linked walkthrough and its applicable chapters to choose the least invasive supported hosting path for the application's requirements.
 
 ## Sample Selection
 
