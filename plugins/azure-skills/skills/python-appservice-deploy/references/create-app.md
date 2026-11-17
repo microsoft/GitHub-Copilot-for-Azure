@@ -46,10 +46,9 @@ Example: folder `my-flask-app/` → `my-flask-app-a3f9c1d2`.
    ```
 3. Else default to `eastus2`.
 4. Before creating a plan, invoke `azure-quotas` to check quota and regional availability. Ask before changing a user-specified region; stop if quota is unavailable or unverifiable rather than switching SKU.
-   - Check the effective subscription, region and SKU from the user or existing `azd` template; use `P0v3` only when unspecified. Confirm `az account show --query id -o tsv` matches the intended subscription; stop on mismatch without silently changing the CLI default. `az account list-locations` uses that active subscription and does not accept `--subscription`.
-   - Use `az quota` CLI first, never quota MCP. Discover the quota resource name instead of assuming it equals the SKU; require unique, non-negative limits and usage with enough remaining capacity in the returned units. `Microsoft.Web` is not a documented [Quota API provider](https://learn.microsoft.com/rest/api/quota/); if unsupported or unmapped, verify through Azure portal Quotas/Support and stop if unverifiable. [App Service regional usage](https://learn.microsoft.com/rest/api/appservice/get-usages-in-location/list) provides diagnostic counters, not proof of SKU capacity.
-   - Confirm Linux SKU availability with `az appservice list-locations --sku "<selected-sku>" --linux-workers-enabled --subscription "<subscription-id>"`; match its region names against `az account list-locations`. Stop on errors or missing data.
-   - Reuse the quota results rather than querying again after the helper. Recheck when subscription, SKU or region changes; provision exactly the checked values, including effective `azd` parameters.
+   - Use the effective user/template subscription, region and SKU (`P0v3` only if unspecified). Confirm the active subscription with `az account show --query id -o tsv`; stop on mismatch without switching. Reuse results unless these values change; recheck after changes and provision only checked values.
+   - Use `az quota` first, never quota MCP. Require an unambiguous quota mapping, non-negative limits/usage and sufficient capacity in matching units. `Microsoft.Web` is not a documented [Quota API provider](https://learn.microsoft.com/rest/api/quota/): for unsupported/unmapped quotas, confirm through Portal/Support or stop. [Regional usage counters](https://learn.microsoft.com/rest/api/appservice/get-usages-in-location/list) alone do not prove capacity.
+   - Verify Linux SKU availability with `az appservice list-locations --sku "<selected-sku>" --linux-workers-enabled --subscription "<subscription-id>"`. Match region names using `az account list-locations` (active subscription only; no `--subscription`). Stop on errors or missing data.
 
 ### 1e. Show the defaults summary BEFORE creating
 Print one concise block so the user can interrupt to override.
@@ -73,7 +72,7 @@ Do **not** call `ask_user` for confirmation here — just print and proceed.
 ### 1f. Transient error handling
 On connection-level or 429/5xx errors from any `az ... create` in §§2–4, see [transient-retry.md](transient-retry.md). Configuration errors (`AuthorizationFailed`, `SkuNotAvailable`, `QuotaExceeded`, etc.) must **not** be retried — surface them.
 
-Passing quota and region checks does not guarantee provisioning. After `QuotaExceeded`, consider another defaulted region only within user/project constraints and after the same checks pass; otherwise stop and suggest a quota increase. Ask before changing a user-specified region.
+Preflight does not guarantee provisioning. After `QuotaExceeded`, another defaulted region must meet user/project constraints and pass §1d; otherwise stop and suggest a quota increase.
 
 ## 2. Resource Group
 

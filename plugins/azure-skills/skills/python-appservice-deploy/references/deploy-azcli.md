@@ -14,7 +14,7 @@ Use this path when there is **no** `azure.yaml` or it doesn't target `appservice
 
 ## 1. Enable server-side build
 
-Check setting names without printing values. Python does not support `WEBSITE_RUN_FROM_PACKAGE`; if present, remove only that setting before source deployment, then rerun the check. Stop on read/delete errors; app-setting changes restart the app. Keep `SCM_DO_BUILD_DURING_DEPLOYMENT=true`.
+Read setting names only. Remove only `WEBSITE_RUN_FROM_PACKAGE` if present, then recheck; stop on read/delete errors. Keep `SCM_DO_BUILD_DURING_DEPLOYMENT=true`. Setting changes restart the app.
 
 ```bash
 CONFLICT=$(az webapp config appsettings list -n <app> -g <rg> --query "[?name=='WEBSITE_RUN_FROM_PACKAGE'].name" -o tsv) || exit 1
