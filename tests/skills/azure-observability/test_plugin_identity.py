@@ -65,14 +65,17 @@ class PluginIdentityTests(unittest.TestCase):
                 self.assertRegex(text, r"(?m)^scoring:\n  threshold: 1\n")
                 self.assertEqual(text.count("      - type: skill-invocation\n"), 1)
 
-    def test_readme_has_preview_installation_and_host_boundaries(self):
+    def test_readme_has_marketplace_installation_and_host_boundaries(self):
         text = (PLUGIN / "README.md").read_text("utf-8")
-        for expected in ("## Installation", "npm install", "npm run build",
-                         "Chat: Install Plugin from Source",
-                         r"copilot --plugin-dir .\output\azure-observability",
-                         "marketplace publication is not verified",
-                         "CLI compatibility remains"):
+        for expected in ("## Install or migrate",
+                         "/plugin marketplace add microsoft/azure-skills",
+                         "/plugin install azure-observability@azure-skills",
+                         "/plugin update azure-observability@azure-skills",
+                         "Installation grants no telemetry"):
             self.assertIn(expected, text)
+        for forbidden in ("npm install", "npm run build", "--plugin-dir",
+                          "Install Plugin from Source", "Preview from source"):
+            self.assertNotIn(forbidden, text)
 
     def test_host_cache_patterns_accept_new_paths_and_reject_old_identity(self):
         scripts = PLUGIN / "hooks" / "scripts"

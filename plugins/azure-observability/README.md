@@ -77,38 +77,15 @@ edit files, or save data.
 Initial evidence review doesn't require Python, Azure Developer CLI (`azd`),
 saved mappings, write permissions, or a new connection.
 
-## Installation
+## Install or migrate
 
-### Preview from source
+In Copilot CLI:
 
-This contribution is under review; marketplace publication is not verified.
-Use a reviewed checkout containing this plugin, with Git, Node.js/npm and
-the build prerequisites in the
-[contributor onboarding guide](https://github.com/microsoft/GitHub-Copilot-for-Azure/blob/main/docs/Onboarding.md).
-From the repository root:
+1. Add the marketplace: `/plugin marketplace add microsoft/azure-skills`
+2. Install this plugin: `/plugin install azure-observability@azure-skills`
+3. Update it later with `/plugin update azure-observability@azure-skills`
 
-```powershell
-npm install
-npm run build
-```
-
-Review the plugin contents and telemetry disclosure before enabling it.
-Build output is `output\azure-observability`; do not install the unbuilt source.
-
-**VS Code:** run **Chat: Install Plugin from Source** from the Command Palette,
-then select the absolute path to `output\azure-observability`. See
-[VS Code plugin installation](https://code.visualstudio.com/docs/agent-customization/agent-plugins).
-Available controls depend on host version and organization policy.
-
-**Copilot CLI:** with Copilot CLI already installed and authenticated, run:
-
-```powershell
-copilot --plugin-dir .\output\azure-observability
-```
-
-This loads the local plugin for that CLI session; CLI compatibility remains
-pending separate validation. Start a fresh conversation, confirm the four
-core skills are exposed, and try a question above. Keep Azure Skills enabled
+Start a fresh conversation and try a question above. Keep Azure Skills enabled
 for canonical diagnostics/Foundry expertise. Installation grants no telemetry
 access or permission to query Azure.
 Disable or remove older draft copies through supported plugin management

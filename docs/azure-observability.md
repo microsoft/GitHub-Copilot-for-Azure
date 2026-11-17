@@ -105,12 +105,21 @@ explicit thresholds do not turn schema lint into executed model evaluations.
 Vally 0.12.0 strict lint passed all four skills and evals locally after this
 change. The full custom-grader invocation was blocked locally by missing test
 harness dependencies; no full-repository lint or model-run pass is implied.
-The installed-user README documents preview build/install steps; marketplace
+The installed-user README documents Azure Skills marketplace installation;
 publication and Copilot CLI behavior remain separate verification gates.
 
 ## Exercise an installed host separately
 
 Use a reviewed built payload through the host's supported plugin flow.
+For contributor-only local testing, build as above, then use **Chat: Install
+Plugin from Source** in VS Code with the absolute `output\azure-observability`
+folder path. With an installed/authenticated Copilot CLI, the local preview is:
+
+```powershell
+copilot --plugin-dir .\output\azure-observability
+```
+
+These are development checks, not the customer marketplace installation path.
 Keep VS Code and Copilot CLI results distinct. For each host, observe actual
 core-skill loading, external canonical-specialist discovery and loading,
 missing/declined/blocked setup, retained approvals and the evidence-only path.
