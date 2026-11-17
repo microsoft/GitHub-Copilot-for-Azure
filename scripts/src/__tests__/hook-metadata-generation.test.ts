@@ -199,6 +199,71 @@ describe("generated hook metadata", () => {
     expect(result.stderr).toContain("must declare equivalent servers");
   });
 
+  it("accepts client-specific plugin roots without changing identical values", () => {
+    writeJson(join(outputRoot, pluginName, "mcp.json"), {
+      mcpServers: {
+        graph: {
+          type: "stdio",
+          command: "node",
+          args: ["${PLUGIN_ROOT}/graph/runtime/launch-python.mjs"],
+          env: { DATA: "${PLUGIN_ROOT}/graph", SHARED: "${CLAUDE_PLUGIN_ROOT}/shared" },
+        },
+      },
+    });
+    writeJson(join(outputRoot, pluginName, ".mcp.json"), {
+      mcpServers: {
+        graph: {
+          command: "node",
+          args: ["${CLAUDE_PLUGIN_ROOT}/graph/runtime/launch-python.mjs"],
+          env: { DATA: "${CLAUDE_PLUGIN_ROOT}/graph", SHARED: "${CLAUDE_PLUGIN_ROOT}/shared" },
+        },
+      },
+    });
+
+    expectAssemblySuccess();
+    expect(metadataLines()).toContain("mcp-server=graph");
+  });
+
+  it.each([
+    {
+      name: "different launcher paths",
+      portable: "${PLUGIN_ROOT}/graph/runtime/launch-python.mjs",
+      legacy: "${CLAUDE_PLUGIN_ROOT}/graph/runtime/other.mjs",
+    },
+    {
+      name: "swapped client-specific roots",
+      portable: "${CLAUDE_PLUGIN_ROOT}/graph/runtime/launch-python.mjs",
+      legacy: "${PLUGIN_ROOT}/graph/runtime/launch-python.mjs",
+    },
+  ])("rejects MCP configurations with $name", ({ portable, legacy }) => {
+    writeJson(join(outputRoot, pluginName, "mcp.json"), {
+      mcpServers: { graph: { type: "stdio", command: "node", args: [portable] } },
+    });
+    writeJson(join(outputRoot, pluginName, ".mcp.json"), {
+      mcpServers: { graph: { command: "node", args: [legacy] } },
+    });
+
+    const result = assemblePluginHooks();
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("must declare equivalent servers");
+  });
+
+  it.each(["${PLUGIN_ROOT}", "${CLAUDE_PLUGIN_ROOT}"])(
+    "continues accepting identical MCP paths using %s",
+    root => {
+      writeJson(join(outputRoot, pluginName, "mcp.json"), {
+        mcpServers: {
+          graph: { type: "stdio", command: "node", args: [`${root}/launcher.mjs`] },
+        },
+      });
+      writeJson(join(outputRoot, pluginName, ".mcp.json"), {
+        mcpServers: { graph: { command: "node", args: [`${root}/launcher.mjs`] } },
+      });
+
+      expectAssemblySuccess();
+    },
+  );
+
   it.each([".plugin", ".claude-plugin", ".cursor-plugin"])(
     "rejects shared metadata drift in %s",
     directory => {

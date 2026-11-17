@@ -17,6 +17,27 @@ function readObject(file: string): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
 
+function normalizeLegacyMcpRoots(legacy: unknown, portable: unknown): unknown {
+  if (typeof legacy === "string" && typeof portable === "string") {
+    return legacy === portable
+      ? legacy
+      : legacy.replaceAll("${CLAUDE_PLUGIN_ROOT}", "${PLUGIN_ROOT}");
+  }
+  if (Array.isArray(legacy) && Array.isArray(portable)) {
+    return legacy.map((value, index) => normalizeLegacyMcpRoots(value, portable[index]));
+  }
+  if (
+    typeof legacy === "object" && legacy !== null && !Array.isArray(legacy) &&
+    typeof portable === "object" && portable !== null && !Array.isArray(portable)
+  ) {
+    const portableObject = portable as Record<string, unknown>;
+    return Object.fromEntries(Object.entries(legacy).map(([key, value]) => [
+      key, normalizeLegacyMcpRoots(value, portableObject[key]),
+    ]));
+  }
+  return legacy;
+}
+
 describe("Agent Plugins 1.0.0 packages", () => {
   it.each(plugins)("%s has a portable manifest matching its legacy metadata", plugin => {
     const root = join(pluginsRoot, plugin);
@@ -68,7 +89,7 @@ describe("Agent Plugins 1.0.0 packages", () => {
     );
     expect(portable).toEqual({
       $schema: `${schemaRoot}/mcp.schema.json`,
-      mcpServers: normalized,
+      mcpServers: normalizeLegacyMcpRoots(normalized, portable.mcpServers),
     });
     for (const server of Object.values(normalized)) {
       if (server.type === "stdio") {
@@ -98,5 +119,34 @@ describe("Agent Plugins 1.0.0 packages", () => {
     }
     expect(copyStep).toContain('"source-repo/output/azure-skills/com.github.copilot/" "target-repo/com.github.copilot/"');
     expect(workflow).toContain('"target-repo/com.github.copilot/" "target-repo/plugin.json" "target-repo/mcp.json"');
+  });
+});
+
+describe("MCP client root normalization", () => {
+  it("normalizes nested client-specific roots and preserves identical values", () => {
+    const legacy = {
+      args: ["${CLAUDE_PLUGIN_ROOT}/graph/runtime/launch-python.mjs"],
+      env: { shared: "${CLAUDE_PLUGIN_ROOT}/shared" },
+    };
+    const portable = {
+      args: ["${PLUGIN_ROOT}/graph/runtime/launch-python.mjs"],
+      env: { shared: "${CLAUDE_PLUGIN_ROOT}/shared" },
+    };
+    expect(normalizeLegacyMcpRoots(legacy, portable)).toEqual(portable);
+  });
+
+  it.each([
+    {
+      name: "different launcher paths",
+      legacy: "${CLAUDE_PLUGIN_ROOT}/graph/runtime/launch-python.mjs",
+      portable: "${PLUGIN_ROOT}/graph/runtime/other.mjs",
+    },
+    {
+      name: "swapped client roots",
+      legacy: "${PLUGIN_ROOT}/graph/runtime/launch-python.mjs",
+      portable: "${CLAUDE_PLUGIN_ROOT}/graph/runtime/launch-python.mjs",
+    },
+  ])("rejects $name", ({ legacy, portable }) => {
+    expect(normalizeLegacyMcpRoots(legacy, portable)).not.toEqual(portable);
   });
 });
