@@ -31,11 +31,11 @@ parameters:
   - name: serviceConnection
     displayName: New Azure service connection that submits the run
     type: string
-    default: azurebench-sc
+    default: azurebench_msbench
   - name: keyVaultServiceConnection
     displayName: Azure service connection with access to the new Key Vault
     type: string
-    default: azurebench-sc
+    default: azurebench_msbench
   - name: keyVaultName
     displayName: New Key Vault containing the test CAPI credentials
     type: string

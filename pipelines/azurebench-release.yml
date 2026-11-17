@@ -31,7 +31,7 @@ parameters:
   - name: serviceConnection
     displayName: New Azure service connection (Registry Editor/Owner to publish)
     type: string
-    default: azurebench-sc
+    default: azurebench_msbench
   - name: publish
     displayName: Publish (unchecked = validate only, nothing is written)
     type: boolean

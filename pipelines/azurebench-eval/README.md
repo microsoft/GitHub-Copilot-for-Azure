@@ -23,7 +23,7 @@ task, the Azure Functions deployment test in
 1. Create a YAML pipeline for each file.
 2. Create the environment `azurebench-release` and add an approval check to it.
 3. Create and authorize a **new** Azure service connection. The example
-   default name is `azurebench-sc`; select the actual name using the
+   default name is `azurebench_msbench`; select the actual name using the
    `serviceConnection` parameter if different. The example backing identity
    is the user-assigned managed identity `azurebench-ado-sc-wif`, using
    workload identity federation. Its identity needs CES access
@@ -45,7 +45,7 @@ task, the Azure Functions deployment test in
    `azurebench-capi-hmac`. Do not put their values in YAML or pipeline
    parameters. Change `keyVaultName`, `capiIdSecret`, and `capiHmacSecret` if
    your actual names differ. Select a service connection for the vault with
-   `keyVaultServiceConnection`; it defaults to `azurebench-sc` but can
+   `keyVaultServiceConnection`; it defaults to `azurebench_msbench` but can
    differ from the MSBench submitter connection. Grant its identity vault
    secret Get and List access, for example the **Key Vault Secrets User** role
    on an Azure RBAC vault, and allow the build agent network access to the
