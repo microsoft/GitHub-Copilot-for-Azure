@@ -176,7 +176,7 @@ while [ "$#" -gt 0 ]; do
     esac
 done
 
-TELEMETRY_REPORTER_VERSION="0.1.20-gc133b914e3"
+TELEMETRY_REPORTER_VERSION="0.1.24-gf157164ac1"
 
 # Skip telemetry if opted out
 if [ "${AZURE_MCP_COLLECT_TELEMETRY}" = "false" ]; then
