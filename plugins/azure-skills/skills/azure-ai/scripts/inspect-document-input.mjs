@@ -104,7 +104,9 @@ async function fileContainsAny(handle, byteLength, needles) {
 
 const VALID_BMP_DIB_SIZES = new Set([12, 40, 52, 56, 64, 108, 124]);
 const HEIF_BRANDS = new Set(["heic", "heix", "heim", "heis", "hevc", "hevx", "mif1", "msf1"]);
+const RASTER_DIMENSION_FORMATS = new Set(["png", "jpeg", "bmp", "tiff"]);
 const MAX_TIFF_IFDS = 2500;
+const MAX_JPEG_SEGMENTS = 4096;
 const MAX_OVERLAP_PAIR_CHECKS = 250000;
 const PDF_SCAN_OVERLAP = 64;
 const isPlainObject = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
@@ -137,31 +139,44 @@ function parseBmpDimensions(head, byteLength) {
   return { width: rawWidth, height: Math.abs(rawHeight) };
 }
 
-function parseJpegDimensions(head) {
+async function parseJpegDimensions(handle, head, byteLength) {
+  const readBytes = async (pos, len) => {
+    if (pos + len <= head.length) return head.subarray(pos, pos + len);
+    return readSlice(handle, pos, len);
+  };
   let offset = 2;
-  while (offset + 4 <= head.length) {
-    if (head[offset] !== 0xff) {
+  let segments = 0;
+  while (offset + 4 <= byteLength && segments < MAX_JPEG_SEGMENTS) {
+    const probe = await readBytes(offset, Math.min(16, byteLength - offset));
+    if (probe.length < 2) break;
+    if (probe[0] !== 0xff) {
       offset += 1;
       continue;
     }
-    while (offset < head.length && head[offset] === 0xff) offset += 1;
-    if (offset >= head.length) break;
-    const marker = head[offset];
+    let idx = 0;
+    while (idx < probe.length && probe[idx] === 0xff) idx += 1;
+    offset += idx;
+    if (idx === probe.length) continue;
+    const marker = probe[idx];
     offset += 1;
-    if (marker === 0xd8 || marker === 0xd9 || (marker >= 0xd0 && marker <= 0xd7) || marker === 0x01) {
+    if (marker === 0xd8 || (marker >= 0xd0 && marker <= 0xd7) || marker === 0x01) {
       continue;
     }
-    if (offset + 2 > head.length) break;
-    const segmentLength = head.readUInt16BE(offset);
+    // SOS (start of scan) or EOI reached before any SOF header.
+    if (marker === 0xd9 || marker === 0xda) break;
+    segments += 1;
+    const segHead = await readBytes(offset, Math.min(9, byteLength - offset));
+    if (segHead.length < 2) break;
+    const segmentLength = segHead.readUInt16BE(0);
     if (segmentLength < 2) break;
     const isSof = (marker >= 0xc0 && marker <= 0xcf) && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc;
-    if (isSof && offset + 7 <= head.length && segmentLength >= 7) {
-      const height = head.readUInt16BE(offset + 3);
-      const width = head.readUInt16BE(offset + 5);
+    if (isSof && segHead.length >= 7 && segmentLength >= 7) {
+      const height = segHead.readUInt16BE(3);
+      const width = segHead.readUInt16BE(5);
       // Height 0 in JPEG indicates DNL (line count deferred until scan end); leave unknown rather than reporting 0 px.
       return width > 0 && height > 0 ? { width, height } : undefined;
     }
-    if (offset + segmentLength > head.length) break;
+    if (offset + segmentLength > byteLength) break;
     offset += segmentLength;
   }
   return undefined;
@@ -182,7 +197,10 @@ async function parseTiffMetadata(handle, head, byteLength) {
 
   // Read each IFD directly by file offset because libtiff/scanners commonly place IFDs at the end of large TIFFs.
   while (ifdOffset !== 0 && pageCount < MAX_TIFF_IFDS) {
-    if (visited.has(ifdOffset)) break;
+    if (visited.has(ifdOffset)) {
+      truncatedScan = true;
+      break;
+    }
     visited.add(ifdOffset);
     if (ifdOffset < 8 || ifdOffset + 2 > byteLength) {
       truncatedScan = true;
@@ -314,7 +332,10 @@ async function detectFormat(handle, head, byteLength, allowFullScan = true) {
     return { format: "png", dimensions: parsePngDimensions(head) };
   }
   if (head.length >= 3 && head[0] === 0xff && head[1] === 0xd8 && head[2] === 0xff) {
-    return { format: "jpeg", dimensions: parseJpegDimensions(head) };
+    const dimensions = allowFullScan
+      ? await parseJpegDimensions(handle, head, byteLength)
+      : await parseJpegDimensions(handle, head, head.length);
+    return { format: "jpeg", dimensions };
   }
   if (head.length >= 2 && head[0] === 0x42 && head[1] === 0x4d) {
     const dimensions = parseBmpDimensions(head, byteLength);
@@ -710,6 +731,18 @@ export async function inspectDocumentInput({
       }
     }
 
+    const dimensionsMissingForRaster =
+      RASTER_DIMENSION_FORMATS.has(detected.format) &&
+      !detected.dimensions &&
+      !(Array.isArray(detected.outOfRangePages) && detected.outOfRangePages.length > 0);
+    if (dimensionsMissingForRaster) {
+      findings.push({
+        code: "IMAGE_DIMENSIONS_NOT_DETERMINED",
+        severity: "warning",
+        detail: `Could not determine pixel dimensions for ${detected.format} input locally; the 50x50 to 10000x10000 px requirement was not verified.`,
+      });
+    }
+
     if (detected.pageCountIncomplete) {
       findings.push({
         code: "TIFF_PAGE_SCAN_INCOMPLETE",
@@ -741,6 +774,7 @@ export async function inspectDocumentInput({
       detectedFormat: detected.format,
       encrypted,
       ...(detected.dimensions ? { dimensions: detected.dimensions } : {}),
+      ...(dimensionsMissingForRaster ? { dimensionsIncomplete: true } : {}),
       ...(pageCount !== undefined ? { pageCount } : {}),
       ...(detected.pageCountIncomplete ? { pageCountIncomplete: true } : {}),
       pageCountBasis,
@@ -756,6 +790,7 @@ export async function inspectDocumentInput({
   const hasError = findings.some((f) => f.severity === "error");
   const incompleteOrUnrecognized =
     documentReport?.detectedFormat === "unrecognized" ||
+    Boolean(documentReport?.dimensionsIncomplete) ||
     Boolean(documentReport?.pageCountIncomplete) ||
     Boolean(labelsReport?.notInspected) ||
     Boolean(labelsReport?.overlapCheckIncomplete) ||

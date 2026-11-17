@@ -214,6 +214,42 @@ it("detects encrypted PDF, HTML disguised as PDF, small PNG, and unsupported GIF
     expect(cappedRes.findings.map((f) => f.code)).toEqual(
       expect.arrayContaining(["TIFF_PAGE_SCAN_INCOMPLETE", "EXCEEDS_MAX_PAGES"]),
     );
+
+    // Cyclic TIFF IFD chain (IFD pointing back to itself) reports TIFF_PAGE_SCAN_INCOMPLETE and status 'unknown'.
+    const cyclicTiff = join(dir, "cyclic.tiff");
+    const cyclicBuf = Buffer.alloc(8 + ifdSize);
+    cyclicBuf.write("II", 0, "ascii"); cyclicBuf.writeUInt16LE(42, 2); cyclicBuf.writeUInt32LE(8, 4);
+    writeIfd(cyclicBuf, 8, 200, 200, 8);
+    await writeFile(cyclicTiff, cyclicBuf);
+    const cyclicRes = await inspectDocumentInput({ file: cyclicTiff });
+    expect(cyclicRes.status).toBe("unknown");
+    expect(cyclicRes.findings.map((f) => f.code)).toContain("TIFF_PAGE_SCAN_INCOMPLETE");
+
+    // JPEG whose SOF0 marker sits past 256 KiB of APP1 metadata still resolves small dimensions (< 50 px),
+    // while a headerless/truncated JPEG without SOF reports status 'unknown'.
+    const makeApp1 = (payloadLen: number): Buffer => {
+      const seg = Buffer.alloc(2 + 2 + payloadLen);
+      seg[0] = 0xff; seg[1] = 0xe1;
+      seg.writeUInt16BE(2 + payloadLen, 2);
+      return seg;
+    };
+    const sof0Tiny = Buffer.from([0xff, 0xc0, 0x00, 0x0b, 0x08, 0x00, 0x20, 0x00, 0x20, 0x01, 0x01, 0x11, 0x00, 0xff, 0xd9]);
+    const bigMetaJpeg = join(dir, "big-exif-tiny.jpg");
+    await writeFile(bigMetaJpeg, Buffer.concat([
+      Buffer.from([0xff, 0xd8]),
+      makeApp1(60000), makeApp1(60000), makeApp1(60000), makeApp1(60000), makeApp1(60000),
+      sof0Tiny,
+    ]));
+    const bigMetaRes = await inspectDocumentInput({ file: bigMetaJpeg });
+    expect(bigMetaRes.status).toBe("failed_preflight");
+    expect(bigMetaRes.document?.dimensions).toEqual({ width: 32, height: 32 });
+    expect(bigMetaRes.findings.map((f) => f.code)).toContain("IMAGE_DIMENSIONS_OUT_OF_RANGE");
+
+    const truncJpeg = join(dir, "truncated.jpg");
+    await writeFile(truncJpeg, Buffer.from([0xff, 0xd8, 0xff, 0xd9]));
+    const truncJpegRes = await inspectDocumentInput({ file: truncJpeg });
+    expect(truncJpegRes.status).toBe("unknown");
+    expect(truncJpegRes.findings.map((f) => f.code)).toContain("IMAGE_DIMENSIONS_NOT_DETERMINED");
   });
 });
 

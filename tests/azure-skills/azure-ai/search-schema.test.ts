@@ -85,7 +85,6 @@ it("validates a consistent vector + hybrid + semantic index and query without em
       queryType: "semantic",
       semanticConfiguration: "sem-default",
       filter: `category eq '${SECRET}'`,
-      orderby: "title asc",
       facets: ["category,count:5"],
       select: "id,title",
       vectorQueries: [{ kind: "vector", vector: [0.1, 0.2, 0.3], fields: "embedding", k: 5 }],
@@ -95,6 +94,18 @@ it("validates a consistent vector + hybrid + semantic index and query without em
     expect(report.status).toBe("passed_local_checks");
     expect(report.query?.isHybrid).toBe(true);
     expect(JSON.stringify(report)).not.toContain(SECRET);
+
+    // Combining semantic ranking with field orderby fails with HTTP 400 in Azure AI Search.
+    const orderedSemQry = join(dir, "ordered-semantic-query.json");
+    await writeFile(orderedSemQry, JSON.stringify({
+      search: SECRET,
+      queryType: "semantic",
+      semanticConfiguration: "sem-default",
+      orderby: "title asc",
+    }));
+    const orderedSemReport = await validateSearchSchema({ indexFile: idx, queryFile: orderedSemQry });
+    expect(orderedSemReport.status).toBe("failed_preflight");
+    expect(orderedSemReport.findings.map((f) => f.code)).toContain("SEMANTIC_QUERY_INCOMPATIBLE_WITH_ORDERBY");
   });
 });
 
@@ -257,24 +268,68 @@ it("accepts Int16 and packed-bit vectors and geo.distance ordering", async () =>
     expect(fnRes.findings).toEqual([]);
     expect(JSON.stringify(fnRes)).not.toContain(SECRET);
 
-    // Semantic content fields with omitted searchable on non-string types (REST default false) must fail.
+    // Semantic content fields with omitted searchable on non-string types, non-retrievable content/keywords,
+    // non-scalar/non-string titleField, and dangling defaultConfiguration must all fail.
     const semIdx = join(dir, "sem-nonstring-index.json");
     await writeFile(semIdx, JSON.stringify({
       name: "sem-idx",
       fields: [
         { name: "id", type: "Edm.String", key: true },
+        { name: "titleTags", type: "Collection(Edm.String)", searchable: true, retrievable: true },
+        { name: "hiddenBody", type: "Edm.String", searchable: true, retrievable: false },
+        { name: "sdkHiddenKw", type: "Edm.String", searchable: true, hidden: true },
+        { name: "unsearchableStr", type: "Edm.String", searchable: false, retrievable: true },
         { name: "scoreNum", type: "Edm.Double" },
       ],
       semantic: {
+        defaultConfiguration: "missing-default",
         configurations: [{
           name: "sem-cfg",
-          prioritizedFields: { prioritizedContentFields: [{ fieldName: "scoreNum" }] },
+          prioritizedFields: {
+            titleField: { fieldName: "titleTags" },
+            prioritizedContentFields: [{ fieldName: "scoreNum" }, { fieldName: "unsearchableStr" }, { fieldName: "hiddenBody" }],
+            prioritizedKeywordsFields: [{ fieldName: "sdkHiddenKw" }],
+          },
         }],
       },
     }));
-    const semRes = await validateSearchSchema({ indexFile: semIdx });
+    const semDefaultQry = join(dir, "sem-default-query.json");
+    await writeFile(semDefaultQry, JSON.stringify({ search: SECRET, queryType: "semantic" }));
+    const semRes = await validateSearchSchema({ indexFile: semIdx, queryFile: semDefaultQry });
     expect(semRes.status).toBe("failed_preflight");
-    expect(semRes.findings.map((f) => f.code)).toContain("SEMANTIC_CONTENT_FIELD_NOT_SEARCHABLE");
+    const semCodes = semRes.findings.map((f) => f.code);
+    expect(semCodes).toEqual(expect.arrayContaining([
+      "SEMANTIC_FIELD_INVALID_TYPE",
+      "SEMANTIC_CONTENT_FIELD_NOT_SEARCHABLE",
+      "SEMANTIC_FIELD_NOT_RETRIEVABLE",
+      "DANGLING_DEFAULT_SEMANTIC_CONFIGURATION",
+      "UNKNOWN_QUERY_SEMANTIC_CONFIGURATION",
+    ]));
+
+    // Scoped OData lambda aliases must not mask an outer non-filterable field of the same name or leak across sibling lambdas.
+    const scopedFilterQry = join(dir, "scoped-lambda-query.json");
+    const scopedIdx = join(dir, "scoped-lambda-index.json");
+    await writeFile(scopedIdx, JSON.stringify({
+      name: "scoped-idx",
+      fields: [
+        { name: "id", type: "Edm.String", key: true },
+        { name: "t", type: "Edm.String", filterable: false },
+        { name: "tags", type: "Collection(Edm.String)", filterable: true },
+        {
+          name: "rooms",
+          type: "Collection(Edm.ComplexType)",
+          fields: [{ name: "rate", type: "Edm.Int32", filterable: false }],
+        },
+      ],
+    }));
+    await writeFile(scopedFilterQry, JSON.stringify({
+      filter: `tags/any(t: t eq '${SECRET}') and rooms/any(t: t/rate eq 100) and t eq '${SECRET}'`,
+    }));
+    const scopedRes = await validateSearchSchema({ indexFile: scopedIdx, queryFile: scopedFilterQry });
+    expect(scopedRes.status).toBe("failed_preflight");
+    const nonFilterableDetails = scopedRes.findings.filter((f) => f.code === "FIELD_NOT_FILTERABLE").map((f) => f.detail);
+    expect(nonFilterableDetails.some((d) => d.includes("'t'"))).toBe(true);
+    expect(nonFilterableDetails.some((d) => d.includes("'rooms/rate'"))).toBe(true);
   });
 });
 

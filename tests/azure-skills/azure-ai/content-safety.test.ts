@@ -92,6 +92,14 @@ it("validates text-analyze limits, blocklist name rules, and haltOnBlocklistHit 
     const notArray = await validateContentSafetyRequest({ operation: "text-analyze", payloadFile: stringCats });
     expect(notArray.status).toBe("failed_preflight");
     expect(notArray.findings.map((f) => f.code)).toContain("INVALID_CATEGORIES_ARRAY");
+
+    // Non-boolean haltOnBlocklistHit (e.g. string "false") is rejected rather than coerced to true.
+    const stringHalt = join(dir, "text-string-halt.json");
+    await writeFile(stringHalt, JSON.stringify({ text: "hello", haltOnBlocklistHit: "false" }));
+    const badHalt = await validateContentSafetyRequest({ operation: "text-analyze", payloadFile: stringHalt });
+    expect(badHalt.status).toBe("failed_preflight");
+    expect(badHalt.details.haltOnBlocklistHit).toBe("invalid");
+    expect(badHalt.findings.map((f) => f.code)).toContain("INVALID_HALT_ON_BLOCKLIST_HIT_TYPE");
   });
 });
 

@@ -108,16 +108,227 @@ async function fileContainsAny(handle, byteLength, needles, accept = () => true)
   return false;
 }
 
-function hasPdfEncryptDictionary(handle, byteLength) {
-  return fileContainsAny(handle, byteLength, [PDF_ENCRYPT], (view, after, end, atEof) => {
-    if (after >= end) return atEof; // next byte is in the next window; the overlap re-checks it
+function hasOle2EncryptionStreams(handle, byteLength) {
+  return fileContainsAny(handle, byteLength, OLE2_ENCRYPTION_STREAMS);
+}
+
+// Inspect PDF dictionary structure in streaming chunks while ignoring comments (%...), literal
+// strings ((...)), hex strings (<...>), and stream...endstream bodies so visible text such as
+// `(A PDF /Encrypt example)` is not misread as encryption. Returns "encrypted" when a trailer or
+// /Type /XRef dictionary declares /Encrypt (other than null), "unverified_marker" when /Encrypt
+// appears in an object dictionary of a PDF with no trailer/XRef dictionary, or "none".
+async function classifyPdfEncryption(handle, byteLength) {
+  // Fast pre-check: if the raw byte sequence "/Encrypt" never occurs anywhere in the file, skip parsing.
+  const hasRawToken = await fileContainsAny(handle, byteLength, [PDF_ENCRYPT], (view, after, end, atEof) => {
+    if (after >= end) return atEof;
     const next = view[after];
     return !((next >= 0x41 && next <= 0x5a) || (next >= 0x61 && next <= 0x7a));
   });
-}
+  if (!hasRawToken) return "none";
 
-function hasOle2EncryptionStreams(handle, byteLength) {
-  return fileContainsAny(handle, byteLength, OLE2_ENCRYPTION_STREAMS);
+  const buf = Buffer.alloc(SCAN_CHUNK_BYTES);
+  let pos = 0;
+  let state = "normal"; // normal | comment | literal | hex | stream
+  let parenDepth = 0;
+  let escaped = false;
+  let dictDepth = 0;
+  let topDictBuffer = "";
+  let currentDictIsTrailer = false;
+  let tokenBuf = "";
+  let lastWord = "";
+  let afterDictClose = "";
+  let streamTail = "";
+  let pendingLt = false;
+  let hasTrailerOrXref = false;
+  let confirmedEncrypted = false;
+  let anyDictEncryptKey = false;
+
+  const flushWord = () => {
+    if (!tokenBuf) return;
+    lastWord = tokenBuf;
+    if (dictDepth === 1 && topDictBuffer.length < 65536) {
+      topDictBuffer += ` ${tokenBuf} `;
+    }
+    tokenBuf = "";
+  };
+
+  const finishTopDict = () => {
+    const hasEncryptKey = /\/Encrypt(?![A-Za-z0-9_])(?![\t\n\f\r ]+null(?![A-Za-z0-9_]))/.test(topDictBuffer);
+    const isXrefDict = /\/Type[\t\n\f\r ]*\/XRef(?![A-Za-z0-9_])/.test(topDictBuffer);
+    if (currentDictIsTrailer || isXrefDict) {
+      hasTrailerOrXref = true;
+      if (hasEncryptKey) confirmedEncrypted = true;
+    } else if (hasEncryptKey) {
+      anyDictEncryptKey = true;
+    }
+    topDictBuffer = "";
+    currentDictIsTrailer = false;
+    afterDictClose = "";
+  };
+
+  while (pos < byteLength && !confirmedEncrypted) {
+    const { bytesRead } = await handle.read(buf, 0, SCAN_CHUNK_BYTES, pos);
+    if (bytesRead <= 0) break;
+    pos += bytesRead;
+    const atEof = pos >= byteLength;
+    let chunk = buf.subarray(0, bytesRead).toString("latin1");
+    if (pendingLt) {
+      chunk = `<${chunk}`;
+      pendingLt = false;
+    }
+
+    let i = 0;
+    while (i < chunk.length) {
+      const ch = chunk[i];
+
+      if (state === "stream") {
+        // Look for `endstream` across chunk boundaries.
+        const windowStr = streamTail + chunk.slice(i);
+        const endIdx = windowStr.search(/(?:^|[\r\n\t\f ])endstream(?=[\r\n\t\f /<>()[\]%]|$)/);
+        if (endIdx === -1) {
+          streamTail = windowStr.slice(-16);
+          break;
+        }
+        const matched = windowStr.slice(endIdx).match(/^(?:[\r\n\t\f ])?endstream/);
+        const consumedInWindow = endIdx + (matched ? matched[0].length : 9);
+        const advance = consumedInWindow - streamTail.length;
+        streamTail = "";
+        state = "normal";
+        lastWord = "endstream";
+        i += Math.max(1, advance);
+        continue;
+      }
+
+      if (state === "comment") {
+        if (ch === "\r" || ch === "\n") state = "normal";
+        i += 1;
+        continue;
+      }
+
+      if (state === "literal") {
+        if (escaped) {
+          escaped = false;
+        } else if (ch === "\\") {
+          escaped = true;
+        } else if (ch === "(") {
+          parenDepth += 1;
+        } else if (ch === ")") {
+          parenDepth -= 1;
+          if (parenDepth === 0) {
+            state = "normal";
+            if (dictDepth === 1 && topDictBuffer.length < 65536) topDictBuffer += " () ";
+          }
+        }
+        i += 1;
+        continue;
+      }
+
+      if (state === "hex") {
+        if (ch === ">") {
+          state = "normal";
+          if (dictDepth === 1 && topDictBuffer.length < 65536) topDictBuffer += " <> ";
+        }
+        i += 1;
+        continue;
+      }
+
+      // state === "normal"
+      if (ch === "%") {
+        flushWord();
+        afterDictClose = "";
+        state = "comment";
+        i += 1;
+        continue;
+      }
+      if (ch === "(") {
+        flushWord();
+        afterDictClose = "";
+        state = "literal";
+        parenDepth = 1;
+        escaped = false;
+        i += 1;
+        continue;
+      }
+      if (ch === "<") {
+        if (i + 1 >= chunk.length && !atEof) {
+          pendingLt = true;
+          break;
+        }
+        if (chunk[i + 1] === "<") {
+          flushWord();
+          afterDictClose = "";
+          if (dictDepth === 0) {
+            currentDictIsTrailer = lastWord === "trailer";
+            topDictBuffer = "";
+          } else if (dictDepth === 1 && topDictBuffer.length < 65536) {
+            topDictBuffer += " <<>> ";
+          }
+          dictDepth += 1;
+          lastWord = "";
+          i += 2;
+          continue;
+        }
+        flushWord();
+        afterDictClose = "";
+        state = "hex";
+        i += 1;
+        continue;
+      }
+      if (ch === ">" && chunk[i + 1] === ">") {
+        flushWord();
+        if (dictDepth > 0) {
+          dictDepth -= 1;
+          if (dictDepth === 0) {
+            finishTopDict();
+            afterDictClose = ">>";
+          }
+        }
+        i += 2;
+        continue;
+      }
+      if (ch === ">" && i + 1 >= chunk.length && !atEof && dictDepth > 0) {
+        // Defer a lone trailing `>` in case the next chunk starts with `>`.
+        // Handled simply by re-reading 1 byte via overlap: adjust pos back by 1.
+        pos -= 1;
+        break;
+      }
+
+      const isDelimiter = /[\s/<>()[\]{}%]/.test(ch);
+      if (ch === "/") {
+        flushWord();
+        tokenBuf = "/";
+        i += 1;
+        continue;
+      }
+      if (isDelimiter) {
+        const completed = tokenBuf;
+        flushWord();
+        if (dictDepth === 0 && afterDictClose === ">>") {
+          if (completed === "stream" && (ch === "\r" || ch === "\n")) {
+            if (ch === "\r" && chunk[i + 1] === "\n") i += 1;
+            afterDictClose = "";
+            streamTail = "";
+            state = "stream";
+            i += 1;
+            continue;
+          }
+          if (completed !== "" && completed !== "stream") {
+            afterDictClose = "";
+          }
+        }
+        i += 1;
+        continue;
+      }
+      tokenBuf += ch;
+      i += 1;
+    }
+  }
+  flushWord();
+  if (dictDepth > 0 && topDictBuffer) finishTopDict();
+
+  if (confirmedEncrypted) return "encrypted";
+  if (!hasTrailerOrXref && anyDictEncryptKey) return "unverified_marker";
+  return "none";
 }
 
 function detectBinarySignature(head) {
@@ -160,6 +371,7 @@ function parseCsvRows(text) {
   let row = [];
   let cell = "";
   let inQuotes = false;
+  let afterClosingQuote = false;
   let quoteErrorRow;
 
   let lineNumber = 1;
@@ -173,6 +385,7 @@ function parseCsvRows(text) {
           i += 1;
         } else {
           inQuotes = false;
+          afterClosingQuote = true;
         }
       } else {
         if (ch === "\n") lineNumber += 1;
@@ -180,22 +393,17 @@ function parseCsvRows(text) {
       }
       continue;
     }
-    if (ch === "\"") {
-      if (cell.length === 0) {
-        inQuotes = true;
-      } else {
-        quoteErrorRow ??= rowLine;
-        cell += ch;
-      }
-    } else if (ch === ",") {
+    if (ch === ",") {
       row.push(cell);
       cell = "";
+      afterClosingQuote = false;
     } else if (ch === "\r") {
       if (text[i + 1] === "\n") i += 1;
       row.push(cell);
       rows.push({ line: rowLine, cells: row });
       row = [];
       cell = "";
+      afterClosingQuote = false;
       lineNumber += 1;
       rowLine = lineNumber;
     } else if (ch === "\n") {
@@ -203,14 +411,25 @@ function parseCsvRows(text) {
       rows.push({ line: rowLine, cells: row });
       row = [];
       cell = "";
+      afterClosingQuote = false;
       lineNumber += 1;
       rowLine = lineNumber;
+    } else if (afterClosingQuote) {
+      quoteErrorRow ??= rowLine;
+      cell += ch;
+    } else if (ch === "\"") {
+      if (cell.length === 0) {
+        inQuotes = true;
+      } else {
+        quoteErrorRow ??= rowLine;
+        cell += ch;
+      }
     } else {
       cell += ch;
     }
   }
   if (inQuotes) quoteErrorRow ??= rowLine;
-  if (row.length > 0 || cell.length > 0) {
+  if (row.length > 0 || cell.length > 0 || afterClosingQuote) {
     row.push(cell);
     rows.push({ line: rowLine, cells: row });
   }
@@ -416,7 +635,7 @@ async function inspectOneDocument(docPath, index, mode) {
   const maxDocBytes = mode === "sync" ? SYNC_MAX_DOC_BYTES : ASYNC_MAX_DOC_BYTES;
   const withinLimit = size > 0 && size <= maxDocBytes;
   let signature;
-  let pdfEncrypted = false;
+  let pdfEncryptionState = "none";
   let textRaw;
   try {
     const head = await readSlice(handle, 0, Math.min(size, 64 * 1024));
@@ -425,7 +644,7 @@ async function inspectOneDocument(docPath, index, mode) {
     if (signature === "ole2" && withinLimit && await hasOle2EncryptionStreams(handle, size)) {
       signature = "ole2_encrypted";
     } else if (signature === "pdf" && withinLimit) {
-      pdfEncrypted = await hasPdfEncryptDictionary(handle, size);
+      pdfEncryptionState = await classifyPdfEncryption(handle, size);
     }
     if (TEXT_EXTENSIONS.has(extension) && withinLimit && signature !== "utf16_bom") {
       textRaw = await handle.readFile();
@@ -501,13 +720,19 @@ async function inspectOneDocument(docPath, index, mode) {
       detail: `Document #${index} is an encrypted Office package; secured (password-encrypted or copy-restricted) documents can't be translated.`,
     });
   } else if (signature === "pdf") {
-    // The /Encrypt reference usually sits in the trailer at the end of the file: scan all of it.
-    if (pdfEncrypted) {
+    if (pdfEncryptionState === "encrypted") {
       findings.push({
         code: "ENCRYPTED_PDF_DOCUMENT",
         severity: "error",
         documentIndex: index,
-        detail: `Document #${index} is an encrypted PDF (/Encrypt dictionary); secured (password-encrypted or copy-restricted) documents can't be translated.`,
+        detail: `Document #${index} is an encrypted PDF (/Encrypt in trailer/XRef); secured (password-encrypted or copy-restricted) documents can't be translated.`,
+      });
+    } else if (pdfEncryptionState === "unverified_marker") {
+      findings.push({
+        code: "POSSIBLE_PDF_ENCRYPTION_MARKER",
+        severity: "warning",
+        documentIndex: index,
+        detail: `Document #${index} contains an /Encrypt dictionary entry without a trailer/XRef section; verify the PDF is not password-encrypted or copy-restricted.`,
       });
     }
     if (extension && extension !== ".pdf") {

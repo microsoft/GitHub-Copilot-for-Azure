@@ -95,8 +95,16 @@ it("catches malformed TSV/CSV glossaries, UTF-16 BOM, duplicates, encrypted PDF,
     const utf16Res = await validateDocumentTranslation({ glossaryFile: utf16Glossary });
     expect(utf16Res.findings.map((f) => f.code)).toContain("GLOSSARY_UTF16_ENCODING");
 
+    // Characters immediately after a closing CSV quote ("source"junk,target) must trigger MALFORMED_CSV_QUOTES.
+    const trailingQuoteCsv = join(dir, "bad-quote.csv");
+    await writeFile(trailingQuoteCsv, `"${SECRET}"junk,target\n`, "utf8");
+    const trailingQuoteRes = await validateDocumentTranslation({ glossaryFile: trailingQuoteCsv });
+    expect(trailingQuoteRes.status).toBe("passed_with_warnings");
+    expect(trailingQuoteRes.findings.map((f) => f.code)).toContain("MALFORMED_CSV_QUOTES");
+    expect(JSON.stringify(trailingQuoteRes)).not.toContain(SECRET);
+
     const lockedPdf = join(dir, "locked.pdf");
-    await writeFile(lockedPdf, "%PDF-1.7\n1 0 obj << /Encrypt 2 0 R >> endobj\n", "latin1");
+    await writeFile(lockedPdf, "%PDF-1.7\ntrailer << /Root 1 0 R /Encrypt 2 0 R >>\n%%EOF\n", "latin1");
     const htmlAsDocx = join(dir, "error.docx");
     await writeFile(htmlAsDocx, `<html>${SECRET}</html>`, "utf8");
 
@@ -126,9 +134,22 @@ it("scans whole PDFs and OLE2 files for encryption, enforces sync formats, and k
       Buffer.alloc(3 * 1024 * 1024, 0x20),
       Buffer.from("trailer << /Root 1 0 R /Encrypt 9 0 R >>\n%%EOF\n", "latin1"),
     ]));
-    // /EncryptMetadata alone is not an encryption dictionary.
+    // /EncryptMetadata alone is not an encryption dictionary, and /Encrypt in visible text, comments, or streams is not encryption.
     const metaOnlyPdf = join(dir, "meta-only.pdf");
-    await writeFile(metaOnlyPdf, "%PDF-1.7\n<< /EncryptMetadata false >>\n", "latin1");
+    await writeFile(
+      metaOnlyPdf,
+      [
+        "%PDF-1.7",
+        "% Comment mentioning /Encrypt dictionary",
+        "1 0 obj << /Type /Page /Title (A PDF /Encrypt example) /EncryptMetadata false >> endobj",
+        "2 0 obj << /Length 34 >> stream",
+        "BT /F1 12 Tf (Body /Encrypt) Tj ET",
+        "endstream endobj",
+        "trailer << /Root 1 0 R >>",
+        "%%EOF",
+      ].join("\n"),
+      "latin1",
+    );
 
     // OLE2 header with the EncryptedPackage stream name far past the first 64 KiB.
     const ole2Header = Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]);

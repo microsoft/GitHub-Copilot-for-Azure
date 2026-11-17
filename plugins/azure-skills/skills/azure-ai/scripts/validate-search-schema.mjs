@@ -146,30 +146,131 @@ const ODATA_KEYWORDS = new Set([
   "true", "false", "null", "add", "sub", "mul", "div", "mod",
 ]);
 
+function tokenizeODataFilter(expr) {
+  const tokens = [];
+  let i = 0;
+  while (i < expr.length) {
+    const ch = expr[i];
+    if (/\s/.test(ch)) {
+      i += 1;
+      continue;
+    }
+    if (ch === "'") {
+      i += 1;
+      while (i < expr.length) {
+        if (expr[i] === "'") {
+          if (expr[i + 1] === "'") {
+            i += 2;
+            continue;
+          }
+          i += 1;
+          break;
+        }
+        i += 1;
+      }
+      tokens.push({ type: "literal" });
+      continue;
+    }
+    if (ch === "(" || ch === ")" || ch === "," || ch === ":" || ch === "/") {
+      tokens.push({ type: ch });
+      i += 1;
+      continue;
+    }
+    if (/[0-9]/.test(ch) || (ch === "-" && /[0-9]/.test(expr[i + 1] ?? ""))) {
+      i += 1;
+      while (i < expr.length && /[0-9.eE+-]/.test(expr[i])) i += 1;
+      tokens.push({ type: "literal" });
+      continue;
+    }
+    if (/[A-Za-z_]/.test(ch)) {
+      const start = i;
+      while (i < expr.length && /[A-Za-z0-9_.]/.test(expr[i])) i += 1;
+      const ident = expr.slice(start, i);
+      if ((ident === "geography" || ident === "geometry") && expr[i] === "'") {
+        continue;
+      }
+      tokens.push({ type: "ident", value: ident });
+      continue;
+    }
+    i += 1;
+  }
+  return tokens;
+}
+
 function extractFilterIdentifiers(filterExpr, knownFields) {
   if (typeof filterExpr !== "string" || filterExpr.trim() === "") return [];
-  let stripped = filterExpr.replace(/(?:geography|geometry)?'(?:''|[^'])*'/g, "''");
-  // Resolve lambda range variables in `collection/any(v: v/sub ...)` so `v` is not mistaken
-  // for an unrelated top-level field of the same name and `v/sub` maps to `collection/sub`.
-  const lambdas = [];
-  stripped = stripped.replace(
-    /([A-Za-z_][A-Za-z0-9_/]*)\/(?:any|all)\(\s*([A-Za-z_][A-Za-z0-9_]*)\s*:/g,
-    (_, collection, variable) => {
-      lambdas.push({ collection, variable });
-      return `${collection} (`;
-    },
-  );
-  for (const { collection, variable } of lambdas) {
-    const varEsc = variable.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    stripped = stripped.replace(new RegExp(`(?<![A-Za-z0-9_/.])${varEsc}\\/`, "g"), `${collection}/`);
-    stripped = stripped.replace(new RegExp(`(?<![A-Za-z0-9_/.])${varEsc}(?![A-Za-z0-9_/.(])`, "g"), " ");
-  }
+  const tokens = tokenizeODataFilter(filterExpr);
   const matched = new Set();
-  for (const fieldName of knownFields.keys()) {
-    if (ODATA_KEYWORDS.has(fieldName.toLowerCase())) continue;
-    const escaped = fieldName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const regex = new RegExp(`(?<![A-Za-z0-9_/.])${escaped}(?![A-Za-z0-9_/.(])`);
-    if (regex.test(stripped)) matched.add(fieldName);
+  const scopeStack = [];
+  let parenDepth = 0;
+
+  const resolveSegments = (segments) => {
+    const first = segments[0];
+    for (let s = scopeStack.length - 1; s >= 0; s -= 1) {
+      if (scopeStack[s].alias === first) {
+        if (segments.length === 1) {
+          return { path: scopeStack[s].collectionPath, isBareAlias: true };
+        }
+        return { path: `${scopeStack[s].collectionPath}/${segments.slice(1).join("/")}`, isBareAlias: false };
+      }
+    }
+    return { path: segments.join("/"), isBareAlias: false };
+  };
+
+  for (let i = 0; i < tokens.length; i += 1) {
+    const tok = tokens[i];
+    if (tok.type === "(") {
+      parenDepth += 1;
+      continue;
+    }
+    if (tok.type === ")") {
+      while (scopeStack.length > 0 && scopeStack[scopeStack.length - 1].depth === parenDepth) {
+        scopeStack.pop();
+      }
+      parenDepth = Math.max(0, parenDepth - 1);
+      continue;
+    }
+    if (tok.type !== "ident") continue;
+    if (tokens[i + 1]?.type === "(") continue;
+    if (ODATA_KEYWORDS.has(tok.value.toLowerCase()) || tok.value.includes(".")) continue;
+
+    const segments = [tok.value];
+    let cursor = i;
+    while (tokens[cursor + 1]?.type === "/" && tokens[cursor + 2]?.type === "ident") {
+      const nextIdent = tokens[cursor + 2].value;
+      if ((nextIdent === "any" || nextIdent === "all") && tokens[cursor + 3]?.type === "(") {
+        break;
+      }
+      segments.push(nextIdent);
+      cursor += 2;
+    }
+    i = cursor;
+
+    if (
+      tokens[i + 1]?.type === "/" &&
+      tokens[i + 2]?.type === "ident" &&
+      (tokens[i + 2].value === "any" || tokens[i + 2].value === "all") &&
+      tokens[i + 3]?.type === "("
+    ) {
+      const resolved = resolveSegments(segments);
+      if (knownFields.has(resolved.path)) matched.add(resolved.path);
+      parenDepth += 1;
+      i += 3;
+      if (tokens[i + 1]?.type === "ident" && tokens[i + 2]?.type === ":") {
+        scopeStack.push({
+          alias: tokens[i + 1].value,
+          collectionPath: resolved.path,
+          depth: parenDepth,
+        });
+        i += 2;
+      }
+      continue;
+    }
+
+    const resolved = resolveSegments(segments);
+    if (!resolved.isBareAlias && knownFields.has(resolved.path)) {
+      matched.add(resolved.path);
+    }
   }
   return [...matched];
 }
@@ -303,6 +404,53 @@ export async function validateSearchSchema({ indexFile, queryFile } = {}) {
     }
   }
 
+  const checkSemanticField = (cfgName, role, fieldName) => {
+    const missingCode = role === "title"
+      ? "SEMANTIC_MISSING_TITLE_FIELD"
+      : role === "content" ? "SEMANTIC_MISSING_CONTENT_FIELD" : "SEMANTIC_MISSING_KEYWORDS_FIELD";
+    const notSearchableCode = role === "title"
+      ? "SEMANTIC_TITLE_FIELD_NOT_SEARCHABLE"
+      : role === "content" ? "SEMANTIC_CONTENT_FIELD_NOT_SEARCHABLE" : "SEMANTIC_KEYWORDS_FIELD_NOT_SEARCHABLE";
+    const target = fieldMap.get(fieldName);
+    if (!target) {
+      findings.push({
+        code: missingCode,
+        severity: "error",
+        detail: `Semantic configuration '${safeName(cfgName)}' references missing ${role} field '${safeName(fieldName)}'.`,
+      });
+      return;
+    }
+    const validType = role === "title"
+      ? (target.type === "Edm.String" && !target.inComplexCollection)
+      : (target.type === "Edm.String" || target.type === "Collection(Edm.String)");
+    if (!validType) {
+      findings.push({
+        code: "SEMANTIC_FIELD_INVALID_TYPE",
+        severity: "error",
+        detail: `Semantic ${role} field '${safeName(fieldName)}' has type '${safeType(target.type)}'${target.inComplexCollection && role === "title" ? " (inside Collection(Edm.ComplexType))" : ""}; ${role === "title" ? "scalar Edm.String" : "Edm.String or Collection(Edm.String)"} is required.`,
+      });
+      return;
+    }
+    const searchableEff = effectiveAttribute(target, "searchable");
+    if (searchableEff.value !== true) {
+      findings.push({
+        code: notSearchableCode,
+        severity: "error",
+        detail: `Semantic ${role} field '${safeName(fieldName)}' must be searchable (${attributeDetail("searchable", searchableEff)}).`,
+      });
+    }
+    const retrievableEff = target.hidden === true
+      ? { value: false, explicit: true }
+      : effectiveAttribute(target, "retrievable");
+    if (retrievableEff.value !== true) {
+      findings.push({
+        code: "SEMANTIC_FIELD_NOT_RETRIEVABLE",
+        severity: "error",
+        detail: `Semantic ${role} field '${safeName(fieldName)}' must be retrievable (${target.hidden === true ? "sets hidden: true" : attributeDetail("retrievable", retrievableEff)}).`,
+      });
+    }
+  };
+
   const semanticObj = rawIndex.semantic ?? rawIndex.semanticSearch;
   const semanticConfigs = new Map();
   if (semanticObj && typeof semanticObj === "object") {
@@ -311,49 +459,26 @@ export async function validateSearchSchema({ indexFile, queryFile } = {}) {
       semanticConfigs.set(cfg.name, cfg);
       const prio = cfg.prioritizedFields ?? {};
       const titleName = prio.titleField?.fieldName;
-      if (titleName && !fieldMap.has(titleName)) {
-        findings.push({
-          code: "SEMANTIC_MISSING_TITLE_FIELD",
-          severity: "error",
-          detail: `Semantic configuration '${safeName(cfg.name)}' references missing titleField '${safeName(titleName)}'.`,
-        });
+      if (titleName) {
+        checkSemanticField(cfg.name, "title", titleName);
       }
       const contentFields = prio.prioritizedContentFields ?? prio.contentFields ?? [];
       for (const cf of Array.isArray(contentFields) ? contentFields : []) {
         if (!cf?.fieldName) continue;
-        const target = fieldMap.get(cf.fieldName);
-        if (!target) {
-          findings.push({
-            code: "SEMANTIC_MISSING_CONTENT_FIELD",
-            severity: "error",
-            detail: `Semantic configuration '${safeName(cfg.name)}' references missing content field '${safeName(cf.fieldName)}'.`,
-          });
-        } else if (effectiveAttribute(target, "searchable").value !== true) {
-          findings.push({
-            code: "SEMANTIC_CONTENT_FIELD_NOT_SEARCHABLE",
-            severity: "error",
-            detail: `Semantic content field '${safeName(cf.fieldName)}' must be searchable.`,
-          });
-        }
+        checkSemanticField(cfg.name, "content", cf.fieldName);
       }
       const keywordFields = prio.prioritizedKeywordsFields ?? prio.keywordsFields ?? [];
       for (const kf of Array.isArray(keywordFields) ? keywordFields : []) {
         if (!kf?.fieldName) continue;
-        const target = fieldMap.get(kf.fieldName);
-        if (!target) {
-          findings.push({
-            code: "SEMANTIC_MISSING_KEYWORDS_FIELD",
-            severity: "error",
-            detail: `Semantic configuration '${safeName(cfg.name)}' references missing keywords field '${safeName(kf.fieldName)}'.`,
-          });
-        } else if (effectiveAttribute(target, "searchable").value !== true) {
-          findings.push({
-            code: "SEMANTIC_KEYWORDS_FIELD_NOT_SEARCHABLE",
-            severity: "error",
-            detail: `Semantic keywords field '${safeName(kf.fieldName)}' must be searchable.`,
-          });
-        }
+        checkSemanticField(cfg.name, "keywords", kf.fieldName);
       }
+    }
+    if (typeof semanticObj.defaultConfiguration === "string" && semanticObj.defaultConfiguration.length > 0 && !semanticConfigs.has(semanticObj.defaultConfiguration)) {
+      findings.push({
+        code: "DANGLING_DEFAULT_SEMANTIC_CONFIGURATION",
+        severity: "error",
+        detail: `Index semantic defaultConfiguration '${safeName(semanticObj.defaultConfiguration)}' does not match any defined semantic configuration.`,
+      });
     }
   }
 
@@ -370,28 +495,46 @@ export async function validateSearchSchema({ indexFile, queryFile } = {}) {
         ? rawQuery.vectors
         : [];
     const hasSearchText = typeof rawQuery.search === "string" && rawQuery.search.trim() !== "" && rawQuery.search.trim() !== "*";
+    const hasSemanticQueryText = typeof rawQuery.semanticQuery === "string" && rawQuery.semanticQuery.trim() !== "";
     const queryType = typeof rawQuery.queryType === "string" ? rawQuery.queryType : "simple";
+    const isSemanticQuery = queryType === "semantic" || hasSemanticQueryText;
 
-    if (queryType === "semantic") {
-      const requestedSemantic = rawQuery.semanticConfiguration;
-      const defaultSemantic = semanticObj?.defaultConfiguration;
+    if (isSemanticQuery) {
+      const requestedSemantic = typeof rawQuery.semanticConfiguration === "string" && rawQuery.semanticConfiguration.length > 0
+        ? rawQuery.semanticConfiguration
+        : undefined;
+      const defaultSemantic = typeof semanticObj?.defaultConfiguration === "string" && semanticObj.defaultConfiguration.length > 0
+        ? semanticObj.defaultConfiguration
+        : undefined;
+      const effectiveSemantic = requestedSemantic ?? defaultSemantic;
       if (semanticConfigs.size === 0) {
         findings.push({
           code: "SEMANTIC_QUERY_WITHOUT_INDEX_CONFIG",
           severity: "error",
-          detail: "Query sets queryType: 'semantic', but the index defines no semantic configurations.",
+          detail: "Query enables semantic ranking, but the index defines no semantic configurations.",
         });
-      } else if (!requestedSemantic && !defaultSemantic) {
+      } else if (!effectiveSemantic) {
         findings.push({
           code: "MISSING_QUERY_SEMANTIC_CONFIGURATION",
           severity: "error",
-          detail: "Query sets queryType: 'semantic' without semanticConfiguration, and index has no defaultConfiguration.",
+          detail: "Query enables semantic ranking without semanticConfiguration, and index has no defaultConfiguration.",
         });
-      } else if (requestedSemantic && !semanticConfigs.has(requestedSemantic)) {
+      } else if (!semanticConfigs.has(effectiveSemantic)) {
         findings.push({
           code: "UNKNOWN_QUERY_SEMANTIC_CONFIGURATION",
           severity: "error",
-          detail: `Query references unknown semanticConfiguration '${safeName(requestedSemantic)}'.`,
+          detail: requestedSemantic
+            ? `Query references unknown semanticConfiguration '${safeName(requestedSemantic)}'.`
+            : `Query relies on index defaultConfiguration '${safeName(defaultSemantic)}', which is not defined in semantic configurations.`,
+        });
+      }
+
+      const orderbyClauses = splitCsvFields(rawQuery.orderby);
+      if (orderbyClauses.some((clause) => !clause.split(/\s+/)[0].startsWith("search.score"))) {
+        findings.push({
+          code: "SEMANTIC_QUERY_INCOMPATIBLE_WITH_ORDERBY",
+          severity: "error",
+          detail: "Semantic ranking cannot be combined with field or geo.distance 'orderby' clauses (HTTP 400).",
         });
       }
     }

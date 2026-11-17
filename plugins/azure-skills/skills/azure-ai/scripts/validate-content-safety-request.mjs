@@ -263,7 +263,13 @@ export async function validateContentSafetyRequest({ operation, payloadFile, ima
       }
     }
 
-    if (payload.haltOnBlocklistHit === true && Array.isArray(payload.blocklistNames) && payload.blocklistNames.length > 0) {
+    if (payload.haltOnBlocklistHit !== undefined && typeof payload.haltOnBlocklistHit !== "boolean") {
+      findings.push({
+        code: "INVALID_HALT_ON_BLOCKLIST_HIT_TYPE",
+        severity: "error",
+        detail: "'haltOnBlocklistHit' must be a boolean when provided.",
+      });
+    } else if (payload.haltOnBlocklistHit === true && Array.isArray(payload.blocklistNames) && payload.blocklistNames.length > 0) {
       findings.push({
         code: "HALT_ON_BLOCKLIST_HIT_OMITS_CATEGORIES",
         severity: "info",
@@ -275,7 +281,9 @@ export async function validateContentSafetyRequest({ operation, payloadFile, ima
       textCodePoints: charCount,
       outputType: TEXT_OUTPUT_TYPES.has(outputType) ? outputType : "invalid",
       blocklistCount: Array.isArray(payload.blocklistNames) ? payload.blocklistNames.length : 0,
-      haltOnBlocklistHit: Boolean(payload.haltOnBlocklistHit),
+      haltOnBlocklistHit: payload.haltOnBlocklistHit === undefined
+        ? false
+        : (typeof payload.haltOnBlocklistHit === "boolean" ? payload.haltOnBlocklistHit : "invalid"),
     };
   } else if (op === "image-analyze") {
     let imgBuf;
@@ -352,6 +360,12 @@ export async function validateContentSafetyRequest({ operation, payloadFile, ima
           code: "UNSUPPORTED_OR_UNRECOGNIZED_IMAGE_FORMAT",
           severity: "warning",
           detail: "Image bytes did not match JPEG, PNG, GIF, BMP, TIFF, or WEBP.",
+        });
+      } else if (!parsedImg.dimensions) {
+        findings.push({
+          code: "IMAGE_DIMENSIONS_NOT_DETERMINED",
+          severity: "warning",
+          detail: `Could not determine pixel dimensions for ${parsedImg.format} image locally; dimension limits were not verified.`,
         });
       }
       if (parsedImg.dimensions) {
@@ -446,7 +460,9 @@ export async function validateContentSafetyRequest({ operation, payloadFile, ima
   const hasError = findings.some((f) => f.severity === "error");
   const unverifiedImage =
     op === "image-analyze" &&
-    (details.imageSource === "payload_blob_url" || details.detectedFormat === "unrecognized");
+    (details.imageSource === "payload_blob_url" ||
+      details.detectedFormat === "unrecognized" ||
+      (details.detectedFormat && details.detectedFormat !== "empty" && !details.dimensions));
   const status = hasError
     ? "failed_preflight"
     : unverifiedImage
