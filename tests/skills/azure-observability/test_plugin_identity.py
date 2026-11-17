@@ -58,6 +58,22 @@ class PluginIdentityTests(unittest.TestCase):
             self.assertTrue((ROOT / parent / NAME).is_dir())
             self.assertFalse((ROOT / parent / LEGACY).exists())
 
+    def test_smoke_evaluations_declare_full_pass_scoring(self):
+        for skill in sorted(SKILLS):
+            text = (ROOT / "evals" / NAME / skill / "eval.yaml").read_text("utf-8")
+            with self.subTest(skill=skill):
+                self.assertRegex(text, r"(?m)^scoring:\n  threshold: 1\n")
+                self.assertEqual(text.count("      - type: skill-invocation\n"), 1)
+
+    def test_readme_has_preview_installation_and_host_boundaries(self):
+        text = (PLUGIN / "README.md").read_text("utf-8")
+        for expected in ("## Installation", "npm install", "npm run build",
+                         "Chat: Install Plugin from Source",
+                         r"copilot --plugin-dir .\output\azure-observability",
+                         "marketplace publication is not verified",
+                         "CLI compatibility remains"):
+            self.assertIn(expected, text)
+
     def test_host_cache_patterns_accept_new_paths_and_reject_old_identity(self):
         scripts = PLUGIN / "hooks" / "scripts"
         powershell = (scripts / "pluginPathAllowPattern.ps1").read_text("utf-8")

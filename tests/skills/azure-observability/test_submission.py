@@ -283,8 +283,10 @@ class SubmissionTests(unittest.TestCase):
         self.assertLessEqual(len(content.split()), 1250)
         self.assertNotRegex(content.casefold(),
                             r"## (?:contributor|maintainer)|candidate-inventory|update_inventory")
-        self.assertNotRegex(content, r"\]\([^)]*(?:docs/|tests/|provenance)")
-        self.assertNotRegex(content.casefold(), r"npm run build|python\s+(?:-b\s+)?scripts")
+        for target in re.findall(r"\]\(([^)]+)\)", content):
+            if not urlsplit(target).scheme:
+                self.assertNotRegex(target, r"(?:docs/|tests/|provenance)")
+        self.assertNotRegex(content.casefold(), r"python\s+(?:-b\s+)?scripts")
 
     def test_selected_user_payload_is_closed_without_developer_assets(self):
         """The receiving build ships every plugin file, not just selected entries."""

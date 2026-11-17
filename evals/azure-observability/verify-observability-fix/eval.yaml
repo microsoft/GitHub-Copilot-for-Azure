@@ -10,6 +10,9 @@ defaults:
   timeout: "10m"
   executor: copilot-sdk-agent-runner
 
+scoring:
+  threshold: 1
+
 stimuli:
   - name: "Invoke verify-observability-fix"
     turns:

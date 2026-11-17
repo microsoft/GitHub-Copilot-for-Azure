@@ -77,6 +77,43 @@ edit files, or save data.
 Initial evidence review doesn't require Python, Azure Developer CLI (`azd`),
 saved mappings, write permissions, or a new connection.
 
+## Installation
+
+### Preview from source
+
+This contribution is under review; marketplace publication is not verified.
+Use a reviewed checkout containing this plugin, with Git, Node.js/npm and
+the build prerequisites in the
+[contributor onboarding guide](https://github.com/microsoft/GitHub-Copilot-for-Azure/blob/main/docs/Onboarding.md).
+From the repository root:
+
+```powershell
+npm install
+npm run build
+```
+
+Review the plugin contents and telemetry disclosure before enabling it.
+Build output is `output\azure-observability`; do not install the unbuilt source.
+
+**VS Code:** run **Chat: Install Plugin from Source** from the Command Palette,
+then select the absolute path to `output\azure-observability`. See
+[VS Code plugin installation](https://code.visualstudio.com/docs/agent-customization/agent-plugins).
+Available controls depend on host version and organization policy.
+
+**Copilot CLI:** with Copilot CLI already installed and authenticated, run:
+
+```powershell
+copilot --plugin-dir .\output\azure-observability
+```
+
+This loads the local plugin for that CLI session; CLI compatibility remains
+pending separate validation. Start a fresh conversation, confirm the four
+core skills are exposed, and try a question above. Keep Azure Skills enabled
+for canonical diagnostics/Foundry expertise. Installation grants no telemetry
+access or permission to query Azure.
+Disable or remove older draft copies through supported plugin management
+before enabling `azure-observability`; renamed packages do not update them.
+
 ## Relevant capabilities, discovered when needed
 
 The instructions guide Copilot to:
@@ -125,12 +162,6 @@ Core skills are independently usable, subject to host discovery and loading supp
 | **Review supplied evidence** | A supported host and evidence with sensitive details removed. No Azure access required. |
 | **Investigate live telemetry** | A deployed target, confirmed sources, authorized tools, task-specific access and an approved read plan. |
 | **Use optional capabilities** | Available specialists/tools, their prerequisites, and applicable setup and execution approvals. |
-
-Use your host's supported installation flow; availability depends on organization policy.
-The package identifier is `azure-observability`. If you used an earlier draft,
-disable or remove that copy through the host's supported plugin management
-before enabling this package; a package rename doesn't update old installations
-automatically.
 
 ## You stay in control
 

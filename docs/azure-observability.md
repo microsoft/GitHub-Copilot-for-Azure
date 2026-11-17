@@ -98,6 +98,16 @@ or this entire repository into the plugin payload.
 The receiving `npm run test` runner does not execute Python tests automatically.
 TypeScript migration remains deferred; these checks do not resolve that request.
 
+The four routing-smoke evals declare `scoring.threshold: 1`: each currently has
+one skill-invocation grader and must fully pass it. Omitting scoring produces
+warnings that the receiving Vally `--strict` lint treats as failures. These
+explicit thresholds do not turn schema lint into executed model evaluations.
+Vally 0.12.0 strict lint passed all four skills and evals locally after this
+change. The full custom-grader invocation was blocked locally by missing test
+harness dependencies; no full-repository lint or model-run pass is implied.
+The installed-user README documents preview build/install steps; marketplace
+publication and Copilot CLI behavior remain separate verification gates.
+
 ## Exercise an installed host separately
 
 Use a reviewed built payload through the host's supported plugin flow.
