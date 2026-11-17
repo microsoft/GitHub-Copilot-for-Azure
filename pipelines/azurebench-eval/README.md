@@ -9,6 +9,10 @@ Two manual Azure DevOps pipelines:
   with the GitHub Copilot CLI agent plus the Azure skills plugin, waits, and
   passes only if every requested task is resolved.
 
+They are separate because releasing is rare, permanent and needs Registry
+rights, while runs are frequent, can create billable Azure resources and need
+CES submit rights. Publish a version once, then run it many times.
+
 Both are generic: the benchmark, version, files, model and run identity are
 parameters. The defaults release and run `azurebench@1.0.0`, which contains one
 task, the Azure Functions deployment test in
