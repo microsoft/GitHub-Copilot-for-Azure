@@ -14,7 +14,7 @@ Use when no `azure.yaml` exists. A file targeting another host is a handoff to `
 
 ## 1. Enable server-side build
 
-Check setting names without printing values. If `WEBSITE_RUN_FROM_PACKAGE` exists, remove only that setting when switching to source deployment, then rerun the check. Stop on read/delete errors; app-setting changes restart the app.
+Read setting names only. Remove only `WEBSITE_RUN_FROM_PACKAGE` if present, then recheck; stop on read/delete errors. Keep `SCM_DO_BUILD_DURING_DEPLOYMENT=true`. Setting changes restart the app.
 
 ```bash
 CONFLICT=$(az webapp config appsettings list -n <app> -g <rg> --query "[?name=='WEBSITE_RUN_FROM_PACKAGE'].name" -o tsv) || exit 1

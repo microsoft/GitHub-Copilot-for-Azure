@@ -45,14 +45,10 @@ Example: folder `my-web-app/` → `my-web-app-a3f9c1d2`.
    $region = az config get defaults.location -o tsv 2>$null; if ($LASTEXITCODE -ne 0) { $region = "" }
    ```
 3. Else default to `eastus2`.
-4. **Mandatory quota gate** — only when the plan is missing, before any plan-create command:
-   1. Resolve the effective subscription, region and SKU from the user or existing `azd` template; default to `P0v3` only when unspecified. Confirm `az account show --query id -o tsv` matches the intended subscription; stop on mismatch without silently changing the CLI default. `az account list-locations` uses that active subscription; it does not accept `--subscription`.
-   2. Invoke `azure-quotas` once (`az quota` CLI first; never quota MCP). If unavailable, use `az quota list` and `az quota usage list` for the subscription/provider/region scope. Discover the quota resource name; never assume it equals the SKU. Require unique, non-negative limits and usage with enough remaining capacity in the returned units.
-   3. `Microsoft.Web` is not a documented [Quota API provider](https://learn.microsoft.com/rest/api/quota/). If unsupported or unmapped, use Azure portal Quotas/Support to verify capacity; stop if unverifiable. [App Service regional usage](https://learn.microsoft.com/rest/api/appservice/get-usages-in-location/list) provides diagnostic counters, not proof of SKU capacity.
-   4. Confirm the selected Linux SKU with `az appservice list-locations --sku "<selected-sku>" --linux-workers-enabled --subscription "<subscription-id>"`; match its region names against `az account list-locations`. Stop on command errors, missing data or insufficient capacity.
-   5. Reuse checked results; recheck when subscription, SKU or region changes. Provision exactly those values, including effective `azd` parameters. Never switch SKU to bypass the gate; ask before changing a user-specified region.
-
-   Passing checks do not guarantee provisioning. On `QuotaExceeded`, surface the error; do not retry unchanged. For a defaulted region, consider another only within user/project constraints and after the same gate passes; otherwise stop and suggest a quota increase.
+4. Before creating a plan, invoke `azure-quotas` to check quota and regional availability. Ask before changing a user-specified region; stop if quota is unavailable or unverifiable rather than switching SKU.
+   - Use the effective user/template subscription, region and SKU (`P0v3` only if unspecified). Confirm the active subscription with `az account show --query id -o tsv`; stop on mismatch without switching. Reuse results unless these values change; recheck after changes and provision only checked values.
+   - Use `az quota` first, never quota MCP; if `azure-quotas` is unavailable, use `az quota list` and `az quota usage list` for the subscription/provider/region scope. Require an unambiguous quota mapping, non-negative limits/usage and sufficient capacity in matching units. `Microsoft.Web` is not a documented [Quota API provider](https://learn.microsoft.com/rest/api/quota/): for unsupported/unmapped quotas, confirm through Portal/Support or stop. [Regional usage counters](https://learn.microsoft.com/rest/api/appservice/get-usages-in-location/list) alone do not prove capacity.
+   - Verify Linux SKU availability with `az appservice list-locations --sku "<selected-sku>" --linux-workers-enabled --subscription "<subscription-id>"`. Match region names using `az account list-locations` (active subscription only; no `--subscription`). Stop on errors or missing data.
 
 ### 1e. Show the defaults summary BEFORE creating
 Print one concise block so the user can interrupt to override.
@@ -75,6 +71,8 @@ Do **not** call `ask_user` for confirmation here — just print and proceed.
 
 ### 1f. Transient error handling
 On connection-level or 429/5xx errors from any `az ... create` in §§2–4, see [transient-retry.md](transient-retry.md). Configuration errors (`AuthorizationFailed`, `SkuNotAvailable`, `QuotaExceeded`, etc.) must **not** be retried — surface them.
+
+Preflight does not guarantee provisioning. After `QuotaExceeded`, another defaulted region must meet user/project constraints and pass §1d; otherwise stop and suggest a quota increase.
 
 ## 2. Resource Group
 
