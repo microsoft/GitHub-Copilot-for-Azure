@@ -372,6 +372,7 @@ telemetry-reporter/.idea/
 telemetry-reporter/.vscode/
 coverage/
 coverage.*
+!/plugins/azure-observability/skills/troubleshoot-observability/references/coverage.md
 *.test
 *.trx
 *.temp

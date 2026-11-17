@@ -50,6 +50,11 @@ These are contributor commands, never automatic customer setup or runtime jobs.
 Use the existing dependencies and commands documented in
 [onboarding](Onboarding.md). Installing dependencies needs applicable approval.
 Do not treat a dependency failure as a passing validation result.
+Runtime resources must also survive a fresh Git checkout. The root ignore rule
+`coverage.*` excludes generated coverage reports; the coordinator's runtime
+`references/coverage.md` has an explicit exception. Keep that guide tracked.
+The submission suite checks runtime files against Git ignore rules so local-only
+resources cannot silently satisfy reference validation.
 
 From the repository root, the plugin's offline Python suite and named-tokenizer
 checks run through:

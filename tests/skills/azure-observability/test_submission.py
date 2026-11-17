@@ -126,6 +126,18 @@ def payload_link_problem(source, target, payload):
 
 
 class SubmissionTests(unittest.TestCase):
+    def test_runtime_resources_are_not_excluded_by_gitignore(self):
+        paths = sorted(path.relative_to(REPOSITORY).as_posix()
+                       for path in public_files().values())
+        result = subprocess.run(
+            ["git", "-C", str(REPOSITORY), "check-ignore", "--no-index", "-z", "--stdin"],
+            input="\0".join(paths) + "\0",
+            capture_output=True, text=True, timeout=30,
+        )
+        self.assertIn(result.returncode, (0, 1), result.stderr)
+        self.assertEqual(result.stdout.strip(), "",
+                         "Runtime resources must survive a fresh Git checkout.")
+
     def test_exact_manifest_and_four_entry_names(self):
         manifest = json.loads((PLUGIN / "plugin.json").read_text("utf-8"))
         self.assertEqual(manifest["name"], PLUGIN.name)
