@@ -20,6 +20,9 @@ The integration follows reviewed source candidate 0.3.40:
 The candidate number identifies the isolated input, not a package version.
 Leave source manifest and skill metadata versions at `0.0.0-placeholder`.
 Keep each skill's `version.json`; see [automatic versioning](VERSIONING.md).
+Keep the portable and three client manifest author objects aligned:
+`{"name": "Microsoft", "url": "https://www.microsoft.com"}`. The receiving
+repository's native package tests require both fields.
 
 ## Skill-local shared resources
 

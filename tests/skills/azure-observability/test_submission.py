@@ -148,6 +148,7 @@ class SubmissionTests(unittest.TestCase):
                          "https://github.com/microsoft/GitHub-Copilot-for-Azure")
         self.assertEqual(manifest["license"], "MIT")
         self.assertEqual(manifest["author"]["name"], "Microsoft")
+        self.assertEqual(manifest["author"]["url"], "https://www.microsoft.com")
         self.assertEqual({path.name for path in SKILLS_ROOT.iterdir()}, SKILLS)
         self.assertTrue((PLUGIN / "skills").is_dir())
 
