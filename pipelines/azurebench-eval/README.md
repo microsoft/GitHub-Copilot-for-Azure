@@ -24,7 +24,9 @@ task, the Azure Functions deployment test in
 2. Create the environment `azurebench-release` and add an approval check to it.
 3. Create and authorize a **new** Azure service connection. The example
    default name is `azurebench_msbench`; select the actual name using the
-   `serviceConnection` parameter if different. Its identity needs CES access
+   `serviceConnection` parameter if different. The example backing identity
+   is the user-assigned managed identity `azurebench-ado-sc-wif`, using
+   workload identity federation. Its identity needs CES access
    to submit runs, Registry Owner/Editor rights to publish, and Reader on the
    benchmark if it is private. Release validation also uses the connection;
    the eval package-only run does not. A run or publish that worked with your
