@@ -43,7 +43,7 @@ if ($LASTEXITCODE -ne 0) { azd auth login }
 
 If no `azd` environment exists in this folder:
 
-Before creating a plan, run the quota gate in [create-app.md](create-app.md) §1d. Ask before changing a user-specified region; stop if quota or regional availability is unavailable or unverifiable rather than switching SKU.
+Before creating a plan, run the [quota and region checks](create-app.md#1d-region) for the template's effective subscription, region and SKU. Preserve defaults unless the user requests changes; reuse results and recheck after these values change.
 
 ```bash
 azd env new <env-name>
