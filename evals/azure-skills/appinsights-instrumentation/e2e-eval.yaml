@@ -1,0 +1,124 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/appinsights-instrumentation/integration.test.ts
+# Migration: Jest → Vally
+#
+# Note on runs:
+# - Routing stimuli are defined in routing-eval.yaml (5 runs, 80% threshold).
+# - Response-quality stimuli were single-run tests in Jest. Each quality stimulus includes
+#   a stimulus-level `config.runs: 1` annotation.
+
+name: appinsights-instrumentation-integration-eval
+description: |
+  Integration evaluation for appinsights-instrumentation skill — migrated from Jest integration tests.
+  Tests response quality for auto-instrumentation guidance and Python telemetry code generation.
+
+tags:
+  type: integration
+  skill: appinsights-instrumentation
+
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+  judge_model: gpt-6.1-sol
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ── aspnetcore-auto-instrumentation ──
+  # Jest: "response mentions auto-instrumentation for ASP.NET Core App Service app"
+  # Setup: copies aspnetcore-app fixture files into workspace
+  # Grading: skill-aligned guidance, including auto-instrumentation as a valid option.
+  - name: "Auto-instrumentation for ASP.NET Core App Service"
+    prompt: |
+      Add App Insights instrumentation to my C# web application in Azure App Service.
+      Only implement the changes in local code; do not proceed to deployment,
+      provision Azure resources, or change live Azure configuration.
+    config:
+      runs: 1
+    environment:
+      files:
+        - src: fixture/aspnetcore-app/Program.cs
+          dest: Program.cs
+        - src: fixture/aspnetcore-app/aspnetcore-app.csproj
+          dest: aspnetcore-app.csproj
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+          prompt: |
+            Evaluate the agent's response and code changes against the
+            appinsights-instrumentation skill's guidance for an ASP.NET Core app
+            hosted in Azure App Service. Mentioning App Service auto-instrumentation
+            as a valid option is sufficient to satisfy the instrumentation criterion.
+            Do not require the agent to recommend or prefer it over manual
+            instrumentation, since the choice depends on other factors. Do not
+            require portal instructions, SDK changes, or actual activation of
+            auto-instrumentation.
+            If the agent additionally proposes or implements manual instrumentation,
+            those changes must be appropriate for ASP.NET Core and configure
+            Application Insights using an environment-provided connection string
+            rather than a hard-coded secret.
+            Fail if auto-instrumentation is not identified as a valid option.
+            Fail if the agent attempts deployment, provisions Azure resources,
+            or changes live Azure configuration. Describing future portal or
+            deployment steps without executing them is allowed.
+
+  # ── python-appinsights-instrumentation ──
+  # Jest: "mentions App Insights in response"
+  # Setup: copies python-app fixture files into workspace
+  # Grading: concrete Python instrumentation changes following the skill's guidance.
+  - name: "Python App Insights instrumentation with code"
+    prompt: |
+      Instrument my Python web app with Application Insights in Azure Container App.
+      Only implement the changes in local code; do not proceed to deployment,
+      provision Azure resources, or change live Azure configuration.
+    config:
+      runs: 1
+    environment:
+      files:
+        - src: fixture/python-app/main.py
+          dest: main.py
+        - src: fixture/python-app/requirements.txt
+          dest: requirements.txt
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+          prompt: |
+            Evaluate the agent's response and code changes against the
+            appinsights-instrumentation skill's Python guidance for the supplied
+            FastAPI app hosted in Azure Container Apps. Pass only if the agent
+            proposes concrete code changes (such as code snippets or a patch)
+            or implements them in the workspace that:
+            - Add azure-monitor-opentelemetry to the application's dependencies.
+            - Import configure_azure_monitor from azure.monitor.opentelemetry and
+              call it during application startup.
+            - Configure a named Python standard-library logger for Azure Monitor,
+              with a matching logger_name and logging.getLogger namespace, and
+              show or implement sending telemetry through that logger.
+            - Explain or configure APPLICATIONINSIGHTS_CONNECTION_STRING as an
+              environment variable, without hard-coding a real connection string
+              or secret in application code.
+            The proposed or implemented changes must preserve the existing
+            FastAPI application and its endpoint. Do not require files to be
+            modified when equivalent, actionable code changes are proposed.
+            Fail if the agent only mentions Application Insights or gives a
+            high-level plan without concrete instrumentation code.
+            Fail if the agent attempts deployment, provisions Azure resources,
+            or changes live Azure configuration. Describing future configuration
+            or deployment steps without executing them is allowed.

@@ -47,7 +47,7 @@ Find out the (programming language, application framework, hosting) tuple of the
 
 ### Prefer auto-instrument if possible
 
-If the app is a C# ASP.NET Core app hosted in Azure App Service, use [AUTO guide](references/auto.md) to help user auto-instrument the app.
+If the app is a C# ASP.NET Core app hosted in Azure App Service, use [AUTO guide](references/auto.md) to help user auto-instrument the app. You must at least mention the option for auto-instrument to the user even if you choose to manually instrument the app in code.
 
 ### Manually instrument
 

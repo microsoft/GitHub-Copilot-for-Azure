@@ -1,0 +1,72 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/appinsights-instrumentation/integration.test.ts
+# Migration: Jest → Vally
+#
+# Routing stimuli preserve the original Jest invocation-rate behavior (5 runs, 80% threshold).
+# Response-quality stimuli are defined in e2e-eval.yaml.
+
+name: appinsights-instrumentation-routing-eval
+description: |
+  Integration evaluation for appinsights-instrumentation skill — migrated from Jest integration tests.
+  Tests skill routing for App Insights instrumentation prompts (ASP.NET Core, Node.js).
+
+tags:
+  type: integration
+  skill: appinsights-instrumentation
+
+defaults:
+  runs: 5
+  timeout: "10m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ── aspnetcore-appinsights-routing ──
+  # Jest: "invokes skill for App Insights instrumentation request"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "App Insights instrumentation for ASP.NET Core"
+    prompt: "How do I add Application Insights to my ASP.NET Core web app?"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"appinsights-instrumentation"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - appinsights-instrumentation
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── nodejs-telemetry-routing ──
+  # Jest: "invokes skill for Node.js telemetry request"
+  # Setup: creates package.json in workspace to indicate Node.js project
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Node.js telemetry instrumentation"
+    prompt: "Add telemetry to my Node.js application"
+    environment:
+      files:
+        - src: fixture/package.json
+          dest: package.json
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"appinsights-instrumentation"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - appinsights-instrumentation
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
