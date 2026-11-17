@@ -1,0 +1,31 @@
+name: verify-observability-fix-eval
+description: "Validates that verify-observability-fix is invoked for a representative request."
+
+tags:
+  type: integration
+  skill: verify-observability-fix
+
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: copilot-sdk-agent-runner
+
+scoring:
+  threshold: 1
+
+stimuli:
+  - name: "Invoke verify-observability-fix"
+    turns:
+      - "Invoke verify-observability-fix skill and describe what it can do"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      requiredSkills:
+        - verify-observability-fix
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - verify-observability-fix

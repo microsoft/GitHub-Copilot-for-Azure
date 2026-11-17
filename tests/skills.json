@@ -111,6 +111,19 @@
             "integrationTestSchedule": {
                 "0 12 * * 2-6": "azure-advisor,azure-advisor-actionability,azure-advisor-cost-optimization"
             }
+        },
+        {
+            "name": "azure-observability",
+            "dirname": "azure-observability",
+            "skills": [
+                "assess-observability-health",
+                "connect-observability",
+                "troubleshoot-observability",
+                "verify-observability-fix"
+            ],
+            "integrationTestSchedule": {
+                "0 12 * * 2-6": "assess-observability-health,connect-observability,troubleshoot-observability,verify-observability-fix"
+            }
         }
     ]
 }

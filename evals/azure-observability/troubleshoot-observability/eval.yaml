@@ -1,0 +1,31 @@
+name: troubleshoot-observability-eval
+description: "Validates that troubleshoot-observability is invoked for a representative request."
+
+tags:
+  type: integration
+  skill: troubleshoot-observability
+
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: copilot-sdk-agent-runner
+
+scoring:
+  threshold: 1
+
+stimuli:
+  - name: "Invoke troubleshoot-observability"
+    turns:
+      - "Invoke troubleshoot-observability skill and describe what it can do"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      requiredSkills:
+        - troubleshoot-observability
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - troubleshoot-observability
