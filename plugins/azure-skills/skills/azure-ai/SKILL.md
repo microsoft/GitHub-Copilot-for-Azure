@@ -24,7 +24,7 @@ Read the matching reference before diagnosing errors, validating local inputs, o
 |---------|-----------|-------------------------|
 | **AI Search** (full-text, vector, hybrid, semantic search) | `azure__search` (`search_index_list`, `search_index_get`, `search_query`), `az search` | [Python](references/sdk/azure-search-documents-py.md) \| [TypeScript](references/sdk/azure-search-documents-ts.md) \| [.NET](references/sdk/azure-search-documents-dotnet.md) |
 | **Speech** (STT, TTS, Fast/Batch Transcription, Batch Synthesis, SDK logs) | `azure__speech` (`speech_transcribe`, `speech_synthesize`), `az cognitiveservices` | [Speech SDK client diagnostics](references/speech/diagnostics.md) \| [Audio & REST/batch preflight](references/speech/transcription-and-audio-preflight.md) |
-| **Document Intelligence** (form extraction, layout, OCR) | `az cognitiveservices` | [.NET](references/sdk/azure-ai-document-intelligence-dotnet.md) \| [TypeScript](references/sdk/azure-ai-document-intelligence-ts.md) |
+| **Document Intelligence** (`v4.0` Analyze, layout/OCR, custom labels) | `az cognitiveservices` | [Input, v4 migration, and Analyze diagnostics](references/document-intelligence/preflight-and-diagnostics.md) |
 | **OpenAI** (direct SDK/API usage) | `az cognitiveservices` | [.NET SDK](references/sdk/azure-ai-openai-dotnet.md) |
 
 **If Azure MCP is not enabled:** In Copilot CLI or Claude Code, ask the user to run `/mcp` and enable Azure MCP; in other hosts, ask the user to enable Azure MCP through the host's MCP configuration. Offline local preflight scripts do not require Azure MCP or Azure sign-in.
@@ -45,3 +45,4 @@ For keyless authentication patterns across Azure AI SDKs, read [Azure Authentica
 
 - [Azure AI Search documentation](https://learn.microsoft.com/azure/search/search-what-is-azure-search)
 - [Azure AI Speech documentation](https://learn.microsoft.com/azure/ai-services/speech-service/overview)
+- [Azure AI Document Intelligence documentation](https://learn.microsoft.com/azure/ai-services/document-intelligence/overview)

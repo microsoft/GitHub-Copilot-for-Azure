@@ -39,6 +39,7 @@ synthetic inputs only (no Azure sign-in, network, customer data or
 credentials):
 
 - `speech-audio.test.ts` — `inspect-speech-audio.mjs` (`SPEECH_AUDIO_INSPECTOR_PATH`)
+- `document-intelligence.test.ts` — `inspect-document-input.mjs` (`DI_INSPECTOR_PATH`)
 
 Build first so `output/azure-skills/skills/azure-ai/scripts/` is up to date, then
 run all suites from the repository root:
