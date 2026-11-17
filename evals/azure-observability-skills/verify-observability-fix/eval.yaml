@@ -1,0 +1,112 @@
+name: verify-observability-fix-supplied-evidence
+description: Recovery outcomes from comparable supplied aggregates, including missing and contradictory evidence.
+tags:
+  type: integration
+  skill: verify-observability-fix
+defaults:
+  runs: 1
+  timeout: "5m"
+  executor: copilot-sdk-agent-runner
+scoring:
+  threshold: 1
+stimuli:
+  - name: Comparable complete evidence supports a qualified recovered verdict
+    prompt: |
+      Does this synthetic before-and-after evidence show recovery? Use only these
+      facts and local skill instructions, without running helpers or commands.
+      One confirmed staging API target, confirmed effective v2 change at
+      2026-10-30T11:00:00Z; assessment at 12:00 UTC. Original complete v1 window
+      10:00-11:00, collected 11:00, first event 10:01, last 10:59: 20 failures
+      out of 100 requests. Post-change complete v2 window 11:00-12:00, collected
+      12:00, first event 11:01, last 11:59: 1 failure out of 100 requests.
+      Same representative workload/cohort and source; agreed error-fraction gate
+      <=0.02, minimum 100 samples and 600 observed seconds, freshness 120 seconds,
+      evidence age maximum 300 seconds. This is the only required original symptom;
+      all other agreed guardrails pass with comparable sufficient fresh evidence.
+      Existing deployment and evaluation results passed but are supporting only.
+      Report a verdict, comparison and limits, then stop with no follow-up.
+      No cloud/network access, authentication, scripts, writes, installs, jobs,
+      new evaluations, traffic or deployment.
+    rubric:
+      - Reports VERIFIED_RECOVERED for the supplied evidence with the qualified synthetic/supplied scope rather than claiming independent live verification.
+      - Compares 20% to 1% against the 2% gate using numerator/denominator and comparable post-change evidence.
+      - Treats deployment/evaluation success as supporting rather than the recovery proof and avoids causal certainty.
+      - Does not execute a helper, query, launch evaluations, schedule monitoring or ask a follow-up after the explicit stop instruction.
+    tags: &tags
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      requiredSkills: [verify-observability-fix]
+    graders: &graders
+      - type: skill-invocation
+        config:
+          required: [verify-observability-fix]
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+      - type: completed
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)(bash|powershell|pwsh|shell|terminal|run_command|exec|azure|fetch|http|browser|write|edit|apply_patch|create|install|deploy)"
+
+  - name: Deployment success without telemetry is inconclusive
+    prompt: |
+      The synthetic staging API deployment succeeded and the existing evaluation
+      passed. Are we good? The effective change is confirmed, but no comparable
+      post-change telemetry or representative traffic has been supplied and
+      alerts are quiet. Use only these facts and local skill instructions.
+      Give the recovery verdict and the smallest missing evidence, not a second
+      monitoring/dashboard question. Do not query, use the network, authenticate,
+      run commands or scripts, save, install, generate traffic, start jobs or
+      evaluations, deploy or claim a scheduled check.
+    rubric:
+      - Reports INCONCLUSIVE rather than VERIFIED_RECOVERED or a definite measured failure.
+      - Explains that deployment/evaluation success and quiet alerts cannot replace comparable post-change symptom and guardrail measurements.
+      - Requests or identifies minimal missing comparable fresh evidence with sample/window sufficiency, not an automatic collection or evaluation.
+      - Does not compete with the evidence request by offering dashboard setup or background monitoring.
+    tags: *tags
+    graders: *graders
+
+  - name: Required violation wins over denied guardrail and supporting gaps
+    prompt: |
+      Is this synthetic API fixed now? Scope and effective v2 change are confirmed.
+      The agreed required error-fraction maximum is 2%. Complete comparable
+      representative original and post-change windows each contain 100 requests
+      over an hour, sufficient for the agreed 100-sample/10-minute minimum.
+      The original v1 has 20 errors; the post-change v2 has 10 errors.
+      Both sources, windows, observed spans and collected events are fresh at
+      the assessment time; windows are wholly before/after deployment.
+      A separate required dependency guardrail is denied. Deployment passed;
+      an existing evaluation is partial. Assess only this supplied evidence and
+      local instructions, give the verdict and gaps, then stop. No network/cloud
+      reads, commands, scripts, saving, installs, remediation, jobs, evaluations,
+      traffic, deployment or dashboard changes.
+    rubric:
+      - Reports NOT_RECOVERED because the sufficient required post-change 10% error rate still exceeds 2%, even though it improved from 20%.
+      - Does not downgrade the known violation to merely INCONCLUSIVE because another guardrail is denied or evaluation evidence is partial.
+      - Retains the denied guardrail and partial supporting evaluation as separate unresolved gaps without treating supporting results as recovery gates that erase the violation.
+      - Does not claim causation, dashboard-based recovery, new collection or execution.
+    tags: *tags
+    graders: *graders
+
+  - name: A different percentile is not evidence that the p95 symptom recovered
+    prompt: |
+      Did my synthetic agent latency fix work? Confirmed target and effective
+      v2 change; the original agreed symptom was p95 latency 12000 ms with gate
+      <=5000 ms, minimum 250 samples and 600 observed seconds. The supplied
+      current complete comparable v2 trace window has 500 samples over an hour
+      and is fresh, but the only reported aggregate is p50=1000 ms, not p95.
+      Deployment passed. Use only these facts and local instructions. Explain
+      the recovery verdict and minimal missing evidence, then stop. No cloud
+      or network operations, commands, scripts, saving, installs, new traffic,
+      deployment, evaluation runs, jobs or dashboard setup.
+    rubric:
+      - Reports INCONCLUSIVE because a p50 measurement cannot establish the agreed p95 gate.
+      - Does not compare the p50 value to p95 or infer p95 from the mean, sample count, quiet alerts or deployment success.
+      - Identifies the missing comparable post-change p95 aggregate, preserving agreed sample/span/freshness requirements without requesting unnecessary new workloads.
+      - Does not execute collection, change the gate or claim recovery.
+    tags: *tags
+    graders: *graders

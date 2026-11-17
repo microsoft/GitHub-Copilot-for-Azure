@@ -113,18 +113,16 @@
             }
         },
         {
-            "name": "observability-super-skill",
-            "dirname": "observability-super-skill",
+            "name": "azure-observability-skills",
+            "dirname": "azure-observability-skills",
             "skills": [
                 "assess-observability-health",
-                "azure-diagnostics",
                 "connect-observability",
-                "microsoft-foundry",
                 "troubleshoot-observability",
                 "verify-observability-fix"
             ],
             "integrationTestSchedule": {
-                "0 12 * * 2-6": "assess-observability-health,azure-diagnostics,connect-observability,microsoft-foundry,troubleshoot-observability,verify-observability-fix"
+                "0 12 * * 2-6": "assess-observability-health,connect-observability,troubleshoot-observability,verify-observability-fix"
             }
         }
     ]

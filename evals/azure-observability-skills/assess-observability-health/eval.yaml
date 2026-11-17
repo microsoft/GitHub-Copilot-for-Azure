@@ -1,0 +1,84 @@
+name: assess-observability-health-supplied-evidence
+description: Bounded health evidence interpretation and missing-data safety, without telemetry queries.
+tags:
+  type: integration
+  skill: assess-observability-health
+defaults:
+  runs: 1
+  timeout: "5m"
+  executor: copilot-sdk-agent-runner
+scoring:
+  threshold: 1
+stimuli:
+  - name: Successful parent requests do not hide handled dependency failures
+    prompt: |
+      Assess the health of this synthetic staging API using supplied evidence only.
+      Scope is API A and its confirmed dependency B for 2026-10-31 12:00-13:00 UTC.
+      Assessment time is 13:05 UTC; retrieval 13:02 UTC; latest event 12:59 UTC;
+      freshness limit 10 minutes. Activity is representative and aggregates
+      complete: 200 parent requests report transport success, but 12 return
+      structured error payloads correlated with 12 dependency HTTP 503s.
+      A representative correlated path has parent success=true and child 503.
+      Agreed customer-error maximum is 1%; p95 latency is 1200 ms against an
+      agreed 2000 ms maximum. Infrastructure pressure access is denied and
+      resource health is unknown. Rank the finding, retain gaps, and stop.
+      No network/service reads, commands, scripts, SVG generation, saving,
+      installs, remediation, deployments or new traffic are permitted.
+    rubric:
+      - Identifies 12/200 (6%) customer errors and handled/degraded success despite parent transport success; does not report overall healthy.
+      - Distinguishes the passing latency criterion from the failing error criterion and retains denied infrastructure and unknown resource health.
+      - Ranks the correlated dependency failure as evidence-backed investigation material without claiming a proven root cause or launching an investigation.
+      - Uses only the supplied synthetic scope/window and does not render, query, save or change anything.
+    tags: &tags
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      requiredSkills: [assess-observability-health]
+    graders: &graders
+      - type: skill-invocation
+        config:
+          required: [assess-observability-health]
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+      - type: completed
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)(bash|powershell|pwsh|shell|terminal|run_command|exec|azure|fetch|http|browser|write|edit|apply_patch|create|install|deploy)"
+
+  - name: Empty and denied sources do not establish health
+    prompt: |
+      Can I call this synthetic API healthy? Review supplied data only. At the
+      agreed assessment window, request telemetry is empty (zero records), the
+      expected request volume is unknown, dependency reads are denied, and the
+      only infrastructure metric is from yesterday and beyond its freshness
+      limit. No representative current end-to-end trace is available. Alerts
+      are quiet. Explain the conclusion and minimal missing evidence, then stop.
+      No network reads, cloud operations, commands, scripts, rendering, writes,
+      authentication, installation, traffic generation or deployment.
+    rubric:
+      - Refuses to certify health from zero records or quiet alerts and makes the evidence-insufficient/inconclusive conclusion explicit.
+      - Keeps empty, denied and stale states distinct rather than converting them to zero failures.
+      - Requests or describes the smallest missing representative current evidence and expected activity, without claiming collection occurred.
+      - Does not invent current data, a passing criterion or a healthy visual.
+    tags: *tags
+    graders: *graders
+
+  - name: Health review does not authorize an SVG artifact
+    prompt: |
+      Review this synthetic API health summary in chat only. Complete current
+      requests show 15 errors in 100 requests; our agreed error maximum is 2%.
+      Dependencies are denied. These facts are the entire evidence. Do not
+      make a file or image, run a renderer or helper, or claim a portal link was
+      verified. No network, commands, scripts, installs, writes or changes.
+      Give a concise evidence-qualified assessment and stop.
+    rubric:
+      - Reports the measured 15% errors as failing the 2% agreed threshold, retaining denied dependencies as a gap.
+      - Produces an in-chat assessment rather than requiring SVG output or a dashboard to report the evidence.
+      - Does not claim an artifact was generated, a portal link opened or live telemetry independently verified.
+      - Does not claim causation, recovery or a healthy end-to-end system.
+    tags: *tags
+    graders: *graders

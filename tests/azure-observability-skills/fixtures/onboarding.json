@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "mapping": {
+    "schema_version": 1,
+    "application": "synthetic-app",
+    "environment": "test",
+    "workload": "web-api",
+    "confirmed_at": "2026-10-29T11:00:00Z",
+    "resources": [
+      {
+        "resource_id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/synthetic/providers/Microsoft.Web/sites/synthetic-app",
+        "basis": "user-confirmed"
+      }
+    ],
+    "telemetry_sources": [
+      {
+        "resource_id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/synthetic/providers/Microsoft.Insights/components/synthetic-ai",
+        "kind": "application-insights",
+        "basis": "resource-metadata"
+      }
+    ]
+  },
+  "checked_at": "2026-10-29T12:00:00Z",
+  "max_check_age_seconds": 600,
+  "prerequisites": {
+    "tools": "verified",
+    "identity": "verified",
+    "mapping": "verified"
+  },
+  "signals": [
+    {
+      "name": "requests",
+      "source_resource_id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/synthetic/providers/Microsoft.Insights/components/synthetic-ai",
+      "required": true,
+      "state": "usable",
+      "checked_at": "2026-10-29T12:00:00Z",
+      "window_start": "2026-10-29T11:00:00Z",
+      "window_end": "2026-10-29T12:00:00Z",
+      "freshness_seconds": 300,
+      "record_count": 10,
+      "latest_event_at": "2026-10-29T11:59:00Z",
+      "complete": true
+    }
+  ]
+}
