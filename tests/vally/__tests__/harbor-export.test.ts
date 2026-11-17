@@ -60,10 +60,10 @@ describe("harborExport", () => {
       expect.stringContaining('COPY ["harbor/azure-kusto/query-logs/environment/fixture/","/app/fixture/"]'));
     expect(execFileSync).toHaveBeenNthCalledWith(2, "docker", [
       "build", "--file", path.join(taskDir, "environment/Dockerfile"),
-      "--tag", "harbor/azure-kusto:query-logs", root,
+      "--tag", "msbenchacr.azurecr.io/harbor/azure-kusto:query-logs", root,
     ], expect.objectContaining({ cwd: root }));
     expect(writeFileSync).toHaveBeenLastCalledWith(path.join(taskDir, "task.toml"),
-      '[agent]\ntimeout_sec = 600\n[environment]\ndocker_image = "harbor/azure-kusto:query-logs"\nskills_dir = "/skills"\nbuild_timeout_sec = 600\n'
+      '[agent]\ntimeout_sec = 600\n[environment]\ndocker_image = "msbenchacr.azurecr.io/harbor/azure-kusto:query-logs"\nskills_dir = "/skills"\nbuild_timeout_sec = 600\n'
       + azureMcpConfig + '[metadata]\nname = "query"\n');
   });
 
@@ -74,7 +74,7 @@ describe("harborExport", () => {
     harborExport(evalPath);
 
     expect(writeFileSync).toHaveBeenLastCalledWith(path.join(taskDir, "task.toml"),
-      '[environment]\ndocker_image = "harbor/azure-kusto:query-logs"\nskills_dir = "/skills"\nbuild_timeout_sec = 600\n'
+      '[environment]\ndocker_image = "msbenchacr.azurecr.io/harbor/azure-kusto:query-logs"\nskills_dir = "/skills"\nbuild_timeout_sec = 600\n'
       + azureMcpConfig + "[agent]\ntimeout_sec = 600\n");
   });
 

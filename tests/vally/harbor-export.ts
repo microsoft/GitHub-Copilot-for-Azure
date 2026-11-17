@@ -108,7 +108,7 @@ export function harborExport(evalYamlPath: string): void {
 
     // Step 4: Build the image with a build context root at the repo root
     // The image name must end with the normalized name of the task
-    const image = `harbor/${skill}:${task.name}`;
+    const image = `msbenchacr.azurecr.io/harbor/${skill}:${task.name}`;
     execFileSync("docker", [
       "build", "--file", dockerfilePath, "--tag", image, repoRoot,
     ], { cwd: repoRoot, stdio: "inherit" });

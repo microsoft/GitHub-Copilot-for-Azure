@@ -379,5 +379,4 @@ coverage.*
 .DS_Store
 Thumbs.db
 
-harbor/
 jobs/
