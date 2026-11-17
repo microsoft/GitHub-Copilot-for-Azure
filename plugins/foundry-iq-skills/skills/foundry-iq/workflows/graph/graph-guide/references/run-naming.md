@@ -52,7 +52,8 @@ For prefix `fiq-travel-12345678`:
 
 | Artifact | Name |
 |---|---|
-| Resource group, Search, OpenAI, identity | `<prefix>-rg`, `-search`, `-openai`, `-identity` |
+| Resource group, Search, OpenAI | `<prefix>-rg`, `-search`, `-openai` |
+| User-assigned Search identity (opt-in only) | `<prefix>-identity`; by default Search uses its system-assigned identity |
 | Entity Knowledge Source | `<prefix>-entity-<generation>` |
 | Entity content and graph indexes | Knowledge Source name plus `-index` and `-graph-index` |
 | Knowledge Base | `<prefix>-kb-<generation>` |

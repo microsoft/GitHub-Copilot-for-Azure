@@ -9,7 +9,7 @@ the download on the plan card. Nothing to install. It comes from the public GitH
 | `win-x64`, `win-arm64` | `topicGraphBuildTool-<version>-win-<arch>.zip` | `topicgraph.exe` |
 | `linux-x64`, `linux-arm64` | `topicGraphBuildTool-<version>-linux-<arch>.deb` (read rootless, no `dpkg`) | `topicgraph` |
 
-macOS isn't supported; the build fails with `NATIVE_PLATFORM_UNSUPPORTED`.
+The native Topic Graph build isn't available on macOS; it fails with `NATIVE_PLATFORM_UNSUPPORTED`.
 
 ## Download and verification
 
@@ -17,7 +17,8 @@ macOS isn't supported; the build fails with `NATIVE_PLATFORM_UNSUPPORTED`.
    naming the pinned repository, release tag, asset and `sha256:` digest. If no release resolves, `plan` stops
    before approval.
 2. **Download.** `apply` (or `download-native --approve-download --plan-id <id>`) checks the `sha256:` digest
-   before extraction and writes `receipt.json` with the executable's SHA-256. The cached binary is reused while
+   before extraction, checks the executable against the package's `checksums.sha256`, and writes `receipt.json`
+   with the executable's SHA-256. The cached binary is reused while
    the pin matches, without calling GitHub; a newer release waits for a plugin update. `NATIVE_RELEASE_MISMATCH`
    means the published asset no longer matches the pin: report it, don't retry. The release lookup uses
    `GITHUB_TOKEN` when it's set, and waits and retries when GitHub rate-limits it; `NATIVE_RELEASE_RATE_LIMITED`

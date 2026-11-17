@@ -25433,7 +25433,7 @@ async function connectRuntimes(input, log = () => {}, startupSignal, { retryInte
 	const failures = /* @__PURE__ */ new Map(), retries = /* @__PURE__ */ new Map(), setupLogs = /* @__PURE__ */ new Map();
 	function setupCommand(domain) {
 		const bootstrap = config.domains[domain]?.args.find((arg) => /(^|[\\/])bootstrap\.py$/i.test(arg));
-		return bootstrap ? `python "${bootstrap}" setup ${domain}` : void 0;
+		return bootstrap ? `python -I "${bootstrap}" setup ${domain}` : void 0;
 	}
 	const lifetime = new AbortController();
 	let closed = false;

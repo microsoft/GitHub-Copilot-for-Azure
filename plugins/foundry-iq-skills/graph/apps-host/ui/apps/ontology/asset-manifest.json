@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "domain": "ontology",
   "server": "ontology-skills",
-  "sourceCommit": "95c9507d5506c65f1acf396f914647702782ed18",
-  "sourceTree": "185628d63e3f4336c9ecb02e8b2ba3799f8fb60d",
+  "sourceCommit": "23e151711d4d4bae960e7784ab3292c404677f0b",
+  "sourceTree": "38d0c672bacf4f6ec1f56109eeed9857174d64c4",
   "sourceDirty": false,
   "lockfileSha256": "02463bfbe2cf9439ef5d8ddfc55fbfe79d29776a6bcf04bf98f4725a07be6a69",
   "entries": {

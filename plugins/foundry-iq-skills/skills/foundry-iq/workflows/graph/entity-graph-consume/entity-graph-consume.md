@@ -12,7 +12,7 @@ Read-only only.
 
 ## Shared rules
 
-Use the `entity-graph-consume` CLI with `--json`. Run `entity-graph-consume doctor` before a live query and follow its one `next_step`. `--descriptor` defaults to `ENTITY_DESCRIPTOR`, then the current published descriptor; pass an absolute path when another is intended. A 403 means the caller lacks Search reader access; report the grant guidance instead of retrying.
+Use the `entity-graph-consume` CLI with `--json`. Run `entity-graph-consume doctor` before a live query and follow its one `next_step`. `--descriptor` defaults to `ENTITY_DESCRIPTOR`, then the current published descriptor; pass an absolute path when another is intended. On a 403, don't retry or assume a missing role: check the service error, the network path the call takes, Search firewall or private-network settings, and the caller's effective access; suggest a Search reader grant only when access is the cause.
 
 Never provision, upload, repair, or mutate indexes here.
 

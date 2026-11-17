@@ -104,6 +104,7 @@ python -I "<package-root>\graph\runtime\bootstrap.py" run entity graph-playgroun
 
 It finds the published state, a Node.js 22.13+ and the plugin's own Python, starts the Playground
 in the background, opens the browser and returns `url` and a one-line `summary`; say the summary as-is.
+Keep the whole `url`, including the part after `#`: it's this launch's key, and the page won't load without it.
 `graph-playground stop` closes it. Never look for Node, write a config, set `*_HOME` variables or
 start `launch.mjs` yourself. On `NODE_REQUIRED` or `PLAYGROUND_FAILED`, say the one-line `error`
 and follow `next_step`. After a new publish, run `graph-playground stop`, then `graph-playground`.

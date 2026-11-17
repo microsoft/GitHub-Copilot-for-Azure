@@ -3,7 +3,7 @@
 The only questionnaire. Ask it after Act 1 in one message with numbered questions and the defaults filled in, so "defaults are fine" is a complete answer.
 
 1. **Tenant.** Name it before any sign-in.
-2. **Subscription and a new resource group name.** Ask "You're signed in to **<subscription>**. Use it for the models? (yes / pick another)". For another, ask for its name, show its models and re-ask item 3. Storage and new models default to West US 3. Search goes in a region where the graph features are available; ask the user if unsure, and never pick one yourself; without an answer, Search goes with the models. Use the run's suggested group name (item 9); a group this demo made earlier can be reused, and the plan keeps what's already there. Or use existing Search, storage and models: [connect existing](../../entity-graph-provision/references/connect-existing-resources.md); skip the items that connect answers.
+2. **Subscription and a new resource group name.** Ask "You're signed in to **<subscription>**. Use it for storage, models and Search? (yes / pick another; Search can have its own subscription)". For another, ask for its name, show its models and re-ask item 3. Storage and new models default to West US 3. Search goes in a region where the graph features are available; ask the user if unsure, and never pick one yourself; without an answer, Search goes with the models. Next to the Search region, ask for the Search subscription; default "Same as above". For another, give the plan that subscription and a new Search group, `<prefix>-search-rg` ([new resources](../../entity-graph-provision/references/new-resources.md) has the overrides). Use the run's suggested group name (item 9); a group this demo made earlier can be reused, and the plan keeps what's already there. Or use existing Search, storage and models: [connect existing](../../entity-graph-provision/references/connect-existing-resources.md); skip the items that connect answers.
 3. **Models.** Show the Act 1 model table as is: usable chat and embedding models by name and region, the user's own first. Ask for one embedding model and one chat model by name, or "create new ones for me" (the default when none are usable). The user always picks the chat model, even when there's only one.
 4. **Data.** Sample earnings calls (default), a local folder, or an existing Blob container with an explicit prefix or whole-container scope ([my data](byo-data.md)).
 5. **Ontology.** Standard (default): the built-in business ontology, with no ontology spend, review or trial. Opt in to one generated from the topics, or give the path to a `.jsonld` file ([my ontology](byo-ontology.md)).
@@ -42,7 +42,7 @@ Then ask one question: **Approve all**, **Approve each step** or **Stop**.
 - Even under Approve all, stop and ask one Approve/Stop question for a card that:
   - differs from the summary: another resource, region, model or group, more documents, a higher cost or a new unknown charge;
   - changes roles or network settings on anything this demo didn't create;
-  - comes after any failure, retry or replay;
+  - comes after a failure; a blocked, partial or uncertain result; or a card or command you re-ran. Retries a command handles itself before it succeeds don't count;
   - follows a no-go trial.
 - Cleanup and deletes are never covered.
 - **Approve each step**: ask one Approve/Stop question before every card.

@@ -22,8 +22,10 @@ const candidates = [
 function resolve(command, env = process.env) {
   if (isAbsolute(command)) return command;
   if (/[\\/]/.test(command)) return null;
-  const extensions = windows && !/\.[^.\\/]+$/.test(command)
-    ? (env.PATHEXT || '.COM;.EXE;.BAT;.CMD').split(';').filter(Boolean)
+  const pathext = (env.PATHEXT || '.COM;.EXE;.BAT;.CMD').split(';').filter(Boolean);
+  // python3.12 has a dot but no executable extension, so it still needs PATHEXT.
+  const extensions = windows && !pathext.some(extension => command.toLowerCase().endsWith(extension.toLowerCase()))
+    ? pathext
     : [''];
   for (const entry of (env.PATH ?? env.Path ?? '').split(delimiter)) {
     const folder = entry.trim().replace(/^"(.*)"$/, '$1');

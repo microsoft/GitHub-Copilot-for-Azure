@@ -20,7 +20,11 @@
     "knowledge-graph",
     "entity",
     "grounding",
-    "topicgraph",
-    "ontology"
+    "topic-graph",
+    "ontology",
+    "entity-graph",
+    "graphrag",
+    "owl",
+    "ontology-validation"
   ]
 }

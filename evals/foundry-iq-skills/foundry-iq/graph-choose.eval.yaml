@@ -17,8 +17,8 @@ scoring:
   threshold: 0.8
 
 stimuli:
-  - name: "Which plugin for documents or graph"
-    prompt: "I have a pile of documents and want to ask multi-hop entity questions on Azure AI Search. Which plugin should I install, and what is the install line?"
+  - name: "Which graph route for documents"
+    prompt: "I have a pile of documents and want to ask multi-hop entity questions on Azure AI Search. Which Foundry IQ graph route should I use?"
     tags:
       type: integration
       tier: smoke
@@ -53,8 +53,8 @@ stimuli:
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
-  - name: "Check installed graph plugins"
-    prompt: "Check which graph and knowledge plugins I have installed and give me install lines for anything missing."
+  - name: "Check graph runtime setup"
+    prompt: "Check that the Foundry IQ graph runtime is set up on this machine and tell me what's missing."
     tags:
       type: integration
       tier: full

@@ -36,7 +36,7 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   - name: "Evidence and diff"
-    prompt: "Why does the Organization class exist, and what changed between version 2 and version 3?"
+    prompt: "In my Foundry IQ ontology, explain why the Organization class exists from its cited evidence, and show what changed between ontology version 2 and version 3."
     tags:
       type: integration
       tier: smoke

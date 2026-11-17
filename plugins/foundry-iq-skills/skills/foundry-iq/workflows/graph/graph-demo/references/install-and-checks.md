@@ -21,8 +21,8 @@ your own probe scripts. If one fails, show its error and next step; for sign-in 
 
 ## Preflight
 
-Run preflight directly for the user with an existing Python 3.12, 3.13 or 3.14.
-It is the expected first step; run it without asking.
+Before provisioning or any Entity Graph write, run preflight directly for the user with an
+existing Python 3.12, 3.13 or 3.14. It is the expected first step; run it without asking.
 It is not read-only: it may prepare the plugin's runtimes in the plugin cache.
 It never signs in or calls Azure. Grounding, when chosen at
 intake, is set up in Act 2 ([grounding](grounding.md)).
@@ -32,6 +32,13 @@ Exit `1` / `blocked` stops the demo: show its results and `next_step`
 `status: conditional` with `native.status: download_pending` is normal on a first run: the
 Topic Graph executable is downloaded at the Topic Graph plan step, behind its own approval.
 It runs on Windows and Linux (x64/arm64), not macOS.
+
+Preflight doesn't see the source index. As soon as the physical content index exists,
+delegate actual schema inspection to `topic-graph-build` (its `inspect`, see
+[handoffs](handoffs.md#3-topics)) before advancing the demo. Topic Graph reads the original index directly, in place:
+it needs a retrievable string key and stored, retrievable float32 vectors with an HNSW cosine or
+dotProduct profile (`scalarQuantization`/`binaryQuantization` compression is fine). The executable's
+own preflight checks that it can read the source.
 
 ## Subscription and models
 

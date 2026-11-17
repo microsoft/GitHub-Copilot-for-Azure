@@ -43,7 +43,7 @@ def posix_main():
                 try:
                     os.killpg(child.pid, signal.SIGTERM)
                 except ProcessLookupError:
-                    pass
+                    pass  # The group already exited.
                 deadline = time.monotonic() + 0.5
                 while group_exists() and time.monotonic() < deadline:
                     time.sleep(0.01)
@@ -51,7 +51,7 @@ def posix_main():
                     try:
                         os.killpg(child.pid, signal.SIGKILL)
                     except ProcessLookupError:
-                        pass
+                        pass  # The group exited before the forced kill.
             child.wait(timeout=0.5)
 
     class Interrupted(Exception):
@@ -99,7 +99,7 @@ if os.name != "nt":
         sys.exit(126)
 
 import ctypes
-from ctypes import wintypes as w
+import ctypes.wintypes as w
 import msvcrt
 
 

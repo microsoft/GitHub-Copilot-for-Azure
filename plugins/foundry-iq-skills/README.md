@@ -64,8 +64,10 @@ other Azure products or continuous evaluation.
 
 ## Prerequisites
 
-- [Git](https://git-scm.com/) and an installed, signed-in
-  [GitHub Copilot CLI](https://github.com/github/copilot-cli).
+- A supported agent client, such as
+  [GitHub Copilot CLI](https://github.com/github/copilot-cli), Claude Code,
+  Cursor or Codex. GitHub Copilot CLI is the host tested end to end.
+  [Git](https://git-scm.com/) is needed to add a plugin marketplace.
 - [Node.js](https://nodejs.org/) and npm for Azure MCP Server. The graph MCP
   launcher also uses Node.js; the optional viewer needs **22.13 or later**.
 - For graph workflows, [Python](https://www.python.org/downloads/) **3.12, 3.13
@@ -129,10 +131,10 @@ for details.
 ## Example prompts
 
 - "Show me what Foundry IQ graph can do."
-- "Continue my Foundry IQ demo."
+- "Run the Foundry IQ graph demo on a small sample of my documents."
 - "Build a graph from the documents in my local folder."
 - "Check whether my existing Search, Storage and OpenAI resources are ready for Entity Graph."
-- "Which entities connect these two events? Show the supporting sources."
+- "Show which organizations connect to Project X, with sources."
 - "Find the main themes across my document collection."
 - "Draft an ontology from these topics and help me review it."
 - "Validate this OWL file and explain its classes."

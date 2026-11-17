@@ -17,7 +17,7 @@ if (major < 22 || (major === 22 && minor < 13)) {
   let count = 0;
   const log = event => { if (count++ < 200) console.error(JSON.stringify(event)); };
   const pluginRoot = fileURLToPath(new URL('../../', import.meta.url));
-  const setup = domain => `python "${join(pluginRoot, 'graph', 'runtime', 'bootstrap.py')}" setup ${domain}`;
+  const setup = domain => `python -I "${join(pluginRoot, 'graph', 'runtime', 'bootstrap.py')}" setup ${domain}`;
   async function close() {
     if (shuttingDown) return;
     shuttingDown = true;

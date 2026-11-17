@@ -3,7 +3,7 @@
 ## Act 7: see it
 
 - **In a host that renders apps** (GitHub Copilot app, VS Code): show the graph explorer, the topic explorer and the Sitemap inline.
-- **In a terminal**: run `graph-playground` ([Graph Playground](../../graph-guide/references/install-and-checks.md#graph-playground)) without asking, then say one line with its link: "Apps don't show in a terminal, so I opened the Graph Playground in your browser: http://127.0.0.1:<port>". Never look for Node, write a config or make folders yourself.
+- **In a terminal**: run `graph-playground` ([Graph Playground](../../graph-guide/references/install-and-checks.md#graph-playground)) without asking, then say one line with its link: "Apps don't show in a terminal, so I opened the Graph Playground in your browser: <url>", with the full returned `url`, including the part after `#` (this launch's key; without it the page won't load). Never look for Node, write a config or make folders yourself.
 - Without grounding, its Grounding view shows how to add one; don't call that a gap.
 
 ## Act 8: ask questions search can't answer well

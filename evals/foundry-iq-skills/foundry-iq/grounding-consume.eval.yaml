@@ -18,7 +18,7 @@ scoring:
 
 stimuli:
   - name: "Check a grounding index and sample edges"
-    prompt: "Check my grounding index for problems and sample a few edges."
+    prompt: "Check my Azure AI Search grounding index for problems and sample a few edges."
     tags:
       type: integration
       tier: smoke
@@ -36,7 +36,7 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   - name: "List predicates and graph names in a grounding index"
-    prompt: "Which predicates and graph names are in this grounding index?"
+    prompt: "Which predicates and graph names are in my Azure AI Search grounding index?"
     tags:
       type: integration
       tier: smoke
@@ -54,7 +54,7 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   - name: "Explain an unmapped grounding profile role"
-    prompt: "Why does check say a graph profile role is unmapped?"
+    prompt: "My Azure AI Search grounding index check says a graph profile role is unmapped. Why, and how do I fix it?"
     tags:
       type: integration
       tier: full

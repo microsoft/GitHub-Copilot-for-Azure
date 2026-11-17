@@ -15,7 +15,7 @@
       "type": "stdio",
       "command": "node",
       "args": [
-        "${CLAUDE_PLUGIN_ROOT}/graph/runtime/launch-python.mjs",
+        "${PLUGIN_ROOT}/graph/runtime/launch-python.mjs",
         "run",
         "entity",
         "foundry-iq-graph"

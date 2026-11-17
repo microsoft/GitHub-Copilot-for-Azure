@@ -18,7 +18,7 @@ scoring:
 
 stimuli:
   - name: "Run the graph chain demo"
-    prompt: "Demo the end-to-end Azure AI Search graph chain on the public Wikipedia enterprise-software dataset."
+    prompt: "Show me what Foundry IQ graph can do: run the guided demo on the sample earnings calls."
     tags:
       type: integration
       tier: smoke
@@ -53,8 +53,8 @@ stimuli:
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
-  - name: "Seven multi-hop questions"
-    prompt: "Show the seven multi-hop questions from the graph demo and which skill answers each."
+  - name: "Demo questions plain search misses"
+    prompt: "What questions does the Foundry IQ graph demo ask that plain search can't answer well?"
     tags:
       type: integration
       tier: full

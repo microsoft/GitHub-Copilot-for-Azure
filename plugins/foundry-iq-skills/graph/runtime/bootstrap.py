@@ -125,7 +125,7 @@ def private_temp_root() -> Path:
     try:
         os.mkdir(root, 0o700)
     except FileExistsError:
-        pass
+        pass  # Already created; the ownership and link checks below still run.
     info = os.lstat(root)
     if stat.S_ISLNK(info.st_mode) or not stat.S_ISDIR(info.st_mode) or getattr(root, "is_junction", bool)():
         raise RuntimeErrorDetail(f"Refusing the temp folder {root}: it is a link or not a folder. Remove it, "
@@ -421,8 +421,8 @@ def checked(args: list[str], environment: Path, *, capture: bool = False) -> str
 
 def installed(environment: Path) -> dict:
     return json.loads(checked([
-        "-c", "import importlib.metadata as m,json,sys;"
-        "print(json.dumps({'prefix':sys.prefix,'packages':{d.metadata['Name']:d.version for d in m.distributions()}}))",
+        "-c", ("import importlib.metadata as m,json,sys;"
+               "print(json.dumps({'prefix':sys.prefix,'packages':{d.metadata['Name']:d.version for d in m.distributions()}}))"),
     ], environment, capture=True))
 
 
@@ -462,7 +462,7 @@ def pid_alive(pid: int) -> bool:
         raise RuntimeErrorDetail("Invalid setup owner PID; no recovery attempted.")
     if os.name == "nt":
         import ctypes
-        from ctypes import wintypes
+        import ctypes.wintypes as wintypes
 
         kernel = ctypes.WinDLL("kernel32", use_last_error=True)
         kernel.OpenProcess.argtypes = (wintypes.DWORD, wintypes.BOOL, wintypes.DWORD)
@@ -682,7 +682,7 @@ def spawn_setup(domain: str, log) -> subprocess.Popen:
 
 def _kernel32():
     import ctypes
-    from ctypes import wintypes
+    import ctypes.wintypes as wintypes
 
     kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
     kernel32.OpenProcess.restype = wintypes.HANDLE
@@ -700,8 +700,8 @@ def _kernel32():
 def exit_with_launcher() -> None:
     """On Windows, exit as soon as the process that started bootstrap dies (the job below then ends the tree)."""
     import ctypes
+    import ctypes.wintypes as wintypes
     import threading
-    from ctypes import wintypes
 
     kernel32 = _kernel32()
 
@@ -762,7 +762,7 @@ def run_attached(command: list[str], env: dict[str, str] | None = None) -> int:
             try:
                 child.wait(0.25)
             except subprocess.TimeoutExpired:
-                pass
+                pass  # Still running after the grace period; kill it below.
         child.kill()
         raise
 
