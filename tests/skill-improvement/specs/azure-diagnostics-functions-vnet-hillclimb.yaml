@@ -3,7 +3,7 @@ name: azure-diagnostics-functions-vnet-hillclimb
 target:
   plugin: azure-skills
   skill: azure-diagnostics
-  baselineRef: kaghiya/diagnostics-functions-vnet-live-evals
+  baselineRef: kaghiya/diagnostics-vnet-hillclimb-seed-iter2
   editablePaths:
     - plugins/azure-skills/skills/azure-diagnostics/**
 
@@ -55,7 +55,7 @@ refinement:
   maximumQualityRegressionPoints: 0
 
 limits:
-  maxIterations: 3
+  maxIterations: 2
   maxAnswerGenerations: 240
   maxJudgeCalls: 240
   maxDurationMinutes: 360
