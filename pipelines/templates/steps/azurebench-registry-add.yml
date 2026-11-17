@@ -44,11 +44,11 @@ steps:
         export CES_PROXY_BYPASS=true
         extra=()
         if [ "${{ parameters.private }}" = "True" ]; then extra+=(--private); fi
-        if [ "${{ parameters.validateOnly }}" = "True" ]; then extra+=(--validate-only); fi
+        # The CLI rejects --management-mode with --validate-only.
+        if [ "${{ parameters.validateOnly }}" = "True" ]; then extra+=(--validate-only); else extra+=(--management-mode self); fi
         msbench-cli registry add benchmark "${{ parameters.benchmark }}@${{ parameters.version }}" \
           --metadata "${{ parameters.metadata }}" \
           --dataset "${{ parameters.dataset }}" \
-          --management-mode self \
           --source-repository "$(Build.Repository.Uri)" \
           --source-commit "$(Build.SourceVersion)" \
           --backend "${{ parameters.backend }}" \
