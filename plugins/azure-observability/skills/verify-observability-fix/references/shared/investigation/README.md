@@ -4,9 +4,13 @@ This is the core affected-path workflow within `troubleshoot-observability`,
 not another discoverable skill or a copy of an upstream diagnostics package.
 Copilot chooses the path below; tools execute only approved operations.
 Evidence-only investigation requires neither canonical external specialist.
-Discover optional `azure-diagnostics` or `microsoft-foundry` through the host
-only when their relevant expertise is needed; follow
+For agent/model/tool failures or AI-specific analysis, first check the host's
+exposed skills and load enabled, relevant `microsoft-foundry` instructions.
+For Azure service-specific expertise, check `azure-diagnostics`. Follow
 [dependency selection and approved setup](../canonical-dependencies.md).
+Do not treat not bundled as unavailable or bypass an applicable enabled
+specialist because direct Monitor tools exist. If discovery/loading is blocked
+or unverified, name that precise state before the core fallback.
 Do not read absent package files, infer activation from links, or install anything.
 Before any external specialist operation, inspect the actually loaded workflow's
 prerequisites and side effects, including automatic setup, scripts, sign-in,
@@ -50,8 +54,11 @@ a restart of onboarding. Synthetic facts are fixtures, not production evidence.
 
 ## 2. Choose the execution path explicitly
 
-**Direct telemetry (default):** use supplied sanitized evidence or existing
-authorized public tools. No Python, Azure CLI, authentication,
+**Direct telemetry (default):** after the applicable specialist-discovery
+checkpoint above, use supplied sanitized evidence or existing authorized public
+tools, either under the loaded specialist or the disclosed core fallback.
+This default chooses evidence transport, not permission to skip skill loading.
+No Python, Azure CLI, authentication,
 local save or new connection is required for supplied-evidence analysis.
 An ordinary request to investigate selects this path and never authorizes
 new external-service operations. Continue to step 3.

@@ -73,10 +73,13 @@ With the receiving repository's JavaScript dependencies already installed:
 npm run build
 npm --prefix scripts run frontmatter -- ..\output\azure-observability\skills
 npm --prefix scripts run references -- azure-observability
-npm --prefix scripts run tokens -- --help
+npm --prefix scripts run tokens -- help
 ```
 
 Consult token-command help for its current supported selectors before use.
+The token check accepts explicit file paths; passing a directory can skip all
+files while still returning zero. Verify the reported file count, not just the
+exit code. Its estimator does not replace the named-encoding tokenizer gate.
 Validate frontmatter in built output: source version placeholders intentionally
 are not final semver values and fail the output-oriented version rule.
 Build output and source validation are different checks. The build stamps

@@ -6,6 +6,42 @@ copies, automatic installs or mandatory prerequisites for evidence-only core
 investigation. They add relevant specialist expertise; they do not supply
 telemetry authorization.
 
+## Check host availability before choosing a fallback
+
+For an agent/model/tool failure or an AI-specific trace/runtime/evaluation
+question, perform this checkpoint before starting more core investigation.
+Apply it to `azure-diagnostics` when Azure service-specific expertise is needed.
+Existing sufficient findings need no redundant handoff.
+
+1. Check the current host-exposed skill names/descriptions, including enabled
+   Azure Skills and other plugins, not just this plugin's four directories.
+   If the host offers skill discovery, use that supported mechanism when
+   necessary. A tool/MCP list is not a skill inventory. Not bundled, no sibling
+   directory, or absent from one plugin manifest does not mean unavailable.
+2. If the relevant specialist is exposed and enabled, use the actual supported
+   skill-loading mechanism and verify the load before choosing core fallback.
+   Use the discovered name, including any host-provided prefix; never invent
+   an invocation. Ordinary instruction loading within the retained ceiling
+   needs no new setup or redundant telemetry-approval prompt.
+3. If loading fails, report the actual failed-load result. If explicit invocation
+   is required or policy disables loading, retain that restriction and explain
+   the supported user action; do not bypass it with file reads or another name.
+   Check the selected workflow's prerequisites and side effects before executing
+   any scripts or operations; instruction loading grants no additional consent.
+4. If the host exposes neither the skill nor a supported discovery mechanism,
+   report availability unverified in this session, not confirmed absent or
+   uninstalled. Do not scan caches, fetch upstream instructions or query Azure
+   to establish skill availability. Continue permitted core analysis with this
+   specific limitation and offer a supported host visibility/refresh check.
+
+Before fallback, give a concise reason based on the actual discovery/load result:
+not exposed in this session, disabled, explicit invocation required, failed load,
+incomplete resources or incompatible workflow side effects. Never say both
+canonical specialists are unavailable after checking only one. Direct Azure
+Monitor tools can be used by a loaded Foundry workflow; their presence is not
+a reason to skip applicable specialist instructions. Loading a skill is not
+delegating to an external service or creating a remote investigation.
+
 ## Select only what the current question needs
 
 | Need | Canonical dependency | Core fallback |

@@ -37,6 +37,10 @@ Canonical `azure-diagnostics` and `microsoft-foundry` are external dependencies:
 discover them through the host under [dependency selection](references/canonical-dependencies.md),
 never by assumed sibling paths. Missing external instructions do not block
 the local evidence-only affected-path workflow or imply permission to install.
+For agent/model/tool failures or AI-specific analysis, check the host's exposed
+skills and load enabled, relevant `microsoft-foundry` instructions before
+choosing a core fallback. Not bundled does not mean unavailable. Follow the
+dependency selection checkpoint; unknown discovery is not confirmed absence.
 
 ## Select one path
 

@@ -90,6 +90,11 @@ The instructions guide Copilot to:
 For service-specific diagnostics, Copilot looks for the canonical
 `azure-diagnostics` skill. For applicable AI-specific investigation, it looks
 for `microsoft-foundry`. **The plugin does not ship duplicate copies of either.**
+Copilot checks skills exposed by the host, including other enabled plugins,
+and loads a relevant enabled specialist before choosing a core fallback.
+Direct Monitor tools do not establish that Foundry instructions are absent.
+If the host does not expose a specialist or a discovery mechanism, Copilot
+reports availability as unverified in that session rather than uninstalled.
 
 Azure Monitor is the operational foundation. Foundry is an optional AI-specific
 branch, not a requirement for web/API or infrastructure troubleshooting.

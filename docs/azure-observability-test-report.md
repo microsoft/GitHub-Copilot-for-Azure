@@ -2,6 +2,41 @@
 
 Report date: 2026-11-16.
 
+## Latest external-specialist discovery follow-up
+
+A user-supplied VS Code response claimed the canonical specialists were
+unavailable and chose direct Monitor queries. That response alone does not
+establish which skills the host exposed or whether a load was attempted.
+The instructions now require checking host-exposed skills across plugins and
+loading an enabled, relevant Foundry specialist before core fallback for
+agent/model/tool failures and AI-specific analysis. Direct telemetry selects
+evidence transport, not permission to skip applicable specialist instructions.
+Unknown discovery, disabled loading, explicit invocation and failed loads
+remain distinct; setup and operations retain separate approval gates.
+
+- **309 offline tests passed**, zero failures or skips. The two new methods are
+  `test_external_specialists.ExternalSpecialistContracts.test_foundry_discovery_is_required_before_core_fallback`
+  and
+  `test_external_specialists.ExternalSpecialistContracts.test_unknown_discovery_is_not_absence_and_blocked_load_stays_blocked`.
+  The focused external-specialist module passed all nine methods.
+  These are static instruction contracts, not actual external-skill loads.
+- Re-materialized shared instructions: 18 resources per dependent skill.
+- Native references validation passed all four source skills; stamped-output
+  frontmatter validation passed all four built skills.
+- Build passed with the existing missing-`upstream` changelog warnings.
+- Native token **estimation** checked 76 runtime Markdown files; zero exceeded
+  its configured limits. This is not the Python named-encoding tokenizer gate,
+  which remains blocked by the missing development dependency.
+  The initial directory argument checked zero files and is not counted as a
+  pass; the successful invocation supplied explicit files from the scripts
+  directory. Earlier help syntax, root module resolution and command-length
+  failures were corrected without installing dependencies.
+- Whitespace checks passed.
+- Added host acceptance cases for cross-plugin Foundry visibility, unknown
+  availability and restricted/failed loads. **VS Code and CLI retests are
+  UNRUN** for this change. No Azure operations, installs, live evaluations,
+  specialist execution or recovery verification occurred.
+
 ## Latest journey-indicator follow-up
 
 This follow-up supersedes the earlier 304-test and missing-JavaScript-dependency

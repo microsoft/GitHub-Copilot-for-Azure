@@ -24,6 +24,10 @@ the existing selection/fallback boundaries.
 
 1. Honor the user's explicit specialist request if eligible and permitted.
 2. Match the next necessary stage and confirmed workload.
+   For agent/model/tool failures or AI-specific analysis, apply the
+   [host availability checkpoint](canonical-dependencies.md#check-host-availability-before-choosing-a-fallback)
+   before choosing core fallback. Load an exposed, enabled relevant Foundry
+   specialist; direct Monitor tools do not replace this instruction check.
 3. Check complete instructions/resources, supported host loading, actual tool
    operations, identity/access, runtime, network and all side effects.
 4. Prefer applicable available contributed work over a parallel implementation.

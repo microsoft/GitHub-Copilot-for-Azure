@@ -70,6 +70,37 @@ class ExternalSpecialistContracts(unittest.TestCase):
         self.assertIn("no installation command or package id is invented", self.contract)
         self.assertIn("setup never grants live reads", self.contract)
 
+    def test_foundry_discovery_is_required_before_core_fallback(self):
+        for path in (SKILLS / "troubleshoot-observability" / "SKILL.md",
+                     REFS / "investigation" / "README.md",
+                     REFS / "specialists.md"):
+            with self.subTest(source=path):
+                text = compact(path)
+                self.assertIn("agent/model/tool failures", text)
+                self.assertIn("load", text)
+                self.assertIn("fallback", text)
+        for concept in ("host-exposed skill names/descriptions",
+                        "not just this plugin's four directories",
+                        "a tool/mcp list is not a skill inventory",
+                        "verify the load before choosing core fallback",
+                        "needs no new setup or redundant telemetry-approval",
+                        "including any host-provided prefix"):
+            self.assertIn(concept, self.contract)
+        local = compact(REFS / "investigation" / "README.md")
+        self.assertIn("default chooses evidence transport", local)
+        self.assertIn("not permission to skip skill loading", local)
+
+    def test_unknown_discovery_is_not_absence_and_blocked_load_stays_blocked(self):
+        for concept in ("availability unverified in this session",
+                        "not confirmed absent or uninstalled",
+                        "not bundled", "does not mean unavailable",
+                        "explicit invocation required", "actual failed-load result",
+                        "do not bypass it with file reads or another name",
+                        "never say both canonical specialists are unavailable",
+                        "presence is not a reason to skip",
+                        "do not scan caches, fetch upstream instructions or query azure"):
+            self.assertIn(concept, self.contract)
+
     def test_sufficient_supplied_evidence_needs_no_external_setup(self):
         self.assertRegex(self.contract, r"not bundled.{0,100}mandatory prerequisites")
         self.assertIn("continue permitted evidence-only investigation", self.contract)
