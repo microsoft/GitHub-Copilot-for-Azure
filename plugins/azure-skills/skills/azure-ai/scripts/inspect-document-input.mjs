@@ -835,7 +835,9 @@ async function main() {
     const report = await inspectDocumentInput(opts);
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
   } catch (err) {
-    const code = err instanceof SyntaxError ? "INVALID_JSON" : (err?.code || err?.message || "READ_ERROR");
+    const code = err instanceof SyntaxError
+      ? "INVALID_JSON"
+      : (err?.code || (typeof err?.message === "string" && /^[A-Z0-9_]+$/.test(err.message) ? err.message : "READ_ERROR"));
     process.stderr.write(`${JSON.stringify({ error: String(code) })}\n`);
     process.exit(1);
   }
