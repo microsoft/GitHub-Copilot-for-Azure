@@ -41,7 +41,6 @@ steps:
       scriptLocation: inlineScript
       inlineScript: |
         set -euo pipefail
-        export CES_PROXY_BYPASS=true
         extra=()
         if [ "${{ parameters.private }}" = "True" ]; then extra+=(--private); fi
         # The CLI rejects --management-mode with --validate-only.

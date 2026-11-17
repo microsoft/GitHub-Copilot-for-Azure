@@ -29,9 +29,9 @@ parameters:
     type: string
     default: ces-dev1
   - name: serviceConnection
-    displayName: Azure service connection with Registry Editor/Owner rights
+    displayName: New Azure service connection (Registry Editor/Owner to publish)
     type: string
-    default: azure_msbench_eval
+    default: azurebench_msbench
   - name: publish
     displayName: Publish (unchecked = validate only, nothing is written)
     type: boolean
