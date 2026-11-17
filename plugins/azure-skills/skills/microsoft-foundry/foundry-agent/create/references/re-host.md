@@ -9,8 +9,6 @@ Resolve two independent choices before initialization or edits:
 
 Infer these choices from the user's request and current code. Ask only for information that remains unclear; skip questions when the intent is explicit or evident, such as an existing Foundry model integration. Do not switch or deploy a model, or migrate the framework, without user intent.
 
-Re-hosting alone does not request a model migration. Preserve the existing provider and API by default. Missing authentication blocks operations that require it, not authorized source preparation; keep unresolved bindings explicit and do not claim blocked deployment succeeded.
-
 ## Step 2: Initialize and adapt
 
 For existing LangChain or LangGraph applications, follow the [framework hosting reference](langchain-langgraph-hosting.md) and its linked walkthrough before selecting a sample or editing. Samples provide API patterns; the walkthrough owns the framework migration workflow.

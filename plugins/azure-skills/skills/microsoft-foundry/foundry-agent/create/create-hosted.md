@@ -81,13 +81,13 @@ Then run the bundled verification script before any create/deploy command:
 ./scripts/verify-environment.ps1    # Windows (pwsh)
 ```
 
-Resolve outstanding `[ACTION]` items before commands that depend on them. Never run `az login` or `azd auth login` for the user. Missing authentication is a hard stop before any `azd ai agent init`, `azd provision`, `azd deploy`, or other deploy command. For existing-code re-hosting, it does not block repository inspection, authorized source and configuration edits, or checks that do not require Azure access. Continue that preparation through [re-host](references/re-host.md), keep unresolved deployment bindings explicit, and report the online operations still blocked.
+Do not continue past Step 1 while any `[ACTION]` from environment verification remains. Never run `az login` or `azd auth login` for the user. Missing authentication is a hard stop before any `azd ai agent init`, `azd provision`, `azd deploy`, or other deploy command.
 
 Act on the summary prefixes:
 
 - `[OK]` -- nothing to do.
 - `[WARN]` -- non-blocking; continue.
-- `[ACTION]` -- resolve before dependent operations, then rerun the script. If `az` or `azd` is missing, ask before installing in interactive mode; install directly in non-interactive mode. For how to install `azd`, see <https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/install-azd>. In any mode, never run `az login` or `azd auth login`; ask the user to log in manually and stop operations requiring that authentication. Missing `azure.ai.agents` / `azure.ai.projects` / `azure.ai.evaluations` extensions may be resolved with `azd extension install <name>`. Keep authorized, environment-independent re-host preparation separate from those blocked operations.
+- `[ACTION]` -- resolve first, then rerun the script. If `az` or `azd` is missing, ask before installing in interactive mode; install directly in non-interactive mode. For how to install `azd`, see <https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/install-azd>. In any mode, never run `az login` or `azd auth login`; stop and ask the user to log in manually. Missing `azure.ai.agents` / `azure.ai.projects` / `azure.ai.evaluations` extensions may be resolved with `azd extension install <name>`. Failed `az` or `azd` auth checks must stop the workflow until the user logs in manually.
 
 Branch on the agent status reported by `verify-environment`:
 
@@ -127,7 +127,7 @@ Do not guess, derive, or construct the project ID from the endpoint. For `--proj
 
 > `azd ai agent init` initializes both the azd project and its environment. Run it directly in the target directory. For an existing Foundry project, also pass `--project-id <arm-id>`.
 
-Only when the independently selected model integration uses a Foundry model deployment, verify that deployment in the existing project by running:
+When creating a new agent in an existing Foundry project, verify that the selected Foundry model deployment exists by running:
 
 ```bash
 az cognitiveservices account deployment list \
@@ -135,8 +135,6 @@ az cognitiveservices account deployment list \
   --name "<foundry-account-name>" \
   --output table
 ```
-
-An existing-code re-host that keeps another model provider still needs a Foundry hosting project, not an unused Foundry model deployment. Do not retain or provision a sample-only model resource merely to satisfy its sample project dependency. Preserve the existing model integration and include only resources the migrated application actually consumes.
 
 ### Step 3 -- Choose the starting point
 
@@ -235,8 +233,6 @@ Check the scaffold before local run:
 ### Step 4b -- Existing agent: continue development
 
 Use when the workspace already contains an agent project or source code.
-
-For re-hosting, preserve the application's existing integration choices; greenfield model and integration defaults from Step 4a do not apply unless the requested change requires them.
 
 First determine whether the workspace is already a Foundry hosted agent project.
 
