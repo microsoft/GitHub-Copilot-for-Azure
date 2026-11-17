@@ -1,0 +1,3 @@
+# Keep offline fixture output out of source control.
+.test-work/
+__pycache__/
