@@ -28,18 +28,6 @@ parameters:
     displayName: Give the run an Azure identity (BYOI)
     type: boolean
     default: true
-  - name: runIdentityClientId
-    displayName: Run identity (BYOI) client ID
-    type: string
-    default: eec01da3-e9f5-48ee-a366-8e85811a4eeb
-  - name: runIdentityTenantId
-    displayName: Run identity (BYOI) tenant ID
-    type: string
-    default: 72f988bf-86f1-41af-91ab-2d7cd011db47
-  - name: runIdentitySubscriptionId
-    displayName: Run identity (BYOI) subscription ID
-    type: string
-    default: cda6aeab-6dec-4567-a4d8-3770583a13f0
   - name: serviceConnection
     displayName: Azure service connection that submits the run
     type: string
@@ -112,10 +100,14 @@ jobs:
                 export CES_PROXY_BYPASS=true
                 byoi=()
                 if [ "${{ parameters.useRunIdentity }}" = "True" ]; then
+                  # Set these pipeline variables in Azure DevOps (kept out of this public repo).
+                  : "${RUN_IDENTITY_CLIENT_ID:?Set pipeline variable RUN_IDENTITY_CLIENT_ID}"
+                  : "${RUN_IDENTITY_TENANT_ID:?Set pipeline variable RUN_IDENTITY_TENANT_ID}"
+                  : "${RUN_IDENTITY_SUBSCRIPTION_ID:?Set pipeline variable RUN_IDENTITY_SUBSCRIPTION_ID}"
                   byoi=(
-                    --run_identity_client_id "${{ parameters.runIdentityClientId }}"
-                    --run_identity_tenant_id "${{ parameters.runIdentityTenantId }}"
-                    --run_identity_subscription_id "${{ parameters.runIdentitySubscriptionId }}"
+                    --run_identity_client_id "$RUN_IDENTITY_CLIENT_ID"
+                    --run_identity_tenant_id "$RUN_IDENTITY_TENANT_ID"
+                    --run_identity_subscription_id "$RUN_IDENTITY_SUBSCRIPTION_ID"
                     --tag harbor.keepIdentityForRun=true
                   )
                 fi

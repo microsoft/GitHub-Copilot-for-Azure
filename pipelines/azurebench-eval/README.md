@@ -25,7 +25,10 @@ task, the Azure Functions deployment test in
 4. Install the CES App on this GitHub repository so MSBench can check out the
    tasks.
 5. If `useRunIdentity` is on (default), the run identity (BYOI) must already
-   have the Azure access the test needs. BYOI is optional and only works on
+   have the Azure access the test needs. Set its IDs as pipeline variables
+   `RUN_IDENTITY_CLIENT_ID`, `RUN_IDENTITY_TENANT_ID` and
+   `RUN_IDENTITY_SUBSCRIPTION_ID` on the `azurebench-eval` pipeline (they are
+   not secrets, but are kept out of this public repo). BYOI is optional and only works on
    supported Corp Linux backends; turn it off for tests that don't need Azure.
    The pipelines do not create identities, roles or Registry permissions.
 
