@@ -13,6 +13,8 @@ evaluations:
     - eval.yaml
     - fixture-evidence.eval.yaml
     - functions-troubleshooting.eval.yaml
+    - live-diagnostics.eval.yaml
+    - report-informed.eval.yaml
     - response-quality.eval.yaml
     - script-invocation.eval.yaml
   heldOut:
@@ -56,8 +58,8 @@ refinement:
 
 limits:
   maxIterations: 2
-  maxAnswerGenerations: 512
-  maxJudgeCalls: 512
+  maxAnswerGenerations: 584
+  maxJudgeCalls: 584
   maxDurationMinutes: 360
   maxConcurrentVallyProcesses: 5
   generationWorkersPerVallyProcess: 1

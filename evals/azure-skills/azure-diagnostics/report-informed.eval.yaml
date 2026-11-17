@@ -1,0 +1,158 @@
+# Synthetic, evidence-only cases inspired by these reports, not copied user turns.
+# Customer-task blockers: CASE-27 and CASE-33.
+# https://gist.github.com/KarishmaGhiya/9704635ff4020424dfe8fe2270b9547e
+# Expanded context analysis: Functions connectivity and authorization categories.
+# https://gist.github.com/KarishmaGhiya/98b21a32fa172b7988309331d9efbb0b
+# The expanded categories are exploratory signals, not population-demand rankings.
+
+name: azure-diagnostics-report-informed-eval
+description: |
+  Synthetic incidents derived from reported customer-task blockers and exploratory
+  diagnostics themes. Evidence is invented for repeatable offline grading; no
+  customer identifiers, original conversation text, or live resources are used.
+
+tags:
+  type: integration
+  skill: azure-diagnostics
+
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: copilot-sdk-agent-runner
+  model: gpt-5.6-sol
+  judge_model: claude-sonnet-5
+
+scoring:
+  threshold: 0.7
+
+stimuli:
+  # Inspired by customer-task blockers CASE-27: deployment != application success.
+  - name: "Successful ZIP deployment hides a failed database migration"
+    prompt: |
+      Azure says my App Service deployment succeeded, but the migration endpoint
+      still fails. Diagnose only the synthetic evidence below; do not query or
+      modify Azure or the database.
+
+      Evidence:
+      - ZIP upload and deployment both completed successfully
+      - The health endpoint returns 200 and the new build identifier
+      - POST /api/migrate returns 500
+      - The application log records PostgreSQL SQLSTATE 42601 (syntax error)
+        while executing a migration statement
+      - A database connection test and SELECT 1 both succeed
+      - The migration handler rewrites the SQL before executing it
+      - A proposed handler correction builds locally, but has not been deployed
+        or exercised against a database
+
+      Explain which stages are working, what is still broken, what evidence
+      would isolate the defect, and what is required before calling this fixed.
+    rubric:
+      - The response separates successful deployment and application startup from the failed migration operation, and does not present the ZIP receipt or healthy endpoint as end-to-end migration success.
+      - The response identifies invalid SQL reaching PostgreSQL as the immediate failure, uses successful connection evidence to distinguish it from connectivity or authentication, and treats SQL rewriting as a hypothesis to inspect rather than claiming an unobserved exact code defect.
+      - Diagnosis compares the original migration with the exact statement sent by the handler and the PostgreSQL error location, without logging credentials or blindly rerunning potentially partially applied migrations.
+      - Remediation checks migration history and partial changes, tests the correction against a representative non-production database with rollback or transaction safeguards, and requires a successful deployed migration and expected schema state before declaring recovery.
+    tags: &report-tags
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      requiredSkills:
+        - azure-diagnostics
+    graders: &report-graders
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.7
+      - type: completed
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)^(bash|powershell|pwsh|shell|terminal|run_in_terminal|run_command|azure|azure_mcp|mcp_azure.*|az)$"
+            - name: "(?i)^(create|create_file|write_file|edit|apply_patch)$"
+
+  # Inspired by customer-task blockers CASE-33: preserve stage-specific recovery.
+  - name: "Queue routing is repaired but downstream processing still fails"
+    prompt: |
+      My Azure Function now reads the intended Service Bus queue, but messages
+      still fail processing. Diagnose only this synthetic evidence; do not query,
+      modify, or replay anything in Azure.
+
+      Evidence:
+      - A PowerShell deployment loop reused a parameter name with different
+        casing and wrote the wrong queue setting
+      - The variable was renamed, and an operator corrected the deployed setting
+      - Readback and invocation logs now confirm the intended queue is used
+      - The handler receives a message, then throws FormatException while
+        assigning a downstream HTTP Content-Type header
+      - No downstream HTTP request is sent for that invocation
+      - After repeated failures, the message is dead-lettered
+      - A proposed header-construction correction passes a local build
+      - No successful downstream write or completed message is recorded afterward
+
+      Separate recovered and unresolved stages, recommend a safe next step, and
+      define the end-to-end evidence needed before reporting success.
+    rubric:
+      - The response recognizes the case-insensitive PowerShell variable collision as an earlier recovered configuration defect, and does not continue blaming queue selection after readback and invocation evidence show it is corrected.
+      - The response identifies the current failure as local HTTP header construction before any downstream request, rather than a Service Bus delivery failure, downstream authorization denial, or proven downstream outage.
+      - The response treats the green local build as insufficient and recommends validating supported header construction and payload formatting in a representative runtime before deploying an approved correction.
+      - Recovery requires one correlated message to reach the intended queue, execute the downstream write, and settle successfully; any dead-letter replay is bounded and idempotent and checks for preexisting effects rather than blindly replaying or deleting messages.
+    tags: *report-tags
+    graders: *report-graders
+
+  # Expanded context themes: Functions + connectivity; details are synthetic.
+  - name: "Function dependency resolves publicly after private DNS drift"
+    prompt: |
+      Our Azure Function cannot fetch a secret from a private Key Vault after a
+      network rollout. Use only this synthetic evidence; do not query or modify
+      Azure, DNS, access rules, or role assignments.
+
+      Evidence:
+      - The Function App is integrated with the expected virtual network
+      - The vault's private endpoint is approved and public access is disabled
+      - From the Function's network path, the vault hostname resolves to a
+        public address; TCP 443 and TLS negotiation to that address succeed
+      - The vault rejects that request with ForbiddenByConnection
+      - The private DNS zone still contains the correct private-endpoint record
+      - The zone's link to the Function integration network was removed
+      - The same managed identity can read the secret from an approved host
+        where the vault hostname resolves to the private address
+
+      Identify the failing layer and the smallest correction that preserves
+      private access, and explain how to verify it from the affected network.
+    rubric:
+      - The response identifies private DNS resolution drift caused by the removed network link, explaining that the Function is reaching the public endpoint rather than the approved private endpoint.
+      - The response distinguishes successful TCP and TLS from an approved private network path, and uses the same identity's successful private-path read to avoid unsupported RBAC or credential changes.
+      - The remediation restores the approved private DNS link or equivalent sanctioned resolver forwarding through the network source of truth, without enabling public vault access or changing the healthy private endpoint.
+      - Verification runs from the Function's integration network, confirms private-address resolution after cache propagation, and performs a correlated secret-read check without revealing the secret value.
+    tags: *report-tags
+    graders: *report-graders
+
+  # Expanded context themes: Functions + authorization; details are synthetic.
+  - name: "Function dependency rejects a token for the wrong audience"
+    prompt: |
+      My Azure Function gets 401 when reading Key Vault despite a role assignment.
+      Diagnose only the synthetic evidence below; do not query or change Azure.
+
+      Evidence:
+      - DNS resolves the vault to its approved private endpoint
+      - TCP and TLS succeed, and the request reaches the vault
+      - The intended managed identity has Key Vault Secrets User at vault scope
+      - Token acquisition succeeds for that identity
+      - The application requests scope https://management.azure.com/.default
+      - The resulting token audience is https://management.azure.com/
+      - The vault response is AKV10022: Invalid audience
+      - No secret value was returned
+
+      Explain the cause, recommend a least-privilege correction, and define the
+      runtime check that would prove the application can now read the secret.
+    rubric:
+      - The response identifies an ARM-audience token being sent to the Key Vault data plane as the immediate cause, rather than missing identity, failed token acquisition, private networking, or proven insufficient RBAC.
+      - The response recommends the vault data-plane scope https://vault.azure.net/.default or a correctly configured Key Vault SDK client using the intended managed identity.
+      - The remediation preserves the existing narrow role and private endpoint rather than granting Owner or Contributor, creating credentials, exposing a token, or enabling public access.
+      - Verification acquires the correct audience and repeats the authorized secret read from the deployed Function identity and network, reporting success without exposing the token or secret and without claiming the repair has already occurred.
+    tags: *report-tags
+    graders: *report-graders

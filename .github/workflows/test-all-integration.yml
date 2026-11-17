@@ -40,6 +40,11 @@ on:
         required: false
         type: string
         default: ""
+      eval-tag:
+        description: "Optional: Vally stimulus tag filter (e.g. area=live-diagnostics)"
+        required: false
+        type: string
+        default: ""
       deploy-test-pattern:
         description: "Optional: Comma separated patterns by name or describe block for filtering azure-deploy tests."
         required: false
@@ -150,6 +155,8 @@ jobs:
       AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      AZURE_FIXTURE_COORDINATION_STORAGE_ACCOUNT: ${{ vars.AZURE_FIXTURE_COORDINATION_STORAGE_ACCOUNT || vars.REPORT_STORAGE_ACCOUNT }}
+      AZURE_FIXTURE_COORDINATION_CONTAINER: ${{ vars.AZURE_FIXTURE_COORDINATION_CONTAINER || vars.REPORT_STORAGE_CONTAINER || 'integration-reports' }}
     strategy:
       fail-fast: false # don't cancel siblings on failure
       max-parallel: 5 # limit number of concurrent jobs
@@ -248,10 +255,15 @@ jobs:
           TEST_RUN_ID: all-integration
           MODEL_OVERRIDE: ${{ inputs.model-override }}
           SKILL: ${{ matrix.skill }}
+          EVAL_TAG: ${{ inputs.eval-tag }}
         run: |
           PLUGIN_DIR="${SKILL%%/*}"
           SKILL_NAME="${SKILL##*/}"
-          npm run test:vally -- --plugin $PLUGIN_DIR --skill $SKILL_NAME --workers 2
+          EVAL_ARGS=()
+          if [[ -n "$EVAL_TAG" ]]; then
+            EVAL_ARGS+=(--tag "$EVAL_TAG")
+          fi
+          npm run test:vally -- --plugin "$PLUGIN_DIR" --skill "$SKILL_NAME" --workers 2 "${EVAL_ARGS[@]}"
 
       - name: Generate skill report
         if: always()

@@ -178,6 +178,34 @@ describe("skill improvement configuration", () => {
     );
   });
 
+  test("keeps the diagnostics plan within budget after including live evaluations", () => {
+    const runSpec = loadRunSpec(fileURLToPath(
+      new URL("../specs/azure-diagnostics.yaml", import.meta.url)
+    ));
+    const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
+
+    expect(runSpec.evaluations.development).toContain("live-diagnostics.eval.yaml");
+    const plan = createRunPlan(repoRoot, runSpec);
+    expect(() => enforceRunLimits(runSpec, plan)).not.toThrow();
+    expect(plan.baselineAnswerGenerations).toBeGreaterThan(0);
+    expect(plan.heldOutAnswerGenerations).toBeGreaterThan(0);
+  });
+
+  test("keeps the live diagnostics fixture compatible with keyless storage policy", () => {
+    const bicep = fs.readFileSync(fileURLToPath(
+      new URL(
+        "../../../evals/azure-skills/azure-diagnostics/fixture/live-diagnostics/main.bicep",
+        import.meta.url
+      )
+    ), "utf8");
+
+    expect(bicep).toContain("allowSharedKeyAccess: false");
+    expect(bicep).toContain("type: 'SystemAssigned'");
+    expect(bicep).toContain("name: 'AzureWebJobsStorage__accountName'");
+    expect(bicep).toContain("name: 'AzureWebJobsStorage__credential'");
+    expect(bicep).not.toContain("storage.listKeys()");
+  });
+
   test("rejects unsupported run-spec environment variables", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "skill-improvement-env-"));
     const configPath = path.join(root, "run.yaml");

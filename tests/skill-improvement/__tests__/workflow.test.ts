@@ -13,6 +13,15 @@ describe("skill improvement workflow", () => {
     expect(workflow).not.toContain("environment: cideploytest");
   });
 
+  test("falls back to existing report storage for fixture coordination", () => {
+    expect(workflow).toContain(
+      "AZURE_FIXTURE_COORDINATION_STORAGE_ACCOUNT: ${{ vars.AZURE_FIXTURE_COORDINATION_STORAGE_ACCOUNT || vars.REPORT_STORAGE_ACCOUNT }}"
+    );
+    expect(workflow).toContain(
+      "AZURE_FIXTURE_COORDINATION_CONTAINER: ${{ vars.AZURE_FIXTURE_COORDINATION_CONTAINER || vars.SKILL_IMPROVEMENT_STORAGE_CONTAINER }}"
+    );
+  });
+
   test("allows setup and cleanup headroom beyond the engine deadline", () => {
     expect(workflow).toContain("timeout-minutes: 420");
   });
