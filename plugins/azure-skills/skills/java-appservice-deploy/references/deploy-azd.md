@@ -24,7 +24,7 @@ services:
     host: appservice
 ```
 
-If the target app was previously used for source deployment, remove `SCM_DO_BUILD_DURING_DEPLOYMENT` and `WEBSITE_RUN_FROM_PACKAGE`. Do not delete other app settings. Verify the latest stable Azure CLI.
+For previously source-built apps, remove only existing `SCM_DO_BUILD_DURING_DEPLOYMENT` and `WEBSITE_RUN_FROM_PACKAGE` settings. Verify the latest stable Azure CLI.
 
 Before every `azd up`/`azd deploy`, run the shared [LF normalization and validation example](deploy-azcli.md#normalize-linux-scripts) on the service's actual package inputs, including startup scripts. Use its shell-specific exit guard. Package only after normalization/validation succeeds; any normalization, build or deployment failure stops deployment. Require a fresh artifact, never a cached artifact from a failed attempt.
 
@@ -43,7 +43,7 @@ if ($LASTEXITCODE -ne 0) { azd auth login }
 
 If no `azd` environment exists in this folder:
 
-Before creating a plan, run the quota gate in [create-app.md](create-app.md) §1d. Ask before changing a user-specified region; stop if quota or regional availability is unavailable or unverifiable rather than switching SKU.
+Before creating a plan, run the [quota and region checks](create-app.md#1d-region) for the template's effective subscription, region and SKU. Preserve defaults unless the user requests changes; reuse results and recheck after these values change.
 
 ```bash
 azd env new <env-name> || exit 1

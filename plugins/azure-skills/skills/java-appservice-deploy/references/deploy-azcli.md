@@ -46,7 +46,7 @@ If more than one remains, ask which to deploy.
 
 ## 3. Prepare app settings
 
-The artifact is prebuilt; remote build is not used. Inspect setting names without printing values; remove only existing `SCM_DO_BUILD_DURING_DEPLOYMENT` or `WEBSITE_RUN_FROM_PACKAGE`. Stop on read/delete errors. Do not change unrelated settings; app-setting changes restart the app.
+Deploy prebuilt artifacts without remote build. Read setting names only; remove only existing `SCM_DO_BUILD_DURING_DEPLOYMENT` and `WEBSITE_RUN_FROM_PACKAGE` settings. Stop on read/delete errors. Setting changes restart the app.
 
 ```bash
 NAMES=$(az webapp config appsettings list -n <app> -g <rg> --query "[].name" -o tsv) || exit 1
