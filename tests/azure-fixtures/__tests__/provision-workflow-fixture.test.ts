@@ -1046,13 +1046,13 @@ describe("additional failure modes", () => {
     expect(azCommands(fake).filter((args) => args[1] === "update")).toHaveLength(0);
   });
 
-  it("retries Azure network operations that are still in progress", async () => {
+  it.each(["AnotherOperationInProgress", "DeploymentNotFound"])("retries transient Azure deployment error %s", async (code) => {
     const fake = environment();
     fake.fail({
       actor: "retry",
       operation: "deployment group create",
       invocation: 1,
-      error: new Error("AnotherOperationInProgress"),
+      error: new Error(`ERROR: {"error":{"code":"${code}"}}`),
     });
 
     await expect(provisionWithDependencies(
@@ -1065,7 +1065,7 @@ describe("additional failure modes", () => {
     expect(fake.logs).toContainEqual(expect.objectContaining({
       actor: "retry",
       level: "warn",
-      message: expect.stringContaining("retrying in 15 seconds (attempt 2/4)"),
+      message: expect.stringContaining(`reported ${code}; retrying in 15 seconds (attempt 2/4)`),
     }));
   });
 });

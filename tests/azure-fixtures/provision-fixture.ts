@@ -91,6 +91,16 @@ const PROVISIONING_RETRY_DELAY_MS = 2 * TOTAL_BUDGET_MS;
 const MAX_PROVISIONING_TIMEOUT_MINUTES = 60;
 const DEPLOYMENT_RETRY_ATTEMPTS = 4;
 const DEPLOYMENT_RETRY_DELAY_MS = 15_000;
+/** ARM error codes that indicate a transient control-plane condition rather than a template bug. */
+const TRANSIENT_DEPLOYMENT_ERRORS = [
+  "AnotherOperationInProgress",
+  "DeploymentNotFound",
+  "RetryableError",
+  "InternalServerError",
+  "ServiceUnavailable",
+  "GatewayTimeout",
+  "TooManyRequests",
+];
 
 export type WorkflowResourceLockLease = Pick<
   ResourceLockLease,
@@ -419,13 +429,14 @@ async function provisionBicepConfig(
       runCommand(deploymentArgs);
       return;
     } catch (error) {
-      if (!errorText(error).includes("AnotherOperationInProgress")
-        || attempt === DEPLOYMENT_RETRY_ATTEMPTS) {
+      const text = errorText(error);
+      const transientCode = TRANSIENT_DEPLOYMENT_ERRORS.find((code) => text.includes(code));
+      if (!transientCode || attempt === DEPLOYMENT_RETRY_ATTEMPTS) {
         throw error;
       }
       const delayMs = DEPLOYMENT_RETRY_DELAY_MS * attempt;
       log.warn(
-        `Azure deployment ${deploymentName} reported AnotherOperationInProgress; `
+        `Azure deployment ${deploymentName} reported ${transientCode}; `
         + `retrying in ${delayMs / 1000} seconds (attempt ${attempt + 1}/${DEPLOYMENT_RETRY_ATTEMPTS}).`,
       );
       await sleep(delayMs);

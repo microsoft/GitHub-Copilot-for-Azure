@@ -129,6 +129,63 @@ type GeneratedAnswers = GenerationTask & {
 
 const SOURCE_WORKSPACE_MARKER = ".vally-source-workspace";
 
+/**
+ * Attempts per Vally eval/grade process. Live Azure fixtures fail transiently (ARM
+ * replication lag, fault warm-up timeouts), and one failed process must not abort a
+ * multi-hour run.
+ */
+export const vallyRetryPolicy = { attempts: 3, delayMs: 30_000 };
+
+function isDeadlineError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.includes("exceeded limits.maxDurationMinutes")
+    || /timed out after \d+ms/.test(message);
+}
+
+/**
+ * Runs a Vally process step, retrying failures until the attempt limit or run deadline.
+ */
+export async function withVallyRetries<T>(
+  label: string,
+  deadline: number,
+  run: (attempt: number) => Promise<T>,
+  onRetry?: (attempt: number, error: unknown) => void,
+): Promise<T> {
+  const { attempts, delayMs } = vallyRetryPolicy;
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await run(attempt);
+    } catch (error) {
+      const wait = delayMs * attempt;
+      if (
+        attempt >= attempts
+        || isDeadlineError(error)
+        || Date.now() + wait >= deadline
+      ) {
+        throw error;
+      }
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(
+        `${label} failed (attempt ${attempt}/${attempts}); retrying in `
+        + `${wait / 1000} seconds: ${message.split("\n").slice(0, 3).join(" ").slice(0, 500)}`
+      );
+      onRetry?.(attempt, error);
+      if (wait > 0) {
+        await new Promise(resolve => setTimeout(resolve, wait));
+      }
+    }
+  }
+}
+
+/** Keeps a failed attempt's output for diagnosis instead of overwriting it. */
+function preserveFailedAttempt(target: string, attempt: number): void {
+  if (attempt > 1 && fs.existsSync(target)) {
+    const destination = `${target}.failed-attempt-${attempt - 1}`;
+    fs.rmSync(destination, { recursive: true, force: true });
+    fs.renameSync(target, destination);
+  }
+}
+
 function slug(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9.-]+/g, "-").replace(/^-|-$/g, "");
 }
@@ -251,6 +308,7 @@ async function generateAnswers(
   task: GenerationTask,
   deadline: number,
   recordBilling: (records: VallyRecord[]) => void,
+  attempt = 1,
 ): Promise<GeneratedAnswers> {
   assertBeforeDeadline(deadline);
   const testsDirectory = path.join(evalRepoRoot, "tests");
@@ -262,6 +320,7 @@ async function generateAnswers(
     slug(task.answerModel),
     slug(task.evalFile)
   );
+  preserveFailedAttempt(taskDirectory, attempt);
   fs.mkdirSync(taskDirectory, { recursive: true });
   const evalSpecFile = materializeEvaluationFile(
     evalPath,
@@ -358,6 +417,7 @@ async function gradeAnswers(
   generated: GeneratedAnswers,
   judgeModel: string,
   deadline: number,
+  attempt = 1,
 ): Promise<JudgedTrial[]> {
   assertBeforeDeadline(deadline);
   const testsDirectory = path.join(evalRepoRoot, "tests");
@@ -371,6 +431,8 @@ async function gradeAnswers(
   fs.mkdirSync(judgeDirectory, { recursive: true });
   const judgmentFile = path.join(judgeDirectory, `${slug(judgeModel)}.jsonl`);
   const stderrFile = path.join(judgeDirectory, `${slug(judgeModel)}.stderr.log`);
+  preserveFailedAttempt(judgmentFile, attempt);
+  preserveFailedAttempt(stderrFile, attempt);
 
   await runProcess(commandName("npx"), [
     "-y",
@@ -489,14 +551,28 @@ export async function runEvaluationBatch(
     tasks,
     spec.limits.maxConcurrentVallyProcesses,
     async (task, index) => {
-      generated[index] = await generateAnswers(
-        worktree,
-        evalRepoRoot,
-        outputRoot,
-        spec,
-        task,
+      const label = `Vally eval for ${task.condition.name}/${task.answerModel}/${task.evalFile}`;
+      generated[index] = await withVallyRetries(
+        label,
         deadline,
-        recordBilling
+        attempt => generateAnswers(
+          worktree,
+          evalRepoRoot,
+          outputRoot,
+          spec,
+          task,
+          deadline,
+          recordBilling,
+          attempt
+        ),
+        attempt => {
+          // A failed attempt's answers are billed but not usable, so expect a full rerun.
+          billing.evaluationAnswers.expected +=
+            countStimuli(evalRepoRoot, spec, [task.evalFile]) * spec.experiment.repetitions;
+          incompleteReasons.add(`${label} was retried after failed attempt ${attempt}.`);
+          billing.evaluationAnswers.reason = [...incompleteReasons].join(" ");
+          onBilling?.(billing);
+        }
       );
     }
   );
@@ -510,15 +586,20 @@ export async function runEvaluationBatch(
       gradingTasks,
       spec.limits.maxConcurrentVallyProcesses,
       async ({ item, judgeModel }, index) => {
-        judged[index] = await gradeAnswers(
-          evalRepoRoot,
-          outputRoot,
-          spec,
-          phase,
-          iteration,
-          item,
-          judgeModel,
-          deadline
+        judged[index] = await withVallyRetries(
+          `Vally grade for ${item.condition.name}/${item.answerModel}/${item.evalFile} with ${judgeModel}`,
+          deadline,
+          attempt => gradeAnswers(
+            evalRepoRoot,
+            outputRoot,
+            spec,
+            phase,
+            iteration,
+            item,
+            judgeModel,
+            deadline,
+            attempt
+          )
         );
       }
     );
