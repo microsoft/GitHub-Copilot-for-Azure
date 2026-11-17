@@ -13,6 +13,10 @@
 #   - Detection:      COPILOT_CLI is "1" with standalone launcher evidence,
 #                     unless a stronger application marker identifies another host
 #
+# GitHub Copilot app:
+#   - Detection:      AI_AGENT is "github_copilot_app_agent"
+#   - Client name:    "copilot-app"
+#
 # Claude Code:
 #   - Field names:    snake_case (tool_name, session_id, tool_input, hook_event_name)
 #   - Tool names:     PascalCase (Skill, Read, Edit)
@@ -396,6 +400,8 @@ if ($Application) {
     $clientName = $Harness
 } elseif ($cursorVersion -is [string] -and $cursorVersion) {
     $clientName = "cursor"
+} elseif ($env:AI_AGENT -ceq "github_copilot_app_agent") {
+    $clientName = "copilot-app"
 } elseif ($isCopilotRuntime -and $hasStandaloneCopilotLauncher -and -not $isVscodeAgent) {
     $clientName = "copilot-cli"
 } elseif ($isVscodeAgent -or $isVscodeExtensionHost -or $isVscodeToolUseId -or $isVscodeTranscript) {

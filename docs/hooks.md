@@ -71,11 +71,18 @@ The `SessionStart` hook reports new and resumed sessions. Copilot CLI is identif
 by `COPILOT_CLI=1` together with standalone-launcher evidence
 (`COPILOT_CLI_PATH`, `COPILOT_CLI_BINARY_VERSION`, or `COPILOT_LOADER_PID`).
 This is corroborating evidence, not a guaranteed host contract. Cursor's
-`cursor_version` and VS Code's exact application marker take precedence over
-these ambient variables. Standalone CLI evidence still takes precedence over
-weaker VS Code ancestry and transcript-path signals, so a CLI launched in a
-VS Code terminal is not classified as VS Code merely because of that ancestry.
-Plugin metadata is read from `.plugin/plugin.json`.
+`cursor_version` and the exact application markers for the GitHub Copilot app
+and VS Code take precedence over these ambient variables. Standalone CLI
+evidence still takes precedence over weaker VS Code ancestry and transcript-path
+signals, so a CLI launched in a VS Code terminal is not classified as VS Code
+merely because of that ancestry. Plugin metadata is read from `.plugin/plugin.json`.
+
+## GitHub Copilot app
+
+The GitHub Copilot app uses the shared Copilot hooks manifest. The exact
+`AI_AGENT=github_copilot_app_agent` marker identifies it as `copilot-app`,
+including when it uses the Copilot runtime or inherits CLI or VS Code signals.
+This is distinct from the `github_copilot_vscode_agent` value used for VS Code.
 
 ## VS Code
 
@@ -123,7 +130,7 @@ bash ./hooks/scripts/track-telemetry.sh --harness copilot-vscode
 |---------|----------------------|
 | `claude-code` | Reports `claude-code` unchanged. |
 | `cursor` | Reports `cursor` unchanged, even without `cursor_version`. |
-| `copilot-vscode` | Refines the Copilot/VS Code family using application evidence; inconclusive input reports `unknown`. |
+| `copilot-vscode` | Refines the Copilot/VS Code registration family, including the Copilot app, using application evidence; inconclusive input reports `unknown`. |
 | Any other nonempty value | Reports the value unchanged, including casing and spaces. |
 | Omitted or empty | Uses environment and payload evidence, with the same runtime/application distinction. |
 
@@ -150,12 +157,13 @@ application override or custom harness label changes the reported name.
 
 The shared manifests do not supply an application identifier because the
 Copilot registration is shared by multiple applications. Without an override,
-Cursor's nonempty `cursor_version` is considered first, then the exact VS Code
-`AI_AGENT` marker takes precedence over ambient CLI evidence. Standalone CLI
-evidence precedes weaker VS Code extension-host, tool-ID, and path evidence.
-Neither Cursor's version field nor environment-based detection requires
-`hook_event_name`. The existing VS Code Stable/Insiders path distinction is
-retained.
+Cursor's nonempty `cursor_version` is considered first, then the exact
+`AI_AGENT` markers for the GitHub Copilot app and VS Code take precedence over
+ambient CLI evidence. The app marker also takes precedence over weaker VS Code
+hints. Standalone CLI evidence precedes weaker VS Code extension-host, tool-ID,
+and path evidence. Neither Cursor's version field nor environment-based
+detection requires `hook_event_name`. The existing VS Code Stable/Insiders path
+distinction is retained.
 
 Payload shape selects an input format, not an application. `toolArgs` without
 `hook_event_name` no longer implies CLI, and `hook_event_name` alone no longer
@@ -167,9 +175,8 @@ Claude/Codex-shaped payloads are not automatically assigned a product name.
 `COPILOT_CLI=1` alone indicates the runtime, not the frontend. Likewise,
 `COPILOT_CLI_RUN_AS_NODE=1` alone, a standalone-launcher variable without the
 runtime marker, or `VSCODE_PID` alone is inconclusive. Such inputs report
-`unknown` rather than guessing CLI, VS Code, or Claude. These environment
-signals are observational and can be inherited; they are not authentication.
-No new passive GitHub Copilot app detection rule is assumed.
+`unknown` rather than guessing CLI, the Copilot app, VS Code, or Claude. These
+environment signals are observational and can be inherited; they are not authentication.
 
 The manifests no longer set `AZURE_SKILLS_HOOK_CLIENT_FAMILY`. The scripts still
 consult it if set externally, but treat it as a family hint rather than proof

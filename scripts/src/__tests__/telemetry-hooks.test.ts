@@ -1371,6 +1371,63 @@ describe.each(shells)("Telemetry harness detection ($name)", { timeout: 30_000 }
       expectedClient: "unknown",
     },
     {
+      name: "Copilot app marker identifies the app without a harness",
+      env: { AI_AGENT: "github_copilot_app_agent" },
+      expectedClient: "copilot-app",
+    },
+    {
+      name: "Copilot app marker works with the Copilot family and runtime",
+      harness: "copilot-vscode",
+      env: { AI_AGENT: "github_copilot_app_agent", COPILOT_CLI: "1" },
+      expectedClient: "copilot-app",
+    },
+    {
+      name: "Copilot app marker overrides CLI launcher and VS Code hints",
+      harness: "copilot-vscode",
+      payload: {
+        transcript_path: "/Users/test/Code - Insiders/User/session.json",
+        tool_use_id: "tool__vscode",
+      },
+      env: {
+        AI_AGENT: "github_copilot_app_agent",
+        COPILOT_CLI: "1",
+        COPILOT_CLI_PATH: "/usr/bin/copilot",
+        VSCODE_PID: "123",
+        VSCODE_CRASH_REPORTER_PROCESS_TYPE: "extensionHost",
+      },
+      expectedClient: "copilot-app",
+    },
+    {
+      name: "Copilot app marker requires exact casing",
+      harness: "copilot-vscode",
+      env: { AI_AGENT: "GITHUB_COPILOT_APP_AGENT" },
+      expectedClient: "unknown",
+    },
+    {
+      name: "unrecognized Copilot app marker is inconclusive",
+      env: { AI_AGENT: "github_copilot_app_agent_extra" },
+      expectedClient: "unknown",
+    },
+    {
+      name: "explicit application overrides the Copilot app marker",
+      harness: "copilot-vscode",
+      application: "Custom Copilot App",
+      env: { AI_AGENT: "github_copilot_app_agent" },
+      expectedClient: "Custom Copilot App",
+    },
+    {
+      name: "explicit harness overrides the Copilot app marker",
+      harness: "claude-code",
+      env: { AI_AGENT: "github_copilot_app_agent" },
+      expectedClient: "claude-code",
+    },
+    {
+      name: "Cursor product marker overrides the Copilot app marker",
+      payload: { cursor_version: "1.7.2" },
+      env: { AI_AGENT: "github_copilot_app_agent" },
+      expectedClient: "cursor",
+    },
+    {
       name: "no harness retains unknown fallback",
       payload: { hook_event_name: undefined, tool_name: "mcp_azure_mcp_documentation" },
       expectedClient: "unknown",
@@ -1546,6 +1603,22 @@ describe.each(shells)("Telemetry harness detection ($name)", { timeout: 30_000 }
     expectArg(args, "--event-type", "tool_invocation");
   });
 
+  it("reports the Copilot app for tool telemetry without a hook event name", () => {
+    const args = runHook(shell, {
+      sessionId: SESSION_ID,
+      toolName: "azure-documentation",
+      toolArgs: {},
+    }, "", {
+      AI_AGENT: "github_copilot_app_agent",
+      COPILOT_CLI: "1",
+      COPILOT_CLI_PATH: "/usr/bin/copilot",
+    }, STUB_HOOKS_DIR, "copilot-vscode");
+
+    expectArg(args, "--client-name", "copilot-app");
+    expectArg(args, "--event-type", "tool_invocation");
+    expectArg(args, "--tool-name", "azure-documentation");
+  });
+
   it("uses explicit Cursor for afterMCPExecution without cursor_version", () => {
     const payload = fixture("cursor-mcp-invocation.json");
     delete payload.cursor_version;
@@ -1587,6 +1660,21 @@ describe.each(shells)("Session start telemetry hook ($name)", { timeout: 30_000 
       },
       harness: "copilot-vscode",
       expectedClient: "copilot-cli",
+      expectedPlugin: PLUGIN_METADATA.copilot,
+    },
+    {
+      client: "Copilot app",
+      payload: {
+        hook_event_name: "SessionStart",
+        session_id: SESSION_ID,
+        source: "new",
+      },
+      env: {
+        AI_AGENT: "github_copilot_app_agent",
+        COPILOT_CLI: "1",
+      },
+      harness: "copilot-vscode",
+      expectedClient: "copilot-app",
       expectedPlugin: PLUGIN_METADATA.copilot,
     },
     {
