@@ -4,7 +4,7 @@ description: "Author, validate, and run Vally evaluation suites for agent skills
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.1.0"
+  version: "1.1.1"
 ---
 
 # Vally eval suites
@@ -24,6 +24,13 @@ Use meaningful file names to categorize tests. If a skill needs fixture files fo
 ## Why is there a custom executor
 
 Our custom executor implemented features that vally doesn't support yet, such as early termination, system prompt modification, screenshot taking, etc. Besides, [test-all-integration](/.github/workflows/test-all-integration.yml) runs automated integration tests, collects its exported data and feeds the data to a dashboard web app under `<repo-root>/dashboard/` to monitor skill integration test results.
+
+The test runner supports both the `copilot-sdk-agent-runner` and `claude-sdk-agent-runner` custom executors. To use the Claude SDK executor, either authenticate with Claude Code or configure GitHub Copilot API as the model provider before running the eval:
+
+```bash
+export ANTHROPIC_BASE_URL=https://api.githubcopilot.com
+export ANTHROPIC_AUTH_TOKEN=$(gh auth token) # or some GitHub token that grants Copilot API access
+```
 
 If you intend to have your vally suites use any of the extended features or have their results be consumed by the dashboard, you **MUST** use the custom executor in your vally suites.
 
