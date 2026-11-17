@@ -25,6 +25,8 @@ If no match → use the az CLI path.
 
 Verify the latest stable Azure CLI before deployment. Django remote builds require `STATIC_ROOT` and successful `python manage.py check` and `python manage.py collectstatic --noinput`.
 
+For an existing target app, run the [app-setting conflict check](deploy-azcli.md#1-enable-server-side-build) before source deployment. For first-time provisioning, inspect the template settings instead. Preserve `SCM_DO_BUILD_DURING_DEPLOYMENT=true`; do not provision `WEBSITE_RUN_FROM_PACKAGE`.
+
 Before every `azd up`/`azd deploy`, run the shared [LF normalization and validation example](deploy-azcli.md#normalize-linux-scripts) on the service's actual package inputs, including generated startup scripts. Use its shell-specific exit guard. Package only after normalization/validation succeeds; any normalization, validation or packaging failure stops deployment. Require a fresh package, never a cached artifact from a failed attempt.
 
 ## Authenticate
@@ -41,13 +43,13 @@ if ($LASTEXITCODE -ne 0) { azd auth login }
 
 If no `azd` environment exists in this folder:
 
-Before creating a plan, invoke `azure-quotas` to check quota and regional availability. Ask before changing a user-specified region; stop if quota is unavailable or unverifiable rather than switching SKU.
+Before creating a plan, run the [quota and region checks](create-app.md#1d-region) against the effective template subscription, SKU and region. Reuse checked results; recheck only when those values change. Preserve template defaults unless the user requested an override.
 
 ```bash
 azd env new <env-name>
 azd env set AZURE_LOCATION <region>
-# Optional: override default SKU via the template's parameters
-azd env set APP_SERVICE_SKU P0v3
+# Only for a requested override, if the template consumes this parameter:
+azd env set APP_SERVICE_SKU "<selected-sku>"
 ```
 
 Then provision + deploy in one call:

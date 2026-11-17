@@ -4,6 +4,10 @@ Creates resources only when missing — every step is `show || create` (idempote
 
 > 💡 **Shell note**: Bash blocks below use `\` line continuation, `||`, `2>/dev/null`, `$(…)`. PowerShell equivalents are shown alongside where the bash form doesn't round-trip — substitute `` ` `` for `\`, `2>$null` for `2>/dev/null`, and `$LASTEXITCODE` checks for `||`.
 
+### Windows Azure CLI quoting
+
+Windows `az.cmd` can reparse complex `--query` expressions. In PowerShell, prefer `-o json` and `ConvertFrom-Json` with local filtering when quoting is uncertain. Check `$LASTEXITCODE` before parsing; stop on command or JSON errors. Use `--settings "@<settings-file>.json"` for JSON-valued app settings rather than inline JSON.
+
 ## 1. Resolve Azure context — minimize prompts
 
 **Ask the user at most ONE question (the app name).** Derive everything else. If the user's request already names an RG / Plan / region / subscription (e.g. *"deploy to my-team-rg in westus3"*), use those values verbatim and skip the corresponding derivation — the `show || create` flow below works against existing resources.
@@ -42,6 +46,10 @@ Example: folder `my-flask-app/` → `my-flask-app-a3f9c1d2`.
    ```
 3. Else default to `eastus2`.
 4. Before creating a plan, invoke `azure-quotas` to check quota and regional availability. Ask before changing a user-specified region; stop if quota is unavailable or unverifiable rather than switching SKU.
+   - Check the effective subscription, region and SKU from the user or existing `azd` template; use `P0v3` only when unspecified. Confirm `az account show --query id -o tsv` matches the intended subscription; stop on mismatch without silently changing the CLI default. `az account list-locations` uses that active subscription and does not accept `--subscription`.
+   - Use `az quota` CLI first, never quota MCP. Discover the quota resource name instead of assuming it equals the SKU; require unique, non-negative limits and usage with enough remaining capacity in the returned units. `Microsoft.Web` is not a documented [Quota API provider](https://learn.microsoft.com/rest/api/quota/); if unsupported or unmapped, verify through Azure portal Quotas/Support and stop if unverifiable. [App Service regional usage](https://learn.microsoft.com/rest/api/appservice/get-usages-in-location/list) provides diagnostic counters, not proof of SKU capacity.
+   - Confirm Linux SKU availability with `az appservice list-locations --sku "<selected-sku>" --linux-workers-enabled --subscription "<subscription-id>"`; match its region names against `az account list-locations`. Stop on errors or missing data.
+   - Reuse the quota results rather than querying again after the helper. Recheck when subscription, SKU or region changes; provision exactly the checked values, including effective `azd` parameters.
 
 ### 1e. Show the defaults summary BEFORE creating
 Print one concise block so the user can interrupt to override.
@@ -65,6 +73,8 @@ Do **not** call `ask_user` for confirmation here — just print and proceed.
 ### 1f. Transient error handling
 On connection-level or 429/5xx errors from any `az ... create` in §§2–4, see [transient-retry.md](transient-retry.md). Configuration errors (`AuthorizationFailed`, `SkuNotAvailable`, `QuotaExceeded`, etc.) must **not** be retried — surface them.
 
+Passing quota and region checks does not guarantee provisioning. After `QuotaExceeded`, consider another defaulted region only within user/project constraints and after the same checks pass; otherwise stop and suggest a quota increase. Ask before changing a user-specified region.
+
 ## 2. Resource Group
 
 ```bash
@@ -78,16 +88,16 @@ if ($LASTEXITCODE -ne 0) { az group create -n <rg> -l <region> }
 
 ## 3. App Service Plan — **Linux, P0v3 by default**
 
-> ⚠️ **MANDATORY**: Use `--is-linux` and `--sku P0v3`. Do not change OS or SKU unless the user explicitly requests it.
+> ⚠️ **MANDATORY**: Use `--is-linux` and the selected SKU (`P0v3` by default), matching the SKU and region checked in §1d. Preserve an existing template's SKU. Do not change OS or SKU unless the user explicitly requests it.
 
 ```bash
 az appservice plan show -n <plan> -g <rg> --only-show-errors 2>/dev/null || \
-  az appservice plan create -n <plan> -g <rg> --is-linux --sku P0v3 -l <region>
+  az appservice plan create -n <plan> -g <rg> --is-linux --sku "<selected-sku>" -l <region>
 ```
 ```powershell
 az appservice plan show -n <plan> -g <rg> --only-show-errors 2>$null
 if ($LASTEXITCODE -ne 0) {
-  az appservice plan create -n <plan> -g <rg> --is-linux --sku P0v3 -l <region>
+  az appservice plan create -n <plan> -g <rg> --is-linux --sku "<selected-sku>" -l <region>
 }
 ```
 

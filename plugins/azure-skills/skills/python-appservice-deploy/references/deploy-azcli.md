@@ -6,6 +6,7 @@ Use this path when there is **no** `azure.yaml` or it doesn't target `appservice
 
 ## Prerequisites
 
+- For complex PowerShell queries, follow [Windows Azure CLI quoting](create-app.md#windows-azure-cli-quoting).
 - Verify the latest stable Azure CLI is installed ([installation/update guide](https://learn.microsoft.com/cli/azure/install-azure-cli-windows?pivots=winget)).
 - `az login` complete
 - Subscription, resource group, region, and app name decided (see [create-app.md](create-app.md))
@@ -13,15 +14,28 @@ Use this path when there is **no** `azure.yaml` or it doesn't target `appservice
 
 ## 1. Enable server-side build
 
+Check setting names without printing values. Python does not support `WEBSITE_RUN_FROM_PACKAGE`; if present, remove only that setting before source deployment, then rerun the check. Stop on read/delete errors; app-setting changes restart the app. Keep `SCM_DO_BUILD_DURING_DEPLOYMENT=true`.
+
+```bash
+CONFLICT=$(az webapp config appsettings list -n <app> -g <rg> --query "[?name=='WEBSITE_RUN_FROM_PACKAGE'].name" -o tsv) || exit 1
+[ -z "$CONFLICT" ] || { echo "Resolve WEBSITE_RUN_FROM_PACKAGE before source deployment" >&2; exit 1; }
+```
+```powershell
+$names = @(az webapp config appsettings list -n <app> -g <rg> --query "[].name" -o tsv)
+if ($LASTEXITCODE -ne 0) { throw "Could not read app setting names" }
+if ($names -contains 'WEBSITE_RUN_FROM_PACKAGE') { throw "Resolve WEBSITE_RUN_FROM_PACKAGE before source deployment" }
+```
+
 ```bash
 az webapp config appsettings set \
   -n <app> -g <rg> \
-  --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true
+  --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true -o none || exit 1
 ```
 ```powershell
 az webapp config appsettings set `
   -n <app> -g <rg> `
-  --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true
+  --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true -o none
+if ($LASTEXITCODE -ne 0) { throw "Could not enable remote build" }
 ```
 
 This tells Oryx to run `pip install -r requirements.txt` during deploy.
