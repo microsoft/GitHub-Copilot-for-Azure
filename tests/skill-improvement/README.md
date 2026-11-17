@@ -280,6 +280,13 @@ completed run. Missing historical ledgers remain unavailable.
 Generation disables Vally trial retries; unreturned failed trajectories and
 unreported model retries remain coverage gaps rather than zero consumption.
 
+A failed Vally `eval` or `grade` process (for example, a transient Azure fixture
+deployment error) is retried up to 3 attempts with 30- and 60-second backoff
+before the run fails. Retries stop at the run deadline. Failed attempts are kept
+beside the final output as `*.failed-attempt-N`. A retried generation adds its
+trials to expected answers and marks answer billing incomplete. Retried answers
+do not count toward `limits.maxAnswerGenerations`.
+
 For example, four of five request-usage events reporting 1.25 AIC produce:
 
 | Evaluation answer AIC | Request billing coverage | Meaning |
