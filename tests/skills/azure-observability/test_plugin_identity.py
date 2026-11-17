@@ -67,12 +67,15 @@ class PluginIdentityTests(unittest.TestCase):
 
     def test_readme_has_marketplace_installation_and_host_boundaries(self):
         text = (PLUGIN / "README.md").read_text("utf-8")
-        for expected in ("## Install or migrate",
+        heading = "## Get Started: Install or Migrate"
+        for expected in (heading,
                          "/plugin marketplace add microsoft/azure-skills",
                          "/plugin install azure-observability@azure-skills",
                          "/plugin update azure-observability@azure-skills",
                          "Installation grants no telemetry"):
             self.assertIn(expected, text)
+        self.assertEqual(text.count(heading), 1)
+        self.assertLess(text.index(heading), text.index("## Start with your question"))
         for forbidden in ("npm install", "npm run build", "--plugin-dir",
                           "Install Plugin from Source", "Preview from source"):
             self.assertNotIn(forbidden, text)

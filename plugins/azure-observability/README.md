@@ -29,6 +29,20 @@ The instructions carry confirmed scope, evidence and approvals across handoffs.
 These are guided troubleshooting stages, not continuous detection or automatic
 remediation.
 
+## Get Started: Install or Migrate
+
+In Copilot CLI:
+
+1. Add the marketplace: `/plugin marketplace add microsoft/azure-skills`
+2. Install this plugin: `/plugin install azure-observability@azure-skills`
+3. Update it later with `/plugin update azure-observability@azure-skills`
+
+Start a fresh conversation and try a question below. Keep Azure Skills enabled
+for canonical diagnostics/Foundry expertise. Installation grants no telemetry
+access or permission to query Azure.
+Disable or remove older draft copies through supported plugin management
+before enabling `azure-observability`; renamed packages do not update them.
+
 ## Start with your question
 
 Enable the plugin in a supported Copilot host and start a fresh chat.
@@ -76,20 +90,6 @@ edit files, or save data.
 
 Initial evidence review doesn't require Python, Azure Developer CLI (`azd`),
 saved mappings, write permissions, or a new connection.
-
-## Install or migrate
-
-In Copilot CLI:
-
-1. Add the marketplace: `/plugin marketplace add microsoft/azure-skills`
-2. Install this plugin: `/plugin install azure-observability@azure-skills`
-3. Update it later with `/plugin update azure-observability@azure-skills`
-
-Start a fresh conversation and try a question above. Keep Azure Skills enabled
-for canonical diagnostics/Foundry expertise. Installation grants no telemetry
-access or permission to query Azure.
-Disable or remove older draft copies through supported plugin management
-before enabling `azure-observability`; renamed packages do not update them.
 
 ## Relevant capabilities, discovered when needed
 
