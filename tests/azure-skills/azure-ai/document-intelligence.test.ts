@@ -175,6 +175,45 @@ it("detects encrypted PDF, HTML disguised as PDF, small PNG, and unsupported GIF
     expect(tiffRes.status).toBe("passed_local_checks");
     expect(tiffRes.document?.dimensions).toEqual({ width: 600, height: 800 });
     expect(tiffRes.document?.pageCount).toBe(1);
+
+    // Multi-page TIFF with valid page 1 and out-of-range page 2 must fail dimension preflight.
+    const multiTiff = join(dir, "multi-bad-page2.tiff");
+    const ifdSize = 2 + 2 * 12 + 4;
+    const writeIfd = (target: Buffer, offset: number, w: number, hVal: number, nextOffset: number): void => {
+      target.writeUInt16LE(2, offset);
+      target.writeUInt16LE(256, offset + 2); target.writeUInt16LE(4, offset + 4);
+      target.writeUInt32LE(1, offset + 6); target.writeUInt32LE(w, offset + 10);
+      target.writeUInt16LE(257, offset + 14); target.writeUInt16LE(4, offset + 16);
+      target.writeUInt32LE(1, offset + 18); target.writeUInt32LE(hVal, offset + 22);
+      target.writeUInt32LE(nextOffset, offset + 26);
+    };
+    const twoPageBuf = Buffer.alloc(8 + ifdSize * 2);
+    twoPageBuf.write("II", 0, "ascii"); twoPageBuf.writeUInt16LE(42, 2); twoPageBuf.writeUInt32LE(8, 4);
+    writeIfd(twoPageBuf, 8, 600, 800, 8 + ifdSize);
+    writeIfd(twoPageBuf, 8 + ifdSize, 20, 800, 0);
+    await writeFile(multiTiff, twoPageBuf);
+    const multiRes = await inspectDocumentInput({ file: multiTiff });
+    expect(multiRes.status).toBe("failed_preflight");
+    expect(multiRes.document?.dimensions).toEqual({ width: 600, height: 800 });
+    expect(multiRes.findings.map((f) => f.code)).toContain("IMAGE_DIMENSIONS_OUT_OF_RANGE");
+
+    // TIFF exceeding the 2,500-IFD scan cap preserves the 2,500 lower bound, triggers EXCEEDS_MAX_PAGES, and returns 'unknown'.
+    const cappedTiff = join(dir, "capped-pages.tiff");
+    const totalIfds = 2505;
+    const cappedBuf = Buffer.alloc(8 + ifdSize * totalIfds);
+    cappedBuf.write("II", 0, "ascii"); cappedBuf.writeUInt16LE(42, 2); cappedBuf.writeUInt32LE(8, 4);
+    for (let p = 0; p < totalIfds; p += 1) {
+      const cur = 8 + p * ifdSize;
+      const next = p + 1 < totalIfds ? 8 + (p + 1) * ifdSize : 0;
+      writeIfd(cappedBuf, cur, 200, 200, next);
+    }
+    await writeFile(cappedTiff, cappedBuf);
+    const cappedRes = await inspectDocumentInput({ file: cappedTiff, tier: "S0" });
+    expect(cappedRes.status).toBe("unknown");
+    expect(cappedRes.document?.pageCount).toBe(2500);
+    expect(cappedRes.findings.map((f) => f.code)).toEqual(
+      expect.arrayContaining(["TIFF_PAGE_SCAN_INCOMPLETE", "EXCEEDS_MAX_PAGES"]),
+    );
   });
 });
 
@@ -270,6 +309,30 @@ it("inspects custom labels and OCR JSON without leaking label names or text", as
     const skipped = await inspectDocumentInput({ labelsFile: bigLabels });
     expect(skipped.status).toBe("unknown");
     expect(skipped.findings.map((f) => f.code)).toContain("LABELS_FILE_NOT_INSPECTED");
+
+    // Non-object analyzeResult values (true, string, array) must fail INVALID_OCR_JSON_SHAPE.
+    for (const invalidVal of [true, "invalid", []]) {
+      const badOcr = join(dir, "bad.ocr.json");
+      await writeFile(badOcr, JSON.stringify({ analyzeResult: invalidVal }));
+      const cleanLabels = join(dir, "clean.labels.json");
+      await writeFile(cleanLabels, JSON.stringify({
+        labels: [{ label: "A", value: [{ page: 1, boundingBoxes: [[0.1, 0.1, 0.2, 0.1, 0.2, 0.2, 0.1, 0.2]] }] }],
+      }));
+      const badOcrRes = await inspectDocumentInput({ labelsFile: cleanLabels, ocrFile: badOcr });
+      expect(badOcrRes.status).toBe("failed_preflight");
+      expect(badOcrRes.labels?.ocr?.hasAnalyzeResult).toBe(false);
+      expect(badOcrRes.findings.map((f) => f.code)).toContain("INVALID_OCR_JSON_SHAPE");
+    }
+
+    // Degenerate all-overlapping label boxes hit the pair-check budget fast and report status 'unknown'.
+    const denseLabels = join(dir, "dense.labels.json");
+    const stackedBoxes = Array.from({ length: 800 }, () => [0, 0, 1, 0, 1, 1, 0, 1]);
+    await writeFile(denseLabels, JSON.stringify({
+      labels: [{ label: "Stacked", value: [{ page: 1, boundingBoxes: stackedBoxes }] }],
+    }));
+    const denseRes = await inspectDocumentInput({ labelsFile: denseLabels });
+    expect(denseRes.status).toBe("unknown");
+    expect(denseRes.findings.map((f) => f.code)).toContain("LABEL_OVERLAP_CHECK_INCOMPLETE");
   });
 });
 

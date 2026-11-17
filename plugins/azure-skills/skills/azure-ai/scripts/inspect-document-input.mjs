@@ -105,7 +105,9 @@ async function fileContainsAny(handle, byteLength, needles) {
 const VALID_BMP_DIB_SIZES = new Set([12, 40, 52, 56, 64, 108, 124]);
 const HEIF_BRANDS = new Set(["heic", "heix", "heim", "heis", "hevc", "hevx", "mif1", "msf1"]);
 const MAX_TIFF_IFDS = 2500;
+const MAX_OVERLAP_PAIR_CHECKS = 250000;
 const PDF_SCAN_OVERLAP = 64;
+const isPlainObject = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
 
 function parsePngDimensions(head) {
   if (head.length < 24 || head.toString("ascii", 12, 16) !== "IHDR") return undefined;
@@ -175,8 +177,8 @@ async function parseTiffMetadata(handle, head, byteLength) {
   const visited = new Set();
   let pageCount = 0;
   let truncatedScan = false;
-  let width;
-  let height;
+  let firstDimensions;
+  const outOfRangePages = [];
 
   // Read each IFD directly by file offset because libtiff/scanners commonly place IFDs at the end of large TIFFs.
   while (ifdOffset !== 0 && pageCount < MAX_TIFF_IFDS) {
@@ -202,26 +204,36 @@ async function parseTiffMetadata(handle, head, byteLength) {
       truncatedScan = true;
       break;
     }
-    if (pageCount === 0) {
-      for (let i = 0; i < entryCount; i += 1) {
-        const entryPos = i * 12;
-        const tag = readU16(entriesBuf, entryPos);
-        const fieldType = readU16(entriesBuf, entryPos + 2);
-        const valueCount = readU32(entriesBuf, entryPos + 4);
-        if (valueCount !== 1 || (fieldType !== 3 && fieldType !== 4)) continue;
-        const value = fieldType === 3 ? readU16(entriesBuf, entryPos + 8) : readU32(entriesBuf, entryPos + 8);
-        if (tag === 256 && value > 0) width = value;
-        if (tag === 257 && value > 0) height = value;
-      }
+    let pageWidth;
+    let pageHeight;
+    for (let i = 0; i < entryCount; i += 1) {
+      const entryPos = i * 12;
+      const tag = readU16(entriesBuf, entryPos);
+      const fieldType = readU16(entriesBuf, entryPos + 2);
+      const valueCount = readU32(entriesBuf, entryPos + 4);
+      if (valueCount !== 1 || (fieldType !== 3 && fieldType !== 4)) continue;
+      const value = fieldType === 3 ? readU16(entriesBuf, entryPos + 8) : readU32(entriesBuf, entryPos + 8);
+      if (tag === 256) pageWidth = value;
+      if (tag === 257) pageHeight = value;
     }
     pageCount += 1;
+    if (pageWidth !== undefined && pageHeight !== undefined) {
+      if (!firstDimensions && pageWidth > 0 && pageHeight > 0) {
+        firstDimensions = { width: pageWidth, height: pageHeight };
+      }
+      if (pageWidth < 50 || pageHeight < 50 || pageWidth > 10000 || pageHeight > 10000) {
+        outOfRangePages.push({ page: pageCount, width: pageWidth, height: pageHeight });
+      }
+    }
     ifdOffset = readU32(entriesBuf, entryCount * 12);
   }
   if (ifdOffset !== 0 && pageCount >= MAX_TIFF_IFDS) truncatedScan = true;
   return {
-    dimensions: width !== undefined && height !== undefined ? { width, height } : undefined,
-    pageCount: truncatedScan ? undefined : pageCount,
-    pageCountBasis: truncatedScan ? "tiff_ifd_window_exceeded" : "tiff_ifd_count",
+    dimensions: firstDimensions,
+    outOfRangePages,
+    pageCount: pageCount > 0 ? pageCount : (truncatedScan ? undefined : 0),
+    pageCountIncomplete: truncatedScan,
+    pageCountBasis: truncatedScan ? "tiff_ifd_lower_bound" : "tiff_ifd_count",
   };
 }
 
@@ -437,14 +449,26 @@ async function inspectLabels(labelsFile, ocrFile) {
   });
 
   let overlappingPairCount = 0;
+  let pairChecks = 0;
+  let overlapCheckIncomplete = false;
   for (const list of regionsByPage.values()) {
-    for (let i = 0; i < list.length; i += 1) {
+    list.sort((a, b) => a.rect.minX - b.rect.minX);
+    for (let i = 0; i < list.length && !overlapCheckIncomplete; i += 1) {
+      const a = list[i];
       for (let j = i + 1; j < list.length; j += 1) {
-        if (list[i].labelIndex !== list[j].labelIndex && rectsOverlap(list[i].rect, list[j].rect)) {
+        // Sorted by minX: once b.minX meets or exceeds a.maxX, no subsequent box on this page can overlap a.
+        if (list[j].rect.minX >= a.rect.maxX - 1e-6) break;
+        pairChecks += 1;
+        if (pairChecks > MAX_OVERLAP_PAIR_CHECKS) {
+          overlapCheckIncomplete = true;
+          break;
+        }
+        if (a.labelIndex !== list[j].labelIndex && rectsOverlap(a.rect, list[j].rect)) {
           overlappingPairCount += 1;
         }
       }
     }
+    if (overlapCheckIncomplete) break;
   }
 
   if (duplicateLabelCount > 0) {
@@ -475,6 +499,13 @@ async function inspectLabels(labelsFile, ocrFile) {
       detail: `${overlappingPairCount} cross-label bounding-box overlap(s) detected; verify template/neural labeling intent.`,
     });
   }
+  if (overlapCheckIncomplete) {
+    findings.push({
+      code: "LABEL_OVERLAP_CHECK_INCOMPLETE",
+      severity: "warning",
+      detail: `Stopped overlap scan after ${MAX_OVERLAP_PAIR_CHECKS} x-overlapping region pair checks; overlap count is a lower bound.`,
+    });
+  }
 
   let ocrSummary;
   if (ocrFile) {
@@ -496,13 +527,16 @@ async function inspectLabels(labelsFile, ocrFile) {
     }
     if (ocrText !== undefined) {
       const ocrJson = JSON.parse(ocrText);
-      const pages = Array.isArray(ocrJson?.analyzeResult?.pages) ? ocrJson.analyzeResult.pages.length : undefined;
+      const validAnalyzeResult = isPlainObject(ocrJson) && isPlainObject(ocrJson.analyzeResult);
+      const pages = validAnalyzeResult && Array.isArray(ocrJson.analyzeResult.pages)
+        ? ocrJson.analyzeResult.pages.length
+        : undefined;
       ocrSummary = {
         byteLength: ocrSize,
-        hasAnalyzeResult: Boolean(ocrJson && typeof ocrJson === "object" && ocrJson.analyzeResult),
+        hasAnalyzeResult: validAnalyzeResult,
         pageCount: pages,
       };
-      if (!ocrSummary.hasAnalyzeResult) {
+      if (!validAnalyzeResult) {
         findings.push({
           code: "INVALID_OCR_JSON_SHAPE",
           severity: "error",
@@ -520,6 +554,7 @@ async function inspectLabels(labelsFile, ocrFile) {
     duplicateLabelCount,
     outOfBoundsBoxCount,
     overlappingPairCount,
+    overlapCheckIncomplete,
     ...(ocrSummary ? { ocr: ocrSummary } : {}),
     findings,
   };
@@ -657,7 +692,14 @@ export async function inspectDocumentInput({
       });
     }
 
-    if (detected.dimensions) {
+    if (Array.isArray(detected.outOfRangePages) && detected.outOfRangePages.length > 0) {
+      const firstBad = detected.outOfRangePages[0];
+      findings.push({
+        code: "IMAGE_DIMENSIONS_OUT_OF_RANGE",
+        severity: "error",
+        detail: `TIFF page ${firstBad.page} dimensions (${firstBad.width}x${firstBad.height} px) fall outside the documented 50x50 to 10000x10000 px range${detected.outOfRangePages.length > 1 ? ` (${detected.outOfRangePages.length} pages out of range)` : ""}.`,
+      });
+    } else if (detected.dimensions) {
       const { width, height } = detected.dimensions;
       if (width < 50 || height < 50 || width > 10000 || height > 10000) {
         findings.push({
@@ -668,18 +710,27 @@ export async function inspectDocumentInput({
       }
     }
 
+    if (detected.pageCountIncomplete) {
+      findings.push({
+        code: "TIFF_PAGE_SCAN_INCOMPLETE",
+        severity: "warning",
+        detail: `TIFF IFD scan stopped after ${pageCount ?? 0} page(s) before reaching a terminal IFD; total page count and remaining page dimensions are incomplete.`,
+      });
+    }
+
+    const pageEstimateLabel = detected.pageCountIncomplete ? `at least ${pageCount}` : `${pageCount}`;
     if (typeof pageCount === "number") {
       if (normalizedTier === "F0" && pageCount > 2) {
         findings.push({
           code: "F0_TWO_PAGE_LIMIT",
           severity: "warning",
-          detail: `Free tier (F0) processes only the first 2 pages (local page estimate: ${pageCount}).`,
+          detail: `Free tier (F0) processes only the first 2 pages (local page estimate: ${pageEstimateLabel}).`,
         });
       } else if (normalizedTier === "S0" && pageCount > 2000) {
         findings.push({
           code: "EXCEEDS_MAX_PAGES",
           severity: "warning",
-          detail: `Up to 2,000 pages can be processed; the local page estimate is ${pageCount} (a heuristic that can overcount incrementally saved PDFs). Use the pages parameter to select a range if needed.`,
+          detail: `Up to 2,000 pages can be processed; the local page estimate is ${pageEstimateLabel} (a heuristic that can overcount incrementally saved PDFs). Use the pages parameter to select a range if needed.`,
         });
       }
     }
@@ -691,6 +742,7 @@ export async function inspectDocumentInput({
       encrypted,
       ...(detected.dimensions ? { dimensions: detected.dimensions } : {}),
       ...(pageCount !== undefined ? { pageCount } : {}),
+      ...(detected.pageCountIncomplete ? { pageCountIncomplete: true } : {}),
       pageCountBasis,
     };
   }
@@ -704,7 +756,9 @@ export async function inspectDocumentInput({
   const hasError = findings.some((f) => f.severity === "error");
   const incompleteOrUnrecognized =
     documentReport?.detectedFormat === "unrecognized" ||
+    Boolean(documentReport?.pageCountIncomplete) ||
     Boolean(labelsReport?.notInspected) ||
+    Boolean(labelsReport?.overlapCheckIncomplete) ||
     Boolean(labelsReport?.ocr?.notInspected);
   const status = hasError ? "failed_preflight" : incompleteOrUnrecognized ? "unknown" : findings.some((f) => f.severity === "warning") ? "passed_with_warnings" : "passed_local_checks";
 
@@ -724,6 +778,7 @@ export async function inspectDocumentInput({
             duplicateLabelCount: labelsReport.duplicateLabelCount,
             outOfBoundsBoxCount: labelsReport.outOfBoundsBoxCount,
             overlappingPairCount: labelsReport.overlappingPairCount,
+            ...(labelsReport.overlapCheckIncomplete ? { overlapCheckIncomplete: true } : {}),
             ...(labelsReport.ocr ? { ocr: labelsReport.ocr } : {}),
           },
         }
