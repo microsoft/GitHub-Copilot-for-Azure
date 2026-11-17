@@ -55,9 +55,9 @@ refinement:
   maximumQualityRegressionPoints: 0
 
 limits:
-  maxIterations: 2
-  maxAnswerGenerations: 200
-  maxJudgeCalls: 200
+  maxIterations: 3
+  maxAnswerGenerations: 240
+  maxJudgeCalls: 240
   maxDurationMinutes: 360
   maxConcurrentVallyProcesses: 4
   generationWorkersPerVallyProcess: 1
