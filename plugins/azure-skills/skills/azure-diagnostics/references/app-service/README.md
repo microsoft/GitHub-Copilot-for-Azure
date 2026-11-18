@@ -45,7 +45,7 @@ az rest --method get \
 **Diagnose:**
 ```bash
 # List deployment history
-az webapp deployment list -n APP -g RG --output table
+az webapp log deployment list -n APP -g RG --output table
 
 # View deployment log for a specific deployment
 az webapp log deployment show -n APP -g RG --deployment-id DEPLOY_ID
@@ -188,6 +188,11 @@ Use the [`appservice-diagnostics`](../../scripts/appservice-diagnostics.sh) scri
 It prints clearly labeled sections — app config, recent deployments, app settings, and
 custom domains — and a summary line describing what it collected. Interpreting the output
 remains your job.
+
+The summary reports **complete** only if every section succeeds; otherwise it reports
+**incomplete**, identifies failed sections, and continues collecting the rest.
+Exit codes: `0` = complete, `1` = incomplete collection, `2` = invalid arguments.
+These describe collection status, not deployment success.
 
 ```powershell
 ..\..\scripts\appservice-diagnostics.ps1 -Name <app> -ResourceGroup <rg>

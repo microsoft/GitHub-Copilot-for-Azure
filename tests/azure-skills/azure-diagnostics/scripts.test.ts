@@ -32,15 +32,29 @@ function readScript(name: string, extension: "sh" | "ps1"): string {
   return fs.readFileSync(`${scriptsDirectory}/${name}.${extension}`, "utf8");
 }
 
-function runWithStubbedCommands(name: AzureScriptName, exitCode: number) {
+function runWithStubbedCommands(name: AzureScriptName, exitCode: number, failCommand = "") {
   const bashStubDirectory = fs.mkdtempSync(
     path.join(os.tmpdir(), "diagnostics-bash-stubs-"),
   );
   const powershellStubDirectory = fs.mkdtempSync(
     path.join(os.tmpdir(), "diagnostics-powershell-stubs-"),
   );
-  const bashStub = "#!/usr/bin/env bash\nexit \"${STUB_EXIT_CODE:-0}\"\n";
-  const cmdStub = "@exit /b %STUB_EXIT_CODE%\r\n";
+  const bashStub = `#!/usr/bin/env bash
+printf '%s\\n' "$*" >&2
+if [[ -z "$STUB_FAIL_COMMAND" || "$*" == "$STUB_FAIL_COMMAND"* ]]; then
+  exit "$STUB_EXIT_CODE"
+fi
+exit 0
+`;
+  const cmdStub = [
+    "@echo off",
+    "echo %* >&2",
+    'if "%STUB_FAIL_COMMAND%"=="" exit /b %STUB_EXIT_CODE%',
+    'echo %* | findstr /b /l /c:"%STUB_FAIL_COMMAND%" >nul',
+    "if not errorlevel 1 exit /b %STUB_EXIT_CODE%",
+    "exit /b 0",
+    "",
+  ].join("\r\n");
   for (const command of ["az", "kubectl"]) {
     fs.writeFileSync(
       path.join(bashStubDirectory, command),
@@ -61,9 +75,12 @@ function runWithStubbedCommands(name: AzureScriptName, exitCode: number) {
   const powershellArgs = name === "aks-baseline"
     ? ["-ResourceGroup", "test-rg", "-Cluster", "test-cluster"]
     : ["-Name", "test-app", "-ResourceGroup", "test-rg"];
+  bashArgs.push("--subscription", "test-sub");
+  powershellArgs.push("-Subscription", "test-sub");
   const commonEnv = {
     ...process.env,
     STUB_EXIT_CODE: `${exitCode}`,
+    STUB_FAIL_COMMAND: failCommand,
   };
   const toBashPath = (value: string) => process.platform === "win32"
     ? value
@@ -161,5 +178,36 @@ describe("Azure Diagnostics script contracts", () => {
     const result = runWithStubbedCommands(name, 0);
     expect(result.bash.status).toBe(0);
     expect(result.powershell.status).toBe(0);
+  });
+
+  test("App Service uses the supported command and accepts empty deployment history", () => {
+    const result = runWithStubbedCommands("appservice-diagnostics", 0);
+    for (const shell of Object.values(result)) {
+      expect(shell.status).toBe(0);
+      expect(shell.stderr).toMatch(
+        /webapp log deployment list -n test-app -g test-rg --subscription test-sub --query "?\[:3\]\.\{id:id, status:status, time:end_time\}"? -o table/,
+      );
+      expect(shell.stdout).toContain("=== Diagnostics collection complete for test-app ===");
+      expect(shell.stdout).not.toContain("=== Diagnostics collection incomplete for test-app ===");
+    }
+  });
+
+  test.each([
+    ["app config", "webapp show", "(failed to read app config)"],
+    ["deployments", "webapp log deployment list", "(failed to list deployments)"],
+    ["app settings", "webapp config appsettings list", "(failed to list app settings)"],
+    ["custom domains", "webapp config hostname list", "(failed to list custom domains)"],
+    ["all sections", "", "(failed to list deployments)"],
+  ])("App Service reports incomplete collection when %s fails", (_, failCommand, failureMessage) => {
+    const result = runWithStubbedCommands("appservice-diagnostics", 1, failCommand);
+    for (const shell of Object.values(result)) {
+      expect(shell.status).toBe(1);
+      expect(shell.stdout).toContain("=== Diagnostics collection incomplete for test-app ===");
+      expect(shell.stdout).not.toContain("=== Diagnostics collection complete for test-app ===");
+      expect(shell.stderr).toContain(failureMessage);
+      expect(shell.stderr).toMatch(
+        /webapp show[\s\S]*webapp log deployment list[\s\S]*webapp config appsettings list[\s\S]*webapp config hostname list/,
+      );
+    }
   });
 });

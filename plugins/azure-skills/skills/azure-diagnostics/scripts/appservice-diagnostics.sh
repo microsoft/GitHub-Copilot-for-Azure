@@ -82,7 +82,7 @@ echo ""
 
 echo "--- Recent Deployments (last 3) ---"
 run_step "(failed to list deployments)" \
-    az webapp deployment list -n "$APP" -g "$RG" ${SUB_ARGS[@]+"${SUB_ARGS[@]}"} \
+    az webapp log deployment list -n "$APP" -g "$RG" ${SUB_ARGS[@]+"${SUB_ARGS[@]}"} \
     --query "[:3].{id:id, status:status, time:end_time}" -o table
 echo ""
 
@@ -97,5 +97,9 @@ run_step "(failed to list custom domains)" \
     az webapp config hostname list -g "$RG" --webapp-name "$APP" ${SUB_ARGS[@]+"${SUB_ARGS[@]}"} -o table
 echo ""
 
-echo "=== Diagnostics collection complete for $APP ==="
+if [ "$COLLECTION_FAILED" -ne 0 ]; then
+    echo "=== Diagnostics collection incomplete for $APP ==="
+else
+    echo "=== Diagnostics collection complete for $APP ==="
+fi
 exit "$COLLECTION_FAILED"
