@@ -1,6 +1,6 @@
 # Deploy via `az` CLI
 
-Use this path when there is **no** `azure.yaml` or it doesn't target `appservice`.
+Use this path when there is **no** `azure.yaml`. Existing projects targeting another host belong to `azure-prepare`.
 
 > ⛔ **NEVER USE `az webapp up`** — this command is deprecated. Use the explicit create + deploy commands below.
 
@@ -31,12 +31,13 @@ if ($names -contains 'WEBSITE_RUN_FROM_PACKAGE') { throw "Resolve WEBSITE_RUN_FR
 ```bash
 az webapp config appsettings set \
   -n <app> -g <rg> \
-  --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true
+  --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true -o none || exit 1
 ```
 ```powershell
 az webapp config appsettings set `
   -n <app> -g <rg> `
-  --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true
+  --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true -o none
+if ($LASTEXITCODE -ne 0) { throw "Could not enable remote build" }
 ```
 
 Oryx then runs `composer install`. It does **not** run npm — build front-end assets (e.g. `npm run build` for Vite) locally before packaging.
@@ -74,26 +75,44 @@ Stop on any failure before packaging.
 
 ### Create a fresh ZIP
 
-Zip the project **without** `vendor` (the remote build installs it), `node_modules`, `.git`, or `.env` files. Laravel's `storage/` and `bootstrap/cache/` folders and their placeholder files **must** be included.
+Package a sanitized staging copy, excluding `.git`, `vendor`, `node_modules`, `.env`/`.env.*` at every depth and generated `bootstrap/cache/*.php`. Do not modify the source. Keep Laravel's `storage/` and `bootstrap/cache/` folders and their placeholder files.
 
 ```bash
 # bash
 rm -f app.zip || exit 1
-zip -r app.zip . \
-  -x ".git/*" -x "vendor/*" -x "node_modules/*" -x ".env" -x ".env.*" -x "app.zip" \
-  || { rm -f app.zip; exit 1; }
+ARCHIVE="$PWD/app.zip"
+STAGE=$(mktemp -d) || exit 1
+(set -o pipefail; tar -cf - \
+  --exclude='.git' --exclude='vendor' --exclude='node_modules' \
+  --exclude='.env' --exclude='.env.*' --exclude='*/.env' --exclude='*/.env.*' \
+  --exclude='*/bootstrap/cache/*.php' --exclude='app.zip' . | tar -xf - -C "$STAGE") \
+  || { rm -r -- "$STAGE"; exit 1; }
+(cd "$STAGE" && zip -r "$ARCHIVE" .) \
+  || { rm -r -- "$STAGE"; rm -f app.zip; exit 1; }
+rm -r -- "$STAGE" || exit 1
 ```
 
 ```powershell
 # PowerShell
 if (Test-Path app.zip) { Remove-Item app.zip -ErrorAction Stop }
-$exclude = @('.git','vendor','node_modules','.env','app.zip')
-$items = Get-ChildItem -Force -ErrorAction Stop | Where-Object { $exclude -notcontains $_.Name -and $_.Name -notlike '.env.*' }
+$root = (Get-Location).Path
+$stage = Join-Path ([IO.Path]::GetTempPath()) ([guid]::NewGuid().ToString())
+New-Item -ItemType Directory -Path $stage -ErrorAction Stop | Out-Null
 try {
-    Compress-Archive -Path $items -DestinationPath app.zip -Force -ErrorAction Stop
+    Get-ChildItem -LiteralPath $root -File -Force -Recurse -ErrorAction Stop | ForEach-Object {
+        $relative = $_.FullName.Substring($root.Length + 1) -replace '\\','/'
+        if ($relative -match '(^|/)(\.git|vendor|node_modules)(/|$)|(^|/)\.env(\.|$)|(^|/)bootstrap/cache/[^/]+\.php$|^app\.zip$') { return }
+        $destination = Join-Path $stage $relative
+        New-Item -ItemType Directory -Path (Split-Path $destination) -Force -ErrorAction Stop | Out-Null
+        Copy-Item -LiteralPath $_.FullName -Destination $destination -ErrorAction Stop
+    }
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    [IO.Compression.ZipFile]::CreateFromDirectory($stage, (Join-Path $root 'app.zip'))
 } catch {
     if (Test-Path app.zip) { Remove-Item app.zip -ErrorAction Stop }
     throw
+} finally {
+    Remove-Item -LiteralPath $stage -Recurse -Force -ErrorAction Stop
 }
 ```
 

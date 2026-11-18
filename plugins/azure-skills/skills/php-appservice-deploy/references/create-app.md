@@ -110,7 +110,7 @@ Before the §1e summary, discover available runtimes:
 az webapp list-runtimes --os linux --runtime php --query "[].config" -o tsv
 ```
 
-Choose the latest runtime compatible with `composer.json` `require.php`, respecting any user-specified runtime. The output uses the pipe form (e.g., `PHP|8.5`) — **convert to colon form** for `<runtime>` and show it in §1e. Stop if discovery fails, the requested runtime is incompatible, or none matches. For existing apps, show their actual OS/runtime and surface mismatches; do not change the runtime silently.
+Choose the latest runtime compatible with `composer.json` `require.php`, locked packages' PHP requirements/conflicts in `composer.lock`, and Composer `config.platform.php` overrides; respect the user's runtime. Stop if these constraints conflict or cannot be verified. The output uses the pipe form (e.g., `PHP|8.5`) — **convert to colon form** for `<runtime>` and show it in §1e. Stop if discovery fails, the requested runtime is incompatible, or none matches. For existing apps, show their actual OS/runtime and surface mismatches; do not change the runtime silently.
 
 > ⚠️ **Shell safety**: Always use the **colon** form (e.g., `PHP:8.5`) — never the pipe form `PHP|8.5`. The pipe is a shell operator in PowerShell, Bash, and cmd.
 

@@ -11,12 +11,14 @@ After `az webapp deploy` / `azd deploy` returns successfully, **the skill is don
 
 ## Message template — standard
 
+Use the HTTPS endpoint already resolved by the deployment path, including any regional/hash suffix; never reconstruct it from the app name.
+
 Use when Step 2 found an entry point (`index.php` or `public/index.php`). Print exactly this (substituting real values), then end the turn:
 
 ```
 ✅ Deployment complete.
 
-🌐 App URL: https://<app>.azurewebsites.net
+🌐 App URL: <resolved-https-endpoint>
    It can take 2–3 minutes for the site to be reachable while App Service finishes
    composer install and warms up the container. Open it in your browser after a short wait.
 
@@ -48,7 +50,7 @@ Use when Step 2 found no `index.php` or `public/index.php`:
 ```
 ✅ Code deployed — but no PHP entry point was found.
 
-🌐 App URL: https://<app>.azurewebsites.net
+🌐 App URL: <resolved-https-endpoint>
    It can take 2–3 minutes for App Service to finish building and start the container.
    The site may show the default page or a 404 until the document root is configured.
 

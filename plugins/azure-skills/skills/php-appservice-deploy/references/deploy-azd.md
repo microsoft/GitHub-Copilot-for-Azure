@@ -12,22 +12,15 @@ Use this path when the workspace already has an `azure.yaml` whose service host 
 
 ## Confirm host target
 
-```bash
-# Look for `host: appservice` under services in azure.yaml
-grep -E "host:\s*appservice" azure.yaml
-```
-```powershell
-# Look for `host: appservice` under services in azure.yaml
-Select-String -Path azure.yaml -Pattern 'host:\s*appservice'
-```
-
-If no match → use the az CLI path.
+Select the actual service and require its `host: appservice`; a different host is a handoff to `azure-prepare`, not permission to use CLI. Do not select a service by matching an unrelated `host` line.
 
 Verify the latest stable Azure CLI before deployment. azd has no PHP language; like the [Azure Laravel sample](https://github.com/Azure-Samples/laravel-tasks/blob/main/azure.yaml), PHP services use `language: js` just to upload files (azd also runs `npm` steps if `package.json` exists). Exclude `vendor` and `.env` from the package, and keep Laravel's `storage/` and `bootstrap/cache/` folders.
 
 If `package.json` exists, inspect its npm scripts and lockfile before deploying: azd may run npm installation and build steps. Respect the existing frontend build, surface failures, and do not silently change scripts or dependencies. Ensure required generated assets are included.
 
-Before every `azd up`/`azd deploy`, run the shared [LF normalization and validation example](deploy-azcli.md#normalize-linux-scripts) on the service's actual package inputs, including generated startup scripts. Use its shell-specific exit guard. Package only after normalization/validation succeeds; any normalization, validation or packaging failure stops deployment. Require a fresh package, never a cached artifact from a failed attempt.
+Before source deployment, run the [app-setting conflict check](deploy-azcli.md#1-enable-server-side-build) for existing apps; inspect template settings for new apps. Require `SCM_DO_BUILD_DURING_DEPLOYMENT=true` and no `WEBSITE_RUN_FROM_PACKAGE`. Apply the [recursive packaging exclusions](deploy-azcli.md#create-a-fresh-zip) to the actual azd package too; preserve Laravel placeholders and stop if package safety cannot be verified.
+
+Before every `azd deploy <service-name>`, run the shared [LF normalization and validation example](deploy-azcli.md#normalize-linux-scripts) on the service's actual package inputs, including generated startup scripts. Use its shell-specific exit guard. Package only after normalization/validation succeeds; any normalization, validation or packaging failure stops deployment. Require a fresh package, never a cached artifact from a failed attempt.
 
 ## Authenticate
 
@@ -39,36 +32,42 @@ azd auth login --check-status
 if ($LASTEXITCODE -ne 0) { azd auth login }
 ```
 
-## Provision (first time only)
+## Resolve environment
 
-If no `azd` environment exists in this folder:
+Reuse the selected environment, even if it is not provisioned. Run this block only if no environment exists:
 
 Before creating a plan, run the [quota and region checks](create-app.md#1d-region) for the template's effective subscription, region and SKU. Preserve defaults unless the user requests changes; reuse results and recheck after these values change.
 
 ```bash
-azd env new <env-name>
-azd env set AZURE_LOCATION <region>
-# Optional: override default SKU via the template's parameters
-azd env set APP_SERVICE_SKU P0v3
+azd env new <env-name> || exit 1
+# Only for requested overrides consumed by the template:
+azd env set AZURE_LOCATION <checked-region> || exit 1
+azd env set APP_SERVICE_SKU "<checked-sku>" || exit 1
 ```
 
-Then provision + deploy in one call:
+Only execute the override lines when explicitly requested; otherwise preserve template defaults. In PowerShell, check `$LASTEXITCODE` after each command and stop on failure.
+
+## Provision missing resources
+
+Before provisioning **or deploying**, resolve the selected service's actual app/RG and the environment's effective `AZURE_SUBSCRIPTION_ID`, `AZURE_LOCATION`, SKU and Linux runtime. Read only needed values, not the full environment (which can contain secrets). Confirm the active Azure CLI subscription matches; stop for clarification on context conflicts or incompatible targets. Recheck quota if effective values change.
+
+Check target-resource existence, not merely environment existence. If resources are missing, run the quota gate above and provision only when the full template is within this code-only App Service scope; otherwise hand off to `azure-prepare`. Do not run project-wide `azd up` or deploy unrelated services.
 
 ```bash
-azd up || exit 1
+azd provision || exit 1
 ```
 ```powershell
-azd up
-if (-not $? -or $LASTEXITCODE -ne 0) { throw "azd provisioning/packaging/deployment failed" }
+azd provision
+if ($LASTEXITCODE -ne 0) { throw "azd provisioning failed" }
 ```
 
 ## Deploy code only (subsequent deploys)
 
 ```bash
-azd deploy || exit 1
+azd deploy <service-name> || exit 1
 ```
 ```powershell
-azd deploy
+azd deploy <service-name>
 if (-not $? -or $LASTEXITCODE -ne 0) { throw "azd packaging/deployment failed" }
 ```
 
@@ -78,16 +77,19 @@ After `azd deploy` returns, **stop**. Do not run `azd monitor`, `az webapp log t
 
 > ⛔ **Do NOT probe the endpoint** (no `curl`, no `Invoke-WebRequest`) and **do NOT tail logs** as a verification step. App Service can take 2–3 minutes after deploy before the site responds.
 
-Read the endpoint from azd without hitting the site:
+Resolve the selected app's endpoint without hitting the site:
 
 ```bash
 # bash
-azd env get-values | grep -E '^SERVICE_.*_URI='
+HOST=$(az webapp show -n <selected-app> -g <selected-rg> --query defaultHostName -o tsv) || exit 1
+printf 'https://%s\n' "$HOST"
 ```
 
 ```powershell
 # PowerShell
-azd env get-values | Select-String "SERVICE_.*_URI"
+$hostName = az webapp show -n <selected-app> -g <selected-rg> --query defaultHostName -o tsv
+if ($LASTEXITCODE -ne 0) { throw "Could not resolve selected app endpoint" }
+"https://$hostName"
 ```
 
 Present the URL with the `https://` prefix and the post-deploy message from [post-deploy-message.md](post-deploy-message.md), then end the turn.
@@ -95,5 +97,4 @@ Present the URL with the `https://` prefix and the post-deploy message from [pos
 ## Notes
 
 - ⛔ Do **not** run `azd init -t <template>` in an existing workspace — it can destroy user code. Only `azd init` (no template) is safe inside an existing project.
-- If `azd up` provisions infra that doesn't match P0v3 Linux, the underlying template owns that decision — don't fight it. Note this to the user.
-- If `azd deploy` fails because no environment exists, fall back to `azd env new` then re-run.
+- Preserve compatible template defaults; stop before changing the template or switching targets.
