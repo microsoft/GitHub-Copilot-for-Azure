@@ -17,13 +17,13 @@ Deploys .NET (ASP.NET Core, MVC, Web API, Razor Pages, Blazor Server/Web App) co
 
 **Prerequisite:** Verify the latest stable Azure CLI; update with approval and recheck if needed.
 
-1. **Resolve context — smart defaults, minimal prompts.** Only the app name is interactive; RG (`<app>-rg`), Plan (`<app>-plan`), region (current `az` default or `eastus2`), subscription are derived. [create-app.md](references/create-app.md) §1.
+1. **Resolve context — smart defaults, minimal prompts.** For CLI (no `azure.yaml`), only the app name is interactive; RG (`<app>-rg`), Plan (`<app>-plan`), region (current `az` default or `eastus2`), subscription are derived. [create-app.md](references/create-app.md) §1.
 2. **Detect web project + target framework** (selects `PROJECT` and runtime). [detect.md](references/detect.md).
-3. **Choose path** — `azure.yaml` host: appservice → [deploy-azd.md](references/deploy-azd.md); else [deploy-azcli.md](references/deploy-azcli.md).
+3. **Choose path** — existing `azure.yaml` → follow [deploy-azd.md](references/deploy-azd.md), then stop; skip manual creation. Otherwise follow [deploy-azcli.md](references/deploy-azcli.md) and continue below.
 4. **Ensure RG → Plan (`P0v3 --is-linux`) → Web App (`--runtime "<runtime>"`)** exist. Discover the latest compatible runtime in [create-app.md](references/create-app.md) §4 (e.g., `DOTNETCORE:10.0`); before creating a plan, run its quota and region gate (§1d). On transient ARM errors, follow [transient-retry.md](references/transient-retry.md).
 5. **Set startup** — ASP.NET Core: none (App Service starts the published assembly). Custom `dotnet <Assembly>.dll` only when needed. [startup-commands.md](references/startup-commands.md).
 6. **Build configuration** — CLI source deploy: set `SCM_DO_BUILD_DURING_DEPLOYMENT=true` (+ `PROJECT` for multi-project repos) so Oryx runs `dotnet publish`. azd publishes locally instead; see [deploy-azd.md](references/deploy-azd.md).
-7. **Deploy** — `azd deploy` or `az webapp deploy --type zip --track-status false --enriched-errors true`.
+7. **Deploy** — `az webapp deploy --type zip --track-status false --enriched-errors true`.
 8. **STOP. Print the post-deploy message** ([post-deploy-message.md](references/post-deploy-message.md)) and end the turn.
 
 ### Hard rules

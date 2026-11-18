@@ -6,6 +6,7 @@ description: |
 tags:
   type: integration
   skill: dotnet-appservice-deploy
+  requiredSkills: [dotnet-appservice-deploy, azure-prepare]
 
 defaults:
   runs: 1
@@ -39,16 +40,15 @@ stimuli:
       - type: skill-invocation
         config:
           required: [dotnet-appservice-deploy]
-      - type: tool-calls
+      - type: shell-command-invoked
         config:
           required:
-            - name: "^(bash|powershell|pwsh)$"
-              command: "\\baz\\s+webapp\\s+deploy\\b|\\bazd\\s+(deploy|up)\\b"
+            - command: "\\baz\\s+webapp\\s+deploy\\b|\\bazd\\s+deploy\\b"
           disallowed:
-            - name: "^(bash|powershell|pwsh)$"
-              command: "\\baz\\s+webapp\\s+up(?!date)\\b"
-            - name: "^(bash|powershell|pwsh)$"
-              command: "\\baz\\s+webapp\\s+log\\s+tail\\b|[Ii]nvoke-[Ww]eb[Rr]equest|\\bcurl\\s+https?://|\\bwget\\s+https?://"
+            - command: "\\baz\\s+webapp\\s+up(?!date)\\b"
+            - command: "(?i)\\baz\\s+webapp\\s+log\\s+tail\\b|\\bazd\\s+monitor\\b"
+            - command: '(?i)\b(curl|wget|Invoke-WebRequest|Invoke-RestMethod|iwr|irm)(\.exe)?\b[^\r\n;&|]*(azurewebsites\.net|\$\{?(url|endpoint|host_?|hostname|app_?url|site_?url)\b)'
+            - command: '(?i)\b(curl|wget|Invoke-WebRequest|Invoke-RestMethod|iwr|irm)(\.exe)?\b(?![^\r\n;&|]*(--output(?:=|\s)|--output-document(?:=|\s)|\s-o\s|-OutFile\s))[^\r\n;&|]*\$(\{[^}]+\}|[A-Za-z_]\w*)'
       - type: output-matches
         config:
           pattern: "https://[^\\s]+\\.azurewebsites\\.net"
@@ -104,6 +104,7 @@ stimuli:
       tier: smoke
       cost: llm
       area: routing-negative
+      requiredSkills: [dotnet-appservice-deploy, php-appservice-deploy, azure-prepare]
       earlyTerminate: '[{"type":"skill-call","skill":"php-appservice-deploy"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
