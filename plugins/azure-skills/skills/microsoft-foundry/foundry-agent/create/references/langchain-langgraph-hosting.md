@@ -4,22 +4,26 @@ Use this guidance when creating, migrating, or re-hosting a LangChain or LangGra
 
 For an end-to-end walkthrough of hosting an existing LangGraph, LangChain, or Deep Agents application on Foundry, see [Host LangGraph applications on Microsoft Foundry](https://github.com/langchain-ai/langchain-azure/blob/main/libs/azure-ai/docs/hosting/host-langgraph-on-foundry.md).
 
-## Design Intent
+## Re-hosting Workflow
 
-Preserve the agent's existing framework behavior and minimize migration-specific code. Choose the least invasive hosting path that satisfies the requested behavior.
+Preserve business behavior, the existing framework and dependencies. Limit edits to necessary hosting-boundary, graph-construction and lifecycle adaptations.
 
-Preserve business behavior and minimize edits. Make only the hosting-boundary, graph-construction, or lifecycle adaptations needed to run the application on Foundry, preserving business logic and existing dependencies.
+### 1. Record the source-to-target contract
 
-Preserve the application's state semantics, including capabilities supplied by its original runtime. Follow the walkthrough's persistence guidance when the target needs an explicit state owner; preserve an established backend and avoid adding state requirements the application did not have.
+Before editing, record the source and target public operations, input/configuration/result mappings, and any required state's owner and lifetime, including capabilities supplied by the original runtime. Name actual target entry points and state owners, not only protocol or session labels. Preserve established backends and caller responsibilities; do not introduce state requirements the application did not have.
 
-## Hosting Decision
+### 2. Choose the least invasive compatible path
 
-Read the linked walkthrough and its applicable chapters before selecting a hosting path or sample. If it cannot be read, report that limitation rather than silently substituting a sample for framework guidance.
+Before choosing a hosting path or sample, read the walkthrough's [local-hosting chapter](https://github.com/langchain-ai/langchain-azure/blob/main/libs/azure-ai/docs/hosting/langgraph-to-foundry/02-run-locally.md) and, when deployment is in scope, [deployment preparation](https://github.com/langchain-ai/langchain-azure/blob/main/libs/azure-ai/docs/hosting/langgraph-to-foundry/03-prepare-deployment.md); read its [state-ownership guidance](https://github.com/langchain-ai/langchain-azure/blob/main/libs/azure-ai/docs/hosting/langgraph-to-foundry/05-persistence-and-recovery.md) if the original runtime supplies required state. If guidance cannot be read, report the limitation rather than substitute a sample.
 
 | Need | Hosting path |
 |------|--------------|
-| The selected protocol's default mapping preserves the application's required interface | **Configuration-only** |
+| The selected protocol's default mapping preserves the application's required interface, and any required state remains with the correct owner | **Configuration-only** |
 | Required input, configuration, operations or runtime capabilities are not covered by that mapping | **Host server integration** or another verified supported entry point |
+
+### 3. Check the delivered project against that contract
+
+Before declaring the project deployable, check its actual entry points and uploaded runtime dependency inputs, including exclusions, against the recorded contract. A local environment or startup check alone does not establish a complete upload. Execute available checks and report blocked checks rather than claiming they passed.
 
 ## Sample Selection
 
