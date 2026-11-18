@@ -160,7 +160,11 @@ export function evaluateNetwork({ account, clientIp, dns = [] } = {}) {
     } else {
       clientIpCovered = ipRules.some((r) => ipv4InRule(clientIp, r)) ? "covered" : "not_covered";
       if (publicDisabled) {
-        findings.push({ code: "PUBLIC_ACCESS_DISABLED", severity: "error", detail: "Public network access is disabled: calls arriving from a public address are denied regardless of IP rules; use the private endpoint path." });
+        findings.push({
+          code: "CLIENT_IP_PUBLIC_PATH_NOT_PROVEN",
+          severity: "info",
+          detail: "The supplied client IP describes a public egress path, not proof that the failing request used it. Public network access is disabled; compare effective DNS and connectivity for the private endpoint path.",
+        });
       } else if (denyByDefault && clientIpCovered === "not_covered") {
         findings.push({ code: "CLIENT_IP_NOT_ALLOWED", severity: "error", detail: "Default action is Deny and the supplied public egress IP matches no IP rule." });
       }

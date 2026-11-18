@@ -17,6 +17,8 @@ keyless code: [auth best practices](../auth-best-practices.md).
    a role only on `.../accounts/<name>/projects/<project>` does not authorize DI
    or CU, so the Foundry sample "Foundry User on the project + Reader on the
    resource" cannot call them.
+   A management-group assignment is reported as `unknown_management_group_ancestry`
+   unless the export also proves that the group contains the target subscription.
 3. **Least privilege** (resource scope or above):
 
 | Need | Role |

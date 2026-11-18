@@ -38,6 +38,7 @@ const { auditTrainingSet } = (await import(pathToFileURL(script).href)) as {
 };
 const SECRET = "SYNTHETIC_FIELD_VALUE_DO_NOT_EMIT";
 const isWindows = process.platform === "win32";
+const OCR_HEAD_BYTES = 256 * 1024;
 
 async function withTempDir<T>(run: (dir: string) => Promise<T>): Promise<T> {
   const dir = await mkdtemp(join(tmpdir(), "di-training-audit-test-"));
@@ -132,6 +133,60 @@ it("flags a missing fields.json and rejects a file path", async () => {
     expect(report.findings.map((f) => f.code)).toContain("FIELDS_JSON_NOT_USABLE");
     expect(report.fields[0]).toMatchObject({ field: "total", inFieldsJson: "unknown", labeledDocuments: 5 });
     await expect(auditTrainingSet({ dir: join(dir, "doc1.png") })).rejects.toThrow("NOT_A_DIRECTORY");
+  });
+});
+
+it("does not reject an OCR version header split at the prefix boundary", async () => {
+  await withTempDir(async (dir) => {
+    await writeFile(join(dir, "fields.json"), JSON.stringify({ fields: [{ fieldKey: "total", fieldType: "string" }] }));
+    const prefix = Buffer.from('{"analyzeResult":{"apiVersion":"2024-11-30","content":"', "utf8");
+    const padding = Buffer.alloc(OCR_HEAD_BYTES - prefix.length - 1, 0x61);
+    for (let i = 1; i <= 5; i += 1) {
+      const doc = `doc${i}.pdf`;
+      await writeFile(join(dir, doc), "synthetic");
+      await writeFile(join(dir, `${doc}.labels.json`), JSON.stringify({ labels: [label("total")] }));
+      await writeFile(join(dir, `${doc}.ocr.json`), Buffer.concat([
+        prefix,
+        padding,
+        Buffer.from("😀", "utf8"),
+        Buffer.from('"}}', "utf8"),
+      ]));
+    }
+    const report = await auditTrainingSet({ dir });
+    expect(report.dataset.ocrApiVersions).toEqual({ "2024-11-30": 5 });
+    expect(report.status).toBe("passed_local_checks");
+  });
+});
+
+it.skipIf(isWindows)("keeps case-distinct training documents separate", async () => {
+  await withTempDir(async (dir) => {
+    await writeFile(join(dir, "fields.json"), JSON.stringify({ fields: [{ fieldKey: "total", fieldType: "string" }] }));
+    for (const doc of ["A.pdf", "a.pdf", "B.pdf", "C.pdf", "D.pdf"]) {
+      await writeFile(join(dir, doc), "synthetic");
+      await writeFile(join(dir, `${doc}.labels.json`), JSON.stringify({ labels: [label("total")] }));
+      await writeFile(join(dir, `${doc}.ocr.json`), JSON.stringify({ analyzeResult: { apiVersion: "2024-11-30" } }));
+    }
+    const report = await auditTrainingSet({ dir });
+    expect(report.dataset.documents).toBe(5);
+    expect(report.fields[0]).toMatchObject({ labeledDocuments: 5, unlabeledDocuments: 0 });
+    expect(report.findings.map((f) => f.code)).not.toContain("TOO_FEW_LABELED_DOCUMENTS");
+  });
+});
+
+it("counts source documents without usable labels as field coverage gaps", async () => {
+  await withTempDir(async (dir) => {
+    await writeFile(join(dir, "fields.json"), JSON.stringify({ fields: [{ fieldKey: "total", fieldType: "string" }] }));
+    for (let i = 1; i <= 6; i += 1) {
+      const doc = `doc${i}.pdf`;
+      await writeFile(join(dir, doc), "synthetic");
+      if (i <= 5) {
+        await writeFile(join(dir, `${doc}.labels.json`), JSON.stringify({ labels: [label("total")] }));
+        await writeFile(join(dir, `${doc}.ocr.json`), JSON.stringify({ analyzeResult: { apiVersion: "2024-11-30" } }));
+      }
+    }
+    const report = await auditTrainingSet({ dir });
+    expect(report.fields[0]).toMatchObject({ labeledDocuments: 5, unlabeledDocuments: 1 });
+    expect(report.findings.map((f) => f.code)).toContain("FIELD_PARTIALLY_LABELED");
   });
 });
 

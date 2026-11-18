@@ -70,6 +70,9 @@ service-to-storage fetch failures. Building the network belongs to
    `--resolve` labels each host `private`, `public` or `not_found`; `--connect`
    stops at a TLS handshake (no HTTP, no credentials). No IPs or host names
    are printed.
+   `--client-ip` only compares a public egress rule; it does not prove which
+   route the failing request used. With public access disabled, trust the
+   private DNS and TLS results for the affected client.
 3. Read-only follow-ups: `az network private-endpoint-connection list --id <resource-id>`,
    `az network private-dns zone list`, `az network private-dns link vnet list -g <rg> -z <zone>`,
    `az network private-endpoint dns-zone-group list --endpoint-name <pe> -g <rg>`.

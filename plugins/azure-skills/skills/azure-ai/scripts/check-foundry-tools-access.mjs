@@ -188,7 +188,7 @@ export function classifyScope(scope, accountId) {
   const s = normalizeScope(scope);
   const t = normalizeScope(accountId);
   if (s === "/" || s === "") return { type: "root", applies: true };
-  if (s.startsWith("/providers/microsoft.management/managementgroups/")) return { type: "management-group", applies: true };
+  if (s.startsWith("/providers/microsoft.management/managementgroups/")) return { type: "management-group", applies: false };
   if (s === t) return { type: "resource", applies: true };
   if (t.startsWith(`${s}/`)) {
     if (/^\/subscriptions\/[^/]+$/.test(s)) return { type: "subscription", applies: true };
@@ -239,6 +239,7 @@ export function evaluateAccess({ assignments = [], definitions = [], account, re
   const results = wanted.map((op) => {
     const spec = OPERATIONS[op];
     const applying = rows.filter((r) => r.where.applies);
+    const managementGroups = rows.filter((r) => r.where.type === "management-group");
     const projectOnly = rows.filter((r) => r.where.type === "foundry-project");
     const satisfiedBy = (candidates) =>
       spec.allOf.every((group) => group.some((action) => candidates.some((r) => r.definition && grants(r.definition, action, spec.plane))));
@@ -256,6 +257,18 @@ export function evaluateAccess({ assignments = [], definitions = [], account, re
     }
     if (applying.some((r) => !r.definition)) {
       return { operation: op, plane: spec.plane, verdict: "unknown_definitions_missing", matchingRoles: [], detail: spec.detail };
+    }
+    if (managementGroups.some((r) => !r.definition)) {
+      return { operation: op, plane: spec.plane, verdict: "unknown_definitions_missing", matchingRoles: [], detail: spec.detail };
+    }
+    if (satisfiedBy(managementGroups)) {
+      return {
+        operation: op,
+        plane: spec.plane,
+        verdict: "unknown_management_group_ancestry",
+        matchingRoles: grantingRows(managementGroups).map((r) => ({ role: r.name, scopeType: r.where.type })),
+        detail: spec.detail,
+      };
     }
     if (satisfiedBy(projectOnly)) {
       return {
@@ -301,6 +314,12 @@ export function evaluateAccess({ assignments = [], definitions = [], account, re
         code: "NOT_ASSIGNED",
         severity: "error",
         detail: `${r.operation}: no assignment in the input grants this at the resource or a parent scope.`,
+      });
+    } else if (r.verdict === "unknown_management_group_ancestry") {
+      findings.push({
+        code: "MANAGEMENT_GROUP_ANCESTRY_UNKNOWN",
+        severity: "warning",
+        detail: `${r.operation}: a potentially granting role is assigned at management-group scope, but the export does not prove that this management group contains the target subscription. Verify ancestry before treating it as allowed.`,
       });
     } else if (r.verdict === "unknown_definitions_missing") {
       findings.push({

@@ -30,7 +30,7 @@ const SAFE_AUTH_ERRORS = new Set([
 const PATH_WORDS = new Set([
   "documentintelligence", "formrecognizer", "documentmodels", "documentclassifiers", "analyzeresults", "analyzebatchresults",
   "operations", "info", "contentunderstanding", "analyzers", "analyzerresults", "classifiers", "classifierresults",
-  "defaults", "labelingprojects", "labels", "schema", "datasets", "files", "test", "reference", "stats", "ocr", "document",
+  "defaults", "labelingprojects", "labels", "schema", "datasets", "files", "test", "train", "reference", "stats", "ocr", "document",
   "persondirectories", "faces", "persons", "results", "images", "api", "projects", "openai", "deployments", "models",
   "subscriptions", "resourcegroups", "providers", "microsoft.cognitiveservices", "accounts", "privateendpointconnections",
   "listkeys", "usages", "skus", "v1", "v2.0", "v2", "oauth2", "token", "authorize", "pdf", "figures",
@@ -80,7 +80,7 @@ export function templatePath(pathname) {
         // keep raw
       }
       const [name, action, ...rest] = decoded.split(":");
-      const safeName = PATH_WORDS.has(name.toLowerCase()) || /^prebuilt-[a-z0-9.-]{1,60}$/i.test(name) ? name : GUID.test(name) ? "{guid}" : "{id}";
+      const safeName = PATH_WORDS.has(name.toLowerCase()) ? name : GUID.test(name) ? "{guid}" : "{id}";
       const safeAction = rest.length === 0 && action && SAFE_PATH_ACTIONS.has(action.toLowerCase()) ? action.toLowerCase() : undefined;
       return safeAction ? `${safeName}:${safeAction}` : safeName;
     })
@@ -106,9 +106,11 @@ function resultIdFrom(location) {
   }
 }
 
-function errorCodes(content) {
+function errorCodes(content, responseStatus, pathname) {
   const text = typeof content?.text === "string" ? content.text : "";
   if (!text || text.length > MAX_BODY_PARSE || !/json/i.test(String(content?.mimeType ?? ""))) return undefined;
+  const isOperationPath = /^\/(?:documentintelligence|formrecognizer|contentunderstanding)(?:\/|$)/i.test(pathname);
+  if (responseStatus < 400 && !isOperationPath) return undefined;
   let body;
   try {
     body = JSON.parse(content.encoding === "base64" ? Buffer.from(text, "base64").toString("utf8") : text);
@@ -116,14 +118,17 @@ function errorCodes(content) {
     return undefined;
   }
   const codes = [];
-  let node = body?.error;
-  for (let depth = 0; node && depth < 5; depth += 1) {
-    if (typeof node.code === "string" && /^[A-Za-z0-9_.-]{1,80}$/.test(node.code)) codes.push(node.code);
-    node = node.innererror ?? node.innerError;
+  const bodyStatus = typeof body?.status === "string" && SAFE_BODY_STATUSES.has(body.status.toLowerCase())
+    ? body.status
+    : undefined;
+  if (responseStatus >= 400 || ["failed", "canceled", "cancelled"].includes(bodyStatus?.toLowerCase())) {
+    let node = body?.error;
+    for (let depth = 0; node && depth < 5; depth += 1) {
+      if (typeof node.code === "string" && /^[A-Za-z0-9_.-]{1,80}$/.test(node.code)) codes.push(node.code);
+      node = node.innererror ?? node.innerError;
+    }
   }
-  if (typeof body?.status === "string" && SAFE_BODY_STATUSES.has(body.status.toLowerCase())) {
-    codes.push(`status:${body.status}`);
-  }
+  if (bodyStatus) codes.push(`status:${bodyStatus}`);
   return codes.length ? codes : undefined;
 }
 
@@ -166,7 +171,7 @@ export function summarizeHar(har, { allHosts = false } = {}) {
     const authErrorValue = wwwAuth ? /error="([a-z_]{1,40})"/i.exec(wwwAuth)?.[1]?.toLowerCase() : undefined;
     const authError = authErrorValue && SAFE_AUTH_ERRORS.has(authErrorValue) ? authErrorValue : undefined;
     const apiVersion = url.searchParams.get("api-version");
-    const codes = errorCodes(entry?.response?.content);
+    const codes = errorCodes(entry?.response?.content, status, url.pathname);
     out.push({
       started: typeof entry?.startedDateTime === "string" ? entry.startedDateTime : undefined,
       method: /^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)$/i.test(entry?.request?.method ?? "")

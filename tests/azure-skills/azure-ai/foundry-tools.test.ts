@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { chmod, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { delimiter, dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -180,6 +180,24 @@ describe("check-foundry-tools-access", () => {
     expect(access.classifyScope(`${SUB}/resourceGroups/other`, ACCOUNT).applies).toBe(false);
   });
 
+  it("does not grant access from an unverified management-group ancestor", () => {
+    const scope = "/providers/Microsoft.Management/managementGroups/unverified-group";
+    const report = access.evaluateAccess({
+      assignments: access.extractAssignments([
+        assignment(scope, "53ca6127-db72-4b80-b1b0-d745d6d5456d", "Foundry User"),
+      ]),
+      definitions: access.extractDefinitions(definitions),
+      account: account(),
+      operations: ["di-analyze", "cu-analyze"],
+    });
+    expect(report.operations.map((o) => o.verdict)).toEqual([
+      "unknown_management_group_ancestry",
+      "unknown_management_group_ancestry",
+    ]);
+    expect(report.findings.map((f) => f.code)).toContain("MANAGEMENT_GROUP_ANCESTRY_UNKNOWN");
+    expect(access.classifyScope(scope, ACCOUNT).applies).toBe(false);
+  });
+
   it("requires a target resource", () => {
     expect(() => access.evaluateAccess({ assignments: [], definitions: [] })).toThrow("TARGET_RESOURCE_REQUIRED");
   });
@@ -224,6 +242,23 @@ describe("check-foundry-tools-network", () => {
     expect(network.ipv4InRule("198.51.100.9", "198.51.100.9/not-a-prefix")).toBe(false);
     expect(network.ipv4InRule("10.0.0.5", "not-an-ip")).toBe(false);
   });
+
+  it("does not treat client IP as proof that a private request used the public path", () => {
+    const report = network.evaluateNetwork({
+      account: account({
+        publicNetworkAccess: "Disabled",
+        privateEndpointConnections: [{ properties: { privateLinkServiceConnectionState: { status: "Approved" } } }],
+      }),
+      clientIp: "198.51.100.9",
+      dns: [
+        { label: "cognitiveservices", result: "private", tls: "handshake_ok" },
+        { label: "openai", result: "private", tls: "handshake_ok" },
+        { label: "services.ai", result: "private", tls: "handshake_ok" },
+      ],
+    });
+    expect(report.status).toBe("passed_local_checks");
+    expect(report.findings.find((f) => f.code === "CLIENT_IP_PUBLIC_PATH_NOT_PROVEN")?.severity).toBe("info");
+  });
 });
 
 describe("sanitize-har", () => {
@@ -264,9 +299,10 @@ describe("sanitize-har", () => {
     expect(text).not.toMatch(/synthetic-ai|syntheticstore|10\.0\.0\.5/);
     expect(report.counts).toMatchObject({ entries: 4, kept: 3, skippedOtherHosts: 1 });
     expect(report.entries[0]).toMatchObject({ host: "<resource>.services.ai.azure.com", path: "/contentunderstanding/defaults", apiVersion: "2025-11-01", status: 401, errorCodes: ["PermissionDenied"], wwwAuthenticateError: "invalid_token", authScheme: "bearer" });
-    expect(report.entries[1]).toMatchObject({ path: "/documentintelligence/documentModels/prebuilt-layout:analyze", keyHeaderPresent: true, ids: { "operation-location.resultId": "12345678-1234-1234-1234-123456789abc" } });
+    expect(report.entries[1]).toMatchObject({ path: "/documentintelligence/documentModels/{id}:analyze", keyHeaderPresent: true, ids: { "operation-location.resultId": "12345678-1234-1234-1234-123456789abc" } });
     expect(report.findings.map((f) => f.code)).toContain("NO_RESPONSE_ENTRIES");
     expect(har.templatePath("/contentunderstanding/analyzers/my-private-analyzer:analyze")).toBe("/contentunderstanding/analyzers/{id}:analyze");
+    expect(har.templatePath("/train/prebuilt-Jane-Smith-medical.pdf")).toBe("/train/{id}");
   });
 
   it("rejects non-HAR JSON", () => {
@@ -298,6 +334,16 @@ describe("sanitize-har", () => {
               content: { mimeType: "application/json", text: JSON.stringify({ error: { code: "PermissionDenied", message: SECRET } }) },
             },
           },
+          {
+            request: {
+              method: "GET",
+              url: `https://syntheticstore.blob.core.windows.net/train/prebuilt-${SECRET}.json`,
+            },
+            response: {
+              status: 200,
+              content: { mimeType: "application/json", text: JSON.stringify({ error: { code: SECRET, value: SECRET } }) },
+            },
+          },
         ],
       },
     };
@@ -308,6 +354,8 @@ describe("sanitize-har", () => {
     expect(report.entries[0].errorCodes).toBeUndefined();
     expect(report.entries[0].wwwAuthenticateError).toBeUndefined();
     expect(report.entries[1]).toMatchObject({ errorCodes: ["PermissionDenied"] });
+    expect(report.entries[2].path).toBe("/train/{id}");
+    expect(report.entries[2].errorCodes).toBeUndefined();
   });
 });
 
@@ -320,6 +368,21 @@ it("reads UTF-16 JSON exports from Windows PowerShell 5.1", async () => {
       Buffer.from(JSON.stringify({ value: "ok" }), "utf16le"),
     ]));
     expect(jsonFile.readJsonFile(path, 1024)).toEqual({ value: "ok" });
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+it("checks JSON file type and size on the opened file", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "foundry-tools-json-guard-"));
+  try {
+    const directoryPath = join(dir, "not-a-file");
+    await mkdir(directoryPath);
+    expect(() => jsonFile.readJsonFile(directoryPath, 1024)).toThrow("NOT_A_FILE");
+
+    const largePath = join(dir, "large.json");
+    await writeFile(largePath, JSON.stringify({ value: "too-large" }));
+    expect(() => jsonFile.readJsonFile(largePath, 8)).toThrow("FILE_TOO_LARGE");
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

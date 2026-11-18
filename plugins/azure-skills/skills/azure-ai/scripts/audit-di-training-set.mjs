@@ -40,7 +40,7 @@ async function readOcrApiVersion(path) {
   try {
     const buffer = Buffer.alloc(OCR_HEAD_BYTES);
     const { bytesRead } = await handle.read(buffer, 0, buffer.length, 0);
-    const head = decodeJsonText(buffer.subarray(0, bytesRead));
+    const head = decodeJsonText(buffer.subarray(0, bytesRead), { fatal: false, stream: true });
     const match = /"apiVersion"\s*:\s*"([0-9]{4}-[0-9]{2}-[0-9]{2}(?:-preview)?)"/.exec(head);
     return match ? match[1] : "not_found";
   } finally {
@@ -118,9 +118,9 @@ export async function auditTrainingSet({ dir, apiVersion = SPEC_VERSION, anonymi
   const sourceDocuments = new Map();
   for (const f of files) {
     const lowered = f.toLowerCase();
-    if (lowered.endsWith(".labels.json")) labelFiles.set(lowered.slice(0, -".labels.json".length), f);
-    else if (lowered.endsWith(".ocr.json")) ocrFiles.set(lowered.slice(0, -".ocr.json".length), f);
-    else if (DOC_TYPES.has(extname(lowered))) sourceDocuments.set(lowered, f);
+    if (lowered.endsWith(".labels.json")) labelFiles.set(f.slice(0, -".labels.json".length), f);
+    else if (lowered.endsWith(".ocr.json")) ocrFiles.set(f.slice(0, -".ocr.json".length), f);
+    else if (DOC_TYPES.has(extname(lowered))) sourceDocuments.set(f, f);
   }
 
   let schema = [];
@@ -161,12 +161,18 @@ export async function auditTrainingSet({ dir, apiVersion = SPEC_VERSION, anonymi
   let missingSourceDocuments = 0;
   let unlabeledDocs = 0;
   const ocrVersions = {};
+  const matchingPath = (map, key) => {
+    if (map.has(key)) return map.get(key);
+    const folded = key.toLowerCase();
+    const matches = [...map.entries()].filter(([candidate]) => candidate.toLowerCase() === folded);
+    return matches.length === 1 ? matches[0][1] : undefined;
+  };
   for (const [key, document] of documents) {
-    const type = DOC_TYPES.get(extname(key)) ?? "unknown";
+    const type = DOC_TYPES.get(extname(key).toLowerCase()) ?? "unknown";
     byType[type] = byType[type] ?? { documents: 0, labeled: 0 };
     byType[type].documents += 1;
     if (!document.hasSource) missingSourceDocuments += 1;
-    const labelPath = labelFiles.get(key);
+    const labelPath = matchingPath(labelFiles, key);
     if (!labelPath) {
       unlabeledDocs += 1;
       continue;
@@ -189,7 +195,7 @@ export async function auditTrainingSet({ dir, apiVersion = SPEC_VERSION, anonymi
       entry.byType[type] = (entry.byType[type] ?? 0) + 1;
     }
     for (const field of summary.emptyValue) ensureField(field).emptyOnly += 1;
-    const ocrPath = ocrFiles.get(key);
+    const ocrPath = matchingPath(ocrFiles, key);
     if (!ocrPath) missingOcr += 1;
     else {
       try {
@@ -210,7 +216,7 @@ export async function auditTrainingSet({ dir, apiVersion = SPEC_VERSION, anonymi
       field: alias.get(name),
       inFieldsJson: schemaStatus === "ok" ? schemaKeys.has(name) : "unknown",
       labeledDocuments: e.labeled,
-      unlabeledDocuments: labeledDocs - e.labeled,
+      unlabeledDocuments: documents.size - e.labeled,
       emptyValueOnlyDocuments: e.emptyOnly,
       labeledByFileType: e.byType,
     };
