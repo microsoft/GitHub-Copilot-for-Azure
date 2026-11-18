@@ -5,9 +5,9 @@
 # 429/502/503/504, timeouts).
 #
 # Usage:
-#   ./retry-az-create.sh "<show-command>" "<create-command>"
+#   ./retry-az-create.sh --show <az-show-arguments...> --create <az-create-arguments...>
 #
-# Both commands are passed as single shell-quoted strings. The script:
+# Arguments are passed directly to az, never evaluated as shell code. The script:
 #   - runs `show` first (short-circuits any partially-succeeded prior attempt
 #     and avoids false NameAlreadyExists / Conflict errors);
 #   - if `show` fails, runs `create`;
@@ -17,34 +17,56 @@
 #
 # Examples:
 #   ./retry-az-create.sh \
-#       "az group show -n my-rg --only-show-errors" \
-#       "az group create -n my-rg -l eastus2"
+#       --show group show -n my-rg --only-show-errors \
+#       --create group create -n my-rg -l eastus2
 #
 #   ./retry-az-create.sh \
-#       "az appservice plan show -n my-plan -g my-rg --only-show-errors" \
-#       "az appservice plan create -n my-plan -g my-rg --is-linux --sku P0v3 -l eastus2"
+#       --show appservice plan show -n my-plan -g my-rg --only-show-errors \
+#       --create appservice plan create -n my-plan -g my-rg --is-linux --sku P0v3 -l eastus2
+#
+# Exit codes: 0 = success, 1 = command failure, 2 = invalid arguments.
 
 set -uo pipefail
 
-SHOW_CMD="${1:?Usage: $0 \"<show-command>\" \"<create-command>\"}"
-CREATE_CMD="${2:?Usage: $0 \"<show-command>\" \"<create-command>\"}"
+usage() {
+    echo "Usage: $0 --show <az-show-arguments...> --create <az-create-arguments...>"
+}
+
+if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then usage; exit 0; fi
+if [ "${1:-}" != "--show" ]; then usage >&2; exit 2; fi
+shift
+if [ "$#" -eq 0 ] || [ "$1" = "--create" ]; then usage >&2; exit 2; fi
+SHOW_ARGS=()
+while [ "$#" -gt 0 ] && [ "$1" != "--create" ]; do
+    SHOW_ARGS+=("$1")
+    shift
+done
+if [ "$#" -eq 0 ]; then usage >&2; exit 2; fi
+shift
+if [ "$#" -eq 0 ]; then usage >&2; exit 2; fi
+CREATE_ARGS=("$@")
 
 TRANSIENT='Connection reset|Connection aborted|ConnectionError|Read timed out|BadGatewayConnection|ServiceUnavailable|Max retries exceeded|TooManyRequests|\b429\b|\b50[234]\b'
+NON_RETRYABLE='AuthorizationFailed|SubscriptionNotFound|ResourceGroupNotFound|InvalidTemplateDeployment|SkuNotAvailable|QuotaExceeded|BadRequest|Forbidden|Unauthorized|\b(HTTP(/[0-9.]+)?|status( code)?)[: =]+4([01][0-9]|2[0-8]|[3-9][0-9])\b'
 
 for attempt in 1 2 3; do
     # Run show silently; on failure, run create and capture stderr.
-    if err=$({ eval "$SHOW_CMD -o none 2>/dev/null" || eval "$CREATE_CMD -o none"; } 2>&1); then
+    if az "${SHOW_ARGS[@]}" -o none >/dev/null 2>&1; then
+        exit 0
+    fi
+    if err=$(az "${CREATE_ARGS[@]}" -o none 2>&1); then
         exit 0
     fi
 
-    if ! echo "$err" | grep -qE "$TRANSIENT"; then
+    if printf '%s\n' "$err" | grep -qiE "$NON_RETRYABLE" ||
+       ! printf '%s\n' "$err" | grep -qiE "$TRANSIENT"; then
         echo "$err" >&2
         exit 1
     fi
 
     if [ "$attempt" -eq 3 ]; then
         echo "$err" >&2
-        echo "ARM frontend is returning transient errors — please retry in a few minutes." >&2
+        echo "ARM frontend is returning transient errors - please retry in a few minutes." >&2
         exit 1
     fi
 

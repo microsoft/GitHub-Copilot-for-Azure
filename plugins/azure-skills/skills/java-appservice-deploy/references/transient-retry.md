@@ -26,19 +26,19 @@ These are ARM frontend / network blips, not configuration problems — they almo
 
 ## Use the wrapper scripts
 
-Both shells have a ready-to-call wrapper that implements the loop, the transient-error filter, and the backoff. Prefer these over inlining the loop:
+Run these wrappers from the skill root, passing arguments rather than command strings. PowerShell uses `-ShowArguments`/`-CreateArguments` arrays. Both implement the loop, transient-error filter and backoff:
 
 - Bash / zsh (Linux, macOS): [`scripts/retry-az-create.sh`](../scripts/retry-az-create.sh)
   ```bash
   ./scripts/retry-az-create.sh \
-      "az group show -n my-rg --only-show-errors" \
-      "az group create -n my-rg -l eastus2"
+      --show group show -n my-rg --only-show-errors \
+      --create group create -n my-rg -l eastus2
   ```
 - PowerShell (Windows): [`scripts/retry-az-create.ps1`](../scripts/retry-az-create.ps1)
   ```powershell
   .\scripts\retry-az-create.ps1 `
-      -ShowCommand "az group show -n my-rg --only-show-errors" `
-      -CreateCommand "az group create -n my-rg -l eastus2"
+      -ShowArguments @('group','show','-n','my-rg','--only-show-errors') `
+      -CreateArguments @('group','create','-n','my-rg','-l','eastus2')
   ```
 
 Both scripts run the `show` command first, fall through to `create` on failure, and retry up to 2 times on transient errors only.

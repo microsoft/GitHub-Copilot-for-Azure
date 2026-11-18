@@ -6,6 +6,7 @@ description: |
 tags:
   type: integration
   skill: java-appservice-deploy
+  requiredSkills: [java-appservice-deploy, azure-prepare]
 
 defaults:
   runs: 1
@@ -39,22 +40,18 @@ stimuli:
       - type: skill-invocation
         config:
           required: [java-appservice-deploy]
-      - type: tool-calls
+      - type: shell-command-invoked
         config:
           required:
-            - name: "^(bash|powershell|pwsh)$"
-              command: "\\baz\\s+quota\\s+(list|show)\\b|check-quota\\.(ps1|sh)"
-            - name: "^(bash|powershell|pwsh)$"
-              command: "\\baz\\s+quota\\s+usage\\s+(list|show)\\b|check-quota\\.(ps1|sh)"
-            - name: "^(bash|powershell|pwsh)$"
-              command: "\\baz\\s+appservice\\s+list-locations\\b[^\\n]*--sku\\s+P0v3[^\\n]*--linux-workers-enabled"
-            - name: "^(bash|powershell|pwsh)$"
-              command: "\\baz\\s+webapp\\s+deploy\\b[^\\n]*--type\\s+jar|\\bazd\\s+(deploy|up)\\b"
+            - command: "\\baz\\s+quota\\s+(list|show)\\b|check-quota\\.(ps1|sh)"
+            - command: "\\baz\\s+quota\\s+usage\\s+(list|show)\\b|check-quota\\.(ps1|sh)"
+            - command: "\\baz\\s+appservice\\s+list-locations\\b[^\\n]*--sku\\s+P0v3[^\\n]*--linux-workers-enabled"
+            - command: "\\baz\\s+webapp\\s+deploy\\b[^\\n]*--type\\s+jar|\\bazd\\s+deploy\\b"
           disallowed:
-            - name: "^(bash|powershell|pwsh)$"
-              command: "\\baz\\s+webapp\\s+up(?!date)\\b"
-            - name: "^(bash|powershell|pwsh)$"
-              command: "\\baz\\s+webapp\\s+log\\s+tail\\b|[Ii]nvoke-[Ww]eb[Rr]equest|\\bcurl\\s+https?://|\\bwget\\s+https?://"
+            - command: "\\baz\\s+webapp\\s+up(?!date)\\b"
+            - command: "(?i)\\baz\\s+webapp\\s+log\\s+tail\\b|\\bazd\\s+monitor\\b"
+            - command: '(?i)\b(curl|wget|Invoke-WebRequest|Invoke-RestMethod|iwr|irm)(\.exe)?\b[^\r\n;&|]*(azurewebsites\.net|\$\{?(url|endpoint|host_?|hostname|app_?url|site_?url)\b)'
+            - command: '(?i)\b(curl|wget|Invoke-WebRequest|Invoke-RestMethod|iwr|irm)(\.exe)?\b(?![^\r\n;&|]*(--output(?:=|\s)|--output-document(?:=|\s)|\s-o\s|-OutFile\s))[^\r\n;&|]*\$(\{[^}]+\}|[A-Za-z_]\w*)'
       - type: output-matches
         config:
           pattern: "https://[^\\s]+\\.azurewebsites\\.net"
@@ -111,6 +108,7 @@ stimuli:
       tier: smoke
       cost: llm
       area: routing-negative
+      requiredSkills: [java-appservice-deploy, dotnet-appservice-deploy, azure-prepare]
       earlyTerminate: '[{"type":"skill-call","skill":"dotnet-appservice-deploy"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation

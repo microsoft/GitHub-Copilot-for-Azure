@@ -184,6 +184,7 @@ stimuli:
       tier: smoke
       cost: llm
       area: routing-negative
+      requiredSkills: [python-appservice-deploy, java-appservice-deploy]
       earlyTerminate: '[{"type":"skill-call","skill":"java-appservice-deploy"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
