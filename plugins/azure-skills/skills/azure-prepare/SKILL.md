@@ -62,14 +62,14 @@ Activate this skill when user wants to:
 
 ## ❌ STEP 0: Specialized Technology Check — MANDATORY FIRST ACTION
 
-**BEFORE starting Phase 1**, check if the user's prompt OR workspace codebase matches a specialized technology that has a dedicated skill with tested templates. If matched, **invoke that skill FIRST** — then resume azure-prepare for validation and deployment.
+**BEFORE starting Phase 1**, check if the user's prompt OR workspace codebase matches a specialized technology that has a dedicated skill with tested templates. If matched, **invoke that skill FIRST** — resume azure-prepare only if the handoff has not completed a code-only deployment.
 
 ### Check 1: Prompt keywords
 
 | Prompt keywords | Invoke FIRST |
 |----------------|-------------|
 | Python + App Service (e.g., "deploy Python to App Service", "Flask on Azure App Service", "publish Python web app to App Service") | **python-appservice-deploy** |
-| Node.js + App Service (e.g., "deploy Node.js to App Service", "Express on Azure App Service", "Next.js on App Service") | **nodejs-appservice-deploy** |
+| Code-only Node.js + App Service Linux (e.g., Express/Next.js); no Terraform/Bicep/IaC, migration or extra infrastructure | **nodejs-appservice-deploy** |
 | Lambda, AWS Lambda, migrate AWS, migrate GCP, Lambda to Functions, migrate from AWS, migrate from GCP | **azure-cloud-migrate** |
 | Azure Functions, function app, serverless function, timer trigger, HTTP trigger, func new | Stay in **azure-prepare** — prefer Azure Functions templates in Step 4; for plan choice/cold starts see [hosting-plans.md](references/services/functions/hosting-plans.md) and [cold-start.md](references/services/functions/cold-start.md) |
 | APIM, API Management, API gateway, deploy APIM | Stay in **azure-prepare** — see [APIM Deployment Guide](references/apim.md) |
@@ -78,7 +78,7 @@ Activate this skill when user wants to:
 
 > ⚠️ Check the user's **prompt text** — not just existing code. Critical for greenfield projects with no codebase to scan. See [full routing table](references/specialized-routing.md).
 
-After the specialized skill completes, **resume azure-prepare** at Phase 1 Step 4 (Select Recipe) for remaining infrastructure, validation, and deployment.
+After a completed code-only deployment, **stop**; do not resume azure-prepare. Otherwise, **resume azure-prepare** at Phase 1 Step 4 (Select Recipe) for remaining infrastructure, validation, and deployment.
 
 ---
 

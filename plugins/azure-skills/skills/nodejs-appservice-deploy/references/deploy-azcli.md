@@ -1,6 +1,6 @@
 # Deploy via `az` CLI
 
-Use this path when there is **no** `azure.yaml` or it doesn't target `appservice`.
+Use this path when there is **no** `azure.yaml`. Existing projects targeting another host belong to `azure-prepare`.
 
 > ⛔ **NEVER USE `az webapp up`** — this command is deprecated. Use the explicit create + deploy commands below.
 
@@ -29,12 +29,13 @@ if ($names -contains 'WEBSITE_RUN_FROM_PACKAGE') { throw "Resolve WEBSITE_RUN_FR
 ```bash
 az webapp config appsettings set \
   -n <app> -g <rg> \
-  --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true
+  --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true -o none || exit 1
 ```
 ```powershell
 az webapp config appsettings set `
   -n <app> -g <rg> `
-  --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true
+  --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true -o none
+if ($LASTEXITCODE -ne 0) { throw "Could not enable remote build" }
 ```
 
 Oryx then runs `npm install` (including `devDependencies`), `npm run build` if a `build` script exists, and `npm run build:azure` if present.

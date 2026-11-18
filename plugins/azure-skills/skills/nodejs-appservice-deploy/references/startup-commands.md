@@ -2,6 +2,8 @@
 
 The Linux Node.js container starts the app automatically when `package.json` has a `start` script (`npm start`) or the root contains `bin/www`, `server.js`, `app.js`, or `index.js`. Set a startup command only for the cases below. Whatever runs must listen on `process.env.PORT` (default 8080).
 
+For an existing app, read `appCommandLine` before relying on automatic startup (`az webapp config show -n <app> -g <rg> --query appCommandLine -o tsv`). Stop on read errors. Preserve an intentional custom command; ask before replacing or clearing an override that no longer matches the selected app. Automatic detection requires an empty override.
+
 ## Express / Fastify / Koa / hapi — no startup command needed
 
 Use the existing `start` script or entry file. Bind to all interfaces — `app.listen(process.env.PORT || 3000)` is correct; Fastify needs `{ port: process.env.PORT || 3000, host: '0.0.0.0' }` because it defaults to `127.0.0.1`.

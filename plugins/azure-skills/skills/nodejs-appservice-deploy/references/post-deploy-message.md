@@ -16,7 +16,7 @@ Use when Step 2 found a start entry (`start` script or common entry file) or Ste
 ```
 ✅ Deployment complete.
 
-🌐 App URL: https://<app>.azurewebsites.net
+🌐 App URL: <resolved-https-endpoint>
    It can take 2–3 minutes for the site to be reachable while App Service finishes
    the npm build and warms up the container. Open it in your browser after a short wait.
 
@@ -40,7 +40,7 @@ Use when Step 2 found no `start` script and no common entry file:
 ```
 ✅ Code deployed — but no start command was found.
 
-🌐 App URL: https://<app>.azurewebsites.net
+🌐 App URL: <resolved-https-endpoint>
    Allow 2–3 minutes for the npm build and container startup.
    The site will likely return an error page until you set a startup command.
 
@@ -56,7 +56,7 @@ Use when Step 2 found no `start` script and no common entry file:
    az webapp log tail -n <app> -g <rg>
 ```
 
-Replace `<entry>` with the most likely entry file if you can identify one from the source.
+Use the HTTPS endpoint already resolved by the deployment path, including any regional/hash suffix; never reconstruct it from the app name. Replace `<entry>` with the most likely entry file if identifiable.
 
 ## Logging tips (mention only if the user asks for them)
 

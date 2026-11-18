@@ -3,8 +3,8 @@
 # Coverage:
 # - Express e2e: full end-to-end deployment against a real Azure subscription.
 #   Seeds a minimal Express app fixture, lets the agent run to completion, and
-#   uses the `tool-calls` grader to assert the agent issued a supported
-#   deploy command (`az webapp deploy` or `azd deploy/up`) and never ran
+#   uses the `shell-command-invoked` grader to assert the agent issued a supported
+#   deploy command (`az webapp deploy` or `azd deploy`) and never ran
 #   the deprecated `az webapp up`. Cleanup of leaked resource groups is
 #   handled by the scheduled job in eng/test-subscription-cleanup/.
 # - Routing (Next.js/NestJS/generic Node.js): cheap, early-terminated checks
@@ -25,6 +25,7 @@ description: |
 tags:
   type: integration
   skill: nodejs-appservice-deploy
+  requiredSkills: [nodejs-appservice-deploy, azure-prepare]
 
 defaults:
   runs: 3
@@ -68,26 +69,27 @@ stimuli:
           required:
             - nodejs-appservice-deploy
       # Agent must EXECUTE a supported deploy command.
-      - type: tool-calls
+      - type: shell-command-invoked
         config:
           required:
-            - name: "^(bash|powershell|pwsh)$"
-              command: "\\baz\\s+webapp\\s+deploy\\b|\\bazd\\s+(deploy|up)\\b"
+            - command: "\\baz\\s+webapp\\s+deploy\\b|\\bazd\\s+deploy\\b"
       # Agent must NOT execute the deprecated `az webapp up` (lookahead
       # avoids matching `az webapp update`).
-      - type: tool-calls
+      - type: shell-command-invoked
         config:
           disallowed:
-            - name: "^(bash|powershell|pwsh)$"
-              command: "\\baz\\s+webapp\\s+up(?!date)\\b"
+            - command: "\\baz\\s+webapp\\s+up(?!date)\\b"
       # Post-deploy message must surface the app URL.
       - type: output-matches
         config:
           pattern: "azurewebsites\\.net"
       # Skill rule: do NOT probe the deployed endpoint.
-      - type: output-not-matches
+      - type: shell-command-invoked
         config:
-          pattern: "(?i)Invoke-WebRequest|\\bcurl\\s+http|\\bwget\\s+http"
+          disallowed:
+            - command: "(?i)\\baz\\s+webapp\\s+log\\s+tail\\b|\\bazd\\s+monitor\\b"
+            - command: '(?i)\b(curl|wget|Invoke-WebRequest|Invoke-RestMethod|iwr|irm)(\.exe)?\b[^\r\n;&|]*(azurewebsites\.net|\$\{?(url|endpoint|host_?|hostname|app_?url|site_?url)\b)'
+            - command: '(?i)\b(curl|wget|Invoke-WebRequest|Invoke-RestMethod|iwr|irm)(\.exe)?\b(?![^\r\n;&|]*(--output(?:=|\s)|--output-document(?:=|\s)|\s-o\s|-OutFile\s))[^\r\n;&|]*\$(\{[^}]+\}|[A-Za-z_]\w*)'
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
@@ -158,6 +160,7 @@ stimuli:
       tier: smoke
       cost: llm
       area: routing-negative
+      requiredSkills: [nodejs-appservice-deploy, python-appservice-deploy, azure-prepare]
       earlyTerminate: '[{"type":"skill-call","skill":"python-appservice-deploy"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation

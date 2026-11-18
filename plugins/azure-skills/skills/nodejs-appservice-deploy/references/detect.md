@@ -4,7 +4,7 @@ Framework detection is **advisory only**. The deployment never blocks because of
 
 ## What to check
 
-1. **Confirm Node.js project** — `package.json` in the app root. If missing, stop and hand off to `azure-prepare`. If it is a monorepo/workspace root (`workspaces`, `pnpm-workspace.yaml`, `turbo.json`, `nx.json`), ask which app folder to deploy and run the workflow from there.
+1. **Confirm Node.js project** — `package.json` in the app root. If missing, stop and hand off to `azure-prepare`. For monorepos/workspaces (`workspaces`, `pnpm-workspace.yaml`, `turbo.json`, `nx.json`), identify the app and check its workspace/local dependencies before changing roots. Use a subfolder only if independently installable; otherwise hand off to `azure-prepare` to preserve root manifests, lockfiles and sibling packages.
 2. **Scan `dependencies` / `devDependencies`** in `package.json`:
 
 | Package (first match wins, top to bottom) | Detected framework |
