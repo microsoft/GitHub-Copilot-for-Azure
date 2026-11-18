@@ -1,0 +1,132 @@
+name: azure-ai-translator-eval
+description: |
+  Offline Azure AI Translator Document Translation and glossary preflight plus
+  Managed Identity storage checks. Synthetic inputs only; no customer content.
+
+tags:
+  type: integration
+  skill: azure-ai
+
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+  judge_model: gpt-6.1-sol
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  - name: "Route Translator Document Translation and glossary validation"
+    prompt: "My Azure Translator document translation batch fails when I attach a custom TSV glossary. How do I validate the glossary and storage permissions?"
+    tags:
+      type: trigger
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills:
+        - azure-ai
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-ai"},{"type":"tool-call-count","count":5}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-ai
+
+  - name: "Validate defective TSV glossary offline without echoing terms"
+    prompt: |
+      Validate this synthetic Translator TSV glossary offline using a temporary
+      file and the bundled Document Translation validator. Do not contact Azure
+      or install anything:
+      Row 1: SYNTHETIC_TERM_DO_NOT_REPEAT<TAB>TargetOne
+      Row 2: SYNTHETIC_TERM_DO_NOT_REPEAT<TAB>TargetTwo
+      Row 3: Extra<TAB>Col<TAB>Row
+      Row 4: EmptyTarget<TAB>
+    rubric:
+      - Runs validate-document-translation.mjs locally on a temporary .tsv file.
+      - Reports the 3-column row mismatch, empty target cell, and duplicate case-sensitive source entry by row numbers/counts.
+      - Mentions that partial-sentence glossary matching is case-sensitive.
+      - Does not repeat SYNTHETIC_TERM_DO_NOT_REPEAT, ask for keys or SAS tokens, contact Azure or install software.
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: response-quality
+      requiredSkills:
+        - azure-ai
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-ai
+      - type: shell-command-invoked
+        config:
+          required:
+            - command: >-
+                (?i)(?:^|[;&|\r\n])\s*(?:&\s*)?node(?:\.exe)?\s+(?:"[^"\r\n]*validate-document-translation\.mjs"|'[^'\r\n]*validate-document-translation\.mjs'|[^\s"';&|\r\n]*validate-document-translation\.mjs)(?=$|[\s;&|])
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "SYNTHETIC_TERM_DO_NOT_REPEAT"
+
+  - name: "Diagnose Global Translator region and Managed Identity storage rules"
+    prompt: |
+      My Translator resource is in the Global region on F0 tier, uses a
+      user-assigned managed identity, and passes SAS URLs to async batch
+      Document Translation behind a storage firewall. Why does it fail? Do not
+      contact Azure or install anything.
+    rubric:
+      - Explains that Document Translation requires S1 (or volume C2-C4/D3) rather than F0, and a custom domain endpoint.
+      - Explains that Managed Identity for Document Translation requires a geographic region (not Global) and System-Assigned Managed Identity (not user-assigned).
+      - States that SAS query strings must be omitted when using Managed Identity, with Storage Blob Data Contributor assigned at storage-account scope, plus Trusted Azure Services and resource-instance rules on a firewalled storage account.
+    tags: &quality-tags
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      requiredSkills:
+        - azure-ai
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-ai
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+      - type: completed
+
+  - name: "Translator glossary check without Node.js"
+    prompt: |
+      I need to check my local .tsv glossary for UTF-16 BOM and bad column
+      counts for Azure Document Translation, but Node.js is not installed. Do
+      not install anything, edit files or contact Azure.
+    rubric:
+      - States that validate-document-translation.mjs requires Node.js 22+ and does not install anything.
+      - Provides read-only BOM byte inspection and non-echoing row/column count commands from translator/without-node.md that output row numbers rather than glossary terms.
+    tags: *quality-tags
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-ai
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "translator[\\\\/]without-node\\.md"
+      - type: shell-command-invoked
+        config:
+          disallowed:
+            - command: '(?i)\b(?:winget|choco|brew|apt(?:-get)?|npm|npx|pnpm|yarn)\s+(?:install|i|add)\b'
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+      - type: completed

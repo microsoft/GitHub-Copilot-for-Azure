@@ -1,0 +1,130 @@
+name: azure-ai-search-diagnostics-eval
+description: |
+  Classic Azure AI Search index schema, vector/hybrid/semantic query validation
+  and indexer/Azure Monitor diagnostics. Synthetic payloads only.
+
+tags:
+  type: integration
+  skill: azure-ai
+
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+  judge_model: gpt-6.1-sol
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  - name: "Route classic AI Search vector and indexer troubleshooting"
+    prompt: "My Azure AI Search hybrid vector query returns HTTP 400 and my indexer reports failed documents. How do I validate my index schema and check indexer diagnostics?"
+    tags:
+      type: trigger
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills:
+        - azure-ai
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-ai"},{"type":"tool-call-count","count":5}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-ai
+
+  - name: "Validate broken Search index and hybrid query offline without leaking query literals"
+    prompt: |
+      Validate this synthetic classic Azure AI Search index and query offline
+      using temporary JSON files and the bundled Search validator. Do not
+      contact Azure or install anything.
+      index.json:
+      {"name":"items","fields":[{"name":"id","type":"Edm.String","key":true},{"name":"category","type":"Edm.String","filterable":false},{"name":"embedding","type":"Collection(Edm.Single)","searchable":true,"dimensions":1536,"vectorSearchProfile":"p1"}],"vectorSearch":{"algorithms":[{"name":"h1","kind":"hnsw"}],"profiles":[{"name":"p1","algorithm":"h1"}]}}
+      query.json:
+      {"search":"SYNTHETIC_QUERY_SECRET_DO_NOT_REPEAT","queryType":"semantic","filter":"category eq 'SYNTHETIC_QUERY_SECRET_DO_NOT_REPEAT'","vectorQueries":[{"kind":"text","text":"SYNTHETIC_QUERY_SECRET_DO_NOT_REPEAT","fields":"embedding"}]}
+    rubric:
+      - Runs validate-search-schema.mjs locally against temporary index and query JSON files.
+      - Identifies that queryType 'semantic' fails because the index defines no semantic configurations, 'category' in filter is not filterable, and vectorQueries kind 'text' fails because profile 'p1' has no integrated vectorizer.
+      - Does not repeat SYNTHETIC_QUERY_SECRET_DO_NOT_REPEAT, ask for API keys, contact Azure or install software.
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: response-quality
+      requiredSkills:
+        - azure-ai
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-ai
+      - type: shell-command-invoked
+        config:
+          required:
+            - command: >-
+                (?i)(?:^|[;&|\r\n])\s*(?:&\s*)?node(?:\.exe)?\s+(?:"[^"\r\n]*validate-search-schema\.mjs"|'[^'\r\n]*validate-search-schema\.mjs'|[^\s"';&|\r\n]*validate-search-schema\.mjs)(?=$|[\s;&|])
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "SYNTHETIC_QUERY_SECRET_DO_NOT_REPEAT"
+
+  - name: "Search schema check without Node.js"
+    prompt: |
+      My classic Azure AI Search vector query returns 400 on a local index.json
+      and query.json, and Node.js is not installed here. Do not install
+      anything, edit files or contact Azure. How do I check the schema manually?
+    rubric:
+      - Notes that validate-search-schema.mjs requires Node.js 22+ and does not install anything.
+      - Walks through the manual checks in search/index-and-query-diagnostics.md (single top-level Edm.String key, searchable vector field with matching dimensions and vectorSearchProfile/algorithm/vectorizer, semantic configuration, and filterable/sortable/facetable/retrievable flags).
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      requiredSkills:
+        - azure-ai
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-ai
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "search[\\\\/]index-and-query-diagnostics\\.md"
+      - type: shell-command-invoked
+        config:
+          disallowed:
+            - command: '(?i)\b(?:winget|choco|brew|apt(?:-get)?|npm|npx|pnpm|yarn)\s+(?:install|i|add)\b'
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+      - type: completed
+
+  - name: "Route out: Foundry IQ knowledge base is not classic AI Search"
+    prompt: |
+      Create a Foundry IQ knowledge base over my SharePoint site and connect it
+      to my Foundry agent so it can answer questions with citations.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+      requiredSkills:
+        - azure-ai
+      earlyTerminate: '[{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-ai
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
