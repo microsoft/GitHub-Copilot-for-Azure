@@ -1,0 +1,121 @@
+name: azure-diagnostics-functions-vnet-routing-eval
+description: |
+  Read-only live diagnosis of Flex Consumption Function App private-storage
+  failures with isolated routing, DNS, and competing-change evidence.
+
+tags:
+  type: integration
+  skill: azure-diagnostics
+
+defaults:
+  runs: 1
+  timeout: "50m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+  judge_model: claude-sonnet-5
+
+scoring:
+  threshold: 0.7
+
+stimuli:
+  - name: "Diagnose Flex Function private storage timeout"
+    prompt: |
+      Our Function App's blob-read endpoint started returning 503 or timing out,
+      but its health endpoint still returns 200. It worked previously. Can you
+      investigate what's wrong and tell me the safest way to fix it?
+      Do not modify any Azure resources.
+    rubric:
+      - "Critical gate: The final response must state the evidence-backed root cause, minimal safe remediation, and concrete recovery verification. Evidence appearing only in tool output does not count."
+      - The agent invokes azure-diagnostics and reads live evidence from the supplied resource group, including the Function App or its telemetry and the relevant VNet route configuration; a generic checklist or hypothetical commands alone do not pass.
+      - The response identifies the affected Function App, the separate test storage account or its blob private endpoint, and the integration route table using observed names or resource IDs.
+      - The response correlates the blob timeout or 503 telemetry with a None next-hop /32 route whose prefix is the test storage private endpoint IP, while noting that DNS still resolves the storage hostname to that private IP.
+      - The response uses the healthy endpoint and unchanged host/deployment storage path to rule out a stopped or broadly unhealthy Function host, and does not misdiagnose the unchanged storage RBAC, firewall, or endpoint approval as the primary cause.
+      - The response explains that Flex Consumption already routes VNet-integrated outbound traffic through the VNet and does not recommend enabling Route All, WEBSITE_VNET_ROUTE_ALL, premium content-share settings, a Kudu console, or worker-NIC inspection.
+      - The proposed repair removes or corrects only the offending /32 route after approval, preserves the private endpoint and DNS design, and verifies health=200, private DNS resolution, successful blob content, and correlated telemetry without claiming a change was made.
+      - All Azure operations remain read-only and scoped to the supplied resource group.
+    tags: &live-vnet-tags
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: live-diagnostics
+      requiredSkills:
+        - azure-diagnostics
+      azureFixture: ./fixture/functions-vnet-routing/azure-manifest.json
+    graders: &live-vnet-graders
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.7
+      - type: completed
+
+  - name: "Correlate Flex Function failure with route change"
+    prompt: |
+      Blob reads from our Function App started timing out shortly after a
+      networking change, while health checks still pass. Can you determine what
+      changed, whether it caused the problem, and how to roll it back safely?
+      Do not modify any Azure resources.
+    rubric:
+      - "Critical gate: The final response must state the evidence-backed root cause, minimal safe remediation, and concrete recovery verification. Evidence appearing only in tool output does not count."
+      - The agent invokes azure-diagnostics and gathers live resource, route, telemetry, or Activity Log evidence from the supplied resource group rather than returning only general Functions networking guidance.
+      - The response establishes that the Function App uses a subnet delegated to Microsoft.App/environments, the route table is associated with that integration subnet, and the blob private endpoint is on a separate subnet with private DNS.
+      - The response identifies the recent storage-path route creation or write and shows that its /32 destination matches the blob private endpoint IP and its next hop is None, making the timing and scope causally consistent with the read failures.
+      - "The response recognizes the observed failure signature: the health endpoint remains available, the storage hostname still resolves privately, and the test-storage connection times out; it does not infer a broad platform outage from the 503."
+      - "The explanation is Flex-specific: outbound VNet routing does not require Route All, the integration subnet delegation is not Microsoft.Web/serverFarms, and deployment packages remain in the unchanged host storage path."
+      - The recommended rollback removes or corrects only the offending storage-path route after approval, then rechecks the route table, private DNS result, health endpoint, blob-read success, and a uniquely correlated Application Insights event.
+      - The response remains read-only, does not expose keys or connection strings, and does not claim the rollback or validation has already occurred.
+    tags: *live-vnet-tags
+    graders: *live-vnet-graders
+
+  - name: "Diagnose Flex Function after overlapping maintenance"
+    prompt: |
+      Our Function App's blob endpoint is returning 503 while health checks
+      continue to pass. Several application, storage, and networking maintenance
+      changes happened around the same time. Investigate the live resources,
+      determine the actual cause, and recommend the safest recovery.
+      Do not modify any Azure resources.
+    rubric:
+      - "Critical gate: The final response must state the evidence-backed root cause, distinguish it from plausible recent changes, recommend minimal safe remediation, and define concrete recovery verification."
+      - The agent invokes azure-diagnostics and gathers live resource, route, telemetry, DNS, role-assignment, and Activity Log evidence rather than selecting a cause from the prompt.
+      - The response identifies the affected Function App, test-storage private endpoint and IP, integration subnet, route table, and relevant recent changes using observed names or resource IDs.
+      - The response distinguishes harmless maintenance tags and the unrelated `monitoring-egress` route for `192.0.2.10/32` from the causal `storage-path` route whose `/32` prefix matches the private endpoint IP and whose next hop is `None`.
+      - The response correlates successful pre-fault telemetry and failed post-fault blob telemetry with the causal route creation while explaining why health, private DNS, role assignments, and host/deployment storage remain healthy.
+      - The recommended repair removes or corrects only the `storage-path` route after approval, preserves unrelated maintenance changes and the private endpoint design, and verifies route state, DNS, health, blob content, and correlated telemetry.
+      - The response remains read-only, does not expose secrets, and does not claim remediation or recovery has already occurred.
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: live-diagnostics
+      requiredSkills:
+        - azure-diagnostics
+      azureFixture: ./fixture/functions-vnet-routing/azure-manifest-ambiguous.json
+    graders: *live-vnet-graders
+
+  - name: "Avoid false route diagnosis for Flex Function"
+    prompt: |
+      Our Function App's blob endpoint is returning 503 while health checks pass.
+      There was recent route-table activity, but we are not sure it caused the
+      outage. Investigate the live environment, identify the actual cause, and
+      recommend a safe recovery plan.
+      Do not modify any Azure resources.
+    rubric:
+      - "Critical gate: The final response must identify the evidence-backed DNS cause, reject the harmless route as causal, recommend minimal remediation, and define concrete recovery verification."
+      - The agent invokes azure-diagnostics and gathers live resource, telemetry, DNS, route, private-endpoint, and Activity Log evidence rather than assuming recent route-table activity caused the failure.
+      - The response identifies that the only added route targets unrelated `192.0.2.10/32`, not the blob private endpoint IP, while the storage hostname no longer resolves to that private IP.
+      - The response uses the missing private DNS VNet link, changed resolution, and failed blob telemetry to establish DNS as the actual cause while recognizing that the private endpoint and role assignment remain healthy.
+      - The response does not recommend removing the harmless route, changing Route All, enabling public storage access, replacing the private endpoint, or broadening identity permissions.
+      - The recommended recovery recreates only the test-storage private DNS zone VNet link after approval, then verifies private resolution, route state, health, blob success, and correlated telemetry.
+      - The response remains read-only, does not expose secrets, and does not claim remediation or recovery has already occurred.
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: live-diagnostics
+      requiredSkills:
+        - azure-diagnostics
+      azureFixture: ./fixture/functions-vnet-routing/azure-manifest-control.json
+    graders: *live-vnet-graders

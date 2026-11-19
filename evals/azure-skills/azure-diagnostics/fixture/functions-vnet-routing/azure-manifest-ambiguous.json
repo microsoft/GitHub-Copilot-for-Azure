@@ -1,0 +1,25 @@
+{
+  "id": "azure-diagnostics-functions-vnet-routing-ambiguous",
+  "schemaVersion": 1,
+  "version": 2,
+  "type": "readOnly",
+  "persistence": "temporary",
+  "provisioningTimeoutMinutes": 60,
+  "description": "A Flex Consumption Function App with several recent maintenance changes and an isolated test-storage failure.",
+  "bicepConfigs": [
+    {
+      "fixtureId": "functions-vnet-routing-ambiguous",
+      "path": "main.bicep",
+      "location": "eastus",
+      "resourceGroupNameBase": "functions-vnet-scenario-a",
+      "parameters": [
+        {
+          "key": "testPrincipalId"
+        }
+      ]
+    }
+  ],
+  "postProvisionScript": {
+    "path": "post-provision-ambiguous.ts"
+  }
+}

@@ -6,6 +6,8 @@ import {
   isGradedVallyRecord,
   requireCompleteGrading,
   runEvaluationBatch,
+  vallyRetryPolicy,
+  withVallyRetries,
 } from "../evaluation.ts";
 import { collectEvaluationAnswerBilling, type PhaseBilling } from "../billing.ts";
 import type { SkillImprovementRunSpec } from "../config.ts";
@@ -20,6 +22,35 @@ vi.mock("../process.ts", async importOriginal => {
     runProcess: vi.fn(),
     runWithConcurrency: vi.fn(original.runWithConcurrency),
   };
+});
+
+vallyRetryPolicy.delayMs = 0;
+
+describe("withVallyRetries", () => {
+  test("retries a transient failure and returns the later result", async () => {
+    const retries: number[] = [];
+    let calls = 0;
+    const result = await withVallyRetries("eval", Date.now() + 60_000, async attempt => {
+      calls++;
+      if (attempt < 3) throw new Error("DeploymentNotFound");
+      return "ok";
+    }, attempt => retries.push(attempt));
+    expect(result).toBe("ok");
+    expect(calls).toBe(3);
+    expect(retries).toEqual([1, 2]);
+  });
+
+  test.each([
+    "Skill improvement run exceeded limits.maxDurationMinutes.",
+    "npx timed out after 1000ms.",
+  ])("does not retry deadline failures: %s", async message => {
+    let calls = 0;
+    await expect(withVallyRetries("eval", Date.now() + 60_000, async () => {
+      calls++;
+      throw new Error(message);
+    })).rejects.toThrow(message);
+    expect(calls).toBe(1);
+  });
 });
 
 describe("answer billing propagation", () => {
@@ -81,12 +112,20 @@ describe("answer billing propagation", () => {
         data: nanoAiu === undefined ? {} : { copilotUsage: { totalNanoAiu: nanoAiu } },
       }, ...(partial ? [{ type: "assistant.usage", data: {} }] : [])], !interrupted);
       const processError = new Error(`${failure} failed`);
+      let persistentWorkspaceRoot: string | undefined;
+      const sourceWorkspace = path.join(os.tmpdir(), `vally-eval-${path.basename(root)}`);
       vi.mocked(runProcess).mockImplementation(async (_command, args, options) => {
         if (!options.stdoutFile) {
           throw new Error("Expected output file.");
         }
         if (args.includes("eval")) {
           expect(args[args.indexOf("--workers") + 1]).toBe(String(workers ?? 1));
+          persistentWorkspaceRoot = options.env?.VALLY_PRESERVE_WORKSPACE_ROOT;
+          expect(persistentWorkspaceRoot).toBeTruthy();
+          const snapshot = path.join(persistentWorkspaceRoot!, "workspace-test");
+          fs.mkdirSync(snapshot, { recursive: true });
+          fs.writeFileSync(path.join(snapshot, ".vally-source-workspace"), sourceWorkspace);
+          fs.writeFileSync(path.join(snapshot, "artifact.txt"), "bundle");
           const runDirectory = path.join(path.dirname(options.stdoutFile), "run");
           fs.mkdirSync(runDirectory);
           fs.writeFileSync(path.join(runDirectory, "eval-results.md"), "# Results\n");
@@ -97,6 +136,7 @@ describe("answer billing propagation", () => {
           }) + "\n" + (truncated ? '{"trajectory":\n{"type":"progress"}\n' : ""));
         } else {
           expect(args).not.toContain("--workers");
+          expect(fs.readFileSync(path.join(sourceWorkspace, "artifact.txt"), "utf8")).toBe("bundle");
           if (!options.stdinFile) {
             throw new Error("Expected saved answers as grading input.");
           }
@@ -120,19 +160,41 @@ describe("answer billing propagation", () => {
         );
         if (failure) {
           await expect(pending).rejects.toBe(processError);
+          expect(fs.existsSync(persistentWorkspaceRoot!)).toBe(false);
+          expect(fs.existsSync(sourceWorkspace)).toBe(false);
+          // Failed generation attempts are retried, billed, and expected again.
+          const attempts = failure === "eval" ? 3 : 1;
           expect(captured).toMatchObject({
             finalized: false,
-            evaluationAnswers: { expected: truncated ? 2 : 1, observed: 1, fullyMeasured: 1, fullyMeasuredAiCredits: 1.25 },
+            evaluationAnswers: {
+              expected: (truncated ? 2 : 1) * attempts,
+              observed: attempts,
+              fullyMeasured: attempts,
+              fullyMeasuredAiCredits: 1.25 * attempts,
+            },
           });
+          const evalCalls = vi.mocked(runProcess).mock.calls.filter(call => call[1].includes("eval")).length;
+          const gradeCalls = vi.mocked(runProcess).mock.calls.filter(call => call[1].includes("grade")).length;
+          expect(evalCalls).toBe(attempts);
+          // Both judges grade concurrently and each makes three attempts.
+          expect(gradeCalls).toBe(failure === "grade" ? 6 : 0);
+          if (failure === "eval") {
+            const generationDir = path.join(root, "results", "generation", "skill-only", "answer-model");
+            expect(fs.readdirSync(generationDir).sort()).toEqual([
+              "quality.yaml", "quality.yaml.failed-attempt-1", "quality.yaml.failed-attempt-2",
+            ]);
+          }
           return;
         }
         if (truncated) {
           await expect(pending).rejects.toBeInstanceOf(SyntaxError);
           expect(captured?.finalized).toBe(false);
-          expect(vi.mocked(runProcess)).toHaveBeenCalledTimes(1);
+          expect(vi.mocked(runProcess)).toHaveBeenCalledTimes(3);
           return;
         }
         const batch = await pending;
+        expect(fs.existsSync(persistentWorkspaceRoot!)).toBe(false);
+        expect(fs.existsSync(sourceWorkspace)).toBe(false);
         expect(vi.mocked(runWithConcurrency).mock.calls.map(call => call[1])).toEqual([2, 2]);
         const reportedCredits = nanoAiu === undefined ? undefined : nanoAiu / 1_000_000_000;
         const credits = partial || interrupted ? undefined : reportedCredits;

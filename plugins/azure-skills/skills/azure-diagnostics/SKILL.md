@@ -75,6 +75,7 @@ Activate this skill when user wants to:
 - Route active AKS incidents, AKS-specific intake, evidence gathering, and remediation guidance to [AKS Troubleshooting](troubleshooting/aks/aks-troubleshooting.md).
 - Route Azure VM RDP/SSH connectivity, NSG/firewall, credential reset, and VM agent troubleshooting to [VM Connectivity Troubleshooting](troubleshooting/compute/vm-troubleshooting.md).
 - Route Azure Messaging SDK troubleshooting (Event Hubs, Service Bus) to [Messaging Troubleshooting](troubleshooting/messaging/README.md).
+- For Function App VNet, route-table, NSG, or private-endpoint failures, use the [Flex networking guidance](references/functions/triggers.md#flex-consumption-specifics) and report the observed topology, causal evidence, impact scope, smallest safe fix, and recovery verification.
 
 ---
 

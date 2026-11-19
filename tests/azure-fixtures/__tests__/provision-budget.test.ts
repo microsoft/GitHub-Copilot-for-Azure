@@ -135,6 +135,30 @@ describe("per-invocation provisioning budgets", () => {
     expect(execFileSync.mock.lastCall?.[2].timeout).toBeUndefined();
   });
 
+  it("allows a bounded per-manifest provisioning timeout", async () => {
+    const extendedBudgetMs = 25 * 60 * 1000;
+    await provision(manifestPath, {
+      ...manifest,
+      persistence: "never",
+      provisioningTimeoutMinutes: 25,
+      bicepConfigs: [manifest.bicepConfigs[0]],
+    });
+
+    const deployment = execFileSync.mock.calls.find(([, args]) =>
+      args.slice(0, 3).join(" ") === "deployment group create");
+    const postProvision = execFileSync.mock.calls.find(([command]) =>
+      command === "npx" || command === "npx.cmd");
+    expect(deployment?.[2].timeout).toBe(extendedBudgetMs);
+    expect(postProvision?.[2].timeout).toBe(extendedBudgetMs);
+  });
+
+  it.each([0, 1.5, 61])("rejects invalid provisioning timeout %s", async (minutes) => {
+    await expect(provision(manifestPath, {
+      ...manifest,
+      provisioningTimeoutMinutes: minutes,
+    })).rejects.toThrow("provisioningTimeoutMinutes must be a whole number from 1 through 60");
+  });
+
   it("allows explicitly unbudgeted commands even after their supplied budget is exhausted", () => {
     const budget = createBudget();
     budget.set(1);

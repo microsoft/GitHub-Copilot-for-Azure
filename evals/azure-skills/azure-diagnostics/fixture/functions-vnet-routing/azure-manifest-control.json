@@ -1,0 +1,25 @@
+{
+  "id": "azure-diagnostics-functions-vnet-routing-control",
+  "schemaVersion": 1,
+  "version": 2,
+  "type": "readOnly",
+  "persistence": "temporary",
+  "provisioningTimeoutMinutes": 60,
+  "description": "A Flex Consumption Function App with a harmless route-table change and an isolated test-storage failure.",
+  "bicepConfigs": [
+    {
+      "fixtureId": "functions-vnet-routing-control",
+      "path": "main.bicep",
+      "location": "eastus",
+      "resourceGroupNameBase": "functions-vnet-scenario-b",
+      "parameters": [
+        {
+          "key": "testPrincipalId"
+        }
+      ]
+    }
+  ],
+  "postProvisionScript": {
+    "path": "post-provision-control.ts"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "id": "azure-diagnostics-functions-vnet-nat-capacity",
+  "schemaVersion": 1,
+  "version": 1,
+  "type": "readWrite",
+  "persistence": "never",
+  "provisioningTimeoutMinutes": 60,
+  "description": "A fresh Flex Consumption Function App with persistent public-outbound pressure after application-level connection improvements, ready for NAT Gateway remediation.",
+  "bicepConfigs": [
+    {
+      "fixtureId": "functions-vnet-nat-capacity",
+      "path": "main.bicep",
+      "location": "eastus",
+      "resourceGroupNameBase": "functions-vnet-nat-capacity",
+      "parameters": [
+        {
+          "key": "testPrincipalId"
+        }
+      ]
+    }
+  ],
+  "postProvisionScript": {
+    "path": "post-provision-nat-capacity.ts"
+  }
+}

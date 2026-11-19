@@ -6,11 +6,30 @@ const workflow = fs.readFileSync(
   fileURLToPath(new URL("../../../.github/workflows/skill-improvement.yml", import.meta.url)),
   "utf8"
 );
+const integrationWorkflow = fs.readFileSync(
+  fileURLToPath(new URL("../../../.github/workflows/test-all-integration.yml", import.meta.url)),
+  "utf8"
+);
 
 describe("skill improvement workflow", () => {
   test("uses the dedicated evaluation environment", () => {
     expect(workflow).toContain("environment: skill-improvement-evals");
     expect(workflow).not.toContain("environment: cideploytest");
+  });
+
+  test("falls back to existing report storage for fixture coordination", () => {
+    expect(workflow).toContain(
+      "AZURE_FIXTURE_COORDINATION_STORAGE_ACCOUNT: ${{ vars.AZURE_FIXTURE_COORDINATION_STORAGE_ACCOUNT || vars.REPORT_STORAGE_ACCOUNT }}"
+    );
+    expect(workflow).toContain(
+      "AZURE_FIXTURE_COORDINATION_CONTAINER: ${{ vars.AZURE_FIXTURE_COORDINATION_CONTAINER || vars.SKILL_IMPROVEMENT_STORAGE_CONTAINER }}"
+    );
+  });
+
+  test("registers the Flex Consumption resource provider in live workflows", () => {
+    const registration = "az provider register --namespace Microsoft.App --wait --output none";
+    expect(workflow).toContain(registration);
+    expect(integrationWorkflow).toContain(registration);
   });
 
   test("allows setup and cleanup headroom beyond the engine deadline", () => {

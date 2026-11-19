@@ -1,0 +1,25 @@
+{
+  "id": "azure-diagnostics-functions-vnet-repair",
+  "schemaVersion": 1,
+  "version": 1,
+  "type": "readWrite",
+  "persistence": "never",
+  "provisioningTimeoutMinutes": 60,
+  "description": "A fresh Flex Consumption Function App private-storage routing failure that the evaluated agent is authorized to repair.",
+  "bicepConfigs": [
+    {
+      "fixtureId": "functions-vnet-repair",
+      "path": "main.bicep",
+      "location": "eastus",
+      "resourceGroupNameBase": "functions-vnet-repair",
+      "parameters": [
+        {
+          "key": "testPrincipalId"
+        }
+      ]
+    }
+  ],
+  "postProvisionScript": {
+    "path": "post-provision-repair.ts"
+  }
+}

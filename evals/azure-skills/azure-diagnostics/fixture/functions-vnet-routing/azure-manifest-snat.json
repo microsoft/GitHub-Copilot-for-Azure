@@ -1,0 +1,25 @@
+{
+  "id": "azure-diagnostics-functions-vnet-snat",
+  "schemaVersion": 1,
+  "version": 2,
+  "type": "readOnly",
+  "persistence": "temporary",
+  "provisioningTimeoutMinutes": 60,
+  "description": "A Flex Consumption Function App with deterministic public-dependency connection-pressure telemetry and an unrelated private-storage route failure.",
+  "bicepConfigs": [
+    {
+      "fixtureId": "functions-vnet-snat",
+      "path": "main.bicep",
+      "location": "eastus",
+      "resourceGroupNameBase": "functions-vnet-snat",
+      "parameters": [
+        {
+          "key": "testPrincipalId"
+        }
+      ]
+    }
+  ],
+  "postProvisionScript": {
+    "path": "post-provision-snat.ts"
+  }
+}
