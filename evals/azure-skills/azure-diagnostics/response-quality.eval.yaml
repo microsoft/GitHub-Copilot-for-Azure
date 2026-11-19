@@ -512,3 +512,24 @@ stimuli:
       - Verification confirms checkpoint blobs advance, restarts resume near the last processed offset, authorization errors stop, and replayed events do not create duplicate business side effects.
     tags: *quality-tags
     graders: *quality-graders
+
+  - name: "Resource details do not establish Azure Resource Health"
+    prompt: |
+      Evaluate this synthetic, offline diagnostic claim. Do not query or modify Azure.
+
+      Evidence:
+      - `az resource show --ids <resource-id>` returned the resource document
+      - The document contains `provisioningState: Succeeded`
+      - No Azure Resource Health response, workload probe, metric, or application
+        request result was collected
+
+      Can this evidence establish that Azure Resource Health is Available or that
+      the workload is healthy? Explain the distinction and give the supported
+      read-only Resource Health lookup that an authorized operator could run.
+    rubric:
+      - The response states that `az resource show` provides resource configuration and provisioning metadata and cannot establish Azure Resource Health or workload health.
+      - The response identifies the current `Microsoft.ResourceHealth/availabilityStatuses/current` lookup, such as through `az rest`, and does not run it in this evidence-only scenario.
+      - The response notes that the lookup requires `Microsoft.ResourceHealth/AvailabilityStatuses/current/read` and applies only to supported resource types.
+      - 'The response distinguishes Azure platform availability states from application, guest, dependency, and end-to-end health; it does not infer `Available` or healthy from `provisioningState: Succeeded`.'
+    tags: *quality-tags
+    graders: *quality-graders
