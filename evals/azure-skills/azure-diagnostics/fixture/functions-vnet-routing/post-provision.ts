@@ -26,12 +26,24 @@ function log(message: string): void {
   console.error(`[functions-vnet-routing] ${message}`);
 }
 
+// Windows needs a shell to run az.cmd; quote each argument so cmd.exe doesn't
+// treat characters such as `|` in JMESPath queries as shell operators.
+function windowsShellArgument(value: string): string {
+  if (/["%\r\n]/.test(value)) {
+    throw new Error(`Azure CLI argument cannot be quoted safely for cmd.exe: ${value}`);
+  }
+  return `"${value}"`;
+}
+
 function runAz(args: string[], timeout = 120_000): string {
+  const isWindows = process.platform === "win32";
   try {
-    return execFileSync(AZ_COMMAND, args, {
+    return execFileSync(AZ_COMMAND, isWindows ? args.map(windowsShellArgument) : args, {
       encoding: "utf8",
-      shell: process.platform === "win32",
+      shell: isWindows,
       timeout,
+      // az traps SIGTERM and can hang past the timeout.
+      killSignal: "SIGKILL",
     }).trim();
   } catch (error) {
     const commandError = error as Error & { stdout?: string; stderr?: string };
@@ -215,6 +227,11 @@ async function waitForTelemetry(
   timeoutMs = 360_000,
 ): Promise<void> {
   const queryUrl = `https://management.azure.com${applicationInsightsId}/query?api-version=2018-04-20`;
+  // Pass the JSON body as a file so its double quotes never reach a command shell.
+  const bodyPath = join(temporaryDirectory, `telemetry-query-${correlationId}.json`);
+  writeFileSync(bodyPath, JSON.stringify({
+    query: `traces | where timestamp > ago(15m) | where message contains "${correlationId}" | take 1`,
+  }), "utf8");
   await retry(
     `waiting for ${description} in Application Insights`,
     async () => {
@@ -225,9 +242,7 @@ async function waitForTelemetry(
         "--url",
         queryUrl,
         "--body",
-        JSON.stringify({
-          query: `traces | where timestamp > ago(15m) | where message contains "${correlationId}" | take 1`,
-        }),
+        `@${bodyPath}`,
         "-o",
         "json",
       ]);

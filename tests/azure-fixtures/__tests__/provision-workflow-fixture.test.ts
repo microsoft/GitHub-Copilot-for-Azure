@@ -1068,6 +1068,26 @@ describe("additional failure modes", () => {
       message: expect.stringContaining(`reported ${code}; retrying in 15 seconds (attempt 2/4)`),
     }));
   });
+
+  it("stops retrying a transient deployment error after losing the lease", async () => {
+    const fake = environment();
+    fake.onOperation({ actor: "owner", operation: "deployment group create", invocation: 1, run: () => fake.expireLease() });
+    fake.fail({
+      actor: "owner",
+      operation: "deployment group create",
+      invocation: 1,
+      error: new Error("ERROR: {\"error\":{\"code\":\"AnotherOperationInProgress\"}}"),
+    });
+
+    await expect(provisionWithDependencies(
+      manifestPath,
+      { ...manifest, provisioningTimeoutMinutes: 1 },
+      fake.createDependencies("owner"),
+    )).rejects.toThrow("Stale lease");
+
+    expect(fake.deploymentCount).toBe(0);
+    expect(writes(fake).map((record) => record.state)).toEqual(["Preparing"]);
+  });
 });
 
 describe("injected time budget", () => {

@@ -354,6 +354,7 @@ async function provisionBicepConfig(
   now: () => number = Date.now,
   sleep: ProvisioningDependencies["sleep"] = (ms) => new Promise((resolvePromise) => setTimeout(resolvePromise, ms)),
   log: Pick<Console, "warn"> = console,
+  assertCanContinue: () => void = () => {},
 ): Promise<void> {
   const resourceGroupName = context.resourceGroupNames[bicepConfig.resourceGroupNameBase];
   if (!resourceGroupName) {
@@ -425,6 +426,8 @@ async function provisionBicepConfig(
     "none",
   ];
   for (let attempt = 1; attempt <= DEPLOYMENT_RETRY_ATTEMPTS; attempt++) {
+    // Stop retrying if coordination (e.g. the fixture lease) was lost during a backoff.
+    assertCanContinue();
     try {
       runCommand(deploymentArgs);
       return;
@@ -863,8 +866,9 @@ async function provisionTemporaryFixture(
 
       const expiration = new Date(Math.floor((dependencies.now() + dependencies.readyRetentionMs) / 1000) * 1000);
       const retentionTag = deleteAfterTag(expiration);
+      const heldLease = lease;
       for (const config of manifest.bicepConfigs) {
-        lease.assertHealthy();
+        heldLease.assertHealthy();
         await provisionBicepConfig(
           context,
           manifest,
@@ -878,6 +882,7 @@ async function provisionTemporaryFixture(
           dependencies.now,
           dependencies.sleep,
           dependencies.log,
+          () => heldLease.assertHealthy(),
         );
         await dependencies.immediate();
         lease.assertHealthy();
