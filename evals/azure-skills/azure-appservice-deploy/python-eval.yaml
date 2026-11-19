@@ -27,6 +27,7 @@ description: |
 tags:
   type: integration
   skill: azure-appservice-deploy
+  requiredSkills: [azure-appservice-deploy, azure-prepare]
 
 defaults:
   runs: 3
