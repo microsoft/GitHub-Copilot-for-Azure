@@ -43,6 +43,14 @@ credentials):
 - `translator.test.ts` — `validate-document-translation.mjs` (`TRANSLATOR_VALIDATOR_PATH`)
 - `search-schema.test.ts` — `validate-search-schema.mjs` (`SEARCH_VALIDATOR_PATH`)
 - `content-safety.test.ts` — `validate-content-safety-request.mjs` (`CS_VALIDATOR_PATH`)
+- `document-intelligence-training.test.ts` — `audit-di-training-set.mjs` (`DI_TRAINING_AUDIT_PATH`)
+- `foundry-tools.test.ts` — `check-foundry-tools-access.mjs` (`FOUNDRY_ACCESS_CHECKER_PATH`),
+  `check-foundry-tools-network.mjs` (`FOUNDRY_NETWORK_CHECKER_PATH`) and
+  `sanitize-har.mjs` (`HAR_SANITIZER_PATH`)
+
+The access and network checkers are tested on exported JSON only; the suites
+never call Azure, resolve DNS or open connections (`--resolve` and `--connect`
+are not exercised).
 
 Build first so `output/azure-skills/skills/azure-ai/scripts/` is up to date, then
 run all suites from the repository root:

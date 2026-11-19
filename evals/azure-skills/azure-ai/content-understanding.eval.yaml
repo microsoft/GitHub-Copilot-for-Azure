@@ -1,0 +1,91 @@
+name: azure-ai-content-understanding-eval
+description: |
+  Azure Content Understanding setup, API versions, model defaults and custom
+  analyzer guidance. Synthetic prompts only; no Azure resources, customer
+  documents or credentials.
+
+tags:
+  type: integration
+  skill: azure-ai
+
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+  judge_model: gpt-6.1-sol
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  - name: "Route Content Understanding custom analyzer questions"
+    prompt: "How do I create a custom analyzer in Azure Content Understanding and call it from my application?"
+    tags:
+      type: trigger
+      tier: smoke
+      cost: llm
+      area: routing
+      requiredSkills:
+        - azure-ai
+        - microsoft-foundry
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-ai"},{"type":"tool-call-count","count":5}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-ai
+
+  - name: "Choose the Content Understanding surface and API version"
+    prompt: |
+      We opened Content Understanding in the new Microsoft Foundry portal but
+      cannot find where to label samples for a custom analyzer. Which tool
+      should we use for authoring, and which API version should production
+      code call? Do not contact Azure.
+    rubric:
+      - Directs custom analyzer authoring, labeling and testing to Content Understanding Studio, and explains that the Foundry portal CU experience is a preview playground without custom analyzer authoring or labeling.
+      - Recommends the GA API version 2025-11-01 for production, uses 2026-06-01-preview only for preview-only features, and keeps the same api-version on create, analyze and every poll.
+      - Explains that a custom analyzer has no separate endpoint and is called by analyzer ID on the resource endpoint, then polled through Operation-Location.
+    tags: &quality-tags
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      requiredSkills:
+        - azure-ai
+    graders: &quality-graders
+      - type: skill-invocation
+        config:
+          required:
+            - azure-ai
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+      - type: completed
+
+  - name: "Fix a missing default model deployment"
+    prompt: |
+      Our Content Understanding analyze call fails with an error saying no
+      default model deployment is set. We already deployed a chat model and an
+      embedding model in the same Foundry resource. What should we check and
+      change? Do not contact Azure.
+    rubric:
+      - Explains that Content Understanding runs its generative steps on the customer's own model deployments and that defaults map model names to deployment names.
+      - Recommends reading defaults with GET on contentunderstanding/defaults and setting them with PATCH, in Content Understanding Studio settings, or per request with modelDeployments.
+      - Distinguishes the analyzer's models (catalog model names from supportedModels) from deployment names, and notes that prebuilt-read and prebuilt-layout need no language or embedding model.
+    tags: *quality-tags
+    graders: *quality-graders
+
+  - name: "Improve a custom analyzer field without sharing documents"
+    prompt: |
+      A field in our Content Understanding custom analyzer is often missing in
+      results even though the analysis status is Succeeded. How should we
+      improve it, and what should we check first? We cannot share the
+      documents. Do not contact Azure.
+    rubric:
+      - Recommends checking result.warnings for guardrail codes such as HarmfulContentFiltered before changing the schema.
+      - Covers field design levers (explicit method extract, generate or classify; specific descriptions with aliases; labeled samples in Content Understanding Studio) and changing one thing per iteration against a fixed validation set.
+      - Suggests comparing per-field presence and confidence across analyzer versions without sharing field values.
+    tags: *quality-tags
+    graders: *quality-graders

@@ -1,0 +1,209 @@
+name: azure-ai-foundry-tools-eval
+description: |
+  Roles, private networking, data handling and content-free evidence for
+  Document Intelligence and Content Understanding on Foundry resources.
+  Synthetic inputs only; no Azure resources, customer documents or credentials.
+
+tags:
+  type: integration
+  skill: azure-ai
+
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+  judge_model: gpt-6.1-sol
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  - name: "Route Foundry User 401 on Content Understanding"
+    prompt: "Our developers have the Foundry User role on a Foundry project, but Content Understanding analyze calls and Document Intelligence calls on the same Foundry resource return 401 PermissionDenied. Why is Foundry User not enough?"
+    tags:
+      type: trigger
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills:
+        - azure-ai
+        - microsoft-foundry
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-ai"},{"type":"tool-call-count","count":5}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-ai
+
+  - name: "Route generic Foundry project RBAC and networking to microsoft-foundry"
+    prompt: "I need to create RBAC assignments and a private network for a Foundry project and its hosted agents. Which role and network workflow should I use?"
+    tags:
+      type: trigger
+      tier: smoke
+      cost: llm
+      area: negative-routing
+      requiredSkills:
+        - azure-ai
+        - microsoft-foundry
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+          disallowed:
+            - azure-ai
+
+  - name: "Evaluate exported role assignments offline with the access checker"
+    prompt: |
+      Check offline whether this synthetic caller can run Content Understanding
+      analyze and Document Intelligence analyze on the Foundry resource. Write
+      the JSON to temporary files and run the skill's bundled access checker.
+      Do not contact Azure, change role assignments or install anything.
+      assignments.json:
+      [{"scope":"/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-synthetic/providers/Microsoft.CognitiveServices/accounts/synthetic-ai/projects/p1","roleDefinitionId":"/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Authorization/roleDefinitions/53ca6127-db72-4b80-b1b0-d745d6d5456d","roleDefinitionName":"Foundry User","principalId":"11111111-1111-1111-1111-111111111111","principalType":"User"}]
+      definitions.json:
+      [{"name":"53ca6127-db72-4b80-b1b0-d745d6d5456d","roleName":"Foundry User","permissions":[{"actions":["Microsoft.CognitiveServices/*/read"],"notActions":[],"dataActions":["Microsoft.CognitiveServices/*"],"notDataActions":[]}]}]
+      account.json:
+      {"id":"/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-synthetic/providers/Microsoft.CognitiveServices/accounts/synthetic-ai","kind":"AIServices","properties":{"customSubDomainName":"synthetic-ai","disableLocalAuth":true}}
+    rubric:
+      - Runs the bundled check-foundry-tools-access.mjs script on the temporary files rather than only reasoning from the prompt.
+      - Concludes that Foundry User at the Foundry project scope does not authorize these resource-level data-plane calls and that the role is needed at the Foundry resource scope (or inherited from above it).
+      - Notes that key authentication is disabled on the resource, so keys are not a workaround.
+      - Presents any role assignment only as a proposed change for the user to confirm, and does not ask for keys or tokens.
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: response-quality
+      requiredSkills:
+        - azure-ai
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-ai
+      - type: shell-command-invoked
+        config:
+          required:
+            - command: >-
+                (?i)(?:^|[;&|\r\n])\s*(?:&\s*)?node(?:\.exe)?\s+(?:"[^"\r\n]*check-foundry-tools-access\.mjs"|'[^'\r\n]*check-foundry-tools-access\.mjs'|[^\s"';&|\r\n]*check-foundry-tools-access\.mjs)(?=$|[\s;&|])
+      - type: shell-command-invoked
+        config:
+          disallowed:
+            - command: '(?i)\baz\s+role\s+assignment\s+create\b'
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+      - type: completed
+
+  - name: "Private endpoint DNS for Content Understanding and Document Intelligence hosts"
+    prompt: |
+      Our Foundry resource has public network access disabled and an approved
+      private endpoint. Apps in the VNet reach <name>.cognitiveservices.azure.com
+      but calls to <name>.services.ai.azure.com fail. Which private DNS zones and
+      checks do we need? Do not contact Azure or install anything.
+    rubric:
+      - Explains that one private endpoint (group ID account) serves the resource hostnames, and that each hostname the app uses needs a record in its own private DNS zone (privatelink.cognitiveservices.azure.com, privatelink.openai.azure.com, privatelink.services.ai.azure.com) linked to the VNet or resolved through the custom DNS forwarder.
+      - Recommends resolving each hostname from inside the VNet and classifying the answer as private or public, for example with the bundled network checker or the no-Node commands, without printing IP addresses.
+      - Notes that with public access disabled a public answer means the call leaves through the public path and is rejected.
+    tags: &quality-tags
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      requiredSkills:
+        - azure-ai
+    graders: &quality-graders
+      - type: skill-invocation
+        config:
+          required:
+            - azure-ai
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+      - type: completed
+
+  - name: "Retention and deletion for Document Intelligence and Content Understanding"
+    prompt: |
+      Our compliance team asks how long Document Intelligence and Content
+      Understanding keep submitted documents and analyze results, whether we can
+      delete them earlier, and whether Content Understanding can process data
+      outside the resource region. Answer from public documentation. Do not
+      contact Azure.
+    rubric:
+      - States that both services keep analyze results for up to 24 hours and that results can be deleted earlier (Document Intelligence Delete Analyze Result; Content Understanding Delete Result on the result ID).
+      - Explains that Content Understanding generative steps run on the customer's own model deployment, so that deployment's type (global, data zone, regional) decides where that processing can happen, and that processingLocation applies only to prebuilt-read and prebuilt-layout.
+      - Flags where the Learn pages differ or are ambiguous instead of presenting a single unqualified guarantee.
+    tags: *quality-tags
+    graders: *quality-graders
+
+  - name: "Summarize a browser trace without leaking secrets"
+    prompt: |
+      Summarize this synthetic browser HAR from Content Understanding Studio
+      for a support ticket. Write it to a temporary file and run the skill's
+      bundled HAR sanitizer. Do not contact Azure or install anything.
+      {"log":{"entries":[{"startedDateTime":"2026-01-01T00:00:00.000Z","time":120,"request":{"method":"GET","url":"https://synthetic-ai.services.ai.azure.com/contentunderstanding/defaults?api-version=2025-11-01","headers":[{"name":"Authorization","value":"Bearer SYNTHETIC_TOKEN_DO_NOT_REPEAT"}]},"response":{"status":401,"headers":[{"name":"apim-request-id","value":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"}],"content":{"mimeType":"application/json","text":"{\"error\":{\"code\":\"PermissionDenied\",\"message\":\"SYNTHETIC_TOKEN_DO_NOT_REPEAT\"}}"}}}]}}
+    rubric:
+      - Runs the bundled sanitize-har.mjs script on the temporary file rather than summarizing the raw HAR by hand.
+      - Reports the request as a 401 on the Content Understanding defaults path with error code PermissionDenied and keeps the apim-request-id for support.
+      - Warns that the raw HAR contains tokens and must not be shared, and does not repeat the token, the message text or the resource name.
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: response-quality
+      requiredSkills:
+        - azure-ai
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-ai
+      - type: shell-command-invoked
+        config:
+          required:
+            - command: >-
+                (?i)(?:^|[;&|\r\n])\s*(?:&\s*)?node(?:\.exe)?\s+(?:"[^"\r\n]*sanitize-har\.mjs"|'[^'\r\n]*sanitize-har\.mjs'|[^\s"';&|\r\n]*sanitize-har\.mjs)(?=$|[\s;&|])
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "SYNTHETIC_TOKEN_DO_NOT_REPEAT"
+
+  - name: "Foundry Tools role and network checks without Node.js"
+    prompt: |
+      I need to check Content Understanding role scope and private DNS from
+      this Windows machine, but Node.js is not installed. Do not install
+      anything, change Azure resources, reveal IP addresses or contact Azure.
+      What safe read-only checks can I run?
+    rubric:
+      - Directs the user to the read-only Bash or PowerShell commands in foundry-tools/without-node.md and does not offer to install Node.js.
+      - Explains that a project-scoped role does not authorize DI or CU and that a public answer for an affected host requires checking its privatelink DNS zone and VNet link.
+      - Keeps role names and private/public labels only and does not print keys, tokens, full resource IDs or IP addresses.
+    tags: *quality-tags
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-ai
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "foundry-tools[\\\\/]without-node\\.md"
+      - type: shell-command-invoked
+        config:
+          disallowed:
+            - command: '(?i)\b(?:winget|choco|brew|apt(?:-get)?|npm|npx|pnpm|yarn)\s+(?:install|i|add)\b'
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+      - type: completed
