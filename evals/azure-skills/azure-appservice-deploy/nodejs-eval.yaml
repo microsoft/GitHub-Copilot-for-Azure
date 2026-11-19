@@ -158,7 +158,7 @@ stimuli:
       type: integration
       tier: smoke
       cost: llm
-      area: routing-negative
+      area: routing
       requiredSkills: [azure-appservice-deploy, azure-prepare]
       earlyTerminate: '[{"type":"skill-call","skill":"azure-appservice-deploy"},{"type":"tool-call-count","count":3}]'
     graders:

@@ -45,8 +45,8 @@ stimuli:
           required:
             - command: "\\baz\\s+quota\\s+(list|show)\\b|check-quota\\.(ps1|sh)"
             - command: "\\baz\\s+quota\\s+usage\\s+(list|show)\\b|check-quota\\.(ps1|sh)"
-            - command: "\\baz\\s+appservice\\s+list-locations\\b[^\\n]*--sku\\s+P0v3[^\\n]*--linux-workers-enabled"
-            - command: "\\baz\\s+webapp\\s+deploy\\b[^\\n]*--type\\s+jar|\\bazd\\s+deploy\\b"
+            - command: '\baz[ \t]+appservice[ \t]+list-locations\b(?:[^;\r\n&|\\`]|[\\`][^\r\n]|[\\`]\r?\n)*--sku[ \t]+P0v3\b(?:[^;\r\n&|\\`]|[\\`][^\r\n]|[\\`]\r?\n)*--linux-workers-enabled\b'
+            - command: '\baz[ \t]+webapp[ \t]+deploy\b(?:[^;\r\n&|\\`]|[\\`][^\r\n]|[\\`]\r?\n)*--type[ \t]+jar\b|\bazd[ \t]+deploy\b'
           disallowed:
             - command: "\\baz\\s+webapp\\s+up(?!date)\\b"
             - command: "(?i)\\baz\\s+webapp\\s+log\\s+tail\\b|\\bazd\\s+monitor\\b"
@@ -107,7 +107,7 @@ stimuli:
       type: integration
       tier: smoke
       cost: llm
-      area: routing-negative
+      area: routing
       requiredSkills: [azure-appservice-deploy, azure-prepare]
       earlyTerminate: '[{"type":"skill-call","skill":"azure-appservice-deploy"},{"type":"tool-call-count","count":3}]'
     graders:

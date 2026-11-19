@@ -12,13 +12,15 @@ Framework detection is **advisory only**. The deployment never blocks because of
 | `next` | **nextjs** |
 | `@nestjs/core` | **nestjs** |
 | `express`, `fastify`, `koa`, `@hapi/hapi` | **node-server** (`express` / `fastify` / `koa` / `hapi`) |
-| `vite`, `react-scripts`, `@angular/core`, `vue` (and none of the above) | **static-spa** |
+| `vite`, `react-scripts`, `@angular/core`, `vue` (and none of the above) | **static-spa** only if the build is confirmed client-only |
 | None of the above | **unknown** |
 
 3. **Resolve the start entry** (Linux Node container order):
    - `scripts.start` in `package.json` → container runs `npm start`.
    - Else one of `bin/www`, `server.js`, `app.js`, `index.js` in the root → container runs it with `node`.
    - Else → **no start entry**.
+
+   For a possible SPA, inspect the build config and production entry point. Choose **static-spa** only if the deployed output is static and needs no server at runtime. If the project uses SSR or a production server, preserve its start entry. If unsure, use the **unknown** outcome, not `pm2 serve`.
 4. **Check `PORT` usage** — search server source for `process.env.PORT`. If the app hard-codes a port without reading `process.env.PORT`, record **port-hardcoded** (the platform default is 8080).
 5. **Check build** — if TypeScript (`tsconfig.json`) or Next.js/NestJS/SPA, `scripts.build` must exist; Oryx runs `npm run build` (and `npm run build:azure` if present).
 6. **Record findings** for Step 5 (startup) and Step 8 (post-deploy message).

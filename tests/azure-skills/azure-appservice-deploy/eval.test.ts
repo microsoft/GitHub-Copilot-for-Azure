@@ -72,7 +72,7 @@ describe.each(["nodejs", "php", "dotnet", "java"])("%s deployment graders", (sta
   test("requires an executed deploy, not a command written in a heredoc", async () => {
     const required = deploymentRules()
       .flatMap(config => config.required ?? [])
-      .filter(rule => rule.command.includes("webapp\\s+deploy"));
+      .filter(rule => rule.command.includes("webapp") && rule.command.includes("deploy"));
     expect(required.length).toBeGreaterThan(0);
 
     const cliDeploy = `az webapp deploy --type ${stack === "java" ? "jar" : "zip"}`;
@@ -81,4 +81,21 @@ describe.each(["nodejs", "php", "dotnet", "java"])("%s deployment graders", (sta
     }
     expect((await gradeShellCommand(`cat > note.md <<'EOF'\n${cliDeploy}\nEOF`, { required })).passed).toBe(false);
   });
+
+  if (stack === "java") {
+    test.each(["\\", "`"])("accepts Java CLI flag continuations with %s", async (continuation) => {
+      const rules = deploymentRules().flatMap(config => config.required ?? []);
+      for (const [subcommand, command, flags] of [
+        ["list-locations", "az appservice list-locations", "--sku P0v3 --linux-workers-enabled"],
+        ["webapp", "az webapp deploy", "--type jar"],
+      ]) {
+        const required = rules.filter(rule => rule.command.includes(subcommand));
+        expect(required).toHaveLength(1);
+        expect((await gradeShellCommand(`${command} ${continuation}\n  ${flags}`, { required })).passed).toBe(true);
+        for (const separator of ["\n", "; ", " && "]) {
+          expect((await gradeShellCommand(`${command}${separator}echo ${flags}`, { required })).passed).toBe(false);
+        }
+      }
+    });
+  }
 });

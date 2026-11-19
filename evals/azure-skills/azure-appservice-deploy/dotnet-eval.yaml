@@ -103,7 +103,7 @@ stimuli:
       type: integration
       tier: smoke
       cost: llm
-      area: routing-negative
+      area: routing
       requiredSkills: [azure-appservice-deploy, azure-prepare]
       earlyTerminate: '[{"type":"skill-call","skill":"azure-appservice-deploy"},{"type":"tool-call-count","count":3}]'
     graders:
@@ -138,7 +138,7 @@ stimuli:
           disallowed: [azure-appservice-deploy]
 
   - name: ".NET Framework Windows does not route here"
-    prompt: "Deploy my ASP.NET Framework 4.8 MVC app to Azure App Service Windows"
+    prompt: "Prepare my existing ASP.NET Framework 4.8 MVC app for Azure App Service Windows using azd. Plan only: don't run commands or change files."
     tags:
       type: integration
       tier: smoke
@@ -148,6 +148,7 @@ stimuli:
     graders:
       - type: skill-invocation
         config:
+          required: [azure-prepare]
           disallowed: [azure-appservice-deploy]
 
   - name: "Standalone WASM does not route here"
