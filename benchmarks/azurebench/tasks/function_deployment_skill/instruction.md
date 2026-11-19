@@ -1,0 +1,1 @@
+Create a simple HTTP-triggered function app in javascript that returns a random compliment from a predefined list in a JSON response. Then deploy it to azure under my subscription GithubCopilotForAzure-Testing. Use recommended defaults for deployment unless necessary to change. Deploy to eastus region. If you create a plan, go ahead and execute it without asking my permission.

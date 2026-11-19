@@ -1,0 +1,19 @@
+version = "1.0"
+
+[metadata]
+category = "cloud-development"
+tags = ["azure", "functions", "skill", "harbor-native"]
+description = "Deploy a JavaScript compliment function using Azure deployment skills."
+
+[agent]
+timeout_sec = 3600.0
+
+[verifier]
+timeout_sec = 600.0
+
+[environment]
+build_timeout_sec = 1200.0
+cpus = 2
+memory_mb = 4096
+storage_mb = 10240
+allow_internet = true

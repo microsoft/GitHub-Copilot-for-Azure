@@ -1,5 +1,11 @@
 # Azure DevOps pipelines
 
+## AzureBench
+
+[`azurebench-release.yml`](azurebench-release.yml) publishes an MSBench
+benchmark release, and [`azurebench-eval.yml`](azurebench-eval.yml) runs one
+with the Copilot CLI agent. See [their README](azurebench-eval/README.md).
+
 ## Telemetry reporter nightly build
 
 The independent
