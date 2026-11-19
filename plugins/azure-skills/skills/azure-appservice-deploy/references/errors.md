@@ -15,7 +15,7 @@ Deploy failed?
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `Container ... didn't respond to HTTP pings on port: 8000` | Wrong/missing startup command, or app bound to 127.0.0.1 | Set startup to bind `0.0.0.0:8000` ([startup-commands.md](startup-commands.md)) |
+| `Container ... didn't respond to HTTP pings` | Wrong/missing startup command, or app bound to 127.0.0.1 | Check the selected language's startup command and bind to the expected port |
 | `ModuleNotFoundError: No module named 'flask'` (or any dep) | Build skipped, deps not installed | `az webapp config appsettings set --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true` then redeploy |
 | `gunicorn: command not found` | `gunicorn` missing from `requirements.txt` | Add `gunicorn>=21` to requirements, redeploy |
 | Deploy returns 202 but site still shows default page | Async deploy not finished | Wait, or re-run with `--track-status true` to make the CLI block until completion; check `az webapp log deployment list` |
@@ -23,10 +23,10 @@ Deploy failed?
 | `Resource group '<rg>' could not be found` | RG missing | `az group create -n <rg> -l <region>` |
 | `An app with name '<app>' already exists` | Global name collision | Pick a different name (App Service host names are globally unique) |
 | `az webapp up` shown in user's notes | Deprecated command | Replace with `az webapp create` + `az webapp deploy --type zip` |
-| `azd up` provisions Container Apps instead of App Service | azure.yaml host isn't `appservice` | Either fix the template's `host:` or fall back to az CLI path |
+| Selected `azure.yaml` service targets Container Apps | The service host isn't `appservice` | Hand off to `azure-prepare`; do not change the host or fall back to CLI |
 | Deployment hangs in "Building..." | Oryx pip install failing on native deps | Run `az webapp log deployment list -n <app> -g <rg>` to find the deployment ID, then `az webapp log deployment show -n <app> -g <rg> --deployment-id <id>`; pin known-good versions in requirements |
-| 401 / unauthorized on deploy | `az login` expired or wrong subscription | `az login` + `az account set -s <sub>` |
-| `LinuxFxVersion` shows `DOCKER\|...` | Web app was created as custom container | Recreate with `--runtime "PYTHON:3.14"` (colon form is shell-safe) |
+| 401 / unauthorized on deploy | `az login` expired or wrong subscription | Reauthenticate or ask the user to confirm the intended subscription |
+| `LinuxFxVersion` shows `DOCKER\|...` | Web app was created as custom container | Stop and confirm the intended target; don't recreate or change the runtime silently |
 
 ## Where logs live
 
