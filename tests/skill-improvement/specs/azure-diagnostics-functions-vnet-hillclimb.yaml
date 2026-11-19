@@ -3,7 +3,7 @@ name: azure-diagnostics-functions-vnet-hillclimb
 target:
   plugin: azure-skills
   skill: azure-diagnostics
-  baselineRef: kaghiya/diagnostics-functions-vnet-live-evals
+  baselineRef: main
   editablePaths:
     - plugins/azure-skills/skills/azure-diagnostics/**
 
