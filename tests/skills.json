@@ -124,6 +124,16 @@
             "integrationTestSchedule": {
                 "0 12 * * 2-6": "assess-observability-health,connect-observability,troubleshoot-observability,verify-observability-fix"
             }
+        },
+        {
+            "name": "azure-device-provisioning",
+            "dirname": "azure-device-provisioning",
+            "skills": [
+                "azure-device-provisioning-onboarding"
+            ],
+            "integrationTestSchedule": {
+                "0 12 * * 2-6": "azure-device-provisioning-onboarding"
+            }
         }
     ]
 }
