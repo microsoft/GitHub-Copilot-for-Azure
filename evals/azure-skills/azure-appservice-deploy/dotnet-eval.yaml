@@ -1,0 +1,193 @@
+name: azure-appservice-deploy-dotnet-eval
+description: |
+  ASP.NET Core deployment on a real Azure subscription, framework routing,
+  and boundaries for other stacks, hosting targets, Windows and IaC.
+
+tags:
+  type: integration
+  skill: azure-appservice-deploy
+  requiredSkills: [azure-appservice-deploy, azure-prepare]
+
+defaults:
+  runs: 1
+  timeout: "35m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  - name: "ASP.NET Core end-to-end deployment"
+    prompt: |
+      I have an ASP.NET Core sample app in this workspace.
+      Use my current Azure subscription and the eastus2 region.
+      Deploy this .NET app to Azure App Service.
+    agent_environment:
+      files:
+        - src: fixture/dotnet-app/HelloApp.csproj
+          dest: HelloApp.csproj
+        - src: fixture/dotnet-app/Program.cs
+          dest: Program.cs
+    tags:
+      type: integration
+      tier: full
+      cost: azure
+      area: e2e-deployment
+      framework: aspnetcore
+      systemPrompt: '{"mode":"append","content":"Use a pseudo-random resource group name (suffix with random characters) to avoid collisions with existing resource groups."}'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [azure-appservice-deploy]
+      - type: shell-command-invoked
+        config:
+          required:
+            - command: "\\baz\\s+webapp\\s+deploy\\b|\\bazd\\s+deploy\\b"
+          disallowed:
+            - command: "\\baz\\s+webapp\\s+up(?!date)\\b"
+            - command: "(?i)\\baz\\s+webapp\\s+log\\s+tail\\b|\\bazd\\s+monitor\\b"
+            - command: '(?i)\b(curl|wget|Invoke-WebRequest|Invoke-RestMethod|iwr|irm)(\.exe)?\b[^\r\n;&|]*(azurewebsites\.net|\$\{?(url|endpoint|host_?|hostname|app_?url|site_?url)\b)'
+            - command: '(?i)\b(curl|wget|Invoke-WebRequest|Invoke-RestMethod|iwr|irm)(\.exe)?\b(?![^\r\n;&|]*(--output(?:=|\s)|--output-document(?:=|\s)|\s-o\s|-OutFile\s))[^\r\n;&|]*\$(\{[^}]+\}|[A-Za-z_]\w*)'
+      - type: output-matches
+        config:
+          pattern: "https://[^\\s]+\\.azurewebsites\\.net"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace|crashed"
+
+  - name: "ASP.NET Core Web API routing"
+    prompt: "Deploy my ASP.NET Core Web API to Azure App Service"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      framework: aspnetcore
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-appservice-deploy"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [azure-appservice-deploy]
+
+  - name: "Blazor Server routing"
+    prompt: "Deploy my Blazor Server app to Azure App Service Linux"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      framework: blazor
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-appservice-deploy"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [azure-appservice-deploy]
+
+  - name: "Generic .NET routing"
+    prompt: "Deploy my .NET 10 web app to Azure App Service"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-appservice-deploy"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [azure-appservice-deploy]
+
+  - name: "Cross-stack App Service routing from dotnet suite"
+    prompt: "Deploy my Laravel app to Azure App Service"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      requiredSkills: [azure-appservice-deploy, azure-prepare]
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-appservice-deploy"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [azure-appservice-deploy]
+
+  - name: ".NET Container Apps does not route here"
+    prompt: "Deploy my ASP.NET Core app to Azure Container Apps"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing-negative
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"skill-call","skill":"azure-app-onboard"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed: [azure-appservice-deploy]
+
+  - name: ".NET Azure Functions does not route here"
+    prompt: "Deploy my C# Azure Functions HTTP trigger app"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing-negative
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"skill-call","skill":"azure-app-onboard"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed: [azure-appservice-deploy]
+
+  - name: ".NET Framework Windows does not route here"
+    prompt: "Prepare my existing ASP.NET Framework 4.8 MVC app for Azure App Service Windows using azd. Plan only: don't run commands or change files."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing-negative
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"skill-call","skill":"azure-app-onboard"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [azure-prepare]
+          disallowed: [azure-appservice-deploy]
+
+  - name: "Standalone WASM does not route here"
+    prompt: "Deploy my standalone Blazor WebAssembly app with no server project to Azure Static Web Apps"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing-negative
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"skill-call","skill":"azure-app-onboard"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed: [azure-appservice-deploy]
+
+  - name: ".NET Terraform uses infrastructure routing"
+    prompt: "Deploy my ASP.NET Core app to Azure App Service using azd with Terraform infrastructure"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing-negative
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed: [azure-appservice-deploy]
+          required: [azure-prepare]
+
+  - name: ".NET Bicep uses infrastructure routing"
+    prompt: "Deploy my ASP.NET Core app to Azure App Service using azd with Bicep infrastructure"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing-negative
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed: [azure-appservice-deploy]
+          required: [azure-prepare]

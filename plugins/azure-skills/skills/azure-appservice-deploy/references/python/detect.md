@@ -41,7 +41,7 @@ Framework detection is **advisory only**. The deployment never blocks because of
 - ⛔ **Do not** abort deployment when framework is unknown.
 - ⛔ **Do not** try to install Flask, Django, or any framework into the user's project.
 - ✅ Always report what was detected so the user has full context.
-- ✅ When detection is `wsgi-generic`, `asgi-generic`, or `unknown`, **remember this fact for Step 8** — the post-deploy message must use the **unknown-framework template** in [post-deploy-message.md](post-deploy-message.md), which adds an explicit "set a startup command" instruction. The Step 5 warning alone is not enough; the user needs the reminder at the end of the run too.
+- ✅ When detection is `wsgi-generic`, `asgi-generic`, or `unknown`, include a startup warning in the [post-deploy message](../post-deploy-message.md).
 
 ## Example output to surface to the user
 

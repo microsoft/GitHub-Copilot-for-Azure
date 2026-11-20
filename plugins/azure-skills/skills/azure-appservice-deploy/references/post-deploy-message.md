@@ -1,6 +1,6 @@
 # Post-deploy message to the user
 
-After `az webapp deploy` / `azd deploy` returns successfully, **the skill is done**. Do not run any further verification commands.
+After `az webapp deploy` / `azd deploy` returns successfully, resolve the actual hostname as described in the deployment reference, then **the skill is done**. Do not run any verification probes.
 
 ## Hard rules
 
@@ -9,14 +9,14 @@ After `az webapp deploy` / `azd deploy` returns successfully, **the skill is don
 - ⛔ Never present an early 5xx or quiet log stream as a deploy failure — the deploy succeeded; the platform just isn't warm yet.
 - ✅ Always give the user the URL, the wait expectation, and the log command, then **stop**.
 
-## Message template — standard (Flask / Django / FastAPI)
+## Message template — standard
 
-Use this when Step 2 detected a known framework (`flask`, `django`, or `fastapi`). Print exactly this (substituting the real values) as the final output of the skill, then end the turn:
+Use this when the selected stack has a known start path. Substitute the actual values, then end the turn:
 
 ```
-✅ Deployment complete.
+✅ Deployment submitted.
 
-🌐 App URL: https://<app>.azurewebsites.net
+🌐 App URL: https://<hostname>
    It can take 2–3 minutes for the site to be reachable while App Service finishes
    warming up the container. Open it in your browser after a short wait.
 
@@ -26,14 +26,16 @@ Use this when Step 2 detected a known framework (`flask`, `django`, or `fastapi`
    (The first command is a one-time prereq on a fresh app — without it the stream stays empty.)
 ```
 
-## Message template — unknown framework
+## Message template — unknown Python framework
+
+For other stacks without a reliable startup entry, use the standard message and add the selected language guide's warning rather than suggesting a Python command.
 
 Use this when Step 2 detected `wsgi-generic`, `asgi-generic`, or `unknown` (i.e. **not** Flask, Django, or FastAPI). The code is already deployed and `SCM_DO_BUILD_DURING_DEPLOYMENT=true` is set, but Oryx will not know how to start the app until the user sets a startup command. Print this instead:
 
 ```
-✅ Code deployed — but framework not detected.
+✅ Deployment submitted — but framework not detected.
 
-🌐 App URL: https://<app>.azurewebsites.net
+🌐 App URL: https://<hostname>
    It can take 2–3 minutes for App Service to finish building and start the
    container. The site will likely return an error page until you set a
    startup command (next step).
@@ -50,7 +52,6 @@ Use this when Step 2 detected `wsgi-generic`, `asgi-generic`, or `unknown` (i.e.
      • Generic ASGI (uvicorn):
          python -m uvicorn <module>:<callable> --host 0.0.0.0 --port 8000
 
-   See references/startup-commands.md for more guidance.
 
 📜 If you want to watch live logs:
    az webapp log config -n <app> -g <rg> --application-logging filesystem --level information
@@ -58,7 +59,7 @@ Use this when Step 2 detected `wsgi-generic`, `asgi-generic`, or `unknown` (i.e.
    (The first command is a one-time prereq on a fresh app — without it the stream stays empty.)
 ```
 
-Replace `<module>:<callable>` with the user's actual entry point (e.g. `app:app`, `main:application`, `myapp.wsgi:application`). If you can identify a likely entry point from the source code, **suggest a concrete command** instead of leaving placeholders.
+See [Python startup commands](python/startup-commands.md). Replace `<module>:<callable>` with the user's actual entry point (e.g. `app:app`, `main:application`, `myapp.wsgi:application`). If you can identify a likely entry point from the source code, **suggest a concrete command** instead of leaving placeholders.
 
 ## Logging tips (mention only if the user asks for them)
 
@@ -85,8 +86,9 @@ Replace `<module>:<callable>` with the user's actual entry point (e.g. `app:app`
 
 | Detected framework (Step 2) | Template |
 |---|---|
-| `flask`, `django`, `fastapi` | **standard** |
-| `wsgi-generic`, `asgi-generic`, `unknown` | **unknown framework** |
+| Known start path (e.g. `flask`, `django`, `fastapi`) | **standard** |
+| Python `wsgi-generic`, `asgi-generic`, `unknown` | **unknown Python framework** |
+| Other stacks without a known start path | **standard** with the stack's warning |
 
 ## What "success" means here
 
