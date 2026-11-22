@@ -545,7 +545,7 @@ Not catalog-driven — the user provides the spec themselves. Each Save in this 
 
 | Tile | `authType` options | `target` | Notes |
 |---|---|---|---|
-| OpenAPI | `None`, `CustomKeys`, `ApiKey`, `OAuth2` | OpenAPI spec URL or upstream API base | Agent gets `tools[].openapi.auth.security_scheme.connection_id`. |
+| OpenAPI | `None`, `CustomKeys`, `ApiKey`, `ProjectManagedIdentity` | OpenAPI spec URL or upstream API base | Agent gets `tools[].openapi.auth.security_scheme.connection_id`. `OAuth2` (OAuth identity passthrough) isn't supported for OpenAPI tools, directly or in a toolbox; for per-user access, use an MCP tool with an `OAuth2` connection. See [OpenAPI limitations](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/openapi#understand-limitations). |
 | A2A (Preview) | `None` / `CustomKeys` / `UserEntraToken` / `AAD` (mapped from UI) | A2A endpoint | `metadata.agentCardPath` default `/.well-known/agent-card.json`; agent gets `tools=[A2APreviewTool(project_connection_id=...)]`; runtime emits `a2a_preview_call` / `a2a_preview_call_output` events. |
 | MCP | covered above | — | This tile is just a router to the catalog / BYO flows. |
 
