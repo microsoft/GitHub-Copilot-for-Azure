@@ -28,6 +28,10 @@ Follow each applicable subsection below before starting its corresponding action
 
 Strictly follow the script output for subsequent actions.
 
+### Existing LangChain and LangGraph Applications
+
+For an existing LangChain, LangGraph, or Deep Agents application, read [LangChain and LangGraph hosting](foundry-agent/create/references/langchain-langgraph-hosting.md) before entering the generic create/deploy workflow or selecting a sample. Resolve skill-reference paths from this skill's directory, not the application directory. Read the linked walkthrough chapters themselves before choosing the hosting boundary; a reference title or sample manifest does not replace that guidance.
+
 ### Workflow Guidance
 
 **MANDATORY:** Before executing ANY workflow-specific steps, you MUST read the corresponding sub-skill document. Do not call workflow-specific MCP tools for a workflow without reading its skill document. This applies even if you already know the MCP tool parameters — the skill document contains required workflow steps, pre-checks, and validation logic that must be followed. This rule applies on every new user message that triggers a different workflow, even if the skill is already loaded.

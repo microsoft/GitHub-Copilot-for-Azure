@@ -2,7 +2,7 @@
 
 Use this guidance when creating, migrating, or re-hosting a LangChain or LangGraph agent on Foundry.
 
-For an end-to-end walkthrough of hosting an existing LangGraph, LangChain, or Deep Agents application on Foundry, see [Host LangGraph applications on Microsoft Foundry](https://github.com/Jiahui-Gu/langchain-azure/blob/8f7d546737c4b3bdfd30a6bd98bdbe69cbf3ffaf/libs/azure-ai/docs/hosting/host-langgraph-on-foundry.md).
+For an end-to-end walkthrough of hosting an existing LangGraph, LangChain, or Deep Agents application on Foundry, see [Host LangGraph applications on Microsoft Foundry](https://raw.githubusercontent.com/Jiahui-Gu/langchain-azure/c435ca894cc1ed1a4599fa9f61ca1c2d9d3b35f6/libs/azure-ai/docs/hosting/host-langgraph-on-foundry.md).
 
 ## Re-hosting Workflow
 
@@ -14,7 +14,7 @@ Before editing, record the source and target public operations, input/configurat
 
 ### 2. Choose the least invasive compatible path
 
-Before choosing a hosting path or sample, read the walkthrough's [local-hosting chapter](https://github.com/Jiahui-Gu/langchain-azure/blob/8f7d546737c4b3bdfd30a6bd98bdbe69cbf3ffaf/libs/azure-ai/docs/hosting/langgraph-to-foundry/02-run-locally.md) and, when deployment is in scope, [deployment preparation](https://github.com/Jiahui-Gu/langchain-azure/blob/8f7d546737c4b3bdfd30a6bd98bdbe69cbf3ffaf/libs/azure-ai/docs/hosting/langgraph-to-foundry/03-prepare-deployment.md); read its [state-ownership guidance](https://github.com/Jiahui-Gu/langchain-azure/blob/8f7d546737c4b3bdfd30a6bd98bdbe69cbf3ffaf/libs/azure-ai/docs/hosting/langgraph-to-foundry/05-persistence-and-recovery.md) if the original runtime supplies required state. If guidance cannot be read, report the limitation rather than substitute a sample.
+Before choosing a hosting path or sample, read the walkthrough's [local-hosting chapter](https://raw.githubusercontent.com/Jiahui-Gu/langchain-azure/c435ca894cc1ed1a4599fa9f61ca1c2d9d3b35f6/libs/azure-ai/docs/hosting/langgraph-to-foundry/02-run-locally.md) and, when deployment is in scope, [deployment preparation](https://raw.githubusercontent.com/Jiahui-Gu/langchain-azure/c435ca894cc1ed1a4599fa9f61ca1c2d9d3b35f6/libs/azure-ai/docs/hosting/langgraph-to-foundry/03-prepare-deployment.md); read its [state-ownership guidance](https://raw.githubusercontent.com/Jiahui-Gu/langchain-azure/c435ca894cc1ed1a4599fa9f61ca1c2d9d3b35f6/libs/azure-ai/docs/hosting/langgraph-to-foundry/05-persistence-and-recovery.md) if the original runtime supplies required state. If guidance cannot be read, report the limitation rather than substitute a sample.
 
 | Need | Hosting path |
 |------|--------------|
