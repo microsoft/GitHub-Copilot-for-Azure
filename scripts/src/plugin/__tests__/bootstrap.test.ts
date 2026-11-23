@@ -1,7 +1,6 @@
 import { execFileSync } from "node:child_process";
 import * as fs from "node:fs";
 import { createRequire } from "node:module";
-import * as os from "node:os";
 import * as path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -19,7 +18,7 @@ describe("plugin and skill bootstrap", () => {
   });
 
   it("bootstraps a plugin and skill in a new repository", () => {
-    repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plugin-bootstrap-"));
+    repoRoot = fs.mkdtempSync(path.join(scriptsRoot, ".plugin-bootstrap-"));
     execFileSync("git", ["init", "--quiet", repoRoot]);
 
     const pluginScriptsRoot = path.join(repoRoot, "scripts", "src", "plugin");
@@ -90,9 +89,35 @@ describe("plugin and skill bootstrap", () => {
     expect(fs.existsSync(path.join(pluginRoot, ".mcp.json"))).toBe(true);
 
     const readme = fs.readFileSync(path.join(pluginRoot, "README.md"), "utf8");
-    expect(readme).toBe(`# <Your Plugin>
-
-## Telemetry
+    expect(readme).toMatch(/^# test-plugin\n/);
+    for (const heading of [
+      "## Installation",
+      "### Publication checklist (authors)",
+      "### VS Code",
+      "### GitHub Copilot app",
+      "### Copilot CLI",
+    ]) {
+      expect(readme).toContain(heading);
+    }
+    expect(readme).toContain("This scaffold does not confirm publication or an Awesome Copilot listing.");
+    expect(readme).toContain("Build and publish the package from `output/test-plugin`");
+    expect(readme).toContain("Verify the installable name in `plugin.json` (currently `test-plugin`).");
+    expect(readme).toContain("Use the manifest name, not the source directory, in installation commands.");
+    expect(readme).toContain("TODO (after the Awesome Copilot listing is confirmed): Add the listing's\n**Install in VS Code** link");
+    expect(readme).toContain("TODO (after the Awesome Copilot listing is confirmed): Add the listing's\n**Install** link for the app");
+    expect(readme).toContain("TODO (after the Awesome Copilot listing is confirmed): Copy the listing's\n**Copy CLI install command** for use in a terminal.");
+    expect(readme).toContain("Do not construct catalog URLs for an unpublished plugin.");
+    expect(readme).not.toMatch(/(?:vscode|ghapp):\/\/|awesome-copilot\.github\.com\/plugin\/|@awesome-copilot/);
+    expect(readme).not.toContain("${pluginName}");
+    expect(readme).not.toContain("<Your Plugin>");
+    expect(readme).toContain("#### Direct Microsoft marketplace (only after publication is confirmed)");
+    expect(readme).toContain("Use these instructions only after `test-plugin` is published and registered\nin `microsoft/azure-skills`.");
+    expect(readme).toContain("The marketplace name is `azure-skills`;\nit is not the plugin name or its source directory.");
+    expect(readme).toContain("From a terminal, after adding that marketplace in an interactive session:\n\n```text\ncopilot plugin install test-plugin@azure-skills\n```");
+    expect(readme).toContain("Alternatively, inside an interactive Copilot CLI session (not a terminal):\n\n```text\n/plugin marketplace add microsoft/azure-skills\n/plugin install test-plugin@azure-skills\n```");
+    expect(readme).toContain("Choose one marketplace for this plugin; do not install duplicate copies.");
+    expect(readme).toContain("Use that same marketplace for updates.");
+    expect(readme).toContain(`## Telemetry
 
 The \`track-telemetry\` hook installs a pinned native \`ghcfa-telem\` release asset
 when needed, verifies its platform-specific SHA-256 digest before extraction,

@@ -152,7 +152,61 @@ async function main(): Promise<void> {
   fs.copyFileSync(path.join(azureSkillsPluginRoot, "LICENSE"), path.join(pluginRoot, "LICENSE"));
 
   // Readme
-  const readme = `# <Your Plugin>
+  const readme = `# ${pluginName}
+
+<Describe the plugin and its prerequisites.>
+
+## Installation
+
+This scaffold does not confirm publication or an Awesome Copilot listing.
+
+### Publication checklist (authors)
+
+- TODO: Build and publish the package from \`output/${pluginName}\` and register
+  it in the Microsoft marketplace before enabling the direct instructions below.
+- TODO: Verify the installable name in \`plugin.json\` (currently \`${pluginName}\`).
+  Use the manifest name, not the source directory, in installation commands.
+- TODO: If accepted into [Awesome Copilot](https://awesome-copilot.github.com/),
+  verify the listing and replace the client TODOs below with its actual links
+  and command. Do not construct catalog URLs for an unpublished plugin.
+
+### VS Code
+
+TODO (after the Awesome Copilot listing is confirmed): Add the listing's
+**Install in VS Code** link and its HTTPS detail page as a browser fallback.
+
+### GitHub Copilot app
+
+TODO (after the Awesome Copilot listing is confirmed): Add the listing's
+**Install** link for the app and its HTTPS detail page as a browser fallback.
+
+### Copilot CLI
+
+TODO (after the Awesome Copilot listing is confirmed): Copy the listing's
+**Copy CLI install command** for use in a terminal.
+
+#### Direct Microsoft marketplace (only after publication is confirmed)
+
+Use these instructions only after \`${pluginName}\` is published and registered
+in \`microsoft/azure-skills\`. The marketplace name is \`azure-skills\`;
+it is not the plugin name or its source directory.
+
+From a terminal, after adding that marketplace in an interactive session:
+
+\`\`\`text
+copilot plugin install ${pluginName}@azure-skills
+\`\`\`
+
+Alternatively, inside an interactive Copilot CLI session (not a terminal):
+
+\`\`\`text
+/plugin marketplace add microsoft/azure-skills
+/plugin install ${pluginName}@azure-skills
+\`\`\`
+
+Choose one marketplace for this plugin; do not install duplicate copies.
+Use that same marketplace for updates. Awesome Copilot pins published packages
+and may differ from the direct Microsoft marketplace.
 
 ## Telemetry
 
