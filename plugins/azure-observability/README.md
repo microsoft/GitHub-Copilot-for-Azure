@@ -31,17 +31,41 @@ remediation.
 
 ## Get Started: Install or Migrate
 
-In Copilot CLI:
+### Choose your client
+
+Use the [Awesome Copilot catalog page](https://awesome-copilot.github.com/plugin/azure-observability/)
+as a browser fallback if a client install link is unavailable.
+
+- **VS Code:** [Install in VS Code](vscode://chat-plugin/install?source=github%2Fawesome-copilot&plugin=azure-observability)
+- **GitHub Copilot app:** [Install in GitHub Copilot app](ghapp://plugins/install?source=azure-observability%40awesome-copilot)
+- **Copilot CLI — terminal:**
+
+  ```text
+  copilot plugin install azure-observability@awesome-copilot
+  ```
+
+Client availability, trust prompts and organization policies apply; these entry
+points do not imply that every host has been tested.
+
+### Direct Microsoft marketplace — interactive Copilot CLI
 
 1. Add the marketplace: `/plugin marketplace add microsoft/azure-skills`
 2. Install this plugin: `/plugin install azure-observability@azure-skills`
-3. Update it later with `/plugin update azure-observability@azure-skills`
 
-Start a fresh conversation and try a question below. Keep Azure Skills enabled
-for canonical diagnostics/Foundry expertise. Installation grants no telemetry
-access or permission to query Azure.
-Disable or remove older draft copies through supported plugin management
-before enabling `azure-observability`; renamed packages do not update them.
+These slash commands run inside an interactive CLI session, not in a terminal
+shell. Awesome Copilot pins published packages, so its version may differ from
+the direct Microsoft marketplace. Update using the original source suffix:
+`copilot plugin update azure-observability@awesome-copilot` in a terminal, or
+`/plugin update azure-observability@azure-skills` inside an interactive CLI
+session for a Microsoft marketplace copy.
+
+Choose one source; avoid duplicate marketplace or extension-managed copies.
+Disable or remove older draft copies through supported plugin management before
+enabling `azure-observability`; renamed packages do not update them.
+Confirm the plugin is enabled and its skills are visible, then start a fresh
+conversation and try a question below. Keep Azure Skills enabled for canonical
+diagnostics/Foundry expertise. Installation grants no telemetry access or
+permission to query Azure, and does not authorize resource changes.
 
 ## Start with your question
 
@@ -169,7 +193,7 @@ Report issues with the host/version, expected behavior and a safe error descript
 
 ## License
 
-This plugin is licensed under the [MIT License](LICENSE).
+This plugin is licensed under the [MIT License](https://github.com/microsoft/azure-skills/blob/main/LICENSE).
 
 ## Telemetry
 
