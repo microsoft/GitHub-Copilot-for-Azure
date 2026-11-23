@@ -2,6 +2,31 @@
 
 Kusto graph analysis, IRQL security hunting pipelines, and graph visualization skills for Azure Data Explorer.
 
+## Installation
+
+Choose one installation route:
+
+- **VS Code:** [Install plugin](vscode://chat-plugin/install?source=github%2Fawesome-copilot&plugin=azure-kusto-graph-skills)
+- **GitHub Copilot app:** [Install plugin](ghapp://plugins/install?source=azure-kusto-graph-skills%40awesome-copilot)
+- **Copilot CLI terminal:**
+
+  ```text
+  copilot plugin install azure-kusto-graph-skills@awesome-copilot
+  ```
+
+If a client link does not open, use the [Awesome Copilot catalog page](https://awesome-copilot.github.com/plugin/azure-kusto-graph-skills/) to choose an available installation option. Client availability and organization policies may vary.
+
+### Direct Microsoft marketplace alternative
+
+Inside an interactive Copilot CLI session, run:
+
+```text
+/plugin marketplace add microsoft/azure-skills
+/plugin install azure-kusto-graph-skills@azure-skills
+```
+
+Awesome Copilot references pinned published packages; its version can differ from the direct Microsoft marketplace. When updating, keep the original marketplace suffix (`@awesome-copilot` or `@azure-skills`). Avoid duplicate copies from different marketplaces or overlapping extension-managed skills.
+
 ## Security
 
 > [!WARNING]
