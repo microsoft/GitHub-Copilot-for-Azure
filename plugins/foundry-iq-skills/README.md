@@ -5,7 +5,32 @@ using your documents, and explore connections across your data.
 
 ## Get started
 
-In Copilot CLI, install the plugin:
+### Install by client
+
+- **VS Code:** [Install in VS Code](vscode://chat-plugin/install?source=github%2Fawesome-copilot&plugin=foundry-iq-skills).
+- **GitHub Copilot app:** [Install in GitHub Copilot app](ghapp://plugins/install?source=foundry-iq-skills%40awesome-copilot).
+- **Copilot CLI — from a terminal:**
+
+  ```text
+  copilot plugin install foundry-iq-skills@awesome-copilot
+  ```
+
+If a client link does not open, use the
+[Awesome Copilot catalog page](https://awesome-copilot.github.com/plugin/foundry-iq-skills/)
+to choose an installation option. Availability depends on your client and
+organization policy; these entry points do not establish end-to-end host
+compatibility. Check the prerequisites below. Review and trust the plugin,
+ensure it is enabled and its skills are visible, then start a fresh conversation.
+Installation does not grant Azure access or approve resource changes.
+
+Awesome Copilot pins a published Microsoft package; its version can differ
+from the direct Microsoft marketplace. Choose one route and avoid duplicate
+copies across marketplaces or extension-managed skills.
+
+### Direct Microsoft marketplace
+
+Alternatively, run these slash commands **inside an interactive Copilot CLI
+session**, not in a terminal shell:
 
 ```text
 /plugin marketplace add microsoft/azure-skills
@@ -15,11 +40,16 @@ In Copilot CLI, install the plugin:
 Then try: **"Show me what Foundry IQ graph can do."** Copilot runs a preflight
 and guides you through prerequisites, resource selection and approvals.
 
-To update an installed plugin:
+To update this direct Microsoft installation, run inside Copilot CLI:
 
 ```text
 /plugin update foundry-iq-skills@azure-skills
 ```
+
+Use the marketplace from which your copy was installed for updates; for an
+Awesome Copilot copy, the interactive command is
+`/plugin update foundry-iq-skills@awesome-copilot`. The routes do not guarantee
+identical versions or automatic updates.
 
 ### Install in Codex
 
