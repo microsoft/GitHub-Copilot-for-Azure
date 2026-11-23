@@ -2,11 +2,13 @@
 
 Use this guidance when creating, migrating, or re-hosting a LangChain or LangGraph agent on Foundry.
 
-For an end-to-end walkthrough of hosting an existing LangGraph, LangChain, or Deep Agents application on Foundry, see [Host LangGraph applications on Microsoft Foundry](https://raw.githubusercontent.com/Jiahui-Gu/langchain-azure/c435ca894cc1ed1a4599fa9f61ca1c2d9d3b35f6/libs/azure-ai/docs/hosting/host-langgraph-on-foundry.md).
+For an end-to-end walkthrough of hosting an existing LangGraph, LangChain, or Deep Agents application on Foundry, see [Host LangGraph applications on Microsoft Foundry](https://raw.githubusercontent.com/Jiahui-Gu/langchain-azure/73d9ad4ffa58d913af18cd51cc2c788164ee8b60/libs/azure-ai/docs/hosting/host-langgraph-on-foundry.md).
 
 ## Re-hosting Workflow
 
 Preserve business behavior, the existing framework and dependencies. Keep the existing model provider, tools and credential inputs unless the user requests changes or the hosting contract requires an adaptation. Limit edits to necessary hosting-boundary, graph-construction and lifecycle adaptations.
+
+Credential delivery is separate from application authentication. If a hosted environment can supply the existing credential variables securely, keep those inputs and avoid adding application-managed project connections solely to re-host. Document any required secret bindings without embedding secret values.
 
 ### 1. Record the source-to-target contract
 
@@ -14,7 +16,7 @@ Before editing, record the source and target public operations, input/configurat
 
 ### 2. Choose the least invasive compatible path
 
-Before choosing a hosting path or sample, read the walkthrough's [local-hosting chapter](https://raw.githubusercontent.com/Jiahui-Gu/langchain-azure/c435ca894cc1ed1a4599fa9f61ca1c2d9d3b35f6/libs/azure-ai/docs/hosting/langgraph-to-foundry/02-run-locally.md) and, when deployment is in scope, [deployment preparation](https://raw.githubusercontent.com/Jiahui-Gu/langchain-azure/c435ca894cc1ed1a4599fa9f61ca1c2d9d3b35f6/libs/azure-ai/docs/hosting/langgraph-to-foundry/03-prepare-deployment.md); read its [state-ownership guidance](https://raw.githubusercontent.com/Jiahui-Gu/langchain-azure/c435ca894cc1ed1a4599fa9f61ca1c2d9d3b35f6/libs/azure-ai/docs/hosting/langgraph-to-foundry/05-persistence-and-recovery.md) if the original runtime supplies required state. If guidance cannot be read, report the limitation rather than substitute a sample.
+Before choosing a hosting path or sample, read the walkthrough's [local-hosting chapter](https://raw.githubusercontent.com/Jiahui-Gu/langchain-azure/73d9ad4ffa58d913af18cd51cc2c788164ee8b60/libs/azure-ai/docs/hosting/langgraph-to-foundry/02-run-locally.md) and, when deployment is in scope, [deployment preparation](https://raw.githubusercontent.com/Jiahui-Gu/langchain-azure/73d9ad4ffa58d913af18cd51cc2c788164ee8b60/libs/azure-ai/docs/hosting/langgraph-to-foundry/03-prepare-deployment.md); read its [state-ownership guidance](https://raw.githubusercontent.com/Jiahui-Gu/langchain-azure/73d9ad4ffa58d913af18cd51cc2c788164ee8b60/libs/azure-ai/docs/hosting/langgraph-to-foundry/05-persistence-and-recovery.md) if the original runtime supplies required state. If guidance cannot be read, report the limitation rather than substitute a sample.
 
 | Need | Hosting path |
 |------|--------------|
@@ -24,6 +26,8 @@ Before choosing a hosting path or sample, read the walkthrough's [local-hosting 
 ### 3. Check the delivered project against that contract
 
 Before declaring the project deployable, check its actual entry points and uploaded runtime dependency inputs, including exclusions, against the recorded contract. A local environment or startup check alone does not establish a complete upload. Execute available checks and report blocked checks rather than claiming they passed.
+
+When including a local `azd ai agent run` path, verify the submitted startup command and interpreter selection, not just an equivalent command in a separate environment. For a Python launcher, use the prepared local runtime and keep any uv Python pin aligned with the selected hosted runtime.
 
 ## Sample Selection
 
