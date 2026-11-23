@@ -30,7 +30,7 @@ Strictly follow the script output for subsequent actions.
 
 ### Existing LangChain and LangGraph Applications
 
-For an existing LangChain, LangGraph, or Deep Agents application, read [LangChain and LangGraph hosting](foundry-agent/create/references/langchain-langgraph-hosting.md) before entering the generic create/deploy workflow or selecting a sample. Resolve skill-reference paths from this skill's directory, not the application directory. Read the linked walkthrough chapters themselves before choosing the hosting boundary; a reference title or sample manifest does not replace that guidance.
+For an existing LangChain, LangGraph, or Deep Agents application, read [LangChain and LangGraph hosting](foundry-agent/create/references/langchain-langgraph-hosting.md) before entering the generic create/deploy workflow or selecting a sample. Resolve this reference from the skill root, and subsequent relative links from the document containing them, not from the application directory. Read the linked walkthrough chapters themselves before choosing the hosting boundary; a reference title or sample manifest does not replace that guidance.
 
 ### Workflow Guidance
 
