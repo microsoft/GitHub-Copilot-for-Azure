@@ -39,18 +39,16 @@ task, the Azure Functions deployment test in
    `RUN_IDENTITY_SUBSCRIPTION_ID` on the `azurebench-eval` pipeline (they are
    not secrets, but are kept out of this public repo). BYOI is optional and only works on
    supported Corp Linux backends; turn it off for tests that don't need Azure.
-6. For eval submission, create a new Key Vault (the default name is
-   `azurebench-kv`, if available) and add your approved **test** CAPI
-   integration ID and HMAC key as secrets named `azurebench-capi-id` and
+6. Only if you use `capiCredentials=keyVault` (BYOI off): create a Key Vault
+   (default name `azurebench-kv`) with your approved **test** CAPI
+   integration ID and HMAC key as secrets `azurebench-capi-id` and
    `azurebench-capi-hmac`. Do not put their values in YAML or pipeline
-   parameters. Change `keyVaultName`, `capiIdSecret`, and `capiHmacSecret` if
-   your actual names differ. Select a service connection for the vault with
-   `keyVaultServiceConnection`; it defaults to `azurebench_msbench` but can
-   differ from the MSBench submitter connection. Grant its identity vault
-   secret Get and List access, for example the **Key Vault Secrets User** role
-   on an Azure RBAC vault, and allow the build agent network access to the
-   vault. The MSBench submitter also needs access to MSBench's encryption
-   service for `--encrypted-env`.
+   parameters. Change `keyVaultName`, `capiIdSecret`, and `capiHmacSecret`
+   if your names differ. Select the vault's service connection with
+   `keyVaultServiceConnection` and grant its identity secret Get and List
+   access (for example **Key Vault Secrets User**). The MSBench submitter also
+   needs access to MSBench's encryption service for `--encrypted-env`. The
+   default `autodev-test` mode needs no Key Vault.
 
 The pipelines do not create identities, roles, secrets, or Registry
 permissions. The release pipeline never reads CAPI secrets.
@@ -75,20 +73,27 @@ default it is private (`private` parameter); grant readers with
 - `copilotModel`: model the Copilot CLI agent actually uses. The pipeline
   writes it to `model.env` as `COPILOT_AGENT_MODEL`. Keep the label consistent.
 
-For a submitted eval, `AzureKeyVault@2` retrieves only the two configured
-secrets. The pipeline maps them to `GITHUB_COPILOT_INTEGRATION_ID` and
-`CAPI_HMAC_KEY` and uses `--encrypted-env` to deliver them to MSBench. This
-uses your integration rather than the workflow-managed HMAC option; confirm
-the integration's model access and billing arrangement with its owner.
+`capiCredentials` selects how the agent authenticates to CAPI:
+
+- `autodev-test` (default): sets `CES_PROXY_BYPASS=true` and the MSBench
+  workflow fetches its managed `autodev-test` HMAC. No Key Vault or
+  `--encrypted-env`. This matches the earlier manual BYOI pilot run, and
+  MSBench requires `CES_PROXY_BYPASS=true` for BYOI runs. Use an
+  `*-autodev-test` model label.
+- `keyVault`: loads your own integration ID and HMAC from Key Vault and
+  sends them with `--encrypted-env`; `CES_PROXY_BYPASS` is unset. MSBench's
+  workflow rejects encrypted `CAPI_HMAC_KEY` together with
+  `CES_PROXY_BYPASS`, so this mode fails fast when `useRunIdentity` is on.
+  Confirm model access and billing with the integration owner.
 
 ## Run
 
 1. Queue `azurebench-eval` with **Submit** unchecked. It only builds and
    publishes the `agent-package` artifact; it does not contact MSBench.
-2. Before submitting, confirm the Key Vault and service connections, then
-   check both **Submit** and **Allow agent and benchmark code to read these
-   test CAPI credentials**. Submission without that authorization fails
-   before reading secrets. The run waits for completion, prints the run ID,
+2. Before submitting, confirm the service connection (and Key Vault for
+   `keyVault` mode), then check both **Submit** and **Allow agent and
+   benchmark code to read the test CAPI credentials**. Submission without that
+   authorization fails before reading secrets. The run waits for completion, prints the run ID,
    and publishes `events.jsonl` and `report.json` as the `results` artifact.
    The job fails unless all requested tasks are resolved.
 

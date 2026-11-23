@@ -32,6 +32,13 @@ parameters:
     displayName: New Azure service connection that submits the run
     type: string
     default: azurebench_msbench
+  - name: capiCredentials
+    displayName: Test CAPI credentials (autodev-test = MSBench workflow-managed; keyVault = your integration, BYOI off)
+    type: string
+    default: autodev-test
+    values:
+      - autodev-test
+      - keyVault
   - name: keyVaultServiceConnection
     displayName: Azure service connection with access to the new Key Vault
     type: string
@@ -49,7 +56,7 @@ parameters:
     type: string
     default: azurebench-capi-hmac
   - name: authorizeCapi
-    displayName: Allow agent and benchmark code to read these test CAPI credentials
+    displayName: Allow agent and benchmark code to read the test CAPI credentials
     type: boolean
     default: false
   - name: submit
@@ -115,19 +122,21 @@ jobs:
             displayName: Require CAPI credential authorization
 
       - ${{ if and(eq(parameters.submit, true), eq(parameters.authorizeCapi, true)) }}:
-          - task: AzureKeyVault@2
-            displayName: Load test CAPI credentials
-            inputs:
-              azureSubscription: ${{ parameters.keyVaultServiceConnection }}
-              KeyVaultName: ${{ parameters.keyVaultName }}
-              SecretsFilter: ${{ parameters.capiIdSecret }},${{ parameters.capiHmacSecret }}
-              RunAsPreJob: false
+          - ${{ if eq(parameters.capiCredentials, 'keyVault') }}:
+              - task: AzureKeyVault@2
+                displayName: Load test CAPI credentials
+                inputs:
+                  azureSubscription: ${{ parameters.keyVaultServiceConnection }}
+                  KeyVaultName: ${{ parameters.keyVaultName }}
+                  SecretsFilter: ${{ parameters.capiIdSecret }},${{ parameters.capiHmacSecret }}
+                  RunAsPreJob: false
 
           - task: AzureCLI@2
             displayName: Run benchmark and check results
             env:
-              GITHUB_COPILOT_INTEGRATION_ID: $(${{ parameters.capiIdSecret }})
-              CAPI_HMAC_KEY: $(${{ parameters.capiHmacSecret }})
+              ${{ if eq(parameters.capiCredentials, 'keyVault') }}:
+                GITHUB_COPILOT_INTEGRATION_ID: $(${{ parameters.capiIdSecret }})
+                CAPI_HMAC_KEY: $(${{ parameters.capiHmacSecret }})
             inputs:
               azureSubscription: ${{ parameters.serviceConnection }}
               scriptType: bash
@@ -135,14 +144,28 @@ jobs:
               inlineScript: |
                 set -euo pipefail
                 unset CES_PROXY_BYPASS CES_PROXY_FORCE CES_PROXY_INTEGRATION_ID
-                for name in GITHUB_COPILOT_INTEGRATION_ID CAPI_HMAC_KEY; do
-                  value="${!name:-}"
-                  if [ -z "$value" ] || [[ "$value" == '$('*')' ]]; then
-                    echo "Missing required Key Vault secret for $name." >&2
+                credentials=()
+                if [ "${{ parameters.capiCredentials }}" = "keyVault" ]; then
+                  # MSBench requires CES_PROXY_BYPASS for BYOI, and its workflow rejects
+                  # encrypted CAPI_HMAC_KEY together with CES_PROXY_BYPASS.
+                  if [ "${{ parameters.useRunIdentity }}" = "True" ]; then
+                    echo "capiCredentials=keyVault cannot be used with BYOI; use autodev-test or turn off useRunIdentity." >&2
                     exit 1
                   fi
-                done
-                unset value
+                  for name in GITHUB_COPILOT_INTEGRATION_ID CAPI_HMAC_KEY; do
+                    value="${!name:-}"
+                    if [ -z "$value" ] || [[ "$value" == '$('*')' ]]; then
+                      echo "Missing required Key Vault secret for $name." >&2
+                      exit 1
+                    fi
+                  done
+                  unset value
+                  credentials=(--encrypted-env GITHUB_COPILOT_INTEGRATION_ID CAPI_HMAC_KEY)
+                else
+                  # MSBench workflow fetches the autodev-test CAPI HMAC (same as the manual pilot run).
+                  unset GITHUB_COPILOT_INTEGRATION_ID CAPI_HMAC_KEY
+                  export CES_PROXY_BYPASS=true
+                fi
                 byoi=()
                 if [ "${{ parameters.useRunIdentity }}" = "True" ]; then
                   # Set these pipeline variables in Azure DevOps (kept out of this public repo).
@@ -168,7 +191,7 @@ jobs:
                   --backend "${{ parameters.backend }}" \
                   --workers 1 \
                   "${byoi[@]}" \
-                  --encrypted-env GITHUB_COPILOT_INTEGRATION_ID CAPI_HMAC_KEY \
+                  "${credentials[@]}" \
                   --tag purpose=azurebench-eval \
                   --no-kusto \
                   --events "$(resultsDir)/events.jsonl" \
