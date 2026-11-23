@@ -6,7 +6,7 @@ For an end-to-end walkthrough of hosting an existing LangGraph, LangChain, or De
 
 ## Re-hosting Workflow
 
-Preserve business behavior, the existing framework and dependencies. Limit edits to necessary hosting-boundary, graph-construction and lifecycle adaptations.
+Preserve business behavior, the existing framework and dependencies. Keep the existing model provider, tools and credential inputs unless the user requests changes or the hosting contract requires an adaptation. Limit edits to necessary hosting-boundary, graph-construction and lifecycle adaptations.
 
 ### 1. Record the source-to-target contract
 
