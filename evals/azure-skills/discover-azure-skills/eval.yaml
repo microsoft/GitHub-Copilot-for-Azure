@@ -35,6 +35,150 @@ stimuli:
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
+  # Supplied metadata isolates installation output from live discovery and Azure.
+  - name: "VS Code catalog installation uses manifest name"
+    prompt: |
+      Use discover-azure-skills and its VS Code installation reference to give
+      guidance only. Supplied verified metadata: plugin directory=azure-skills,
+      plugin.json name=azure, matched skill=azure-ai, Awesome Copilot catalog
+      contains name=azure with source repo=microsoft/azure-skills and
+      source path=.github/plugins/azure-skills. Do not rediscover this metadata.
+      I use VS Code. Give the native install link and HTTPS fallback, explain
+      the name/directory distinction, and require approval before installation.
+      Read local skill/reference files only. Do not install anything, run shell
+      commands, access the network, authenticate, or perform any Azure/cloud ops.
+    tags: &installation-tags
+      type: integration
+      tier: smoke
+      cost: llm
+      area: installation
+      skill: discover-azure-skills
+      systemPrompt: &installation-policy '{"mode":"append","content":"This is a read-only installation-guidance evaluation. Invoke discover-azure-skills and read the relevant local installation reference. Treat supplied manifest/catalog metadata as sufficient; do not search live catalogs. Do not install plugins, skills, packages, MCP servers or hooks. Do not run shell commands, network calls, authentication or cloud operations. Return guidance only, without claiming installation succeeded. Include only verified routes; omit unverified URL/URI/command examples even when describing what not to do."}'
+    constraints: &installation-constraints
+      max_turns: 6
+    graders:
+      - type: skill-invocation
+        config:
+          required: [discover-azure-skills]
+      - type: output-matches
+        config:
+          pattern: '(?is)(?=.*vscode://chat-plugin/install\?source=github%2Fawesome-copilot&plugin=azure)(?=.*https://awesome-copilot\.github\.com/plugin/azure/)(?=.*azure-skills)(?=.*approv)'
+      - type: output-not-matches
+        config:
+          pattern: '(?i)plugin=azure-skills|ghapp://|/plugin (?:install|marketplace)|copilot plugin install|installed successfully'
+      - type: completed
+
+  - name: "Copilot app catalog installation"
+    prompt: |
+      Use discover-azure-skills and its GitHub Copilot app installation reference.
+      Supplied verified metadata: directory=azure-cost, plugin.json name=azure-cost,
+      matched skill=cost-analysis, Awesome Copilot catalog contains name=azure-cost
+      with source repo=microsoft/azure-skills and path=.github/plugins/azure-cost.
+      I use the GitHub Copilot desktop app, not CLI. Give the app install link
+      and HTTPS fallback, requiring approval. Do not rediscover the metadata.
+      Guidance only: read local files, but no installation, shell commands,
+      network calls, authentication, or Azure/cloud operations.
+    tags: *installation-tags
+    constraints: *installation-constraints
+    graders:
+      - type: skill-invocation
+        config:
+          required: [discover-azure-skills]
+      - type: output-matches
+        config:
+          pattern: '(?is)(?=.*ghapp://plugins/install\?source=azure-cost%40awesome-copilot)(?=.*https://awesome-copilot\.github\.com/plugin/azure-cost/)(?=.*approv)'
+      - type: output-not-matches
+        config:
+          pattern: '(?i)vscode://|/plugin (?:install|marketplace)|copilot plugin install|installed successfully'
+      - type: completed
+
+  - name: "Copilot CLI terminal and interactive marketplace routes"
+    prompt: |
+      Use discover-azure-skills and its Copilot CLI installation reference.
+      Supplied verified metadata: directory=azure-skills, plugin.json name=azure,
+      matched skill=azure-ai, Awesome Copilot contains name=azure with source
+      repo=microsoft/azure-skills and path=.github/plugins/azure-skills.
+      Publication in the direct Microsoft azure-skills marketplace is confirmed.
+      Give both the terminal catalog command and the alternative interactive
+      Microsoft marketplace slash commands. Label where each runs and explain
+      marketplace version differences. Require approval; guidance is not approval.
+      Read local files only; do not rediscover metadata, install anything, run
+      shell commands, use network/authentication, or perform Azure/cloud operations.
+    tags: *installation-tags
+    constraints: *installation-constraints
+    graders:
+      - type: skill-invocation
+        config:
+          required: [discover-azure-skills]
+      - type: output-matches
+        config:
+          pattern: '(?is)(?=.*copilot plugin install azure@awesome-copilot)(?=.*/plugin marketplace add microsoft/azure-skills)(?=.*/plugin install azure@azure-skills)(?=.*terminal)(?=.*interactive)(?=.*version)(?=.*approv)'
+      - type: output-not-matches
+        config:
+          pattern: '(?i)copilot plugin install azure-skills@|/plugin install azure-skills@|copilot plugin install azure@azure-skills|vscode://|ghapp://|installed successfully'
+      - type: completed
+
+  - name: "Noncataloged plugin falls back by client"
+    prompt: |
+      Use discover-azure-skills installation references for these supplied
+      hypothetical fixture facts (not live facts): directory=preview-package,
+      plugin.json name=azure-preview, matched skill=preview-skill. A complete
+      Awesome Copilot catalog lookup confirmed azure-preview is absent.
+      Its publication in Microsoft's azure-skills marketplace is confirmed;
+      publisher documentation is https://github.com/microsoft/azure-skills.
+      Give separate guidance for VS Code, GitHub Copilot app, and Copilot CLI.
+      Use documentation when no supported native source is verified, and the
+      direct marketplace only in CLI. Require approval before actual installation.
+      Do not rediscover metadata. Read local references only; no installation,
+      shell, network, authentication, or Azure/cloud operations.
+    tags: &fallback-tags
+      type: integration
+      tier: smoke
+      cost: llm
+      area: installation
+      skill: discover-azure-skills
+      systemPrompt: *installation-policy
+      installation-status: fallback
+    constraints: *installation-constraints
+    graders:
+      - type: skill-invocation
+        config:
+          required: [discover-azure-skills]
+      - type: output-matches
+        config:
+          pattern: '(?is)(?=.*VS Code)(?=.*Copilot app)(?=.*https://github\.com/microsoft/azure-skills)(?=.*/plugin marketplace add microsoft/azure-skills)(?=.*/plugin install azure-preview@azure-skills)(?=.*approv)'
+      - type: output-not-matches
+        config:
+          pattern: '(?i)https://awesome-copilot\.github\.com/plugin/azure-preview|vscode://chat-plugin/install\?source=|ghapp://plugins/install\?source=|azure-preview@awesome-copilot|no supported native install route exists|installed successfully'
+      - type: completed
+
+  - name: "Unknown catalog listing is not absence"
+    prompt: |
+      Use discover-azure-skills installation references for these supplied
+      hypothetical fixture facts: directory=unknown-package, plugin.json
+      name=azure-unknown, matched skill=unknown-skill. Awesome Copilot metadata
+      lookup was unavailable, so membership is UNKNOWN, not confirmed absent.
+      Direct Microsoft marketplace publication is also unconfirmed.
+      Individual skill publication is unconfirmed too; do not construct its URL.
+      Give VS Code and Copilot app documentation fallbacks. Also explain what
+      the npx skills fallback installs and what plugin components it omits.
+      Say the catalog status is unknown and require approval before installation.
+      Read local files only. Do not retry the lookup, install anything, run shell
+      commands, access network/authentication, or perform Azure/cloud operations.
+    tags: *fallback-tags
+    constraints: *installation-constraints
+    graders:
+      - type: skill-invocation
+        config:
+          required: [discover-azure-skills]
+      - type: output-matches
+        config:
+          pattern: '(?is)(?=.*unknown)(?=.*https://github\.com/microsoft/azure-skills)(?=.*(?:skills.only|only.{0,30}skill|skill content))(?=.*MCP)(?=.*hooks)(?=.*approv)'
+      - type: output-not-matches
+        config:
+          pattern: '(?i)https://awesome-copilot\.github\.com/plugin/azure-unknown|vscode://chat-plugin/install\?source=|ghapp://plugins/install\?source=|azure-unknown@|https://github\.com/microsoft/azure-skills/tree/main/\.github/plugins/unknown-package|installed successfully'
+      - type: completed
+
   # Azure Kusto Graph related skills are in a different plugin
   - name: "Find a skill to generate Azure Kusto graph"
     prompt: "Find an Azure agent skill that can generate an Azure Kusto graph."
