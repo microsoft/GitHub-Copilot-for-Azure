@@ -23,4 +23,4 @@ on this repository. The pinned commit must be pushed to this repository.
 
 Publish with [`pipelines/azurebench-release.yml`](../../pipelines/azurebench-release.yml)
 and run with [`pipelines/azurebench-eval.yml`](../../pipelines/azurebench-eval.yml).
-See [the pipeline README](../../pipelines/azurebench-eval/README.md).
+See [the pipeline README](../../pipelines/azurebench/README.md).

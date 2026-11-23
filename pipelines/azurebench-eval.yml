@@ -1,5 +1,5 @@
 # Manually run a published MSBench Registry benchmark with the GitHub Copilot CLI agent.
-# How to set up and run: pipelines/azurebench-eval/README.md
+# How to set up and run: pipelines/azurebench/README.md
 trigger: none
 pr: none
 
@@ -8,10 +8,6 @@ parameters:
     displayName: Published benchmark release (<name>@<version>, optionally .<instance_id>)
     type: string
     default: azurebench@1.0.0
-  - name: agentDir
-    displayName: Agent scripts folder (path in this repo)
-    type: string
-    default: pipelines/azurebench-eval/agent
   - name: model
     displayName: MSBench model label
     type: string
@@ -24,39 +20,19 @@ parameters:
     displayName: MSBench backend
     type: string
     default: ces-dev1
-  - name: useRunIdentity
-    displayName: Give the run an Azure identity (BYOI)
-    type: boolean
-    default: true
-  - name: serviceConnection
-    displayName: New Azure service connection that submits the run
+  - name: capi
+    displayName: CAPI credentials (ours = our Key Vault integration, msbench = MSBench autodev-test)
     type: string
-    default: azurebench_msbench
-  - name: capiCredentials
-    displayName: Test CAPI credentials (autodev-test = MSBench workflow-managed; keyVault = your integration, BYOI off)
-    type: string
-    default: autodev-test
+    default: ours
     values:
-      - autodev-test
-      - keyVault
-  - name: keyVaultServiceConnection
-    displayName: Azure service connection with access to the new Key Vault
-    type: string
-    default: azurebench_msbench
-  - name: keyVaultName
-    displayName: New Key Vault containing the test CAPI credentials
-    type: string
-    default: azurebench-kv
-  - name: capiIdSecret
-    displayName: Key Vault secret name for CAPI integration ID
-    type: string
-    default: azurebench-capi-id
-  - name: capiHmacSecret
-    displayName: Key Vault secret name for CAPI HMAC key
-    type: string
-    default: azurebench-capi-hmac
+      - ours
+      - msbench
+  - name: useRunIdentity
+    displayName: Give the run an Azure identity (BYOI, needs capi=msbench)
+    type: boolean
+    default: false
   - name: authorizeCapi
-    displayName: Allow agent and benchmark code to read the test CAPI credentials
+    displayName: Allow agent and benchmark code to read the CAPI credentials
     type: boolean
     default: false
   - name: submit
@@ -66,6 +42,11 @@ parameters:
 
 variables:
   - template: /pipelines/templates/variables/image.yml
+  # Submits the run and reads our CAPI secrets from the Key Vault.
+  - name: serviceConnection
+    value: azurebench_sc
+  - name: keyVaultName
+    value: azurebench-kv
   - name: packageDir
     value: $(Agent.TempDirectory)/agent-package
   - name: resultsDir
@@ -94,21 +75,7 @@ jobs:
       - script: python -m pip install --no-input msbench-cli==0.3.70 msbench-agent-github-copilot-cli==0.0.28
         displayName: Install MSBench CLI and Copilot CLI agent generator
 
-      - script: |
-          set -euo pipefail
-          prep="$(Agent.TempDirectory)/prepare"
-          rm -rf "$prep" "$(packageDir)"
-          mkdir -p "$prep/work" "$prep/out" "$(packageDir)"
-
-          # Official Copilot CLI agent files: package downloader, entry.sh, setup.sh, agent_profile.yml.
-          msbench-agent-github-copilot-cli prepare --work_dir "$prep/work" --output_dir "$prep/out" --backend "${{ parameters.backend }}"
-          cp "$prep/work/agent/agent-downloader.sh" "$prep/work/agent/entry.sh" "$prep/work/agent/agent_profile.yml" "$(packageDir)/"
-          cp "$prep/work/agent/setup.sh" "$(packageDir)/setup-base.sh"
-
-          # Our scripts (setup.sh, runner.sh, ...) wrap the official ones.
-          cp "${{ parameters.agentDir }}"/*.sh "$(packageDir)/"
-          echo "export COPILOT_AGENT_MODEL='${{ parameters.copilotModel }}'" > "$(packageDir)/model.env"
-          ls -l "$(packageDir)"
+      - script: bash pipelines/azurebench/scripts/build-agent.sh pipelines/azurebench/agent "${{ parameters.copilotModel }}" "${{ parameters.backend }}" "$(packageDir)"
         displayName: Build agent package
 
       - publish: $(packageDir)
@@ -117,105 +84,38 @@ jobs:
 
       - ${{ if and(eq(parameters.submit, true), eq(parameters.authorizeCapi, false)) }}:
           - script: |
-              echo "Submission requires explicit authorization to expose test CAPI credentials to the run." >&2
+              echo "Submitting needs authorizeCapi: agent and benchmark code can read the CAPI credentials." >&2
               exit 1
             displayName: Require CAPI credential authorization
 
       - ${{ if and(eq(parameters.submit, true), eq(parameters.authorizeCapi, true)) }}:
-          - ${{ if eq(parameters.capiCredentials, 'keyVault') }}:
+          - ${{ if eq(parameters.capi, 'ours') }}:
               - task: AzureKeyVault@2
-                displayName: Load test CAPI credentials
+                displayName: Load our CAPI credentials
                 inputs:
-                  azureSubscription: ${{ parameters.keyVaultServiceConnection }}
-                  KeyVaultName: ${{ parameters.keyVaultName }}
-                  SecretsFilter: ${{ parameters.capiIdSecret }},${{ parameters.capiHmacSecret }}
+                  azureSubscription: ${{ variables.serviceConnection }}
+                  KeyVaultName: $(keyVaultName)
+                  SecretsFilter: azurebench-capi-id,azurebench-capi-hmac
                   RunAsPreJob: false
 
           - task: AzureCLI@2
             displayName: Run benchmark and check results
             env:
-              ${{ if eq(parameters.capiCredentials, 'keyVault') }}:
-                GITHUB_COPILOT_INTEGRATION_ID: $(${{ parameters.capiIdSecret }})
-                CAPI_HMAC_KEY: $(${{ parameters.capiHmacSecret }})
+              BENCHMARK: ${{ parameters.benchmark }}
+              MODEL: ${{ parameters.model }}
+              BACKEND: ${{ parameters.backend }}
+              CAPI: ${{ parameters.capi }}
+              USE_RUN_IDENTITY: ${{ parameters.useRunIdentity }}
+              PACKAGE_DIR: $(packageDir)
+              RESULTS_DIR: $(resultsDir)
+              ${{ if eq(parameters.capi, 'ours') }}:
+                GITHUB_COPILOT_INTEGRATION_ID: $(azurebench-capi-id)
+                CAPI_HMAC_KEY: $(azurebench-capi-hmac)
             inputs:
-              azureSubscription: ${{ parameters.serviceConnection }}
+              azureSubscription: ${{ variables.serviceConnection }}
               scriptType: bash
-              scriptLocation: inlineScript
-              inlineScript: |
-                set -euo pipefail
-                unset CES_PROXY_BYPASS CES_PROXY_FORCE CES_PROXY_INTEGRATION_ID
-                credentials=()
-                if [ "${{ parameters.capiCredentials }}" = "keyVault" ]; then
-                  # MSBench requires CES_PROXY_BYPASS for BYOI, and its workflow rejects
-                  # encrypted CAPI_HMAC_KEY together with CES_PROXY_BYPASS.
-                  if [ "${{ parameters.useRunIdentity }}" = "True" ]; then
-                    echo "capiCredentials=keyVault cannot be used with BYOI; use autodev-test or turn off useRunIdentity." >&2
-                    exit 1
-                  fi
-                  for name in GITHUB_COPILOT_INTEGRATION_ID CAPI_HMAC_KEY; do
-                    value="${!name:-}"
-                    if [ -z "$value" ] || [[ "$value" == '$('*')' ]]; then
-                      echo "Missing required Key Vault secret for $name." >&2
-                      exit 1
-                    fi
-                  done
-                  unset value
-                  credentials=(--encrypted-env GITHUB_COPILOT_INTEGRATION_ID CAPI_HMAC_KEY)
-                else
-                  # MSBench workflow fetches the autodev-test CAPI HMAC (same as the manual pilot run).
-                  unset GITHUB_COPILOT_INTEGRATION_ID CAPI_HMAC_KEY
-                  export CES_PROXY_BYPASS=true
-                fi
-                byoi=()
-                if [ "${{ parameters.useRunIdentity }}" = "True" ]; then
-                  # Set these pipeline variables in Azure DevOps (kept out of this public repo).
-                  : "${RUN_IDENTITY_CLIENT_ID:?Set pipeline variable RUN_IDENTITY_CLIENT_ID}"
-                  : "${RUN_IDENTITY_TENANT_ID:?Set pipeline variable RUN_IDENTITY_TENANT_ID}"
-                  : "${RUN_IDENTITY_SUBSCRIPTION_ID:?Set pipeline variable RUN_IDENTITY_SUBSCRIPTION_ID}"
-                  byoi=(
-                    --run_identity_client_id "$RUN_IDENTITY_CLIENT_ID"
-                    --run_identity_tenant_id "$RUN_IDENTITY_TENANT_ID"
-                    --run_identity_subscription_id "$RUN_IDENTITY_SUBSCRIPTION_ID"
-                    --tag harbor.keepIdentityForRun=true
-                  )
-                fi
-                mkdir -p "$(resultsDir)"
-                # Waits for the run to finish; the run ID is in events.jsonl.
-                status=0
-                msbench-cli run \
-                  --agent "$(packageDir)" \
-                  --runner "$(packageDir)/runner.sh" \
-                  --runner_type harbor \
-                  --benchmark "${{ parameters.benchmark }}" \
-                  --model "${{ parameters.model }}" \
-                  --backend "${{ parameters.backend }}" \
-                  --workers 1 \
-                  "${byoi[@]}" \
-                  "${credentials[@]}" \
-                  --tag purpose=azurebench-eval \
-                  --no-kusto \
-                  --events "$(resultsDir)/events.jsonl" \
-                  --output "$(resultsDir)/report.json" \
-                  -y || status=$?
-
-                # A submitted or finished run is not a pass: every requested task must be resolved.
-                python3 - "$(resultsDir)" "$status" <<'EOF'
-                import json, os, sys
-                folder, status = sys.argv[1], int(sys.argv[2])
-                events = os.path.join(folder, "events.jsonl")
-                run_ids = [e["data"].get("run_id") for e in map(json.loads, open(events))
-                           if e.get("event") == "run_started"] if os.path.exists(events) else []
-                print("Run ID:", run_ids[-1] if run_ids else "not started")
-                report = os.path.join(folder, "report.json")
-                if not os.path.exists(report):
-                    sys.exit(f"No results (msbench-cli exit code {status}).")
-                data = json.load(open(report))
-                totals = [b["totals"] for b in data["summary"]["benchmarks_overview"].values()]
-                passed = sum(t["num_passed_cases"] for t in totals)
-                requested = data["requested_instance_count"]
-                print(f"Resolved {passed}/{requested}")
-                sys.exit(0 if status == 0 and requested > 0 and passed == requested else 1)
-                EOF
+              scriptLocation: scriptPath
+              scriptPath: pipelines/azurebench/scripts/run-eval.sh
 
           - publish: $(resultsDir)
             artifact: results
