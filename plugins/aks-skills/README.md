@@ -5,6 +5,68 @@ diagnosis, advanced cost-efficiency analysis, known-issue matching, GPU
 inference troubleshooting, and packet capture. Install it alongside the base
 `azure` plugin when you operate AKS clusters.
 
+## Install
+
+Install the base `azure` plugin first, then add this plugin. Its manifests don't
+declare `azure` as a dependency, because a client could then install a second
+copy next to the one you already have. Keep exactly one copy of `azure`, from
+whichever marketplace you installed it; it is not auto-installed for you.
+
+### Copilot quick install
+
+Open the [Awesome Copilot catalog page](https://awesome-copilot.github.com/plugin/aks-skills/)
+for browser-based installation options if a client link does not open.
+
+| Client | Install |
+| --- | --- |
+| VS Code | [Install in VS Code](vscode://chat-plugin/install?source=github%2Fawesome-copilot&plugin=aks-skills) |
+| GitHub Copilot app | [Install in GitHub Copilot app](ghapp://plugins/install?source=aks-skills%40awesome-copilot) |
+| Copilot CLI (terminal) | `copilot plugin install aks-skills@awesome-copilot` |
+
+Awesome Copilot pins published packages from `microsoft/azure-skills`; its
+version can differ from the direct Microsoft marketplace below. Choose one
+route, not both, and avoid duplicate plugin or extension-managed skill copies.
+For later interactive CLI updates, use the original marketplace suffix:
+`/plugin update aks-skills@awesome-copilot` for the catalog route, or
+`/plugin update aks-skills@azure-skills` for the direct route.
+Client availability and organization policy can affect installation; these
+entry points do not imply identical features across clients. Check that the
+plugin is enabled and its skills are visible before starting a new conversation.
+Installation does not grant Azure permissions or approve resource changes.
+
+### Direct Microsoft marketplace — interactive Copilot CLI
+
+Run these slash commands inside a Copilot CLI session, not in a terminal shell:
+
+1. Add the marketplace: `/plugin marketplace add microsoft/azure-skills`
+2. Install this plugin: `/plugin install aks-skills@azure-skills`
+3. Update it later with `/plugin update aks-skills@azure-skills`
+
+### Claude Code
+
+`aks-skills` isn't listed in `claude-plugins-official`, so add the
+`azure-skills` marketplace even if you installed `azure` from
+`claude-plugins-official`.
+
+1. If you don't have the base plugin yet, install it:
+   `/plugin install azure@claude-plugins-official`
+2. Add the marketplace: `/plugin marketplace add microsoft/azure-skills`
+3. Install this plugin: `/plugin install aks-skills@azure-skills`
+4. Run `/reload-plugins`, or start a new session, so the skills appear.
+5. Update it later with `/plugin update aks-skills@azure-skills`
+
+### Codex
+
+Codex reads the same Claude-style marketplace.
+
+1. Add the marketplace: `codex plugin marketplace add microsoft/azure-skills`
+2. In the Codex plugin browser, open the `azure-skills` marketplace and install
+   `azure` (if you don't have it yet) and `aks-skills`.
+3. Start a new session so the skills appear.
+
+If your organization's plugin policy blocks this plugin, the base `azure`
+plugin's AKS guidance remains available.
+
 ## Security
 
 - The troubleshooting and capture skills read cluster and Azure state with your
@@ -50,42 +112,3 @@ stable node-demand evidence. Use `cost-analysis` for billed AKS spend, namespace
 allocation, and anomalies. Use `cost-optimization` for Reservation and Savings
 Plan utilization, coverage, recommendations, economics, purchases, and
 renewals.
-
-## Install
-
-Install the base `azure` plugin first, then add this plugin. This plugin is
-published in the `microsoft/azure-skills` marketplace. Its manifests don't
-declare `azure` as a dependency, because a client could then install a second
-copy of `azure` next to the one you already have. Keep exactly one copy of
-`azure`, from whichever marketplace you installed it.
-
-### Copilot CLI
-
-1. Add the marketplace: `/plugin marketplace add microsoft/azure-skills`
-2. Install this plugin: `/plugin install aks-skills@azure-skills`
-3. Update it later with `/plugin update aks-skills@azure-skills`
-
-### Claude Code
-
-`aks-skills` isn't listed in `claude-plugins-official`, so add the
-`azure-skills` marketplace even if you installed `azure` from
-`claude-plugins-official`.
-
-1. If you don't have the base plugin yet, install it:
-   `/plugin install azure@claude-plugins-official`
-2. Add the marketplace: `/plugin marketplace add microsoft/azure-skills`
-3. Install this plugin: `/plugin install aks-skills@azure-skills`
-4. Run `/reload-plugins`, or start a new session, so the skills appear.
-5. Update it later with `/plugin update aks-skills@azure-skills`
-
-### Codex
-
-Codex reads the same Claude-style marketplace.
-
-1. Add the marketplace: `codex plugin marketplace add microsoft/azure-skills`
-2. In the Codex plugin browser, open the `azure-skills` marketplace and install
-   `azure` (if you don't have it yet) and `aks-skills`.
-3. Start a new session so the skills appear.
-
-If your organization's plugin policy blocks this plugin, the base `azure`
-plugin's AKS guidance remains available.
