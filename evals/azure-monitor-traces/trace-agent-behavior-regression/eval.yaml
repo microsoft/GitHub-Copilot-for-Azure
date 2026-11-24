@@ -1,0 +1,79 @@
+name: trace-agent-behavior-regression-eval
+description: "Checks GenAI trace routing and canonical inference-only token accounting."
+
+tags:
+  type: integration
+  skill: trace-agent-behavior-regression
+
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: copilot-sdk-agent-runner
+
+scoring:
+  threshold: 1
+
+stimuli:
+  - name: "Agent token regression"
+    turns:
+      - "Why did agent tokens per invocation increase in Azure Monitor Trace Store GenAI traces? Separate inference count, tokens per inference, and model mix."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      requiredSkills:
+        - trace-agent-behavior-regression
+      earlyTerminate: '[{"type":"skill-call","skill":"trace-agent-behavior-regression"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - trace-agent-behavior-regression
+
+  - name: "Higher tool-call count"
+    prompt: "Explain why some runs make more tool calls and fail more than others using Azure Monitor Trace Store distributed GenAI traces for the same agent."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills: [trace-agent-behavior-regression]
+      earlyTerminate: '[{"type":"skill-call","skill":"trace-agent-behavior-regression"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [trace-agent-behavior-regression]
+
+  - name: "Exclude agent rollups and cache aliases"
+    prompt: |
+      Offline exercise: complete parent-verified invocation in trace t has
+      agent rollup a (input=300, output=30); inference i1 (parent a, input=100,
+      output=10, canonical cache-read=50, alias cached_tokens=50); inference i2
+      (parent a, input=200, output=20); and tool operation u (parent a, input=999).
+      i1 is exported twice with the same span ID and identical values.
+      Report total inference tokens, inference count, tool count, and separate
+      canonical cache-read tokens without summing aliases or rollups. No queries.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: token-accounting
+      requiredSkills: [trace-agent-behavior-regression]
+      systemPrompt: '{"mode":"append","content":"Offline behavior exercise. Invoke trace-agent-behavior-regression and its dependencies/references. Use supplied observations only; do not call MCP or network tools."}'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [trace-agent-behavior-regression]
+      - type: output-matches
+        config:
+          pattern: "330"
+      - type: output-matches
+        config:
+          pattern: "(?i)cache[^\\n]*50|50[^\\n]*cache"
+      - type: output-matches
+        config:
+          pattern: "(?i)inference[^\\n]*2|2[^\\n]*inference"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)(total inference tokens|canonical cache.read tokens)[^\\n]*(\\|\\s*|:\\s*|=\\s*)(660|1329|380|100)\\b"

@@ -1,0 +1,75 @@
+name: trace-what-changed-eval
+description: "Checks matched-window trace routing and unavailable comparison behavior."
+
+tags:
+  type: integration
+  skill: trace-what-changed
+
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: copilot-sdk-agent-runner
+
+scoring:
+  threshold: 1
+
+stimuli:
+  - name: "Deployment change in traces"
+    turns:
+      - "What changed in Azure Monitor Trace Store distributed traces after deployment? Compare equal before/after windows for errors, latency, and mechanisms."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      requiredSkills:
+        - trace-what-changed
+      earlyTerminate: '[{"type":"skill-call","skill":"trace-what-changed"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - trace-what-changed
+
+  - name: "Week-over-week trace behavior"
+    prompt: "Compare week-over-week Azure Monitor Trace Store behavior for the same checkout operation using matched UTC windows, then investigate the observed change."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills: [trace-what-changed]
+      earlyTerminate: '[{"type":"skill-call","skill":"trace-what-changed"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [trace-what-changed]
+
+  - name: "Absent paired comparison is a capability gap"
+    prompt: |
+      Offline exercise: runtime discovery on released @azure/mcp@4.0.0-beta.4
+      exposes only account list, field list, query run/resume/cancel. There are
+      separate capped before and after trace-query previews, but no compare,
+      critical-path, top-attributes, or Portal command. Explain what can be
+      reported and what blocks a paired before/after investigation. Do not
+      run tools, invent deltas, or treat previews as complete populations.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: error-handling
+      requiredSkills: [trace-what-changed]
+      systemPrompt: '{"mode":"append","content":"Offline behavior exercise. Invoke trace-what-changed and its dependencies/references. Use supplied observations only; do not call MCP or network tools."}'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [trace-what-changed]
+      - type: output-matches
+        config:
+          pattern: "(?i)unreleased|not exposed|capability gap|unavailable"
+      - type: output-matches
+        config:
+          pattern: "(?i)capped|partial|incomplete|sample"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)paired comparison (confirmed|succeeded)|root cause (is confirmed|proven)"

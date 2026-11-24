@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "azure-monitor-traces": {
+      "command": "npx",
+      "args": ["-y", "@azure/mcp@latest", "server", "start"]
+    }
+  }
+}
