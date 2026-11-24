@@ -4,28 +4,23 @@ Kusto graph analysis, IRQL security hunting pipelines, and graph visualization s
 
 ## Installation
 
-Choose one installation route:
+Install the plugin using one of the methods below, or via the [Awesome Copilot catalog page](https://awesome-copilot.github.com/plugin/azure-kusto-graph-skills/).
 
-- **VS Code:** [Install plugin](vscode://chat-plugin/install?source=github%2Fawesome-copilot&plugin=azure-kusto-graph-skills)
-- **GitHub Copilot app:** [Install plugin](ghapp://plugins/install?source=azure-kusto-graph-skills%40awesome-copilot)
-- **Copilot CLI terminal:**
+### VS Code
 
-  ```text
-  copilot plugin install azure-kusto-graph-skills@awesome-copilot
-  ```
+[Install in VS Code](vscode://chat-plugin/install?source=github%2Fawesome-copilot&plugin=azure-kusto-graph-skills)
 
-If a client link does not open, use the [Awesome Copilot catalog page](https://awesome-copilot.github.com/plugin/azure-kusto-graph-skills/) to choose an available installation option. Client availability and organization policies may vary.
+### GitHub Copilot app
 
-### Direct Microsoft marketplace alternative
+[Install in GitHub Copilot app](ghapp://plugins/install?source=azure-kusto-graph-skills%40awesome-copilot)
 
-Inside an interactive Copilot CLI session, run:
+### Copilot CLI — terminal
+
+Run in your terminal:
 
 ```text
-/plugin marketplace add microsoft/azure-skills
-/plugin install azure-kusto-graph-skills@azure-skills
+copilot plugin install azure-kusto-graph-skills@awesome-copilot
 ```
-
-Awesome Copilot references pinned published packages; its version can differ from the direct Microsoft marketplace. When updating, keep the original marketplace suffix (`@awesome-copilot` or `@azure-skills`). Avoid duplicate copies from different marketplaces or overlapping extension-managed skills.
 
 ## Security
 
