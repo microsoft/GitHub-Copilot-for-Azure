@@ -174,9 +174,9 @@ If deploy reports `Done` for the service and then fails only in `postdeploy` wit
 azd ai agent show --output json
 ```
 
-Expect `"status": "active"` (or `"deployed"`) and an `agent_endpoints` map. Inspect the selected service protocols in `azure.yaml`.
+Before any remote smoke test for LangChain / LangGraph calling the project's OpenAI endpoint, verify [project-scoped `Foundry User` access for the agent's managed identity](../create/references/langchain-langgraph-hosting.md#pre-smoke-test-rbac). Use the same check for `401 PermissionDenied` from that model call.
 
-For LangChain / LangGraph calling the project's OpenAI endpoint from the container, confirm [project-scoped `Foundry User` access for the agent's managed identity](../create/references/langchain-langgraph-hosting.md#pre-smoke-test-rbac) before the first remote smoke test. Use the same check if that model call returns `401 PermissionDenied`.
+Expect `"status": "active"` (or `"deployed"`) and an `agent_endpoints` map. Inspect the selected service protocols in `azure.yaml`, then smoke-test:
 
 For the Responses or Invocations protocol, smoke-test with azd:
 

@@ -41,9 +41,7 @@ For ordinary prompt agents, use [create-prompt.md](create-prompt.md). For a Prom
 
 Use this azd sample selection guidance when the workflow refers to azd sample selection guidance.
 
-Honor an explicitly named sample. For LangChain / LangGraph, read [LangChain and LangGraph hosting](references/langchain-langgraph-hosting.md) and use its sample routing before selecting a sample or editing code.
-
-For other frameworks, list the curated catalog (filter by language if known):
+List the curated catalog (filter by language if known):
 
 ```bash
 azd ai agent sample list --language python --output json
@@ -54,6 +52,8 @@ Capture the selected sample's `manifestUrl`.
 > **Important:** Always select the best-matching samples from `azd ai agent sample list` for the capabilities the user explicitly requested. Use advanced tool samples only when the user explicitly asks for external actions, APIs, tools, connectors, or data lookup. Starting with the right sample helps ensure that the implementation follows the established code patterns and best practices for that type of Foundry hosted agent. If `azd ai agent sample list` does not return a suitable sample, choose one from the official [Foundry samples repository](https://github.com/microsoft-foundry/foundry-samples) and construct the manifest URL from its exact `azure.yaml` path, following the URL format returned by `azd ai agent sample list`.
 
 You should pick only one sample for `azd ai agent init`, but you can browse multiple samples relevant to the user's task as code references.
+
+> **Important:** For LangChain / LangGraph, follow [LangChain and LangGraph hosting](references/langchain-langgraph-hosting.md) before using the catalog or editing code. Honor a named sample and use its module entry point in place of `main.py` when specified.
 
 ## Workflow
 
@@ -103,13 +103,11 @@ remaining applicable values in one `AskUserQuestion` round. Do not ask for
 values that are already resolved or irrelevant to the requested change.
 Populate each question with the default option below.
 
-For Python, infer the framework from the request, the named sample, or the selected agent's `pyproject.toml`, `requirements.txt`, or `langgraph.json` before asking. A graph manifest or a direct `langchain`, `langgraph`, or `langchain-azure-ai` dependency identifies the LangChain / LangGraph path. If language is undecided, make the framework choice conditional on Python.
-
 | Value | When to skip | Default option | Notes |
 |-------|--------------|----------------|-------|
 | Project / agent name | The user provided one, or the existing code already defines one. | Project: `ai-project-<random>`; agent: the selected sample's agent name | Generate `<random>` using 6-8 lowercase alphanumeric characters. Pass the agent name to `azd ai agent init` with `--agent-name`; it sets the service key and agent name in `azure.yaml`. For a new Foundry project, set the project name after init with `azd env set AZURE_AI_PROJECT_NAME "<project-name>"` before running `azd provision`. |
 | Language | The user provided one, or the existing code already determines it. | Python | Supported languages: Python and .NET. |
-| Framework | .NET, the user named a framework or sample, or project metadata determines the framework. | Microsoft Agent Framework | Offer `LangChain / LangGraph (langchain-azure-ai)` as one choice and `Bring Your Own / Custom` as the other. Keep the package name in the displayed choice, including in planning responses. |
+| Framework (Python only) | .NET, the user named a framework or sample, or `pyproject.toml`, `requirements.txt`, or `langgraph.json` resolves it. | Microsoft Agent Framework | Other choices: `LangChain / LangGraph (langchain-azure-ai)` and `Bring Your Own / Custom`. Use the full labels in questions and plans. |
 | Subscription | The active azd environment already contains the intended `AZURE_SUBSCRIPTION_ID`. | Active Azure subscription: `<subscription-name>` (`<subscription-id>`) | Resolve both values with `az account show --query "{name:name,id:id}" -o json`; the ID must be a subscription GUID. |
 | Region | The active azd environment already contains the intended `AZURE_LOCATION`, or this change does not provision regional resources. | `northcentralus` | Azure resource location. |
 | Foundry project | The workspace or azd environment is already configured with a Foundry project, or the user provided one. | New Foundry project | Offer a new or existing project. For a new project, do not pass `--project-id`; `azd provision` creates it. For an existing project, use its ARM resource ID with `azd ai agent init --project-id`. |
@@ -154,7 +152,7 @@ Follow [azd Sample Selection Guidance](#azd-sample-selection-guidance) and use t
 
 Run `azd ai agent init`. `azd ai agent init` is sufficient to create new Foundry projects (or reuse an existing one) and create new Foundry agents. By default, you do not need to run `azd init` unless the user has specific initialization requirements.
 
-Python example (add `--project-id "<resourceId>"` for an existing Foundry project). Substitute the selected sample's runtime and entry point; pass a module-style `codeConfiguration.entryPoint` as one argument to `--entry-point`.
+Python example (add `--project-id "<resourceId>"` for an existing Foundry project):
 
 Pass `--deploy-mode code` for code deploy (recommended), or `--deploy-mode container` for container deploy.
 
@@ -237,9 +235,11 @@ Check the scaffold before local run:
 
 Use when the workspace already contains an agent project or source code.
 
-First check `azure.yaml` for a Foundry hosted service and use its `project` directory as the agent source root (or the existing code root if there is no service). Inspect `langgraph.json`, `pyproject.toml`, and `requirements.txt` there when present. A graph manifest or a direct `langchain`, `langgraph`, or `langchain-azure-ai` dependency resolves the existing framework: read [LangChain and LangGraph hosting](references/langchain-langgraph-hosting.md) before choosing a sample or editing code, and do not ask for the framework again.
+First determine whether the workspace is already a Foundry hosted agent project.
 
-- **Existing Foundry hosted agent** -- preserve its project structure and hosting configuration unless the user requests changes. For Foundry-specific features, follow the [azd Sample Selection Guidance](#azd-sample-selection-guidance) to choose a code reference.
+At the agent source root (the service's `project` directory for a hosted agent), check for `langgraph.json` or a direct `langchain`, `langgraph`, or `langchain-azure-ai` dependency in `pyproject.toml` or `requirements.txt`. If found, read [LangChain and LangGraph hosting](references/langchain-langgraph-hosting.md) without re-asking for the framework.
+
+- **Existing Foundry hosted agent** -- preserve its project structure, make the requested changes, and continue. For Foundry-specific features, follow the [azd Sample Selection Guidance](#azd-sample-selection-guidance) to choose a sample for code reference.
 - **Other existing agent** -- infer whether the user wants to re-host it on Foundry and ask only when the intended outcome is unclear. If re-hosting, read and follow [Re-host an existing agent](references/re-host.md), then continue to Step 5.
 
 If the user wants to switch the deploy mode from the default `code` mode to `container`, follow the
@@ -276,7 +276,7 @@ Flow (only when the user asks you to create the toolbox):
 
 1. Create the **connection** (`azd ai connection create ...`).
 2. Create or update the **toolbox** (`azd ai toolbox create` / `connection add`).
-3. Set the agent env var (`TOOLBOX_NAME` for LangChain / LangGraph, `TOOLBOX_ENDPOINT` for MAF and raw MCP).
+3. Set the agent env var (`azd env set TOOLBOX_ENDPOINT ...`, or `azd env set TOOLBOX_NAME ...` for LangChain / LangGraph).
 4. Reference it in the agent service's `environmentVariables` in `azure.yaml`.
 5. `azd deploy`.
 

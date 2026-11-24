@@ -1,15 +1,32 @@
 # LangChain and LangGraph Hosting
 
-Use for Python LangChain or LangGraph hosted agents on Foundry. Preserve existing source, dependencies, and checkpointing during migration.
+Use this guidance when creating, migrating, or re-hosting a LangChain or LangGraph agent on Foundry.
 
-## Sample routing
+## Design Intent
 
-Paths are relative to `samples/python/hosted-agents` in the [Foundry samples repo](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents). Use the sample's hosting pattern without replacing the user's application.
+Preserve the agent's existing framework behavior and minimize migration-specific code. Choose the least invasive hosting path that satisfies the requested behavior.
 
-| Need | Sample |
-|------|--------|
-| Zero-code, Responses | [`langgraph/responses/10-run`](https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/hosted-agents/langgraph/responses/10-run/azure.yaml) |
-| Zero-code, Invocations | [`langgraph/invocations/03-run`](https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/hosted-agents/langgraph/invocations/03-run/azure.yaml) |
+Treat migration as additive. Do not delete or replace user-authored code, and do not remove existing dependencies. Add only the hosting configuration, files, and dependencies required to run the existing agent on Foundry.
+
+Do not add, remove, or replace the agent's checkpointer unless the user explicitly requests a checkpointing change. Checkpointing belongs to the agent's application logic, not its hosting configuration.
+
+## Hosting Decision
+
+| Need | Hosting path |
+|------|--------------|
+| Standard LangChain or LangGraph agent hosting with no custom server behavior | **Configuration-only** |
+| Custom request handling, protocol behavior, lifecycle control, or other hosting behavior that configuration cannot express | **Host server integration** |
+
+Prefer configuration-only hosting unless the user explicitly requests custom hosting behavior or the existing agent demonstrably requires it. Do not add host server integration merely because the project already contains agent code.
+
+## Sample Selection
+
+For configuration-only hosting, select the sample matching the required protocol. Paths are relative to `samples/python/hosted-agents` in the [Foundry samples repo](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents).
+
+| Protocol or need | Sample |
+|----------|--------|
+| Responses | [`langgraph/responses/10-run`](https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/hosted-agents/langgraph/responses/10-run/azure.yaml) |
+| Invocations | [`langgraph/invocations/03-run`](https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/hosted-agents/langgraph/invocations/03-run/azure.yaml) |
 | ReAct chat with `create_agent` | `langgraph/responses/01-langgraph-chat` |
 | Toolbox; Toolbox with user OAuth | `langgraph/responses/02-langgraph-toolbox`; `langgraph/responses/03-langgraph-toolbox-user-identity` |
 | Multi-agent, subgraphs, deep agents | `langgraph/responses/05-workflows`, `langgraph/responses/15-branching`, `langgraph/responses/11-deep-agents` |
@@ -17,7 +34,13 @@ Paths are relative to `samples/python/hosted-agents` in the [Foundry samples rep
 | Observability | `langgraph/responses/08-observability` |
 | Custom Responses server or startup/shutdown lifecycle | `langgraph/responses/12-custom-host` (`ResponsesHostServer`), only when `langgraph.json` cannot express it |
 
+Use a host server integration sample only when the hosting decision above requires that path.
+
+Samples provide hosting patterns only. Use their manifests, adapters, protocol wiring, and deployment configuration as references; do not treat sample application structure or conventions as the desired final application.
+
 ## Zero-code migration
+
+For an existing agent moving to Foundry, read [Re-host an existing agent](re-host.md) before planning or applying the configuration below.
 
 In the service's source directory (`azure.yaml` → `services.<agent>.project`), add or reuse `langgraph.json` and point to the existing graph or factory:
 
@@ -25,7 +48,7 @@ In the service's source directory (`azure.yaml` → `services.<agent>.project`),
 {"dependencies": ["."], "graphs": {"agent": "./main.py:graph"}}
 ```
 
-Add `langchain-azure-ai[hosting,opentelemetry]>=1.2.9` to the existing `pyproject.toml` or `requirements.txt`. Keep the graph and its checkpointer unchanged. Merge the following service into `azure.yaml` (`project: .` for root-level code):
+Add `langchain-azure-ai[hosting,opentelemetry]>=1.2.9` to the existing `pyproject.toml` or `requirements.txt`. Merge the following service into `azure.yaml` (`project: .` for root-level code):
 
 ```yaml
 name: my-agent
@@ -48,6 +71,8 @@ services:
 ```
 
 For Invocations, use `invocations` in the protocol and both commands. For a synced uv environment, `startupCommand` can prefix `python` with `uv run --no-sync`. Preserve existing project and model settings. For config-only preparation, leave unresolved project/model selection for deployment.
+
+When scaffolding a sample, pass its module-style `codeConfiguration.entryPoint` as one `--entry-point` argument to `azd ai agent init`. Validate both hosting commands and the `langgraph.json` graph binding; do not replace the module entry point with a filename.
 
 ## Model wiring and tracing
 

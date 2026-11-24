@@ -2,11 +2,11 @@
 
 A **toolbox** is a single MCP-compatible endpoint that exposes all the tools you've configured; your agent connects to that one URL and discovers every tool inside. For the concept, object model, and API/schema, see [toolbox.md](../../toolbox/toolbox.md).
 
-Choose the integration for your framework:
+There are three ways to consume it from agent code:
 
 - **Default SDK — Microsoft Agent Framework (MAF).** The `FoundryToolbox` wrapper does all the plumbing (endpoint resolution, auth, per-request call-id, connect/close). This is the happy path below.
 - **LangChain / LangGraph SDK.** Use `AzureAIProjectToolbox` from `langchain-azure-ai`; see the [SDK path](#langchain--langgraph-sdk) below.
-- **Other — generic/BYO raw MCP client or C#.** See [Bring Your Own (BYO) — raw MCP client](#bring-your-own-byo--raw-mcp-client) or use the C# sample.
+- **Other — generic/BYO raw MCP client or C#.** You wire the MCP client yourself. See [Bring Your Own (BYO) — raw MCP client](#bring-your-own-byo--raw-mcp-client).
 
 > 🚦 **Toolbox creation gate:** before creating a toolbox/connection, you MUST read the boundary rules in [create-hosted.md → Toolbox creation boundary](../create-hosted.md#toolbox-creation-boundary) and follow them, then continue with the rest of this file.
 
@@ -95,7 +95,7 @@ For toolbox-composition / provisioning errors (`Multiple tools without identifie
 
 ## Bring Your Own (BYO) — raw MCP client
 
-Use this protocol guidance when you hand-write the MCP client. The consent error shape also applies to the LangChain / LangGraph SDK path above.
+The MCP client wiring below is only needed when you **hand-write the MCP client** (generic frameworks, or the BYO samples). The consent error shape also applies to the LangChain / LangGraph SDK.
 
 For the MCP protocol methods and tool-naming rules, see [mcp-protocol.md § MCP protocol](../../toolbox/references/mcp-protocol.md#mcp-protocol) and [§ Tool naming](../../toolbox/references/mcp-protocol.md#tool-naming).
 

@@ -9,13 +9,13 @@ Resolve two independent choices before initialization or edits:
 
 Infer these choices from the user's request and current code. Ask only for information that remains unclear; skip questions when the intent is explicit or evident, such as an existing Foundry model integration. Do not switch or deploy a model, or migrate the framework, without user intent.
 
-Inspect `langgraph.json` and the direct dependencies in `pyproject.toml` or `requirements.txt` at the agent source root. If the manifest or a `langchain`, `langgraph`, or `langchain-azure-ai` dependency identifies the framework, follow [LangChain and LangGraph hosting](langchain-langgraph-hosting.md) without re-asking. Reuse that guide if already loaded in Step 4b. Defer project or model decisions that do not block the requested local configuration.
+Before asking, check the agent source root for `langgraph.json` or a direct `langchain`, `langgraph`, or `langchain-azure-ai` dependency in `pyproject.toml` or `requirements.txt`. If found, follow [LangChain and LangGraph hosting](langchain-langgraph-hosting.md) without re-asking for the framework. For a plan or local configuration, defer project and model choices that do not block the requested deliverable.
 
 ## Step 2: Initialize and adapt
 
-For LangChain / LangGraph, prefer [configuration-only hosting](langchain-langgraph-hosting.md#zero-code-migration): prepare the configuration in place and skip the init and catalog commands below. If the user only wants a plan or local configuration, stop at that deliverable; leave environment setup, local invocation, and deployment for later.
+For [configuration-only LangChain / LangGraph hosting](langchain-langgraph-hosting.md#zero-code-migration), skip the init and catalog commands below. For plan-only or local configuration requests, stop at the requested deliverable.
 
-For other agents that need scaffolding, run:
+To scaffold a Foundry agent project with existing agent codes, run:
 
 ```bash
 azd ai agent init --no-prompt \
@@ -30,13 +30,12 @@ Use `--deploy-mode code` by default. `--runtime` and `--entry-point` are require
 
 After scaffolding, you must use `azd ai agent sample list --language <language> --output json` and follow the [azd Sample Selection Guidance](../create-hosted.md#azd-sample-selection-guidance) to find the closest relevant samples for adapter, protocol, and deployment guidance. Treat samples as boundary patterns, not replacement applications. Browse the relevant samples as code references.
 
-Re-hosting scenarios:
-
+For reference, here are some awesome samples for re-hosting scenarios:
 1. Re-host LangChain / LangGraph agents (zero-code via `langgraph.json` + `langchain-azure-ai`): follow the [hosting guide](langchain-langgraph-hosting.md) and the [`langgraph/responses/10-run` sample](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/langgraph/responses/10-run).
 2. Re-host agents built with the OpenAI Agents SDK: https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/bring-your-own/responses/openai-agents-sdk
 3. Re-host agents built with the Claude Agent SDK: https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/bring-your-own/invocations/claude-agent-sdk
 
-If the user is adopting a Foundry model, wire it to the agent. Otherwise preserve the existing model wiring.
+If users use a Foundry model, you must wire the Foundry model to the agent.
 
 Set `startupCommand` in `azure.yaml`.
 

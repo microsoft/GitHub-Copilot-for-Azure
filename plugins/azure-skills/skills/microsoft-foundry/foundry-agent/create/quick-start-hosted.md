@@ -58,13 +58,11 @@ remaining applicable values in one `AskUserQuestion` round. Do not ask for
 values that are already resolved or irrelevant to the requested change.
 Populate each question with the default option below.
 
-For Python, infer the framework from the request, the named sample, or the agent's `pyproject.toml`, `requirements.txt`, or `langgraph.json` before asking. A graph manifest or a direct `langchain`, `langgraph`, or `langchain-azure-ai` dependency identifies the LangChain / LangGraph path. If language is undecided, make the framework choice conditional on Python.
-
 | Value | When to skip | Default option | Notes |
 |-------|--------------|----------------|-------|
 | Project / agent name | The user provided one, or the existing code already defines one. | Project: `ai-project-<random>`; agent: the selected sample's agent name | Generate `<random>` using 6-8 lowercase alphanumeric characters. Pass the agent name to `azd ai agent init` with `--agent-name`; it sets the service key and agent name in `azure.yaml`. For a new Foundry project, set the project name after init with `azd env set AZURE_AI_PROJECT_NAME "<project-name>"` before running `azd provision`. |
 | Language | The user provided one, or the existing code already determines it. | Python | Supported languages: Python and .NET. |
-| Framework | .NET, the user named a framework or sample, or project metadata determines the framework. | Microsoft Agent Framework | Offer `LangChain / LangGraph (langchain-azure-ai)` as one choice and `Bring Your Own / Custom` as the other. Keep the package name in the displayed choice, including in planning responses. |
+| Framework (Python only) | .NET, the user named a framework or sample, or `pyproject.toml`, `requirements.txt`, or `langgraph.json` resolves it. | Microsoft Agent Framework | Other choices: `LangChain / LangGraph (langchain-azure-ai)` and `Bring Your Own / Custom`. Use the full labels in questions and plans. |
 | Subscription | The active azd environment already contains the intended `AZURE_SUBSCRIPTION_ID`. | Active Azure subscription: `<subscription-name>` (`<subscription-id>`) | Resolve both values with `az account show --query "{name:name,id:id}" -o json`; the ID must be a subscription GUID. |
 | Region | The active azd environment already contains the intended `AZURE_LOCATION`, or this change does not provision regional resources. | `northcentralus` | Azure resource location. |
 | Foundry project | The workspace or azd environment is already configured with a Foundry project, or the user provided one. | New Foundry project | Offer a new or existing project. For a new project, do not pass `--project-id`; `azd provision` creates it. For an existing project, use its ARM resource ID with `azd ai agent init --project-id`. |
@@ -92,8 +90,6 @@ az cognitiveservices account deployment list \
 
 ### Step 3 — Pick the sample
 
-Honor an explicitly named sample. For LangChain / LangGraph, read [LangChain and LangGraph hosting](references/langchain-langgraph-hosting.md) and use its sample routing before selecting a sample or editing code. Use the catalog below for other frameworks.
-
 ```bash
 azd ai agent sample list --language <lang> --output json
 ```
@@ -106,7 +102,9 @@ Capture the `manifestUrl`.
 
 You should pick only one sample for `azd ai agent init`, but you can browse multiple samples relevant to user's task as code reference.
 
-Step 4 needs `--runtime` and `--entry-point`. Use the selected sample's settings, including a module-style entry point where declared. Use these standard defaults when the sample does not specify them:
+> **Important:** For LangChain / LangGraph, follow [LangChain and LangGraph hosting](references/langchain-langgraph-hosting.md) before using the catalog or editing code. Honor a named sample. For configuration-only hosting, use its module entry point and `langgraph.json` graph binding in place of the file-based entry-point guidance below.
+
+Step 4 needs `--runtime` and `--entry-point` values. These are CLI args, **not** fields in the manifest — use these standard defaults for the chosen language:
 
 | Language | `--runtime` | `--entry-point` |
 |----------|-------------|-----------------|
@@ -144,7 +142,7 @@ azd env set AZURE_AI_PROJECT_NAME "<project-name>"
 Values you **must** substitute from Step 3 — do not pass placeholders or guesses:
 
 - `--runtime`: exactly one of `python_3_13`, `python_3_14`, `dotnet_10` (the bare value `python` fails with `--runtime must be one of: python_3_13, python_3_14, dotnet_10`).
-- `--entry-point`: the sample's file or module command. Pass a module-style value as one argument, e.g. `--entry-point='-m langchain_azure_ai.agents.hosting.run --protocol responses'`.
+- `--entry-point`: the entry-point file the sample declares (e.g. `main.py`, not `app.py` — a wrong value scaffolds correctly but breaks local run and deploy).
 
 If using an existing Foundry project, add `--project-id "<arm-id>"`.
 
@@ -161,11 +159,11 @@ The scaffold is a generic working sample. Edit only what the user's original pro
 Typical changes:
 
 - The agent service's `description:` in `azure.yaml` — update it to match the user's intent (this also feeds Step 13 eval generation).
-- Agent source under `src/<agent-name>/` — update the system prompt / instructions to match the user's intent. For configuration-only LangGraph, locate the source from `langgraph.json`.
+- `src/<agent-name>/<entry-point>` — update the system prompt / instructions to match the user's intent.
 
 Only when the user explicitly asked for it:
 
-- Add or modify tool / function-calling code in the agent source.
+- Add or modify tool / function-calling code in `<entry-point>`.
 - Add dependencies to `pyproject.toml` / `requirements.txt` (Python) or `*.csproj` (.NET).
 - Change the model in `azure.yaml services.ai-project.deployments[]` before Step 8 provision.
 
@@ -187,7 +185,7 @@ Verify all four before continuing. If any check fails, pick **one** recovery pat
 |-------|----------|-----------|
 | `azure.yaml services.ai-project.deployments[]` | Non-empty array with `name`, `model.{name,format,version}`, `sku.{name,capacity}` | Model resolution deferred — use recovery |
 | Agent service `environmentVariables` `AZURE_AI_MODEL_DEPLOYMENT_NAME` (in `azure.yaml`) | Literal name **or** `${AZURE_AI_MODEL_DEPLOYMENT_NAME}` substitution | If literal `{{AZURE_AI_MODEL_DEPLOYMENT_NAME}}` (double braces): use recovery |
-| Agent service `codeConfiguration.entryPoint:` (in `azure.yaml`) | Matches an existing source file or the sample's module command. For configuration-only LangGraph, check `langgraph.json` and both hosting commands. | Correct the entry point in `azure.yaml` and re-verify. |
+| Agent service `codeConfiguration.entryPoint:` (in `azure.yaml`) | Matches a real file in `src/<agent-name>/` (e.g. `main.py` and `main.py` exists) | If mismatch (e.g. `entryPoint: app.py` but only `main.py` exists): edit `azure.yaml` to the real filename, then re-verify. Most often caused by passing a wrong `--entry-point` in Step 4. |
 | `azure.yaml services:` keys | Only one `<agent-name>` entry | If `<agent-name>-2` exists: init was re-run; use recovery |
 
 **Recovery paths** (pick based on whether Step 5 has already customized `src/<agent-name>/`):
@@ -358,8 +356,8 @@ azd down                                    # tear down all resources when done
 | Symptom | Fix |
 |---------|-----|
 | `azd ai agent init` fails with `--runtime must be one of: python_3_13, python_3_14, dotnet_10` | You passed a bare value like `python`. Use the full runtime token (e.g. `python_3_13`). |
-| `azd ai agent init` fails with `--entry-point is required when using --deploy-mode code with --no-prompt` | Pass the sample's file or module command as `--entry-point` (from Step 3). |
-| `codeConfiguration.entryPoint` points to a missing file or uses the wrong module command | Correct the entry point in `azure.yaml` using the selected sample. For configuration-only LangGraph, also verify the graph binding. No re-init needed. |
+| `azd ai agent init` fails with `--entry-point is required when using --deploy-mode code with --no-prompt` | Pass `--entry-point <filename>` matching the entry-point file the sample declares (from Step 3). |
+| `codeConfiguration.entryPoint` doesn't match any file in `src/<agent-name>/` | You guessed the entry-point in Step 4. Edit the agent service in `azure.yaml` to the real filename (verify with `ls src/<agent-name>/`). No re-init needed. |
 | `azd deploy` postdeploy hook fails with missing `AZURE_TENANT_ID` | Run `az account show --query tenantId -o tsv` and `azd env set AZURE_TENANT_ID <tenant-id>`, then re-run `azd deploy --no-prompt`. The deployed agent version from the first deploy is still valid; the postdeploy hook just registers env vars. |
 | Scaffold sanity check fails (Step 7) | Pick a recovery path from Step 7. If still failing → [create-hosted.md](create-hosted.md). |
 | Local invoke returns model `404` / wrong deployment | Stale `AZURE_AI_MODEL_DEPLOYMENT_NAME` in azd env overrides `.env`. Re-run Step 9 to sync both. |
