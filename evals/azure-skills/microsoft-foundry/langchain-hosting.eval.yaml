@@ -1,0 +1,279 @@
+name: microsoft-foundry-langchain-hosting
+description: Offline workflow checks for first-class LangChain and LangGraph hosting.
+
+tags:
+  skill: microsoft-foundry
+  feature: langchain-hosting-p0
+  systemPrompt: >-
+    {"mode":"append","content":"This is an offline workflow continuation. Invoke microsoft-foundry and resolve packaged references from the skill directory it returns. The parent dependency and workflow environment checks have already completed successfully. Do not rerun them, run Azure CLI or azd, access the network, or change Azure resources. Use the packaged skill and supplied synthetic inputs. Put any questions in the response instead of pausing for interactive input."}
+
+defaults:
+  runs: 1
+  timeout: "2m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+
+scoring:
+  threshold: 1
+
+stimuli:
+  - name: "Offer a framework for greenfield Python"
+    prompt: |
+      I'm starting a new Python hosted agent in Foundry from scratch. Before scaffolding, list only the decisions you still need from me, with choices and defaults. If the framework needs a decision, put its choices and default together on a line starting with `Framework:`.
+    tags:
+      id: langchain-python-framework-choice
+      type: integration
+      tier: full
+      cost: llm
+      area: create
+    constraints:
+      max_turns: 8
+    graders:
+      - type: skill-invocation
+        config: { required: [microsoft-foundry] }
+      - type: tool-calls
+        config:
+          required:
+            - name: &readTool '(?i)^(view|read_file|read|bash|powershell|pwsh|run_in_terminal)$'
+              pattern: 'quick-start-hosted\.md'
+          disallowed: &liveCommands
+            - name: '(?i)^(bash|powershell|pwsh|run_in_terminal)$'
+              command: '(?i)\bazd?(?:\.exe)?\s+'
+      - type: output-matches
+        config:
+          pattern: '(?i)Framework(?:\*\*)?:(?=[^\r\n]*LangChain[^\r\n]*LangGraph)(?=[^\r\n]*(Bring Your Own|BYO|Custom))(?=[^\r\n]*(?:(?:Microsoft Agent Framework|MAF)[\s*,:(-]*(?:MAF[\s*,:-]*)?default\b|default[\s*:-]*(?:Microsoft Agent Framework|MAF)))'
+      - type: diff-empty
+
+  - name: "Skip the framework choice for .NET container hosting"
+    prompt: |
+      I'm starting a new .NET hosted Foundry agent with container deployment. Before initializing it, list the decisions that still need my input. For the framework status, use `Framework: resolved` if you don't need me to choose, or `Framework: <choices>` if you do.
+    tags:
+      id: langchain-dotnet-framework-skip
+      type: integration
+      tier: full
+      cost: llm
+      area: create
+    constraints:
+      max_turns: 8
+    graders:
+      - type: skill-invocation
+        config: { required: [microsoft-foundry] }
+      - type: tool-calls
+        config:
+          required:
+            - name: *readTool
+              pattern: 'create-hosted\.md'
+          disallowed: *liveCommands
+      - type: output-matches
+        config:
+          pattern: &frameworkResolved '(?i)Framework(?:\*\*)?:[\s*`]*resolved\b'
+      - type: diff-empty
+
+  - name: "Choose a custom host only for explicitly required server lifecycle"
+    prompt: |
+      I want a new Python Foundry hosted agent using LangGraph and Responses. It must initialize a connection pool once at host server startup and close it at host shutdown. Before scaffolding, recommend the exact official sample and the server class I'd use. For the framework status, use `Framework: resolved` if you don't need me to choose, or `Framework: <choices>` if you do.
+    tags:
+      id: langchain-explicit-custom-host
+      type: integration
+      tier: full
+      cost: llm
+      area: create
+    constraints:
+      max_turns: 8
+    graders:
+      - type: skill-invocation
+        config: { required: [microsoft-foundry] }
+      - type: tool-calls
+        config:
+          required:
+            - name: *readTool
+              pattern: 'langchain-langgraph-hosting\.md'
+          disallowed: *liveCommands
+      - type: output-matches
+        config:
+          pattern: *frameworkResolved
+      - type: output-matches
+        config:
+          pattern: '(?s)(?=.*langgraph/responses/12-custom-host\b)(?=.*ResponsesHostServer\b)'
+      - type: diff-empty
+
+  - name: "Recognize a graph manifest and choose the Responses re-host path"
+    agent_environment:
+      files:
+        - src: fixture/langchain-hosting/graph/main.py
+          dest: main.py
+        - src: fixture/langchain-hosting/langgraph.json
+          dest: langgraph.json
+    prompt: |
+      Plan how to move this existing Python ticket agent to Microsoft Foundry over Responses. Keep its graph behavior and checkpointing. Don't change any files. Identify the strategy and exact official sample, show the startup command and deployment entry point you would use, and list any decisions that still block the move. For the framework status, use `Framework: resolved` if you don't need me to choose, or `Framework: <choices>` if you do.
+    tags:
+      id: langchain-manifest-responses-rehost
+      type: integration
+      tier: full
+      cost: llm
+      area: migrate
+    constraints:
+      max_turns: 10
+    graders:
+      - type: skill-invocation
+        config: { required: [microsoft-foundry] }
+      - type: tool-calls
+        config:
+          required:
+            - name: *readTool
+              pattern: 're-host\.md'
+            - name: *readTool
+              pattern: 'langchain-langgraph-hosting\.md'
+          disallowed: *liveCommands
+      - type: output-matches
+        config:
+          pattern: *frameworkResolved
+      - type: output-matches
+        config:
+          pattern: '(?s)(?=.*langgraph/responses/10-run\b)(?=.*startupCommand)(?=.*entryPoint)(?=.*langchain_azure_ai\.agents\.hosting\.run\s+--protocol\s+responses\b)'
+      - type: diff-empty
+
+  - name: "Re-host from dependencies with additive Invocations configuration"
+    agent_environment:
+      files:
+        - src: fixture/langchain-hosting/graph
+          dest: .
+    prompt: |
+      Prepare this Python ticket agent for Microsoft Foundry over Invocations. Add the files and dependencies needed for code deployment, keeping the repository root as the service source directory and preserving the existing program and dependencies. The project and model will be selected later, so only make local configuration edits. Summarize the official sample you followed.
+    tags:
+      id: langchain-dependencies-invocations-rehost
+      type: integration
+      tier: full
+      cost: llm
+      area: migrate
+    constraints:
+      max_turns: 12
+    graders:
+      - type: skill-invocation
+        config: { required: [microsoft-foundry] }
+      - type: tool-calls
+        config:
+          required:
+            - name: *readTool
+              pattern: 'langchain-langgraph-hosting\.md'
+          disallowed:
+            - name: '(?i)^(bash|powershell|pwsh|run_in_terminal)$'
+              command: '(?i)\bazd?(?:\.exe)?\s+'
+            - name: '(?i)^(ask_user|askuserquestion|request_user_input)$'
+              pattern: '(?i)framework'
+      - type: output-matches
+        config:
+          pattern: 'langgraph/invocations/03-run\b'
+      - type: file-matches
+        config:
+          path: azure.yaml
+          pattern: '(?ms)(?=.*^\s*startupCommand:[^\r\n]*langchain_azure_ai\.agents\.hosting\.run\s+--protocol\s+invocations\b)(?=.*^\s*entryPoint:[^\r\n]*-m\s+langchain_azure_ai\.agents\.hosting\.run\s+--protocol\s+invocations\b)(?=.*^\s*(?:-\s*)?protocol:\s*["'']?invocations\b)'
+      - type: file-matches
+        config:
+          path: requirements.txt
+          pattern: '(?ms)(?=.*^langgraph>=1,<2\s*$)(?=.*^langchain-azure-ai\[(?:hosting,\s*opentelemetry|opentelemetry,\s*hosting)\]>=1\.2\.9\b)'
+      - type: run-command
+        config:
+          command: node
+          args:
+            - -e
+            - |
+              const assert = require("node:assert/strict");
+              const fs = require("node:fs");
+              const cp = require("node:child_process");
+              const config = JSON.parse(fs.readFileSync("langgraph.json", "utf8"));
+              assert(config.dependencies.includes("."));
+              assert(Object.values(config.graphs).includes("./main.py:graph"));
+              assert.equal(fs.readFileSync("main.py", "utf8"), cp.execFileSync("git", ["show", "HEAD:main.py"], { encoding: "utf8" }));
+
+  - name: "Use the LangGraph Toolbox SDK and surface OAuth consent"
+    agent_environment:
+      files:
+        - src: fixture/langchain-hosting/consent-error.json
+          dest: consent-error.json
+    prompt: |
+      How should I wire an existing Foundry toolbox named `ticket-tools` into my Python LangGraph agent? The tools run with the user's OAuth identity, and I need the user to see a useful response when the attached MCP error occurs. Show the integration snippet, including any tool schema adaptation, and point me to the base and user-identity samples. Don't modify anything.
+    tags:
+      id: langchain-toolbox-user-oauth
+      type: integration
+      tier: full
+      cost: llm
+      area: create
+    constraints:
+      max_turns: 10
+    graders:
+      - type: skill-invocation
+        config: { required: [microsoft-foundry] }
+      - type: tool-calls
+        config:
+          required:
+            - name: *readTool
+              pattern: 'use-toolbox-in-hosted-agent\.md'
+            - name: *readTool
+              pattern: 'consent-error\.json'
+          disallowed: *liveCommands
+      - type: output-matches
+        config:
+          pattern: '(?s)(?=.*AzureAIProjectToolbox\s*\([^)]*toolbox_name\s*=\s*os\.environ\[[\"'']TOOLBOX_NAME)(?=.*02-langgraph-toolbox)(?=.*03-langgraph-toolbox-user-identity)(?=.*-32006)(?=.*CONSENT_REQUIRED)(?=.*https://auth\.example\.invalid/authorize\?ticket=oak-42)'
+      - type: output-matches
+        config:
+          pattern: '(?i)\bsanitiz\w*\b|\bnormaliz\w+\s+(?:the\s+)?(?:tool\s+)?schemas?\b'
+      - type: diff-empty
+
+  - name: "Restore model trace correlation for LangGraph Responses"
+    prompt: |
+      My Python LangGraph hosted agent uses the Foundry project's OpenAI endpoint with Entra ID. Its graph runs, but the Foundry portal's Traces tab is empty after a Responses invocation. I suspect my ChatOpenAI setup. Show the corrected model setup, where tracing belongs in the graph, the azure.yaml tracing setting, and how to tell whether the fix worked. Give a plan only.
+    tags:
+      id: langchain-responses-trace-correlation
+      type: integration
+      tier: full
+      cost: llm
+      area: tracing
+    constraints:
+      max_turns: 10
+    graders:
+      - type: skill-invocation
+        config: { required: [microsoft-foundry] }
+      - type: tool-calls
+        config:
+          required:
+            - name: *readTool
+              pattern: 'langchain-langgraph-hosting\.md'
+          disallowed: *liveCommands
+      - type: output-matches
+        config:
+          pattern: '(?s)(?=.*AIProjectClient)(?=.*DefaultAzureCredential)(?=.*get_bearer_token_provider)(?=.*https://ai\.azure\.com/\.default)(?=.*base_url\s*=)(?=.*api_key\s*=)(?=.*use_responses_api\s*=\s*True)(?=.*output_version\s*=\s*["'']responses/v1["''])(?=.*enable_auto_tracing\(\))(?=.*OTEL_AUTO_CONFIGURE_AZURE_MONITOR\s*[:=]\s*["'']true["''])(?=.*gen_ai\.response\.id)'
+      - type: diff-empty
+
+  - name: "Diagnose the container principal behind model 401"
+    agent_environment:
+      files:
+        - src: fixture/langchain-hosting/model-401.txt
+          dest: session.log
+    prompt: |
+      My deployed Python LangGraph agent starts and accepts requests, but the smoke invocation fails. Diagnose the supplied session.log. Show how to check and correct the issue before the next smoke test, with the relevant commands and scope. Do not run the commands or modify resources.
+    tags:
+      id: langchain-model-401-rbac
+      type: integration
+      tier: full
+      cost: llm
+      area: troubleshoot
+    constraints:
+      max_turns: 10
+    graders:
+      - type: skill-invocation
+        config: { required: [microsoft-foundry] }
+      - type: tool-calls
+        config:
+          required:
+            - name: *readTool
+              pattern: 'troubleshoot\.md'
+            - name: *readTool
+              pattern: 'langchain-langgraph-hosting\.md'
+            - name: *readTool
+              pattern: 'session\.log'
+          disallowed: *liveCommands
+      - type: output-matches
+        config:
+          pattern: '(?s)(?=.*az role assignment list\b)(?=.*az role assignment create\b.*--role\s+["'']Foundry User["''])(?=.*22222222-2222-4222-8222-222222222222)(?=.*/providers/Microsoft\.CognitiveServices/accounts/fixture-foundry/projects/tickets\b)'
+      - type: diff-empty
