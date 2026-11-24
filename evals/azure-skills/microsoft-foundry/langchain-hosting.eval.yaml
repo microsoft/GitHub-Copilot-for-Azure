@@ -19,13 +19,15 @@ scoring:
 stimuli:
   - name: "Offer a framework for greenfield Python"
     prompt: |
-      I'm starting a new Python hosted agent in Foundry from scratch. Before scaffolding, list only the decisions you still need from me, with choices and defaults. If the framework needs a decision, put its choices and default together on a line starting with `Framework:`.
+      I want to build a Python hosted agent from scratch. Before scaffolding, list only the decisions you still need from me, with choices and defaults. If the framework needs a decision, put its choices and default together on a line starting with `Framework:`.
     tags:
       id: langchain-python-framework-choice
       type: integration
       tier: full
       cost: llm
       area: create
+      systemPrompt: >-
+        {"mode":"append","content":"This is an offline planning exercise. Any dependency and environment preflight checks have already succeeded; do not rerun them. Do not run setup or cloud commands, access the network, or modify files. Put any questions in the response instead of pausing for interactive input."}
     constraints:
       max_turns: 8
     graders:
