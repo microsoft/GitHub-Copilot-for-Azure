@@ -4,7 +4,12 @@ import { readFile, readdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
-import { isDeepStrictEqual, promisify } from "node:util";
+import { promisify } from "node:util";
+import { require as tsxRequire } from "tsx/cjs/api";
+
+// Load the shared CommonJS TypeScript module in both Node and Vitest.
+const { equivalentMcpValues }: typeof import("./shared/mcp-config.cjs") =
+  tsxRequire("./shared/mcp-config.cjs", import.meta.url);
 
 const execute = promisify(execFile);
 const categories = ["commands", "areas", "extensionTools"] as const;
@@ -351,8 +356,8 @@ export async function discover(binary: string, releaseVersion: string): Promise<
 }
 
 /**
- * Replaces only the Azure server's pinned package argument while preserving surrounding JSON formatting.
- * Configurations without that server are unchanged; missing or ambiguous package pins are rejected.
+ * Replaces only the Azure server's package argument while preserving surrounding JSON formatting.
+ * The existing argument must be a version or latest; missing or ambiguous package arguments are rejected.
  */
 export function updatePin(text: string, releaseVersion: string): string {
   version(releaseVersion);
@@ -361,10 +366,11 @@ export function updatePin(text: string, releaseVersion: string): string {
   if (!Object.hasOwn(servers, "azure")) return text;
   const azure = object(servers.azure, "Azure MCP configuration");
   const args = names(azure.args, "Azure MCP args");
-  const pins = args.filter(argument => argument.startsWith("@azure/mcp@"));
-  if (pins.length !== 1) throw new Error("Expected exactly one pinned @azure/mcp argument.");
-  const pin = pins[0];
-  version(pin.slice("@azure/mcp@".length));
+  const packageArguments = args.filter(argument => argument.startsWith("@azure/mcp@"));
+  if (packageArguments.length !== 1) throw new Error("Expected exactly one @azure/mcp@<version or latest> argument.");
+  const previousArgument = packageArguments[0];
+  const previousVersion = previousArgument.slice("@azure/mcp@".length);
+  if (previousVersion !== "latest") version(previousVersion);
   // Replace only the Azure server's argument, even when another server uses the same package.
   const stack: { object: boolean; key?: string; keyExpected: boolean }[] = [];
   for (const match of text.matchAll(/"(?:\\.|[^"\\])*"|[{}[\]:,]/g)) {
@@ -382,7 +388,7 @@ export function updatePin(text: string, releaseVersion: string): string {
         current.keyExpected = false;
       } else if (stack.length === 4 && stack[0].key === "mcpServers" &&
                  stack[1].key === "azure" && stack[2].key === "args" &&
-                 !current.object && JSON.parse(token) === pin) {
+                 !current.object && JSON.parse(token) === previousArgument) {
         return text.slice(0, match.index) + JSON.stringify(`@azure/mcp@${releaseVersion}`) + text.slice(match.index + token.length);
       }
     }
@@ -440,7 +446,7 @@ export async function updatePlugins(root: string, rawDiscovery: unknown): Promis
       const type = server.type === "http" ? "streamable-http" : server.type ?? ("command" in server ? "stdio" : undefined);
       return [name, { ...server, type }];
     }));
-    if (!isDeepStrictEqual(configurations.get("mcp.json"), normalized)) {
+    if (!equivalentMcpValues(configurations.get("mcp.json"), normalized)) {
       throw new Error(`Portable and legacy MCP configurations differ for ${directory.name}.`);
     }
   }
