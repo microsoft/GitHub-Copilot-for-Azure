@@ -4,28 +4,23 @@ Use Azure Advisor recommendations to understand optimization opportunities, iden
 
 ## Installation
 
-Choose one installation route:
+Install the plugin using one of the methods below, or via the [Awesome Copilot catalog page](https://awesome-copilot.github.com/plugin/azure-advisor/).
 
-- **VS Code:** [Install Azure Advisor](vscode://chat-plugin/install?source=github%2Fawesome-copilot&plugin=azure-advisor).
-- **GitHub Copilot app:** [Install Azure Advisor](ghapp://plugins/install?source=azure-advisor%40awesome-copilot).
-- **Copilot CLI terminal:**
+### VS Code
 
-  ```text
-  copilot plugin install azure-advisor@awesome-copilot
-  ```
+[Install in VS Code](vscode://chat-plugin/install?source=github%2Fawesome-copilot&plugin=azure-advisor)
 
-If a client link does not open, use the [Azure Advisor catalog page](https://awesome-copilot.github.com/plugin/azure-advisor/) to choose an installation option. Client availability and organization policy may restrict installation. Check that the plugin is enabled and its skills are visible, then start a fresh conversation. Installation does not grant Azure access or authorize resource changes; follow **Setup** below for authentication and review the **Security** warning before installing.
+### GitHub Copilot app
 
-### Direct Microsoft marketplace alternative
+[Install in GitHub Copilot app](ghapp://plugins/install?source=azure-advisor%40awesome-copilot)
 
-Inside an interactive Copilot CLI session (not a terminal shell), run:
+### Copilot CLI — terminal
+
+Run in your terminal:
 
 ```text
-/plugin marketplace add microsoft/azure-skills
-/plugin install azure-advisor@azure-skills
+copilot plugin install azure-advisor@awesome-copilot
 ```
-
-Awesome Copilot pins published packages, so its version may differ from the direct Microsoft marketplace. Use the original marketplace when updating the installed copy; do not install duplicate copies from both marketplaces or alongside overlapping extension-managed skills. Installation links do not establish identical behavior or rendering across clients.
 
 ## Included skills
 
