@@ -53,23 +53,28 @@ azd ai agent invoke "list the tools you have access to"
 
 ## LangChain / LangGraph SDK
 
-Set `TOOLBOX_NAME` to the existing toolbox name in the agent service's environment. In the async graph factory, load and sanitize the tools before passing them to `create_agent`:
+Set `TOOLBOX_NAME` to the existing toolbox name in the agent service's environment. In integration snippets for either sample, show the direct SDK constructor and the `sanitize_tool_schema` helper below. Load the tools in the async graph factory before passing them to `create_agent`:
 
 ```python
 import os
 from langchain_azure_ai.tools import AzureAIProjectToolbox
 
+def sanitize_tool_schema(tool):
+    schema = tool.args_schema
+    if isinstance(schema, dict) and schema.get("type") == "object":
+        schema.setdefault("properties", {})
+
 async def load_tools():
     toolbox = AzureAIProjectToolbox(toolbox_name=os.environ["TOOLBOX_NAME"])
     tools = await toolbox.get_tools()
     for tool in tools:
-        schema = tool.args_schema
-        if isinstance(schema, dict) and schema.get("type") == "object":
-            schema.setdefault("properties", {})
+        sanitize_tool_schema(tool)
     return tools
 ```
 
-For required fields with missing schemas, restore their definitions from the tool contract before binding. Follow the user-identity sample for per-user OAuth. On tool discovery or invocation, handle `-32006` by extracting the URL from the nested `CONSENT_REQUIRED` error (see [error shape](#handling-consent_required)). Surface the consent link to the affected user in the response; retry only after consent. Preserve unrelated errors.
+**Schema sanitization:** Ensure object schemas have `properties`. For required fields with missing definitions, restore them from the tool contract before binding.
+
+Follow the user-identity sample for per-user OAuth. On tool discovery or invocation, handle `-32006` by extracting the URL from the nested `CONSENT_REQUIRED` error (see [error shape](#handling-consent_required)). Surface the consent link to the affected user in the response; retry only after consent. When the user supplies a consent error, show the user-facing authorization link with the actual URL extracted from that error. Preserve unrelated errors.
 
 ## Troubleshooting
 
