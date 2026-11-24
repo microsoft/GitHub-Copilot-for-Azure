@@ -549,8 +549,8 @@ stimuli:
           required:
             - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
               command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
-  - name: "Create LangGraph hosted Foundry agent"
-    prompt: "Create a LangGraph hosted agent for Foundry in Python."
+  - name: "Create LangGraph hosted agent"
+    prompt: "Create a LangGraph hosted agent in Python."
     tags:
       type: integration
       tier: full
