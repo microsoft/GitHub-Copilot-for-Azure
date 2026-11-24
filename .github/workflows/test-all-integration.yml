@@ -140,6 +140,19 @@ jobs:
       test-pattern: ${{ needs.resolve-inputs.outputs.deploy-test-pattern }}
       no-skills: ${{ inputs.no-skills || false }}
 
+  langchain-hosting:
+    name: Integration - Foundry LangChain hosting (no Azure credentials)
+    needs: setup
+    if: contains(fromJSON(needs.setup.outputs.matrix), 'azure-skills/microsoft-foundry')
+    permissions:
+      contents: read
+      copilot-requests: write
+    uses: ./.github/workflows/eval.yml
+    with:
+      suite: langchain-hosting
+      model-override: ${{ inputs.model-override || '' }}
+      no-skills: ${{ inputs.no-skills || false }}
+
   test:
     name: Integration – ${{ matrix.skill }}
     needs: [resolve-inputs, setup]
@@ -256,7 +269,9 @@ jobs:
         run: |
           PLUGIN_DIR="${SKILL%%/*}"
           SKILL_NAME="${SKILL##*/}"
-          npm run test:vally -- --plugin $PLUGIN_DIR --skill $SKILL_NAME --workers 2
+          # The LangChain hosting fixtures run in the credential-free job.
+          npm run test:vally -- --plugin "$PLUGIN_DIR" --skill "$SKILL_NAME" --workers 2 \
+            --tag 'feature!=langchain-hosting-p0'
 
       - name: Generate skill report
         if: always()

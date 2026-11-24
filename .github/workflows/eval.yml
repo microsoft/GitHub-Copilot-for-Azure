@@ -18,6 +18,18 @@ on:
           - triggers
           - integration
           - smoke
+          - langchain-hosting
+  workflow_call:
+    inputs:
+      suite:
+        required: true
+        type: string
+      model-override:
+        type: string
+        default: ""
+      no-skills:
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -30,6 +42,7 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -57,18 +70,6 @@ jobs:
       - name: Lint skill and eval specs
         run: npx --yes @microsoft/vally-cli@^0.12.0 lint plugins/ --eval-spec evals/ --strict --grader-plugin ./tests/vally/vally-graders.ts
 
-      - name: Determine suite
-        if: github.event_name != 'pull_request'
-        id: suite
-        shell: bash
-        run: |
-          set -e
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "name=${{ inputs.suite || 'full' }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "name=full" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Run smoke evaluations
         if: >-
           github.event_name == 'pull_request' &&
@@ -84,12 +85,30 @@ jobs:
           COPILOT_GITHUB_TOKEN: ${{ github.token }}
 
       - name: Run evaluations
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && inputs.suite != 'langchain-hosting'
         working-directory: tests
         run: |
           npm run test:vally -- \
-            --suite ${{ steps.suite.outputs.name }} \
+            --suite "$EVAL_SUITE" \
             --junit \
             --threshold 0.8
         env:
           COPILOT_GITHUB_TOKEN: ${{ github.token }}
+          EVAL_SUITE: ${{ inputs.suite || 'full' }}
+
+      - name: Run LangChain hosting evaluations without Azure
+        if: inputs.suite == 'langchain-hosting'
+        working-directory: tests
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ github.token }}
+          NO_SKILLS: ${{ inputs.no-skills && 'true' || '' }}
+          MODEL_OVERRIDE: ${{ inputs.model-override }}
+          VALLY_RUNNER_DISABLE_AZURE_MCP: "true"
+        run: npm run test:vally -- --suite langchain-hosting --junit
+
+      - name: Upload LangChain hosting results
+        if: always() && inputs.suite == 'langchain-hosting'
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: foundry-langchain-hosting-results
+          path: tests/results/*/eval-results.*

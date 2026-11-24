@@ -127,6 +127,13 @@ stimuli:
       area: migrate
     constraints:
       max_turns: 10
+    rubric:
+      - |
+        Identifies the existing graph binding in langgraph.json as evidence
+        that the LangGraph framework is already resolved.
+      - &noFrameworkQuestion |
+        Does not ask the user to select, name, or confirm a framework in the
+        final response. Asking for an unresolved project or model is fine.
     graders:
       - type: skill-invocation
         config: { required: [microsoft-foundry] }
@@ -137,13 +144,20 @@ stimuli:
               pattern: 're-host\.md'
             - name: *readTool
               pattern: 'langchain-langgraph-hosting\.md'
-          disallowed: *liveCommands
+            - name: *readTool
+              pattern: '\blanggraph\.json\b'
+              result: '\./main\.py:graph'
+          disallowed: &noCloudOrQuestions
+            - name: '(?i)^(bash|powershell|pwsh|run_in_terminal)$'
+              command: '(?i)\bazd?(?:\.exe)?\s+'
+            - name: '(?i)^(ask_user|askuserquestion|request_user_input)$'
       - type: output-matches
         config:
           pattern: *frameworkResolved
       - type: output-matches
         config:
           pattern: '(?s)(?=.*langgraph/responses/10-run\b)(?=.*startupCommand)(?=.*entryPoint)(?=.*langchain_azure_ai\.agents\.hosting\.run\s+--protocol\s+responses\b)'
+      - *requiredRubric
       - type: diff-empty
 
   - name: "Re-host from dependencies with additive Invocations configuration"
@@ -161,6 +175,30 @@ stimuli:
       area: migrate
     constraints:
       max_turns: 12
+    rubric:
+      - |
+        Identifies the existing LangGraph dependency in requirements.txt
+        as evidence that the framework is already resolved.
+      - *noFrameworkQuestion
+      - |
+        The generated azure.yaml has a Python hosted agent at the repository
+        root. A single services entry has host: azure.ai.agent, kind: hosted,
+        language: python, project: . (or equivalent), and an invocations item
+        under protocols. Its startupCommand runs
+        `python -m langchain_azure_ai.agents.hosting.run --protocol invocations`
+        (a `uv run` prefix is fine), and its codeConfiguration.entryPoint is
+        `-m langchain_azure_ai.agents.hosting.run --protocol invocations`.
+        Reject fields at the top level or spread across services.
+      - |
+        The generated langgraph.json is valid JSON, with "." in the dependencies
+        array and a graph mapped to "./main.py:graph". The graph name can vary.
+      - |
+        The requirements.txt edit preserves the existing `langgraph>=1,<2`
+        dependency and adds `langchain-azure-ai` with both `hosting` and
+        `opentelemetry` extras. The version constraint permits installation
+        and excludes releases below 1.2.9. Accept higher floors (such as
+        `>=1.2.10`) and compatible pins; reject lower floors, missing extras,
+        and contradictory constraints.
     graders:
       - type: skill-invocation
         config: { required: [microsoft-foundry] }
@@ -169,35 +207,31 @@ stimuli:
           required:
             - name: *readTool
               pattern: 'langchain-langgraph-hosting\.md'
-          disallowed:
-            - name: '(?i)^(bash|powershell|pwsh|run_in_terminal)$'
-              command: '(?i)\bazd?(?:\.exe)?\s+'
-            - name: '(?i)^(ask_user|askuserquestion|request_user_input)$'
-              pattern: '(?i)framework'
+            - name: *readTool
+              pattern: '\brequirements\.txt\b'
+              result: 'langgraph>=1,<2'
+          disallowed: *noCloudOrQuestions
       - type: output-matches
         config:
           pattern: 'langgraph/invocations/03-run\b'
-      - type: file-matches
+      - type: file-exists
+        config: { path: azure.yaml }
+      - type: file-exists
+        config: { path: langgraph.json }
+      - type: file-exists
+        config: { path: requirements.txt }
+      - type: diff-not-contains
         config:
-          path: azure.yaml
-          pattern: '(?ms)(?=.*^\s*startupCommand:[^\r\n]*langchain_azure_ai\.agents\.hosting\.run\s+--protocol\s+invocations\b)(?=.*^\s*entryPoint:[^\r\n]*-m\s+langchain_azure_ai\.agents\.hosting\.run\s+--protocol\s+invocations\b)(?=.*^\s*(?:-\s*)?protocol:\s*["'']?invocations\b)'
-      - type: file-matches
+          pattern: '(?m)^diff --git (?:"?a/main\.py"? .*|.* "?b/main\.py"?)$'
+      - type: prompt
         config:
-          path: requirements.txt
-          pattern: '(?ms)(?=.*^langgraph>=1,<2\s*$)(?=.*^langchain-azure-ai\[(?:hosting,\s*opentelemetry|opentelemetry,\s*hosting)\]>=1\.2\.9\b)'
-      - type: run-command
-        config:
-          command: node
-          args:
-            - -e
-            - |
-              const assert = require("node:assert/strict");
-              const fs = require("node:fs");
-              const cp = require("node:child_process");
-              const config = JSON.parse(fs.readFileSync("langgraph.json", "utf8"));
-              assert(config.dependencies.includes("."));
-              assert(Object.values(config.graphs).includes("./main.py:graph"));
-              assert.equal(fs.readFileSync("main.py", "utf8"), cp.execFileSync("git", ["show", "HEAD:main.py"], { encoding: "utf8" }));
+          scoring: binary
+          threshold: 1
+          evidence: [trajectory, diff]
+          prompt: |
+            Pass only if every rubric criterion is met. Judge the generated
+            configuration and dependency edit from the workspace diff. Do not
+            credit claims or examples in the answer in place of file changes.
 
   - name: "Detect the framework of an already hosted agent from pyproject.toml"
     agent_environment:
@@ -358,6 +392,21 @@ stimuli:
       area: troubleshoot
     constraints:
       max_turns: 10
+    rubric:
+      - |
+        Diagnoses the failing request as the hosted container's ChatOpenAI call
+        to the project's OpenAI endpoint. Distinguishes its managed identity
+        (22222222-2222-4222-8222-222222222222) from the already authorized
+        invocation caller (11111111-1111-4111-8111-111111111111).
+      - |
+        Both the `az role assignment list` check and the conditional
+        `az role assignment create --role "Foundry User"` fix target that
+        managed identity and this exact project ARM scope:
+        `/subscriptions/00000000-0000-4000-8000-000000000001/resourceGroups/fixture-rg/providers/Microsoft.CognitiveServices/accounts/fixture-foundry/projects/tickets`.
+        Variables are fine if they resolve to the right values. Mentioning the
+        right identity and scope in prose is insufficient if either command
+        uses the caller or a broader scope. Retries the smoke test only after
+        effective access is confirmed.
     graders:
       - type: skill-invocation
         config: { required: [microsoft-foundry] }
@@ -370,8 +419,7 @@ stimuli:
               pattern: 'langchain-langgraph-hosting\.md'
             - name: *readTool
               pattern: 'session\.log'
+              result: 'ChatOpenAI model request failed inside container'
           disallowed: *liveCommands
-      - type: output-matches
-        config:
-          pattern: '(?s)(?=.*az role assignment list\b)(?=.*az role assignment create\b.*--role\s+["'']Foundry User["''])(?=.*22222222-2222-4222-8222-222222222222)(?=.*/providers/Microsoft\.CognitiveServices/accounts/fixture-foundry/projects/tickets\b)'
+      - *requiredRubric
       - type: diff-empty
