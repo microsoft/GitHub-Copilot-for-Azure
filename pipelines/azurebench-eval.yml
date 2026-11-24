@@ -28,7 +28,7 @@ parameters:
       - ours
       - msbench
   - name: useRunIdentity
-    displayName: Give the run an Azure identity (BYOI, needs capi=msbench)
+    displayName: Give the run an Azure identity (BYOI)
     type: boolean
     default: false
   - name: authorizeCapi

@@ -6,7 +6,8 @@
 # Environment:
 #   BENCHMARK, MODEL, BACKEND, PACKAGE_DIR, RESULTS_DIR
 #   CAPI               ours    = our CAPI integration: GITHUB_COPILOT_INTEGRATION_ID, CAPI_HMAC_KEY
-#                      msbench = MSBench's workflow-managed autodev-test credentials
+#                      msbench = MSBench's autodev-test integration through the CES proxy
+#   CES_PROXY_BYPASS is never used; it is always unset.
 #   USE_RUN_IDENTITY   True or False. True needs RUN_IDENTITY_CLIENT_ID,
 #                      RUN_IDENTITY_TENANT_ID and RUN_IDENTITY_SUBSCRIPTION_ID.
 # Exit codes: 0 all tasks resolved, 1 the run or a task failed, 2 missing or invalid input.
@@ -47,17 +48,12 @@ args=(
 
 case "$CAPI" in
   ours)
-    # MSBench only allows our BYOI identity with CES_PROXY_BYPASS=true, and with
-    # that flag MSBench rejects our own CAPI_HMAC_KEY.
-    if [ "$USE_RUN_IDENTITY" = "True" ]; then
-      fail "CAPI=ours cannot be used with the run identity (BYOI); use CAPI=msbench."
-    fi
     require GITHUB_COPILOT_INTEGRATION_ID CAPI_HMAC_KEY
     args+=(--encrypted-env GITHUB_COPILOT_INTEGRATION_ID CAPI_HMAC_KEY)
     ;;
   msbench)
+    # No credentials: runner.sh uses the CES proxy with MSBench's autodev-test integration.
     unset GITHUB_COPILOT_INTEGRATION_ID CAPI_HMAC_KEY
-    export CES_PROXY_BYPASS=true
     ;;
   *) fail "CAPI must be ours or msbench." ;;
 esac

@@ -80,23 +80,30 @@ default it is private (`private` parameter); grant readers with
    before reading secrets. The run waits for completion, prints the run ID,
    and publishes `events.jsonl` and `report.json` as the `results` artifact.
 
-`capi` picks the CAPI credentials:
+`capi` picks the CAPI credentials. `CES_PROXY_BYPASS` is never used;
+`run-eval.sh` always unsets it.
 
 - `ours` (default): loads our integration ID and HMAC key from
   `azurebench-kv` and sends them with
-  `--encrypted-env GITHUB_COPILOT_INTEGRATION_ID CAPI_HMAC_KEY`. Confirm model
-  access and billing with the integration owner.
-- `msbench`: sets `CES_PROXY_BYPASS=true` so the MSBench workflow supplies its
-  own `autodev-test` credentials. No Key Vault. Use an `*-autodev-test`
-  `model` label.
+  `--encrypted-env GITHUB_COPILOT_INTEGRATION_ID CAPI_HMAC_KEY`. The agent
+  calls CAPI directly. Confirm model access and billing with the integration
+  owner.
+- `msbench`: sends no credentials. Because `CAPI_HMAC_KEY` is absent,
+  `agent/runner.sh` uses the CES proxy with MSBench's `autodev-test`
+  integration: the same endpoint, integration and `az` token scope MSBench
+  generates for its built-in `msbench-default-index` (a custom runner skips
+  that generation). No Key Vault. Use an `*-autodev-test` `model` label.
 
 `useRunIdentity` (off by default) gives the run our Azure identity (BYOI).
-MSBench only allows that identity with `CES_PROXY_BYPASS=true`, and rejects our
-own `CAPI_HMAC_KEY` together with that flag, so BYOI currently needs
-`capi=msbench`; `run-eval.sh` stops early otherwise. BYOI also sets
-`harbor.keepIdentityForRun=true`, which keeps the identity logged in while
-agent and grading code run. MSBench says this tag is temporary (until after
-November 2026); the Functions test depends on it.
+MSBench confirmed our identity is allowlisted, so BYOI needs no bypass and
+works with either option. BYOI also sets `harbor.keepIdentityForRun=true`,
+which keeps the identity logged in while agent and grading code run. MSBench
+says this tag is temporary (until after November 2026); the Functions test
+depends on it.
+
+Status: neither BYOI option has completed without bypass yet. Validate both
+with local `msbench-cli` submissions first (proxy routing, `az` in the
+container, model access and grading); only then use `ours` in pipeline runs.
 
 Models: `model` is the MSBench label; with our custom runner it does not
 configure the endpoint. `copilotModel` is what the Copilot CLI agent actually
