@@ -7,6 +7,8 @@
 Review the security warning and Azure setup requirements below before installing.
 The installable plugin name is **`azure`**, not its source directory name `azure-skills`.
 
+Install the plugin using one of the methods below, or via the [Awesome Copilot catalog page](https://awesome-copilot.github.com/plugin/azure/).
+
 ### VS Code
 
 [Install in VS Code](vscode://chat-plugin/install?source=github%2Fawesome-copilot&plugin=azure)
@@ -15,33 +17,17 @@ The installable plugin name is **`azure`**, not its source directory name `azure
 
 [Install in GitHub Copilot app](ghapp://plugins/install?source=azure%40awesome-copilot)
 
-If a client link does not open, use the [Azure catalog page](https://awesome-copilot.github.com/plugin/azure/) to choose your client.
-
 ### Copilot CLI — terminal
 
-Run in Bash or PowerShell:
+Run in your terminal:
 
 ```text
 copilot plugin install azure@awesome-copilot
 ```
 
-### Alternative: direct Microsoft marketplace
+### Claude Code
 
-In an interactive Copilot CLI or Claude Code session, run these slash commands
-(not Bash or PowerShell commands):
-
-```text
-/plugin marketplace add microsoft/azure-skills
-/plugin install azure@azure-skills
-```
-
-Awesome Copilot pins published packages; its version may differ from the direct
-Microsoft marketplace. Update each installed copy through its original marketplace
-(`awesome-copilot` or `azure-skills`). Choose one route: avoid duplicate plugin
-copies across marketplaces or overlapping skills installed by an extension.
-Client availability, trust prompts, and organization policies may affect installation.
-Confirm the plugin is enabled and its skills are visible, then start a fresh conversation.
-Installation does not authenticate to Azure or grant Azure permissions.
+Run `/plugin install azure@claude-plugins-official` in Claude Code.
 
 ## Security
 
