@@ -29,6 +29,8 @@ Before choosing a hosting path or sample, read the walkthrough's [local-hosting 
 
 Before declaring the project deployable, check its actual entry points and uploaded runtime dependency inputs, including exclusions, against the recorded contract. A local environment or startup check alone does not establish a complete upload. Execute available checks and report blocked checks rather than claiming they passed.
 
+Check the submitted agent service definition against the deployment preparation example linked above or a current generated definition for the chosen deployment mode. Verify the service kind, protocol entries and deployment configuration; parsing `azure.yaml` or starting the application alone does not validate the agent definition. When available, run `azd ai agent doctor --local-only` from the submitted project and inspect the per-service agent-definition result separately from environment setup. Fix definition failures and report skipped or unavailable checks without requiring cloud sign-in for this local check.
+
 When including a local `azd ai agent run` path, verify the submitted startup command and interpreter selection, not just an equivalent command in a separate environment. For a Python launcher, use the prepared local runtime and keep any uv Python pin aligned with the selected hosted runtime.
 
 For retained artifacts, verify a later request can read an artifact written by an earlier request without recreating it; use a different hosted session if the contract requires that lifetime. Startup, a successful first response, and an unchanged conversation ID are not evidence of state restoration. If external prerequisites block verification, keep the required state construction and report the blocked check.
