@@ -25,9 +25,13 @@ Before choosing a hosting path or sample, read the walkthrough's [local-hosting 
 | The selected protocol's default mapping preserves the application's required interface, and any required state remains with the correct owner | **Configuration-only** |
 | Required input, configuration, operations or runtime capabilities are not covered by that mapping | **Host server integration** or another verified supported entry point |
 
+Choose the protocol from the required target caller and operations, not from the source framework's server APIs alone. When no target protocol is specified and Responses can preserve the required caller workflow, prefer Responses and reuse the existing graph and tools. Keep required state and artifact access in the mapping; do not recreate every development-server endpoint or add a custom RPC surface merely because the source server exposes one. If a required client operation or compatibility contract cannot be preserved this way, explain the gap and choose a supported boundary that meets it.
+
 ### 3. Check the delivered project against that contract
 
 Before declaring the project deployable, check its actual entry points and uploaded runtime dependency inputs, including exclusions, against the recorded contract. A local environment or startup check alone does not establish a complete upload. Execute available checks and report blocked checks rather than claiming they passed.
+
+Verify which uploaded dependency declaration the selected remote builder actually consumes. Follow the deployment preparation guidance for that builder, including files it expects and development manifests that could select a different build path. Do not infer that a local lockfile, editable install or virtual environment works remotely; verify the upload has a complete runtime declaration and a startup command that works with the installed runtime, not a path to a development environment.
 
 Check the submitted agent service definition against the deployment preparation example linked above or a current generated definition for the chosen deployment mode. Verify the service kind, protocol entries and deployment configuration; parsing `azure.yaml` or starting the application alone does not validate the agent definition. When available, run `azd ai agent doctor --local-only` from the submitted project and inspect the per-service agent-definition result separately from environment setup. Fix definition failures and report skipped or unavailable checks without requiring cloud sign-in for this local check.
 
