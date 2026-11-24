@@ -1,0 +1,14 @@
+name: tickets
+services:
+  tickets:
+    host: azure.ai.agent
+    kind: hosted
+    name: tickets
+    project: src/tickets
+    language: python
+    protocols:
+      - protocol: responses
+        version: 2.0.0
+    codeConfiguration:
+      runtime: python_3_13
+      entryPoint: main.py

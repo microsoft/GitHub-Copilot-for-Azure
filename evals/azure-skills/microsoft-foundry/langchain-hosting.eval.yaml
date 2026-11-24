@@ -12,6 +12,7 @@ defaults:
   timeout: "2m"
   executor: copilot-sdk-agent-runner
   model: claude-sonnet-5
+  judge_model: gpt-6.1-sol
 
 scoring:
   threshold: 1
@@ -19,7 +20,7 @@ scoring:
 stimuli:
   - name: "Offer a framework for greenfield Python"
     prompt: |
-      I want to build a Python hosted agent from scratch. Before scaffolding, list only the decisions you still need from me, with choices and defaults. If the framework needs a decision, put its choices and default together on a line starting with `Framework:`.
+      I want to build a Python hosted agent from scratch. Before scaffolding, list only the decisions you still need from me, with choices and defaults.
     tags:
       id: langchain-python-framework-choice
       type: integration
@@ -30,6 +31,13 @@ stimuli:
         {"mode":"append","content":"This is an offline planning exercise. Any dependency and environment preflight checks have already succeeded; do not rerun them. Do not run setup or cloud commands, access the network, or modify files. Put any questions in the response instead of pausing for interactive input."}
     constraints:
       max_turns: 8
+    rubric:
+      - |
+        Offers a Python framework decision with Microsoft Agent Framework (MAF)
+        as the default, LangChain and LangGraph as one option using
+        langchain-azure-ai, and a Bring Your Own / Custom option. Accept equivalent
+        wording and any option order. Listing LangChain and LangGraph as
+        separate choices does not meet the criterion.
     graders:
       - type: skill-invocation
         config: { required: [microsoft-foundry] }
@@ -41,9 +49,12 @@ stimuli:
           disallowed: &liveCommands
             - name: '(?i)^(bash|powershell|pwsh|run_in_terminal)$'
               command: '(?i)\bazd?(?:\.exe)?\s+'
-      - type: output-matches
+      - &requiredRubric
+        type: prompt
         config:
-          pattern: '(?i)Framework(?:\*\*)?:(?=[^\r\n]*LangChain[^\r\n]*LangGraph)(?=[^\r\n]*(Bring Your Own|BYO|Custom))(?=[^\r\n]*(?:(?:Microsoft Agent Framework|MAF)[\s*,:(-]*(?:MAF[\s*,:-]*)?default\b|default[\s*:-]*(?:Microsoft Agent Framework|MAF)))'
+          scoring: binary
+          threshold: 1
+          prompt: Pass only if the final answer satisfies every rubric criterion.
       - type: diff-empty
 
   - name: "Skip the framework choice for .NET container hosting"
@@ -188,6 +199,50 @@ stimuli:
               assert(Object.values(config.graphs).includes("./main.py:graph"));
               assert.equal(fs.readFileSync("main.py", "utf8"), cp.execFileSync("git", ["show", "HEAD:main.py"], { encoding: "utf8" }));
 
+  - name: "Detect the framework of an already hosted agent from pyproject.toml"
+    agent_environment:
+      files:
+        - src: fixture/langchain-hosting/existing-hosted
+          dest: .
+    prompt: |
+      I want to update the ticket-routing logic of our Python agent that's already hosted on Microsoft Foundry. This checkout contains just its deployment and package manifests. Inspect them and explain how you'd continue development and what decisions you still need from me. Give a plan only; don't change any files.
+    tags:
+      id: langchain-pyproject-existing-hosted
+      type: integration
+      tier: full
+      cost: llm
+      area: create
+    constraints:
+      max_turns: 10
+    rubric:
+      - |
+        Identifies the existing LangChain / LangGraph stack from the
+        langchain-azure-ai dependency in the hosted service's pyproject.toml,
+        without asking the user to choose or confirm the framework.
+      - |
+        Continues development of the existing hosted agent in place, preserving
+        its current hosting configuration. Does not propose new scaffolding,
+        re-hosting, or changing frameworks.
+    graders:
+      - type: skill-invocation
+        config: { required: [microsoft-foundry] }
+      - type: tool-calls
+        config:
+          required:
+            - name: *readTool
+              pattern: 'create-hosted\.md'
+            - name: *readTool
+              pattern: 'azure\.yaml'
+              result: 'azure\.ai\.agent'
+            - name: *readTool
+              pattern: 'pyproject\.toml'
+              result: 'langchain-azure-ai'
+            - name: *readTool
+              pattern: 'langchain-langgraph-hosting\.md'
+          disallowed: *liveCommands
+      - *requiredRubric
+      - type: diff-empty
+
   - name: "Use the LangGraph Toolbox SDK and surface OAuth consent"
     agent_environment:
       files:
@@ -245,6 +300,47 @@ stimuli:
       - type: output-matches
         config:
           pattern: '(?s)(?=.*AIProjectClient)(?=.*DefaultAzureCredential)(?=.*get_bearer_token_provider)(?=.*https://ai\.azure\.com/\.default)(?=.*base_url\s*=)(?=.*api_key\s*=)(?=.*use_responses_api\s*=\s*True)(?=.*output_version\s*=\s*["'']responses/v1["''])(?=.*enable_auto_tracing\(\))(?=.*OTEL_AUTO_CONFIGURE_AZURE_MONITOR\s*[:=]\s*["'']true["''])(?=.*gen_ai\.response\.id)'
+      - type: diff-empty
+
+  - name: "Check the hosted agent identity before the first remote smoke test"
+    prompt: |
+      Our `tickets` Python LangGraph hosted agent was just deployed to Microsoft Foundry. Its Responses endpoint is active, but we haven't sent a request yet. It uses ChatOpenAI to call the project's OpenAI endpoint from inside the container. Give me the verification steps in order, including the commands and anything that would block the first smoke test. Do not run anything.
+
+      Deployment handoff:
+      - Foundry project ARM ID: `/subscriptions/00000000-0000-4000-8000-000000000001/resourceGroups/fixture-rg/providers/Microsoft.CognitiveServices/accounts/fixture-foundry/projects/tickets`
+      - Agent managed identity principal ID: `22222222-2222-4222-8222-222222222222`
+      - Deployment caller principal ID: `11111111-1111-4111-8111-111111111111`
+    tags:
+      id: langchain-pre-smoke-rbac
+      type: integration
+      tier: full
+      cost: llm
+      area: deploy
+    constraints:
+      max_turns: 10
+    rubric:
+      - |
+        Before any remote `azd ai agent invoke`, gives an `az role assignment list`
+        check for the effective `Foundry User` role on the supplied Foundry project
+        ARM scope. The check targets the agent's managed identity, not the deployment
+        caller. Variables are acceptable if bound to the supplied values.
+      - |
+        If access is missing or has not been verified, blocks the smoke invocation.
+        For a missing role, gives the `az role assignment create --role "Foundry User"`
+        remediation for the same principal and project scope, to be performed by
+        an authorized operator. Recommends invoking only after effective access is confirmed.
+    graders:
+      - type: skill-invocation
+        config: { required: [microsoft-foundry] }
+      - type: tool-calls
+        config:
+          required:
+            - name: *readTool
+              pattern: 'deploy[\\/]deploy\.md'
+            - name: *readTool
+              pattern: 'langchain-langgraph-hosting\.md'
+          disallowed: *liveCommands
+      - *requiredRubric
       - type: diff-empty
 
   - name: "Diagnose the container principal behind model 401"
