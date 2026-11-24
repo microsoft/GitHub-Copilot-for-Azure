@@ -47,7 +47,7 @@ export function prBody(template: string, discovery: Discovery): string {
     "Validation passed:",
     "- `cd scripts && npm test -- src/__tests__/generate-azure-mcp-allowlist.test.ts src/__tests__/azure-mcp-publication.test.ts` (passed)",
     "- `cd scripts && npm run typecheck` (passed)",
-    "- `cd scripts && npm run lint -- src/generate-azure-mcp-allowlist.ts src/azure-mcp-publication.ts src/__tests__/generate-azure-mcp-allowlist.test.ts src/__tests__/azure-mcp-publication.test.ts` (passed)",
+    "- `cd scripts && npm run lint -- src/generate-azure-mcp-allowlist.ts src/azure-mcp-publication.ts src/shared/mcp-config.cts src/__tests__/generate-azure-mcp-allowlist.test.ts src/__tests__/azure-mcp-publication.test.ts` (passed)",
     "",
     "The plugin build, `cd tests && npm test`, and skill routing tests were not run by this workflow. No skill descriptions, build packaging, or telemetry hook wiring are changed.",
   ].join("\n");

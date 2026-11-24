@@ -104,7 +104,7 @@ jobs:
         run: |
           npm test -- src/__tests__/generate-azure-mcp-allowlist.test.ts src/__tests__/azure-mcp-publication.test.ts
           npm run typecheck
-          npm run lint -- src/generate-azure-mcp-allowlist.ts src/azure-mcp-publication.ts src/__tests__/generate-azure-mcp-allowlist.test.ts src/__tests__/azure-mcp-publication.test.ts
+          npm run lint -- src/generate-azure-mcp-allowlist.ts src/azure-mcp-publication.ts src/shared/mcp-config.cts src/__tests__/generate-azure-mcp-allowlist.test.ts src/__tests__/azure-mcp-publication.test.ts
       - name: Publish one update PR
         env:
           GH_TOKEN: ${{ steps.bot.outputs.token }}

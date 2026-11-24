@@ -159,6 +159,11 @@ describe("Gulp allowlist packaging", () => {
       join(REPO_ROOT, "scripts", "src", "plugin-allowlists.cts"),
       join(root, "scripts", "src", "plugin-allowlists.cts"),
     );
+    mkdirSync(join(root, "scripts", "src", "shared"), { recursive: true });
+    copyFileSync(
+      join(REPO_ROOT, "scripts", "src", "shared", "mcp-config.cts"),
+      join(root, "scripts", "src", "shared", "mcp-config.cts"),
+    );
     symlinkSync(
       join(REPO_ROOT, "node_modules"),
       join(root, "node_modules"),
