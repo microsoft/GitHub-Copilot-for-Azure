@@ -53,7 +53,7 @@ azd ai agent invoke "list the tools you have access to"
 
 ## LangChain / LangGraph SDK
 
-Set `TOOLBOX_NAME` to the existing toolbox name in the agent service's environment. In integration snippets for either sample, show the direct SDK constructor and the `sanitize_tool_schema` helper below. Load the tools in the async graph factory before passing them to `create_agent`:
+Set `TOOLBOX_NAME` to the existing toolbox name in the agent service's environment. In integration snippets for either sample, keep the direct SDK constructor with the required `os.environ["TOOLBOX_NAME"]` lookup and no hard-coded fallback. Include the `sanitize_tool_schema` helper and load the tools in the async graph factory before passing them to `create_agent`:
 
 ```python
 import os
