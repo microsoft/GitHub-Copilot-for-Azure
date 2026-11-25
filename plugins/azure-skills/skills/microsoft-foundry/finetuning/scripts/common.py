@@ -74,17 +74,18 @@ def _validate_azure_endpoint(endpoint, name="endpoint"):
         or port not in (None, 443)
         or parsed.username is not None
         or parsed.password is not None
-        or parsed.query
-        or parsed.fragment
+        or "?" in endpoint
+        or "#" in endpoint
     ):
         raise _EndpointValidationError(message)
-    return parsed.scheme, hostname, port or 443
+    return parsed.scheme, hostname, 443 if port is None else port
 
 
 def _check_request_origin(url, expected_origin):
     try:
         parsed = urlsplit(str(url))
-        origin = parsed.scheme, parsed.hostname, parsed.port or 443
+        port = parsed.port
+        origin = parsed.scheme, parsed.hostname, 443 if port is None else port
     except ValueError as exc:
         raise _EndpointValidationError("Invalid authenticated request URL.") from exc
     if (

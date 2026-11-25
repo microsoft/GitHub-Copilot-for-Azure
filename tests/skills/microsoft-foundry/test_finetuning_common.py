@@ -106,11 +106,14 @@ class FineTuningAuthenticationTests(unittest.TestCase):
             "https://unit-test-services.ai.azure.com/",
             "https://127.0.0.1/",
             "https://unit-test.openai.azure.com:8443/",
+            "https://unit-test.openai.azure.com:0/",
             "https://user:password@unit-test.openai.azure.com/",
             "https://@unit-test.openai.azure.com/",
             "https://unit-test.openai.azure.com\\@example.invalid/",
             "https://unit-test.openai.azure.com/?api-key=example",
+            "https://unit-test.openai.azure.com/?",
             "https://unit-test.openai.azure.com/#fragment",
+            "https://unit-test.openai.azure.com/#",
             "https://unit-test.openai.azure.com:\n443/",
             "https://unit-test.openai.azure.com:invalid/",
             "https://unit-test.openai.azure.com./",
@@ -188,13 +191,14 @@ class FineTuningAuthenticationTests(unittest.TestCase):
 
     def test_blocks_absolute_url_overrides_even_to_another_azure_resource(self):
         for options, method in MODES:
-            for target in (
-                "https://example.invalid/models",
-                "https://another.openai.azure.com/openai/v1/models",
-                "http://unit-test.services.ai.azure.com/models",
-            ):
-                with self.subTest(method=method, target=target):
-                    with self.client(options) as (client, _, received):
+            with self.client(options) as (client, _, received):
+                for target in (
+                    "https://example.invalid/models",
+                    "https://another.openai.azure.com/openai/v1/models",
+                    "http://unit-test.services.ai.azure.com/models",
+                    f"https://{client.base_url.host}:0/models",
+                ):
+                    with self.subTest(method=method, target=target):
                         with self.assertRaises(
                             (openai.APIConnectionError, common._EndpointValidationError),
                         ) as error:
@@ -232,10 +236,12 @@ class FineTuningAuthenticationTests(unittest.TestCase):
 
     def test_rest_submission_rejects_untrusted_endpoints_before_sending(self):
         with patch.object(submit_training.requests, "post") as post:
-            with self.assertRaises(common._EndpointValidationError):
-                submit_training.submit_sft_rest(
-                    "https://example.invalid/", KEY, "model", "file-test", None,
-                )
+            for endpoint in ("https://example.invalid/", AZURE_ENDPOINT + "?", AZURE_ENDPOINT + "#"):
+                with self.subTest(endpoint=endpoint):
+                    with self.assertRaises(common._EndpointValidationError):
+                        submit_training.submit_sft_rest(
+                            endpoint, KEY, "model", "file-test", None,
+                        )
             post.assert_not_called()
 
     def test_rest_submission_does_not_forward_api_key_on_redirect(self):
