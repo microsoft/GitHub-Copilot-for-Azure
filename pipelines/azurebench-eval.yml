@@ -15,7 +15,7 @@ parameters:
   - name: copilotModel
     displayName: Copilot CLI model the agent uses (COPILOT_AGENT_MODEL)
     type: string
-    default: sweagent-capi:claude-opus-4.5
+    default: sweagent-capi:claude-opus-5.5
   - name: backend
     displayName: MSBench backend
     type: string

@@ -92,7 +92,9 @@ default it is private (`private` parameter); grant readers with
   `agent/runner.sh` uses the CES proxy with MSBench's `autodev-test`
   integration: the same endpoint, integration and `az` token scope MSBench
   generates for its built-in `msbench-default-index` (a custom runner skips
-  that generation). No Key Vault. Use an `*-autodev-test` `model` label.
+  that generation). No Key Vault. Use an `*-autodev-test` `model` label and
+  set `copilotModel` to `sweagent-capi:claude-opus-4.5` (verified with
+  `autodev-test`; the `claude-opus-5.5` default is not yet).
 
 `useRunIdentity` (off by default) gives the run our Azure identity (BYOI).
 MSBench confirmed our identity is allowlisted, so BYOI needs no bypass and
@@ -101,13 +103,23 @@ which keeps the identity logged in while agent and grading code run. MSBench
 says this tag is temporary (until after November 2026); the Functions test
 depends on it.
 
-Status: neither BYOI option has completed without bypass yet. Validate both
-with local `msbench-cli` submissions first (proxy routing, `az` in the
-container, model access and grading); only then use `ours` in pipeline runs.
+Status (local `msbench-cli` submissions, no bypass):
+
+- `msbench` + BYOI: passed (run 2026112402239264, `claude-opus-4.5`).
+- `ours` without BYOI: the agent reached CAPI with `claude-opus-5.5`
+  (run 2026112582202760); deployment failed only for lack of an identity.
+- `ours` + BYOI: fails before the agent starts. MSBench's task checkout gets an
+  empty GitHub App `private-key` and the image fallback is not found (runs
+  2026112579687372, 2026112582191068). Needs MSBench to investigate.
+
+Use `ours` in pipeline runs once `ours` + BYOI passes locally.
 
 Models: `model` is the MSBench label; with our custom runner it does not
 configure the endpoint. `copilotModel` is what the Copilot CLI agent actually
-uses (`COPILOT_AGENT_MODEL` in `model.env`). Keep them consistent.
+uses (`COPILOT_AGENT_MODEL` in `model.env`). Keep them consistent. With
+`ours`, `copilotModel` must be a model our integration can use (its CAPI
+`/models` list): the default `claude-opus-5.5` is; `claude-opus-4.5` is not
+and fails with HTTP 400.
 
 Encryption protects transport, not against the agent and benchmark code,
 which can read the credentials and use the run identity. Use only approved,

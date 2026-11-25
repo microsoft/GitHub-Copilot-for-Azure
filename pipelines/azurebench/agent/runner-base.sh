@@ -5,7 +5,7 @@
 set -e
 
 # Model-specific configuration
-if [ -z "$COPILOT_AGENT_MODEL" ]; then export COPILOT_AGENT_MODEL=sweagent-capi:claude-opus-4.5; fi
+if [ -z "$COPILOT_AGENT_MODEL" ]; then export COPILOT_AGENT_MODEL=sweagent-capi:claude-opus-5.5; fi
 
 # Change to the agent directory
 cd "$AGENT_DIR"
