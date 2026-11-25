@@ -53,7 +53,7 @@ Capture the selected sample's `manifestUrl`.
 
 You should pick only one sample for `azd ai agent init`, but you can browse multiple samples relevant to the user's task as code references.
 
-> **Important:** When users want to create or continue working on LangChain/LangGraph agents, you MUST read and follow [LangChain and LangGraph hosting](references/langchain-langgraph-hosting.md) before selecting a sample or changing agent code.
+> **Important:** For LangChain / LangGraph, follow [LangChain and LangGraph hosting](references/langchain-langgraph-hosting.md) before selecting a sample or editing code. Use the selected sample's module entry point in place of `main.py` when specified.
 
 ## Workflow
 
@@ -107,6 +107,7 @@ Populate each question with the default option below.
 |-------|--------------|----------------|-------|
 | Project / agent name | The user provided one, or the existing code already defines one. | Project: `ai-project-<random>`; agent: the selected sample's agent name | Generate `<random>` using 6-8 lowercase alphanumeric characters. Pass the agent name to `azd ai agent init` with `--agent-name`; it sets the service key and agent name in `azure.yaml`. For a new Foundry project, set the project name after init with `azd env set AZURE_AI_PROJECT_NAME "<project-name>"` before running `azd provision`. |
 | Language | The user provided one, or the existing code already determines it. | Python | Supported languages: Python and .NET. |
+| Framework (Python only) | .NET, the user named a framework or sample, or `pyproject.toml`, `requirements.txt`, or `langgraph.json` resolves it. | Microsoft Agent Framework (MAF) | Offer the default plus both full option labels: **LangChain / LangGraph (`langchain-azure-ai`)** and **Bring Your Own / Custom**. |
 | Subscription | The active azd environment already contains the intended `AZURE_SUBSCRIPTION_ID`. | Active Azure subscription: `<subscription-name>` (`<subscription-id>`) | Resolve both values with `az account show --query "{name:name,id:id}" -o json`; the ID must be a subscription GUID. |
 | Region | The active azd environment already contains the intended `AZURE_LOCATION`, or this change does not provision regional resources. | `northcentralus` | Azure resource location. |
 | Foundry project | The workspace or azd environment is already configured with a Foundry project, or the user provided one. | New Foundry project | Offer a new or existing project. For a new project, do not pass `--project-id`; `azd provision` creates it. For an existing project, use its ARM resource ID with `azd ai agent init --project-id`. |
@@ -236,6 +237,8 @@ Use when the workspace already contains an agent project or source code.
 
 First determine whether the workspace is already a Foundry hosted agent project.
 
+At the agent source root (the service's `project` directory for a hosted agent), check for `langgraph.json` or a direct `langchain`, `langgraph`, or `langchain-azure-ai` dependency (including extras such as `[hosting]`) in `pyproject.toml` or `requirements.txt`. If found, state that LangChain / LangGraph is the resolved framework, even if the exact hosting adapter is unknown, and read [LangChain and LangGraph hosting](references/langchain-langgraph-hosting.md) without re-asking.
+
 - **Existing Foundry hosted agent** -- preserve its project structure, make the requested changes, and continue. For Foundry-specific features, use `azd ai agent sample list` and follow the [azd Sample Selection Guidance](#azd-sample-selection-guidance) to choose a sample for code reference.
 - **Other existing agent** -- infer whether the user wants to re-host it on Foundry and ask only when the intended outcome is unclear. If re-hosting, read and follow [Re-host an existing agent](references/re-host.md), then continue to Step 5.
 
@@ -273,7 +276,7 @@ Flow (only when the user asks you to create the toolbox):
 
 1. Create the **connection** (`azd ai connection create ...`).
 2. Create or update the **toolbox** (`azd ai toolbox create` / `connection add`).
-3. Set the agent env var (`azd env set TOOLBOX_ENDPOINT ...`).
+3. Set the agent env var (`azd env set TOOLBOX_ENDPOINT ...`, or `azd env set TOOLBOX_NAME ...` for LangChain / LangGraph).
 4. Reference it in the agent service's `environmentVariables` in `azure.yaml`.
 5. `azd deploy`.
 

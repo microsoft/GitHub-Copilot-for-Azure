@@ -21,13 +21,97 @@ Prefer configuration-only hosting unless the user explicitly requests custom hos
 
 ## Sample Selection
 
-Use the parent workflow's azd sample selection guidance. For configuration-only hosting, select the sample matching the required protocol:
+Honor a named sample. For configuration-only migration, name the matching protocol sample below before editing and use the configuration in this guide without looking up the sample again. For scaffolding, use the parent workflow's azd sample selection guidance. Paths are relative to [`samples/python/hosted-agents`](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents).
 
-| Protocol | Sample |
+| Protocol or need | Sample |
 |----------|--------|
-| Responses | [Configuration-driven agent (Responses, LangGraph, Python)](https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/hosted-agents/langgraph/responses/10-run/azure.yaml) |
-| Invocations | [Configuration-driven agent (Invocations, LangGraph, Python)](https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/hosted-agents/langgraph/invocations/03-run/azure.yaml) |
+| Responses (configuration-only) | [`langgraph/responses/10-run`](https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/hosted-agents/langgraph/responses/10-run/azure.yaml) |
+| Invocations (configuration-only) | [`langgraph/invocations/03-run`](https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/hosted-agents/langgraph/invocations/03-run/azure.yaml) |
+| ReAct chat with `create_agent` | `langgraph/responses/01-langgraph-chat` |
+| Toolbox; Toolbox with user OAuth | `langgraph/responses/02-langgraph-toolbox`; `langgraph/responses/03-langgraph-toolbox-user-identity` |
+| Multi-agent, subgraphs, deep agents | `langgraph/responses/05-workflows`, `langgraph/responses/15-branching`, `langgraph/responses/11-deep-agents` |
+| Human-in-the-loop | `langgraph/responses/07-human-in-the-loop` |
+| Observability | `langgraph/responses/08-observability` |
+| Custom Responses server or startup/shutdown lifecycle | `langgraph/responses/12-custom-host` (`ResponsesHostServer`), only when `langgraph.json` cannot express it |
 
 Use a host server integration sample only when the hosting decision above requires that path.
 
 Samples provide hosting patterns only. Use their manifests, adapters, protocol wiring, and deployment configuration as references; do not treat sample application structure or conventions as the desired final application.
+
+## Zero-code migration
+
+In the service's `project` directory, add or reuse `langgraph.json` and bind the existing graph or factory:
+
+```json
+{"dependencies": ["."], "graphs": {"agent": "./main.py:graph"}}
+```
+
+Add `langchain-azure-ai[hosting,opentelemetry]>=1.2.9` to the existing `pyproject.toml` or `requirements.txt`. Add or merge this service in `azure.yaml` (`project: .` for root-level code):
+
+```yaml
+name: my-agent
+services:
+  my-agent:
+    name: my-agent
+    project: .
+    host: azure.ai.agent
+    kind: hosted
+    language: python
+    protocols:
+      - protocol: responses
+        version: 2.0.0
+    startupCommand: python -m langchain_azure_ai.agents.hosting.run --protocol responses
+    codeConfiguration:
+      runtime: python_3_13
+      entryPoint: "-m langchain_azure_ai.agents.hosting.run --protocol responses"
+    env:
+      OTEL_AUTO_CONFIGURE_AZURE_MONITOR: "true"
+```
+
+For Invocations, replace `responses` with `invocations` in the protocol and both fields. `startupCommand` includes `python`; `codeConfiguration.entryPoint` contains only the arguments starting with `-m` because the runtime supplies Python. When scaffolding, pass those same module arguments as one `--entry-point` argument. Verify the graph binding resolves to the existing code.
+
+## Model wiring and tracing
+
+For a Foundry model, use the project's OpenAI-compatible base URL and a refreshable Entra token provider:
+
+```python
+import os
+from azure.ai.projects import AIProjectClient
+from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+from langchain_openai import ChatOpenAI
+
+credential = DefaultAzureCredential()
+endpoint = os.environ["FOUNDRY_PROJECT_ENDPOINT"]
+with AIProjectClient(endpoint=endpoint, credential=credential) as project, project.get_openai_client() as client:
+    base_url = str(client.base_url)
+
+model = ChatOpenAI(
+    model=os.environ["AZURE_AI_MODEL_DEPLOYMENT_NAME"],
+    base_url=base_url,
+    api_key=get_bearer_token_provider(credential, "https://ai.azure.com/.default"),
+    use_responses_api=True,
+    output_version="responses/v1",
+)
+```
+
+`use_responses_api=True` is mandatory: otherwise model spans lack `gen_ai.response.id` and Foundry Portal Traces renders empty. When monitoring is enabled, call `enable_auto_tracing()` from `langchain_azure_ai.callbacks.tracers` inside the graph factory and set `OTEL_AUTO_CONFIGURE_AZURE_MONITOR: "true"` in the service `env` as above. Verify correlated spans in the portal after a smoke invocation.
+
+## Toolbox
+
+Use `langchain_azure_ai.tools.AzureAIProjectToolbox` and follow the [LangChain / LangGraph Toolbox integration](use-toolbox-in-hosted-agent.md#langchain--langgraph-sdk) for schema adaptation and user OAuth consent.
+
+## Pre-smoke-test RBAC
+
+`ChatOpenAI` calls the project's OpenAI endpoint from inside the hosted container. Before remote smoke testing, check `Foundry User` for the **agent's managed identity**, not the deploy/invoke caller, at the project ARM scope ending in `Microsoft.CognitiveServices/accounts/<account>/projects/<project>`:
+
+```bash
+az role assignment list --assignee "<agent-principal-id>" --scope "<project-arm-id>" --role "Foundry User" --include-inherited --output table
+```
+
+If the role is missing, have an authorized operator grant it to that identity at the project scope:
+
+```bash
+az role assignment create --assignee-object-id "<agent-principal-id>" --assignee-principal-type ServicePrincipal --scope "<project-arm-id>" --role "Foundry User"
+```
+
+Do not invoke until effective access is confirmed. For `401 PermissionDenied` from the model call, recheck the same identity and scope before retrying.
