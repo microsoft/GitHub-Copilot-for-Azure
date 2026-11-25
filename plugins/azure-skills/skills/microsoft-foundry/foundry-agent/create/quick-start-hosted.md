@@ -62,7 +62,7 @@ Populate each question with the default option below.
 |-------|--------------|----------------|-------|
 | Project / agent name | The user provided one, or the existing code already defines one. | Project: `ai-project-<random>`; agent: the selected sample's agent name | Generate `<random>` using 6-8 lowercase alphanumeric characters. Pass the agent name to `azd ai agent init` with `--agent-name`; it sets the service key and agent name in `azure.yaml`. For a new Foundry project, set the project name after init with `azd env set AZURE_AI_PROJECT_NAME "<project-name>"` before running `azd provision`. |
 | Language | The user provided one, or the existing code already determines it. | Python | Supported languages: Python and .NET. |
-| Framework (Python only) | .NET, the user named a framework or sample, or `pyproject.toml`, `requirements.txt`, or `langgraph.json` resolves it. | Microsoft Agent Framework | Other choices: `LangChain / LangGraph (langchain-azure-ai)` and `Bring Your Own / Custom`. Use the full labels in questions and plans. |
+| Framework (Python only) | .NET, the user named a framework or sample, or `pyproject.toml`, `requirements.txt`, or `langgraph.json` resolves it. | Microsoft Agent Framework (MAF) | Other choices: LangChain / LangGraph (`langchain-azure-ai`) and Bring Your Own / Custom. |
 | Subscription | The active azd environment already contains the intended `AZURE_SUBSCRIPTION_ID`. | Active Azure subscription: `<subscription-name>` (`<subscription-id>`) | Resolve both values with `az account show --query "{name:name,id:id}" -o json`; the ID must be a subscription GUID. |
 | Region | The active azd environment already contains the intended `AZURE_LOCATION`, or this change does not provision regional resources. | `northcentralus` | Azure resource location. |
 | Foundry project | The workspace or azd environment is already configured with a Foundry project, or the user provided one. | New Foundry project | Offer a new or existing project. For a new project, do not pass `--project-id`; `azd provision` creates it. For an existing project, use its ARM resource ID with `azd ai agent init --project-id`. |
@@ -102,7 +102,7 @@ Capture the `manifestUrl`.
 
 You should pick only one sample for `azd ai agent init`, but you can browse multiple samples relevant to user's task as code reference.
 
-> **Important:** For LangChain / LangGraph, follow [LangChain and LangGraph hosting](references/langchain-langgraph-hosting.md) before using the catalog or editing code. Honor a named sample. For configuration-only hosting, use its module entry point and `langgraph.json` graph binding in place of the file-based entry-point guidance below.
+> **Important:** For LangChain / LangGraph, follow [LangChain and LangGraph hosting](references/langchain-langgraph-hosting.md) before selecting a sample or editing code. For configuration-only hosting, use and validate the sample's module entry point and `langgraph.json` binding instead of the file-based entry point below.
 
 Step 4 needs `--runtime` and `--entry-point` values. These are CLI args, **not** fields in the manifest — use these standard defaults for the chosen language:
 

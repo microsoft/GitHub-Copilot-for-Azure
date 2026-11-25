@@ -9,11 +9,11 @@ Resolve two independent choices before initialization or edits:
 
 Infer these choices from the user's request and current code. Ask only for information that remains unclear; skip questions when the intent is explicit or evident, such as an existing Foundry model integration. Do not switch or deploy a model, or migrate the framework, without user intent.
 
-Before asking, check the agent source root for `langgraph.json` or a direct `langchain`, `langgraph`, or `langchain-azure-ai` dependency in `pyproject.toml` or `requirements.txt`. If found, follow [LangChain and LangGraph hosting](langchain-langgraph-hosting.md) without re-asking for the framework. For a plan or local configuration, defer project and model choices that do not block the requested deliverable.
+Before asking, check the agent source root for `langgraph.json` or a direct `langchain`, `langgraph`, or `langchain-azure-ai` dependency in `pyproject.toml` or `requirements.txt`. If found, follow [LangChain and LangGraph hosting](langchain-langgraph-hosting.md) without re-asking for the framework.
 
 ## Step 2: Initialize and adapt
 
-For [configuration-only LangChain / LangGraph hosting](langchain-langgraph-hosting.md#zero-code-migration), skip the init and catalog commands below. For plan-only or local configuration requests, stop at the requested deliverable.
+For [configuration-only LangChain / LangGraph hosting](langchain-langgraph-hosting.md#zero-code-migration), use that configuration instead of the init and catalog commands below. If only local configuration was requested, stop there; defer unresolved project and model choices until deployment.
 
 To scaffold a Foundry agent project with existing agent codes, run:
 

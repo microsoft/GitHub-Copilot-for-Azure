@@ -9,9 +9,7 @@ metadata:
 
 # Azure App Onboard
 
-> **Route before onboarding:** For a standalone LangChain or LangGraph agent deployment to Azure with no other host specified, invoke `{"skill": "microsoft-foundry"}` and follow its hosted-agent workflow instead.
-
-> ⛔ **Every in-scope repo goes through the full pipeline (Steps 1–10). No exceptions.** Do not skip steps, refuse, or short-circuit based on what you recognize. Follow the Workflow table below sequentially — read each step's references before acting.
+> ⛔ **Every repo goes through the full pipeline (Steps 1–10). No exceptions.** Do not skip steps, refuse, or short-circuit based on what you recognize. Follow the Workflow table below sequentially — read each step's references before acting.
 
 ## Quick Reference
 

@@ -53,28 +53,25 @@ azd ai agent invoke "list the tools you have access to"
 
 ## LangChain / LangGraph SDK
 
-Set `TOOLBOX_NAME` to the existing toolbox name in the agent service's environment. In integration snippets for either sample, keep the direct SDK constructor with the required `os.environ["TOOLBOX_NAME"]` lookup and no hard-coded fallback. Include the `sanitize_tool_schema` helper and load the tools in the async graph factory before passing them to `create_agent`:
+Set `TOOLBOX_NAME` in the agent service's environment. Load and sanitize the schemas in the async graph factory before passing the tools to `create_agent`:
 
 ```python
 import os
 from langchain_azure_ai.tools import AzureAIProjectToolbox
 
-def sanitize_tool_schema(tool):
-    schema = tool.args_schema
-    if isinstance(schema, dict) and schema.get("type") == "object":
-        schema.setdefault("properties", {})
-
 async def load_tools():
     toolbox = AzureAIProjectToolbox(toolbox_name=os.environ["TOOLBOX_NAME"])
     tools = await toolbox.get_tools()
     for tool in tools:
-        sanitize_tool_schema(tool)
+        schema = tool.args_schema
+        if isinstance(schema, dict) and schema.get("type") == "object":
+            schema.setdefault("properties", {})
     return tools
 ```
 
-**Schema sanitization:** Ensure object schemas have `properties`. For required fields with missing definitions, restore them from the tool contract before binding.
+Restore any missing required property definitions from the tool contract before binding.
 
-Follow the user-identity sample for per-user OAuth. On tool discovery or invocation, handle `-32006` by extracting the URL from the nested `CONSENT_REQUIRED` error (see [error shape](#handling-consent_required)). Surface the consent link to the affected user in the response; retry only after consent. When the user supplies a consent error, show the user-facing authorization link with the actual URL extracted from that error. Preserve unrelated errors.
+For user OAuth, follow the user-identity sample. On `-32006` during discovery or invocation, extract the [nested `CONSENT_REQUIRED` URL](#handling-consent_required) and surface it to the affected user. Retry only after consent; preserve unrelated errors.
 
 ## Troubleshooting
 
