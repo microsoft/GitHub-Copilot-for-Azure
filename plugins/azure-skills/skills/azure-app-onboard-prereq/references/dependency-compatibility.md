@@ -102,7 +102,7 @@ Static lockfile analysis only.
 
 When `hasNativeModules: true`: `f1Viable: false`, `f1BlockReason: "native modules ({signal})"`.
 
-When `hasNativeModules: null`: `f1Viable` unchanged, WARN that native modules could not be ruled out; prepare falls back to Startup-install.
+When `hasNativeModules: null`: `f1Viable` unchanged, WARN that native modules could not be ruled out; prepare falls back to Startup-install, except for plain HTML sites (no package manager, no Dockerfile), which stay on static hosting.
 
 ## F1 Viability — Beyond Native Modules
 

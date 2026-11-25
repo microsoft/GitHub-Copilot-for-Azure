@@ -10,7 +10,7 @@ Three patterns — select based on `prereq-output.json.components[].buildRequire
 
 | Pattern | When | `deployStrategy` needed? |
 |---------|------|--------------------------|
-| **A: Oryx auto-build** | No native modules, no Dockerfile | Yes — startup command + app settings go in Bicep at scaffold time |
+| **A: Oryx auto-build** | No native modules (`hasNativeModules: false`), no Dockerfile | Yes — startup command + app settings go in Bicep at scaffold time |
 | **B: Startup-install** | Native modules detected (`hasNativeModules: true`) or unknown (`hasNativeModules: null`) | Yes — startup command + fallback install + app settings in Bicep |
 | **C: Container-only** | Has Dockerfile that runs a server process (Express, Flask, uvicorn, etc.) | No — route to Container Apps (Dockerfile IS the deploy strategy) |
 
@@ -19,6 +19,7 @@ Three patterns — select based on `prereq-output.json.components[].buildRequire
 | Condition | Action |
 |-----------|--------|
 | Jib build plugin (Java + `com.google.cloud.tools.jib`) | Container-only via Jib push to ACR — no Dockerfile needed |
+| Plain HTML (no package manager, no Dockerfile) | Static hosting per `service-mapping.md § Plain HTML` — ignore `hasNativeModules` (even `null`); no `deployStrategy` startup-install |
 
 ---
 
