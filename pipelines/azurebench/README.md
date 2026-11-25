@@ -108,9 +108,10 @@ Status (local `msbench-cli` submissions, no bypass):
 - `msbench` + BYOI: passed (run 2026112402239264, `claude-opus-4.5`).
 - `ours` without BYOI: the agent reached CAPI with `claude-opus-5.5`
   (run 2026112582202760); deployment failed only for lack of an identity.
-- `ours` + BYOI: fails before the agent starts. MSBench's task checkout gets an
-  empty GitHub App `private-key` and the image fallback is not found (runs
-  2026112579687372, 2026112582191068). Needs MSBench to investigate.
+- `ours` + BYOI: fails before the agent starts. MSBench's "Mint GitHub App
+  Token" step for the task checkout gets an empty `private-key` (runs
+  2026112579687372, 2026112582191068). The earlier cache-image pull error is
+  non-fatal. Needs MSBench to investigate.
 
 Use `ours` in pipeline runs once `ours` + BYOI passes locally.
 
