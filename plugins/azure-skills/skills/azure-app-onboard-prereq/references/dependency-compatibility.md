@@ -93,14 +93,16 @@ Static lockfile analysis only.
 | Language | Signal | Where |
 |----------|--------|-------|
 | Node.js | `"node-gyp"` in lockfile | `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml` |
-| Python | `numpy`, `pandas`, `grpcio`, `Pillow`, `bcrypt`, `psycopg2` (not `-binary`), `cryptography`, `lxml`, `scipy`, `scikit-learn` | `requirements.txt`, `pyproject.toml` |
+| Python | `numpy`, `pandas`, `grpcio`, `Pillow`, `bcrypt`, `psycopg2` (not `-binary`), `cryptography`, `lxml`, `scipy`, `scikit-learn` | `poetry.lock`, `Pipfile.lock`, `uv.lock` |
 | .NET | `[DllImport]`, `NativeLibrary.Load` | `.cs` files |
 | Go | `import "C"` (cgo) | `.go` files |
 | PHP | `ext-*` requirements | `composer.json` |
 
-> ⛔ **Lockfile grep is the ONLY valid evidence.** Do NOT set `hasNativeModules` from package name alone. `prebuild-install` without `node-gyp` = prebuilt → `hasNativeModules: false`. Key: `bcrypt` ✅ native, `bcryptjs` ❌ JS. `psycopg2` ✅, `psycopg2-binary` ❌. `sharp` v0.33+ ❌ prebuilt. `canvas` ✅ always. No lockfile → `"unknown"`, ⚠️ WARN.
+> ⛔ **Lockfile grep is the ONLY valid evidence.** Do NOT set `hasNativeModules` from package name alone. `prebuild-install` without `node-gyp` = prebuilt → `hasNativeModules: false`. Key: `bcrypt` ✅ native, `bcryptjs` ❌ JS. `psycopg2` ✅, `psycopg2-binary` ❌. `sharp` v0.33+ ❌ prebuilt. `canvas` ✅ always. No lockfile (including Python with only `requirements.txt`/`pyproject.toml`) → `hasNativeModules: null`, ⚠️ WARN.
 
 When `hasNativeModules: true`: `f1Viable: false`, `f1BlockReason: "native modules ({signal})"`.
+
+When `hasNativeModules: null`: `f1Viable` unchanged, WARN that native modules could not be ruled out; prepare falls back to Startup-install.
 
 ## F1 Viability — Beyond Native Modules
 

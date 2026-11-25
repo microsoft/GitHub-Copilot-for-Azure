@@ -92,3 +92,5 @@ Read manifest to determine actual build script. Install deps first. Capture outp
 See [dependency-compatibility.md § Native Module Detection](dependency-compatibility.md) for the canonical detection procedure, edge cases, and package table. Results go to `buildRequirements.hasNativeModules`.
 
 > ⛔ **Prebuild-install exception:** Packages with `prebuild-install` (without `node-gyp`) in lockfile use prebuilt binaries → `hasNativeModules: false`. Key examples: `better-sqlite3` v12+ = prebuilt, `sharp` v0.33+ = prebuilt, `bcrypt` = always native, `canvas` = always native. Check the lockfile — do not rely on package name alone.
+
+> ⛔ **No lockfile → `hasNativeModules: null`** (never `true`/`false`), ⚠️ WARN, `f1Viable` unchanged. `requirements.txt`/`pyproject.toml` are not lockfiles.

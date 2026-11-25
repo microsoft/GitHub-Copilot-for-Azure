@@ -14,7 +14,8 @@
 // ─── prereq-output.json ──────────────────────────────────────────────────────
 
 export interface BuildRequirements {
-  hasNativeModules: boolean;
+  /** null = no lockfile evidence (unknown); never coerce to true/false */
+  hasNativeModules: boolean | null;
   hasDockerfile: boolean;
   /** True when the app can deploy on App Service F1 (Free) SKU */
   f1Viable: boolean;
