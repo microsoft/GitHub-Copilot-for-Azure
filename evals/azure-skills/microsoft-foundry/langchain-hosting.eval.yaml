@@ -181,6 +181,10 @@ stimuli:
         as evidence that the framework is already resolved.
       - *noFrameworkQuestion
       - |
+        Identifies the official configuration-driven Python LangGraph
+        Invocations sample (`langgraph/invocations/03-run`) by path, link,
+        or a description that distinguishes it from other samples.
+      - |
         The generated azure.yaml has a Python hosted agent at the repository
         root. A single services entry has host: azure.ai.agent, kind: hosted,
         language: python, project: . (or equivalent), and an invocations item
@@ -211,9 +215,6 @@ stimuli:
               pattern: '\brequirements\.txt\b'
               result: 'langgraph>=1,<2'
           disallowed: *noCloudOrQuestions
-      - type: output-matches
-        config:
-          pattern: 'langgraph/invocations/03-run\b'
       - type: file-exists
         config: { path: azure.yaml }
       - type: file-exists
@@ -292,6 +293,18 @@ stimuli:
       area: create
     constraints:
       max_turns: 10
+    rubric:
+      - |
+        Uses AzureAIProjectToolbox with the toolbox name from TOOLBOX_NAME
+        and points to both official samples (02-langgraph-toolbox and
+        03-langgraph-toolbox-user-identity).
+      - |
+        Shows or explains an actual tool schema adaptation before binding,
+        such as adding missing `properties` to object schemas. Do not
+        require a particular helper name or wording.
+      - |
+        Explains how to surface the URL from the nested CONSENT_REQUIRED error
+        to the user when MCP returns -32006.
     graders:
       - type: skill-invocation
         config: { required: [microsoft-foundry] }
@@ -305,10 +318,8 @@ stimuli:
           disallowed: *liveCommands
       - type: output-matches
         config:
-          pattern: '(?s)(?=.*AzureAIProjectToolbox\s*\([^)]*toolbox_name\s*=\s*os\.environ\[[\"'']TOOLBOX_NAME)(?=.*02-langgraph-toolbox)(?=.*03-langgraph-toolbox-user-identity)(?=.*-32006)(?=.*CONSENT_REQUIRED)(?=.*https://auth\.example\.invalid/authorize\?ticket=oak-42)'
-      - type: output-matches
-        config:
-          pattern: '(?i)\bsanitiz\w*\b|\bnormaliz\w+\s+(?:the\s+)?(?:tool\s+)?schemas?\b'
+          pattern: 'https://auth\.example\.invalid/authorize\?ticket=oak-42\b'
+      - *requiredRubric
       - type: diff-empty
 
   - name: "Restore model trace correlation for LangGraph Responses"
@@ -322,6 +333,18 @@ stimuli:
       area: tracing
     constraints:
       max_turns: 10
+    rubric:
+      - |
+        Configures ChatOpenAI with the Foundry project OpenAI endpoint from
+        AIProjectClient and Entra authentication using DefaultAzureCredential
+        and a bearer-token provider for https://ai.azure.com/.default.
+      - |
+        Uses `use_responses_api=True` and `output_version="responses/v1"` for
+        `gen_ai.response.id` correlation.
+      - |
+        Calls or instructs the user to call `enable_auto_tracing` inside the
+        graph factory and sets `OTEL_AUTO_CONFIGURE_AZURE_MONITOR` to true in
+        the hosted service's `azure.yaml`. Accept equivalent code or prose.
     graders:
       - type: skill-invocation
         config: { required: [microsoft-foundry] }
@@ -331,9 +354,7 @@ stimuli:
             - name: *readTool
               pattern: 'langchain-langgraph-hosting\.md'
           disallowed: *liveCommands
-      - type: output-matches
-        config:
-          pattern: '(?s)(?=.*AIProjectClient)(?=.*DefaultAzureCredential)(?=.*get_bearer_token_provider)(?=.*https://ai\.azure\.com/\.default)(?=.*base_url\s*=)(?=.*api_key\s*=)(?=.*use_responses_api\s*=\s*True)(?=.*output_version\s*=\s*["'']responses/v1["''])(?=.*enable_auto_tracing\(\))(?=.*OTEL_AUTO_CONFIGURE_AZURE_MONITOR\s*[:=]\s*["'']true["''])(?=.*gen_ai\.response\.id)'
+      - *requiredRubric
       - type: diff-empty
 
   - name: "Check the hosted agent identity before the first remote smoke test"
@@ -370,7 +391,7 @@ stimuli:
         config:
           required:
             - name: *readTool
-              pattern: 'deploy[\\/]deploy\.md'
+              pattern: 'deploy[\\/]+deploy\.md' # Windows separators are escaped in serialized tool input.
             - name: *readTool
               pattern: 'langchain-langgraph-hosting\.md'
           disallowed: *liveCommands
