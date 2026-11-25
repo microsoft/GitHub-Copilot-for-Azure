@@ -31,9 +31,9 @@ Use `--deploy-mode code` by default. `--runtime` and `--entry-point` are require
 After scaffolding, you must use `azd ai agent sample list --language <language> --output json` and follow the [azd Sample Selection Guidance](../create-hosted.md#azd-sample-selection-guidance) to find the closest relevant samples for adapter, protocol, and deployment guidance. Treat samples as boundary patterns, not replacement applications. Browse the relevant samples as code references.
 
 For reference, here are some awesome samples for re-hosting scenarios:
-1. Re-host agents built with the OpenAI Agents SDK: https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/bring-your-own/responses/openai-agents-sdk
-2. Re-host agents built with the Claude Agent SDK: https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/bring-your-own/invocations/claude-agent-sdk
-3. Re-host LangChain / LangGraph agents (zero-code via `langgraph.json` + `langchain-azure-ai`): follow the [hosting guide](langchain-langgraph-hosting.md) and the [`langgraph/responses/10-run` sample](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/langgraph/responses/10-run).
+1. Re-host LangChain / LangGraph agents (zero-code via `langgraph.json` + `langchain-azure-ai`): follow the [hosting guide](langchain-langgraph-hosting.md) and the [`langgraph/responses/10-run` sample](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/langgraph/responses/10-run).
+2. Re-host agents built with the OpenAI Agents SDK: https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/bring-your-own/responses/openai-agents-sdk
+3. Re-host agents built with the Claude Agent SDK: https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/bring-your-own/invocations/claude-agent-sdk
 
 If users use a Foundry model, you must wire the Foundry model to the agent.
 

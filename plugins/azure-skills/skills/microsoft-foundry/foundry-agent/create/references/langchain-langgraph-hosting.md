@@ -21,12 +21,12 @@ Prefer configuration-only hosting unless the user explicitly requests custom hos
 
 ## Sample Selection
 
-Use the parent workflow's azd sample selection guidance. Honor a named sample; for configuration-only hosting, select by protocol. Paths are relative to [`samples/python/hosted-agents`](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents).
+Honor a named sample. For configuration-only migration, name the matching protocol sample below before editing and use the configuration in this guide without looking up the sample again. For scaffolding, use the parent workflow's azd sample selection guidance. Paths are relative to [`samples/python/hosted-agents`](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents).
 
 | Protocol or need | Sample |
 |----------|--------|
-| Responses | [Configuration-driven agent (Responses, LangGraph, Python)](https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/hosted-agents/langgraph/responses/10-run/azure.yaml) |
-| Invocations | [Configuration-driven agent (Invocations, LangGraph, Python)](https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/hosted-agents/langgraph/invocations/03-run/azure.yaml) |
+| Responses (configuration-only) | [`langgraph/responses/10-run`](https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/hosted-agents/langgraph/responses/10-run/azure.yaml) |
+| Invocations (configuration-only) | [`langgraph/invocations/03-run`](https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/hosted-agents/langgraph/invocations/03-run/azure.yaml) |
 | ReAct chat with `create_agent` | `langgraph/responses/01-langgraph-chat` |
 | Toolbox; Toolbox with user OAuth | `langgraph/responses/02-langgraph-toolbox`; `langgraph/responses/03-langgraph-toolbox-user-identity` |
 | Multi-agent, subgraphs, deep agents | `langgraph/responses/05-workflows`, `langgraph/responses/15-branching`, `langgraph/responses/11-deep-agents` |
@@ -68,7 +68,7 @@ services:
       OTEL_AUTO_CONFIGURE_AZURE_MONITOR: "true"
 ```
 
-For Invocations, use `invocations` in the protocol and both commands. When scaffolding, pass the sample's `codeConfiguration.entryPoint` as one `--entry-point` argument, not a filename. Verify the graph binding resolves to the existing code.
+For Invocations, replace `responses` with `invocations` in the protocol and both fields. `startupCommand` includes `python`; `codeConfiguration.entryPoint` contains only the arguments starting with `-m` because the runtime supplies Python. When scaffolding, pass those same module arguments as one `--entry-point` argument. Verify the graph binding resolves to the existing code.
 
 ## Model wiring and tracing
 

@@ -73,6 +73,8 @@ Restore any missing required property definitions from the tool contract before 
 
 For user OAuth, follow the user-identity sample. On `-32006` during discovery or invocation, extract the [nested `CONSENT_REQUIRED` URL](#handling-consent_required) and surface it to the affected user. Retry only after consent; preserve unrelated errors.
 
+If the user supplies an MCP error, including in an attachment, read the supplied payload before answering and show the actual consent URL when present, not a placeholder.
+
 ## Troubleshooting
 
 | Error | Cause | Resolution |

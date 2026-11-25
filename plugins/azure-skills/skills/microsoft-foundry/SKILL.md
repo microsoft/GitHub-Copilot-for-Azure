@@ -32,6 +32,8 @@ Strictly follow the script output for subsequent actions.
 
 **MANDATORY:** Before executing ANY workflow-specific steps, you MUST read the corresponding sub-skill document. Do not call workflow-specific MCP tools for a workflow without reading its skill document. This applies even if you already know the MCP tool parameters — the skill document contains required workflow steps, pre-checks, and validation logic that must be followed. This rule applies on every new user message that triggers a different workflow, even if the skill is already loaded.
 
+For a new hosted agent from scratch, read [quick-start-hosted](foundry-agent/create/quick-start-hosted.md) before answering, even if the user only wants the decisions, options, or defaults. For container deployment, use [create-hosted](foundry-agent/create/create-hosted.md) instead. For planning only, use Step 2 without scaffolding or deploying.
+
 ### Foundry MCP
 
 **MANDATORY:** Before using Foundry MCP operations, call the Azure MCP `foundry` tool and inspect the available Foundry MCP tools and related parameters. Treat this as the discovery/help step for MCP-based workflows.
