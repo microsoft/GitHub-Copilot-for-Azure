@@ -60,7 +60,7 @@ refinement:
 
 limits:
   maxIterations: 2
-  maxAnswerGenerations: 608
+  maxAnswerGenerations: 620
   maxJudgeCalls: 608
   maxDurationMinutes: 360
   maxConcurrentVallyProcesses: 5
