@@ -11,6 +11,8 @@ Infer these choices from the user's request and current code. Ask only for infor
 
 ## Step 2: Initialize and adapt
 
+For existing LangChain or LangGraph applications, follow the [framework hosting reference](langchain-langgraph-hosting.md) and its linked walkthrough before selecting a sample or editing. Samples provide API patterns; the walkthrough owns the framework migration workflow.
+
 To scaffold a Foundry agent project with existing agent codes, run:
 
 ```bash

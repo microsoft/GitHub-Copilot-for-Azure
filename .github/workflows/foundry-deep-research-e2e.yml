@@ -1,0 +1,177 @@
+name: Foundry Deep Research migration
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Generate a new candidate or accept a previously frozen one
+        type: choice
+        options: [accept, generate]
+        default: accept
+        required: true
+      generation_run_id:
+        description: Successful generation workflow run ID (required for accept)
+        type: string
+
+permissions: {}
+
+env:
+  VALLY_TELEMETRY_OPTOUT: "1"
+  AZURE_DEV_COLLECT_TELEMETRY: "no"
+  MIGRATION_EVAL: evals/azure-skills/microsoft-foundry
+
+jobs:
+  generate:
+    name: Generate and freeze candidate
+    if: inputs.mode == 'generate'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      copilot-requests: write
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: "3.13"
+      - uses: Azure/setup-azd@0b7e3a35ab00f2eee7080c845eb39c3f0ebfa553
+        with:
+          version: "1.40.0"
+      - name: Install actor tools
+        run: |
+          python -m pip install uv==0.11.28
+          azd extension install microsoft.foundry --no-prompt
+      - name: Generate with the pinned Vally case
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          work="$RUNNER_TEMP/foundry-migration"
+          mkdir -p "$work"
+          npx --yes @microsoft/vally-cli@0.16.0 eval --eval-spec "$MIGRATION_EVAL/e2e.eval.yaml" \
+            --executor copilot-sdk --model gpt-5.6-sol --reasoning-effort medium \
+            --tag id=migration-deep-research-to-foundry --workers 1 --runs 1 --max-retries 0 \
+            --skip-grade --workspace "$work/workspaces" --output-dir "$work/results" --output jsonl > "$work/migration.jsonl"
+      - name: Freeze source for reuse
+        run: |
+          work="$RUNNER_TEMP/foundry-migration"
+          python -I -B "$MIGRATION_EVAL/graders/deep-research-artifact.py" freeze \
+            --trajectory "$work/migration.jsonl" --workspace "$work/workspaces" \
+            --output "$work/frozen" --revision "$GITHUB_SHA"
+          printf 'Reuse this candidate with generation run ID `%s`.\n' "$GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: foundry-deep-research-candidate
+          path: ${{ runner.temp }}/foundry-migration/frozen/
+          if-no-files-found: error
+          retention-days: 90
+
+  accept:
+    name: Set up and run T01–T07
+    if: inputs.mode == 'accept' && github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    environment: foundry-deep-research-e2e
+    concurrency: foundry-deep-research-acceptance
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+    env:
+      AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+      - name: Verify the previous generation run
+        id: generation
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GENERATION_RUN_ID: ${{ inputs.generation_run_id }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          ASSESSOR_REPOSITORY: ${{ vars.FOUNDRY_MIGRATION_ASSESSOR_REPOSITORY }}
+          ASSESSOR_REVISION: ${{ vars.FOUNDRY_MIGRATION_ASSESSOR_REVISION }}
+        run: |
+          [[ "$GENERATION_RUN_ID" =~ ^[0-9]+$ ]]
+          [[ "$ASSESSOR_REPOSITORY" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ && "$ASSESSOR_REVISION" =~ ^[a-f0-9]{40}$ ]]
+          revision=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GENERATION_RUN_ID" | jq -er \
+            --arg repo "$GITHUB_REPOSITORY" --arg branch "$DEFAULT_BRANCH" '
+              select(.event == "workflow_dispatch" and .conclusion == "success" and
+                .path == ".github/workflows/foundry-deep-research-e2e.yml" and
+                .head_repository.full_name == $repo and .head_branch == $branch) | .head_sha')
+          [[ "$revision" =~ ^[a-f0-9]{40}$ ]]
+          printf 'revision=%s\n' "$revision" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: foundry-deep-research-candidate
+          run-id: ${{ inputs.generation_run_id }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/foundry-migration/frozen
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: "3.13"
+      - name: Restore exact candidate without running a model
+        env:
+          GENERATION_REVISION: ${{ steps.generation.outputs.revision }}
+        run: |
+          work="$RUNNER_TEMP/foundry-migration"
+          python -I -B "$MIGRATION_EVAL/graders/deep-research-artifact.py" restore \
+            --artifact "$work/frozen" --output "$work/candidate" --revision "$GENERATION_REVISION"
+      - name: Checkout the pinned private assessor
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          repository: ${{ vars.FOUNDRY_MIGRATION_ASSESSOR_REPOSITORY }}
+          ref: ${{ vars.FOUNDRY_MIGRATION_ASSESSOR_REVISION }}
+          token: ${{ secrets.FOUNDRY_MIGRATION_ASSESSOR_TOKEN }}
+          path: .foundry-assessor
+          persist-credentials: false
+      - uses: Azure/setup-azd@0b7e3a35ab00f2eee7080c845eb39c3f0ebfa553
+        with:
+          version: "1.40.0"
+      - name: Install evaluator dependencies
+        run: |
+          python -m pip install uv==0.11.28 -r .foundry-assessor/02-tests/requirements-offline.txt
+          azd extension install microsoft.foundry --no-prompt
+          if ! command -v podman >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y podman
+          fi
+      - uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Authenticate azd for the evaluator
+        env:
+          AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+        run: |
+          azd auth login --client-id "$AZURE_CLIENT_ID" --tenant-id "$AZURE_TENANT_ID" \
+            --federated-credential-provider github
+      - name: Stage private test-project settings
+        env:
+          OPERATOR_CONFIG: ${{ secrets.FOUNDRY_MIGRATION_EVAL_CONFIG }}
+        run: |
+          [[ -n "$OPERATOR_CONFIG" ]]
+          umask 077
+          work="$RUNNER_TEMP/foundry-migration"
+          mkdir "$work/receipts"
+          printf '%s' "$OPERATOR_CONFIG" > "$work/operator.json"
+      - name: Run the fixed acceptance suite
+        env:
+          FOUNDRY_MIGRATION_ALLOW_LIVE: "1"
+        run: |
+          work="$RUNNER_TEMP/foundry-migration"
+          grader="$GITHUB_WORKSPACE/$MIGRATION_EVAL/graders"
+          export EVALUATE_WORKSPACE="$work/candidate"
+          export FOUNDRY_MIGRATION_EVALUATOR="$grader/deep-research-ci.py"
+          export FOUNDRY_MIGRATION_ASSESSOR_DIR="$GITHUB_WORKSPACE/.foundry-assessor/02-tests/archive"
+          export FOUNDRY_MIGRATION_EVAL_CONFIG="$work/operator.json"
+          export FOUNDRY_MIGRATION_RECEIPTS="$work/receipts"
+          python -I -B "$grader/deep-research-migration.py" | tee "$work/verdict.json"
+          jq -r '.evidence' "$work/verdict.json" >> "$GITHUB_STEP_SUMMARY"
+          jq -e '.passed == true' "$work/verdict.json" > /dev/null
