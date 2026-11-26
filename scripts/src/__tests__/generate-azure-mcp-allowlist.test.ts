@@ -261,12 +261,84 @@ describe("shared source refresh", () => {
     const after = updatePin(text, discovery.version);
     expect(after).toBe(text.replace('"args":["-y","@azure/mcp@1.0.0"', `"args":["-y","@azure/mcp@${discovery.version}"`));
     expect(updatePin('{"mcpServers":{}}', discovery.version)).toBe('{"mcpServers":{}}');
-    expect(() => updatePin('{"mcpServers":{"azure":{"args":["@azure/mcp"]}}}', discovery.version)).toThrow("pinned");
+    expect(() => updatePin('{"mcpServers":{"azure":{"args":["@azure/mcp"]}}}', discovery.version)).toThrow("Expected exactly one @azure/mcp");
     const withMetadata = '{"metadata":{"azure":{"args":["@azure/mcp@1.0.0"]}},"mcpServers":{"azure":{"args":["@azure/mcp@1.0.0"]}}}';
     const parsed: { metadata: { azure: { args: string[] } }; mcpServers: { azure: { args: string[] } } } =
       JSON.parse(updatePin(withMetadata, discovery.version));
     expect(parsed.metadata.azure.args).toEqual(["@azure/mcp@1.0.0"]);
     expect(parsed.mcpServers.azure.args).toEqual([`@azure/mcp@${discovery.version}`]);
+  });
+
+  it("replaces the latest tag only for the Azure server with the exact discovered version", () => {
+    const text = '{ "mcpServers": { "other": {"args":["@azure/mcp@latest"]}, "azure": {"command":"npx", "args":["-y","@azure/mcp@latest","server","start"]} } }\n';
+    const after = updatePin(text, discovery.version);
+    expect(after).toBe(text.replace('"args":["-y","@azure/mcp@latest"', `"args":["-y","@azure/mcp@${discovery.version}"`));
+    expect(() => updatePin(text, "latest")).toThrow("Invalid Azure MCP release version: latest");
+    expect(() => updatePin(text.replace('"-y","@azure/mcp@latest"', '"-y","@azure/mcp@next"'), discovery.version))
+      .toThrow("Invalid Azure MCP release version: next");
+    expect(() => updatePin(text.replace('"-y","@azure/mcp@latest"', '"-y","@azure/mcp@latest","@azure/mcp@1.0.0"'), discovery.version))
+      .toThrow("Expected exactly one @azure/mcp");
+  });
+
+  it("updates latest in all client files while preserving equivalent client-specific roots", async () => {
+    const root = await fixture();
+    const plugin = join(root, "plugins", "foundry");
+    await mkdir(plugin);
+    await writeFile(join(plugin, "plugin.json"), "{}");
+    const azure = { type: "stdio", command: "npx", args: ["-y", "@azure/mcp@latest", "server", "start"] };
+    const portableGraph = {
+      type: "stdio", command: "node", args: ["${PLUGIN_ROOT}/graph/launch.mjs"],
+      env: { ROOT: "${PLUGIN_ROOT}/graph", SHARED: "${CLAUDE_PLUGIN_ROOT}/shared" },
+    };
+    const legacyGraph = {
+      ...portableGraph, args: ["${CLAUDE_PLUGIN_ROOT}/graph/launch.mjs"],
+      env: { ROOT: "${CLAUDE_PLUGIN_ROOT}/graph", SHARED: "${CLAUDE_PLUGIN_ROOT}/shared" },
+    };
+    const configurations = {
+      "mcp.json": { mcpServers: { azure, graph: portableGraph } },
+      ".mcp.json": { mcpServers: { azure, graph: legacyGraph } },
+      "gemini-extension.json": { mcpServers: { azure } },
+    };
+    for (const [file, value] of Object.entries(configurations)) {
+      await writeFile(join(plugin, file), JSON.stringify(value));
+    }
+
+    const changes = await updatePlugins(root, discovery);
+    for (const [file, value] of Object.entries(configurations)) {
+      const path = join(plugin, file);
+      expect(changes).toContain(path);
+      expect(JSON.parse(await readFile(path, "utf8"))).toEqual({
+        ...value,
+        mcpServers: {
+          ...value.mcpServers,
+          azure: { ...azure, args: ["-y", `@azure/mcp@${discovery.version}`, "server", "start"] },
+        },
+      });
+    }
+    expect(await updatePlugins(root, discovery)).toEqual([]);
+  });
+
+  it.each([
+    ["different paths", "${PLUGIN_ROOT}/graph/other.mjs", "${CLAUDE_PLUGIN_ROOT}/graph/launch.mjs"],
+    ["swapped roots", "${CLAUDE_PLUGIN_ROOT}/graph/launch.mjs", "${PLUGIN_ROOT}/graph/launch.mjs"],
+  ])("rejects %s between client configurations before writing", async (_name, portablePath, legacyPath) => {
+    const root = await fixture();
+    const plugin = join(root, "plugins", "first");
+    for (const [file, path] of [["mcp.json", portablePath], [".mcp.json", legacyPath]]) {
+      const configPath = join(plugin, file);
+      const config = JSON.parse(await readFile(configPath, "utf8"));
+      config.mcpServers.graph = { type: "stdio", command: "node", args: [path] };
+      await writeFile(configPath, JSON.stringify(config));
+    }
+    const allowlistPath = join(root, "plugins", "allowed-azure-tools.json");
+    const pinPath = join(plugin, "mcp.json");
+    const [allowlistBefore, pinBefore] = await Promise.all([
+      readFile(allowlistPath, "utf8"), readFile(pinPath, "utf8"),
+    ]);
+
+    await expect(updatePlugins(root, discovery)).rejects.toThrow("Portable and legacy MCP configurations differ for first");
+    expect(await readFile(allowlistPath, "utf8")).toBe(allowlistBefore);
+    expect(await readFile(pinPath, "utf8")).toBe(pinBefore);
   });
 
   it("updates only the shared allowlist and existing MCP pins, without creating plugin-local copies", async () => {
