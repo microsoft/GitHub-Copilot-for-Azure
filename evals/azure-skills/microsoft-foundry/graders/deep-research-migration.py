@@ -57,6 +57,9 @@ def grade():
     try:
         cases = json.loads((acceptance / "results.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
+        setup = run_dir / "setup"
+        if setup.is_dir() and not (setup / "operator.json").is_file():
+            raise ValueError("Evaluator test environment setup failed; T01–T07 did not run.") from None
         raise ValueError("Evaluator did not produce valid results. Check the private receipts.") from None
     if not isinstance(cases, dict):
         raise ValueError("Expected T01–T07 results from the evaluator.")
