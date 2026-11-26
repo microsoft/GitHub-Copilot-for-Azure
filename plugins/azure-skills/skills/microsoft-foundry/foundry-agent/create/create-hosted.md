@@ -27,11 +27,7 @@ Scaffold or develop a hosted Foundry agent project with the Azure Developer CLI 
 
 For ordinary prompt agents, use [create-prompt.md](create-prompt.md). For a Prompt Agent with `harness.type: microsoft_copilot_preview` or legacy `github_copilot_preview`, use [create-managed-harness.md](create-managed-harness.md). For deploy, use [deploy.md](../deploy/deploy.md).
 
-### Detect an existing Python framework
-
-Check the agent source root (the service's `project` path in `azure.yaml` for a Foundry hosted agent) for `langgraph.json` or a direct `langchain`, `langgraph`, or `langchain-azure-ai` dependency (including extras such as `[hosting]`) in `pyproject.toml` or `requirements.txt`.
-
-If found, read [LangChain and LangGraph hosting](references/langchain-langgraph-hosting.md) before answering or editing, even for plan-only requests. State that LangChain / LangGraph is the existing framework and name the manifest evidence, even if the exact hosting adapter is unknown. Do not ask the user to choose the framework again.
+For an existing Python agent, follow [framework detection](references/detect-existing-python-framework.md) before answering or editing.
 
 ## Hosted vs Prompt vs Voice
 
@@ -243,7 +239,7 @@ Use when the workspace already contains an agent project or source code.
 
 First determine whether the workspace is already a Foundry hosted agent project.
 
-For a Python agent, follow [framework detection](#detect-an-existing-python-framework) before proposing a plan or making changes.
+For a Python agent, follow [framework detection](references/detect-existing-python-framework.md) before proposing a plan or making changes.
 
 If deployment is requested for a LangChain / LangGraph agent that has only been configured locally, follow the [re-host initialization path](references/re-host.md#step-2-initialize-and-adapt) even if `azure.yaml` already contains a hosted service.
 
