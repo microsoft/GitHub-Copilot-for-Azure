@@ -27,6 +27,12 @@ Scaffold or develop a hosted Foundry agent project with the Azure Developer CLI 
 
 For ordinary prompt agents, use [create-prompt.md](create-prompt.md). For a Prompt Agent with `harness.type: microsoft_copilot_preview` or legacy `github_copilot_preview`, use [create-managed-harness.md](create-managed-harness.md). For deploy, use [deploy.md](../deploy/deploy.md).
 
+### Detect an existing Python framework
+
+Check the agent source root (the service's `project` path in `azure.yaml` for a Foundry hosted agent) for `langgraph.json` or a direct `langchain`, `langgraph`, or `langchain-azure-ai` dependency (including extras such as `[hosting]`) in `pyproject.toml` or `requirements.txt`.
+
+If found, read [LangChain and LangGraph hosting](references/langchain-langgraph-hosting.md) before answering or editing, even for plan-only requests. State that LangChain / LangGraph is the existing framework and name the manifest evidence, even if the exact hosting adapter is unknown. Do not ask the user to choose the framework again.
+
 ## Hosted vs Prompt vs Voice
 
 | | Hosted | Prompt | Managed Harness Agent | Voice |
@@ -237,7 +243,7 @@ Use when the workspace already contains an agent project or source code.
 
 First determine whether the workspace is already a Foundry hosted agent project.
 
-At the agent source root (the service's `project` directory for a hosted agent), check for `langgraph.json` or a direct `langchain`, `langgraph`, or `langchain-azure-ai` dependency (including extras such as `[hosting]`) in `pyproject.toml` or `requirements.txt`. If found, state that LangChain / LangGraph is the resolved framework, even if the exact hosting adapter is unknown, and read [LangChain and LangGraph hosting](references/langchain-langgraph-hosting.md) without re-asking.
+For a Python agent, follow [framework detection](#detect-an-existing-python-framework) before proposing a plan or making changes.
 
 - **Existing Foundry hosted agent** -- preserve its project structure, make the requested changes, and continue. For Foundry-specific features, use `azd ai agent sample list` and follow the [azd Sample Selection Guidance](#azd-sample-selection-guidance) to choose a sample for code reference.
 - **Other existing agent** -- infer whether the user wants to re-host it on Foundry and ask only when the intended outcome is unclear. If re-hosting, read and follow [Re-host an existing agent](references/re-host.md), then continue to Step 5.

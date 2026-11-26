@@ -53,7 +53,9 @@ azd ai agent invoke "list the tools you have access to"
 
 ## LangChain / LangGraph SDK
 
-Set `TOOLBOX_NAME` in the agent service's environment. Load and sanitize the schemas in the async graph factory before passing the tools to `create_agent`:
+**Read the supplied error first.** When the request mentions an attached Toolbox MCP error, find it in the workspace (for example, `consent-error.json`) and open it with a file-reading tool before answering, even if the request does not name the file. Base the handler on the supplied payload, not the example below, and show the returned consent URL when present.
+
+Set the toolbox name in the agent service's `TOOLBOX_NAME` environment variable and read it when constructing `AzureAIProjectToolbox` instead of hardcoding the name. Load and sanitize the schemas in the async graph factory before passing the tools to `create_agent`:
 
 ```python
 import os
@@ -71,9 +73,7 @@ async def load_tools():
 
 Restore any missing required property definitions from the tool contract before binding.
 
-For user OAuth, follow the user-identity sample. On `-32006` during discovery or invocation, extract the [nested `CONSENT_REQUIRED` URL](#handling-consent_required) and surface it to the affected user. Retry only after consent; preserve unrelated errors.
-
-If the user supplies an MCP error, including in an attachment, read the supplied payload before answering and show the actual consent URL when present, not a placeholder.
+For user OAuth, follow the user-identity sample. On discovery or invocation failure, check for `-32006` in the outer JSON-RPC `error.code` before decoding the JSON embedded in `error.message`. The embedded JSON contains `errors`, not the outer code. Extract the [nested `CONSENT_REQUIRED` URL](#handling-consent_required) from it and surface it to the affected user. Retry only after consent; preserve unrelated errors.
 
 ## Troubleshooting
 
