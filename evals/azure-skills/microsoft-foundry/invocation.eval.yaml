@@ -573,7 +573,7 @@ stimuli:
     tags:
       id: langchain-deploy-routing
       type: integration
-      tier: full
+      tier: smoke
       cost: llm
       area: routing
       scenario: langchain-hosting
@@ -590,7 +590,7 @@ stimuli:
     tags:
       id: langchain-build-routing
       type: integration
-      tier: full
+      tier: smoke
       cost: llm
       area: routing
       scenario: langchain-hosting
