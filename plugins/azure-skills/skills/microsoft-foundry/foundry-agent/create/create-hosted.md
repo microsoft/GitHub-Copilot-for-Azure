@@ -245,8 +245,10 @@ First determine whether the workspace is already a Foundry hosted agent project.
 
 For a Python agent, follow [framework detection](#detect-an-existing-python-framework) before proposing a plan or making changes.
 
+If deployment is requested for a LangChain / LangGraph agent that has only been configured locally, follow the [re-host initialization path](references/re-host.md#step-2-initialize-and-adapt) even if `azure.yaml` already contains a hosted service.
+
 - **Existing Foundry hosted agent** -- preserve its project structure, make the requested changes, and continue. For Foundry-specific features, use `azd ai agent sample list` and follow the [azd Sample Selection Guidance](#azd-sample-selection-guidance) to choose a sample for code reference.
-- **Other existing agent** -- infer whether the user wants to re-host it on Foundry and ask only when the intended outcome is unclear. If re-hosting, read and follow [Re-host an existing agent](references/re-host.md), then continue to Step 5.
+- **Other existing agent** -- infer whether the user wants to re-host it on Foundry and ask only when the intended outcome is unclear. If re-hosting, read and follow [Re-host an existing agent](references/re-host.md). Continue to Step 5 unless the request stops at local configuration.
 
 If the user wants to switch the deploy mode from the default `code` mode to `container`, follow the
 [deploy mode selection](../deploy/deploy.md#deploy-mode-selection----hosted-agents) to update `azure.yaml`.
