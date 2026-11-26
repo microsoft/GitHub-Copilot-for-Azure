@@ -83,3 +83,40 @@ stimuli:
             Replacing or adapting only the HTTP server or protocol adapter for the Foundry runtime is acceptable and does not count as replacing the underlying SDK architecture.
             Verify that the coding agent created a new Foundry project and model deployment, ran the migrated agent locally, deployed it successfully with direct code deploy,
             invoked the deployed agent with an order-status request, and received a successful tool-grounded response.
+
+  - name: "Migration - Deep Research to Foundry"
+    supported_executors: [copilot-sdk]
+    agent_environment:
+      skills:
+        - ../../../plugins/azure-skills/skills/microsoft-foundry
+      commandTimeout: "5m"
+      commands:
+        - >-
+          python -I -c "import io, pathlib, tarfile, urllib.request;
+          revision = 'a06932197ac66407bfdf079e27bab92d8d3a6a6c';
+          prefix = f'deepagents-{revision}/examples/deep_research/';
+          data = urllib.request.urlopen(f'https://codeload.github.com/langchain-ai/deepagents/tar.gz/{revision}', timeout=60).read();
+          archive = tarfile.open(fileobj=io.BytesIO(data));
+          archive.extractall(members=[entry.replace(name=entry.name[len(prefix):]) for entry in archive.getmembers() if entry.isfile() and entry.name.startswith(prefix)], filter='data');
+          assert pathlib.Path('langgraph.json').is_file(), 'Deep Research sample not found'"
+    constraints:
+      max_turns: 70
+    tags:
+      id: migration-deep-research-to-foundry
+      type: foundry-e2e
+      tier: full
+      cost: llm
+      area: migrate
+    prompt: >-
+      Re-host this entire application, including its existing public operations, as Microsoft Foundry hosted agents. Preserve business behavior and deliver a deployable project.
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: completed
+      - type: program
+        config:
+          program: python
+          args: ["-I", "-B", "${FOUNDRY_MIGRATION_GRADER=--foundry-migration-grader-required}"]
+          timeout: "2h"
