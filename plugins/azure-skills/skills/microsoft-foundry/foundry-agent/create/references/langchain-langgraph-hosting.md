@@ -46,7 +46,16 @@ In the service's `project` directory, add or reuse `langgraph.json` and bind the
 {"dependencies": ["."], "graphs": {"agent": "./main.py:graph"}}
 ```
 
-Add `langchain-azure-ai[hosting,opentelemetry]>=1.2.9` to the existing `pyproject.toml` or `requirements.txt`. Add or merge this service in `azure.yaml` (`project: .` for root-level code):
+Add `langchain-azure-ai[hosting,opentelemetry]>=1.2.9` to the existing `pyproject.toml` or `requirements.txt`. Add a small deployment launcher, `foundry_host.py`, next to `langgraph.json` without changing the graph code:
+
+```python
+from langchain_azure_ai.agents.hosting.run import main
+
+if __name__ == "__main__":
+    main(["--protocol", "responses"])
+```
+
+Add or merge this service in `azure.yaml` (`project: .` for root-level code):
 
 ```yaml
 name: my-agent
@@ -63,12 +72,14 @@ services:
     startupCommand: python -m langchain_azure_ai.agents.hosting.run --protocol responses
     codeConfiguration:
       runtime: python_3_13
-      entryPoint: "-m langchain_azure_ai.agents.hosting.run --protocol responses"
+      entryPoint: foundry_host.py
     env:
       OTEL_AUTO_CONFIGURE_AZURE_MONITOR: "true"
 ```
 
-For Invocations, replace `responses` with `invocations` in the protocol and both fields. `startupCommand` includes `python`; `codeConfiguration.entryPoint` contains only the arguments starting with `-m` because the runtime supplies Python. When scaffolding, pass those same module arguments as one `--entry-point` argument. Verify the graph binding resolves to the existing code.
+Keep the module command in `startupCommand` for local runs. `azd` passes `codeConfiguration.entryPoint` as one argument to Python, so use the launcher path relative to the service's `project`, not module arguments. When scaffolding, pass `--entry-point foundry_host.py` even if the sample shows inline module arguments. Before running or deploying, verify the launcher exists and the graph binding resolves to the existing code.
+
+For Invocations, use `invocations` in `protocols`, `startupCommand`, and the launcher's argument list. The entry-point filename stays the same.
 
 ## Model wiring and tracing
 

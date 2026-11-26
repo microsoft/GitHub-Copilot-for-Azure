@@ -102,7 +102,7 @@ Capture the `manifestUrl`.
 
 You should pick only one sample for `azd ai agent init`, but you can browse multiple samples relevant to user's task as code reference.
 
-> **Important:** For LangChain / LangGraph, follow [LangChain and LangGraph hosting](references/langchain-langgraph-hosting.md) before selecting a sample or editing code. For configuration-only hosting, use and validate the sample's module entry point and `langgraph.json` binding instead of the file-based entry point below.
+> **Important:** For LangChain / LangGraph, follow [LangChain and LangGraph hosting](references/langchain-langgraph-hosting.md) before selecting a sample or editing code. For configuration-only hosting, use the Python launcher from that guide and verify the launcher and `langgraph.json` binding in the scaffolded service directory.
 
 Step 4 needs `--runtime` and `--entry-point` values. These are CLI args, **not** fields in the manifest — use these standard defaults for the chosen language:
 
@@ -142,7 +142,7 @@ azd env set AZURE_AI_PROJECT_NAME "<project-name>"
 Values you **must** substitute from Step 3 — do not pass placeholders or guesses:
 
 - `--runtime`: exactly one of `python_3_13`, `python_3_14`, `dotnet_10` (the bare value `python` fails with `--runtime must be one of: python_3_13, python_3_14, dotnet_10`).
-- `--entry-point`: the entry-point file the sample declares (e.g. `main.py`, not `app.py` — a wrong value scaffolds correctly but breaks local run and deploy).
+- `--entry-point`: the entry-point file the sample declares (e.g. `main.py`, not `app.py`), or `foundry_host.py` for configuration-only LangChain / LangGraph. Never pass the local module command here.
 
 If using an existing Foundry project, add `--project-id "<arm-id>"`.
 
@@ -159,7 +159,7 @@ The scaffold is a generic working sample. Edit only what the user's original pro
 Typical changes:
 
 - The agent service's `description:` in `azure.yaml` — update it to match the user's intent (this also feeds Step 13 eval generation).
-- `src/<agent-name>/<entry-point>` — update the system prompt / instructions to match the user's intent.
+- `src/<agent-name>/<entry-point>` — update the system prompt / instructions to match the user's intent. For configuration-only LangChain / LangGraph, use the source referenced in `langgraph.json`, not the launcher.
 
 Only when the user explicitly asked for it:
 

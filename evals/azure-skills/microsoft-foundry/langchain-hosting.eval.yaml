@@ -134,6 +134,11 @@ stimuli:
       - &noFrameworkQuestion |
         Does not ask the user to select, name, or confirm a framework in the
         final response. Asking for an unresolved project or model is fine.
+      - |
+        Keeps the Responses module command in startupCommand and uses a
+        Python launcher file as codeConfiguration.entryPoint. Explains that
+        the launcher runs the same config-driven runner over Responses.
+        Rejects a module command or arguments as the deployment entry point.
     graders:
       - type: skill-invocation
         config: { required: [microsoft-foundry] }
@@ -166,7 +171,7 @@ stimuli:
         - src: fixture/langchain-hosting/graph
           dest: .
     prompt: |
-      Prepare this Python ticket agent for Microsoft Foundry over Invocations. Add the files and dependencies needed for code deployment, keeping the repository root as the service source directory and preserving the existing program and dependencies. The project and model will be selected later, so only make local configuration edits. Summarize the official sample you followed.
+      Prepare this Python ticket agent for Microsoft Foundry over Invocations. Add the files and dependencies needed for code deployment, keeping the repository root as the service source directory and preserving the existing program and dependencies. The project and model will be selected later, so make only local hosting changes. Summarize the official sample you followed.
     tags:
       id: langchain-dependencies-invocations-rehost
       type: integration
@@ -190,8 +195,10 @@ stimuli:
         language: python, project: . (or equivalent), and an invocations item
         under protocols. Its startupCommand runs
         `python -m langchain_azure_ai.agents.hosting.run --protocol invocations`
-        (a `uv run` prefix is fine), and its codeConfiguration.entryPoint is
-        `-m langchain_azure_ai.agents.hosting.run --protocol invocations`.
+        (a `uv run` prefix is fine). Its codeConfiguration.entryPoint points
+        to an added Python launcher relative to the service's project directory.
+        The launcher runs the config-driven runner over Invocations. Reject
+        module arguments in codeConfiguration.entryPoint.
         Reject fields at the top level or spread across services.
       - |
         The generated langgraph.json is valid JSON, with "." in the dependencies

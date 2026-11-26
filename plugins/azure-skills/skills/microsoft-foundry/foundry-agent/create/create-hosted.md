@@ -59,7 +59,7 @@ Capture the selected sample's `manifestUrl`.
 
 You should pick only one sample for `azd ai agent init`, but you can browse multiple samples relevant to the user's task as code references.
 
-> **Important:** For LangChain / LangGraph, follow [LangChain and LangGraph hosting](references/langchain-langgraph-hosting.md) before selecting a sample or editing code. Use the selected sample's module entry point in place of `main.py` when specified.
+> **Important:** For LangChain / LangGraph, follow [LangChain and LangGraph hosting](references/langchain-langgraph-hosting.md) before selecting a sample or editing code. For configuration-only code deployment, pass the Python launcher filename from that guide as `--entry-point` and ensure the launcher exists in the scaffolded service directory.
 
 ## Workflow
 
