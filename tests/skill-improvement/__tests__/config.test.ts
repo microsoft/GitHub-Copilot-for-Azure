@@ -192,8 +192,12 @@ describe("skill improvement configuration", () => {
     expect(() => enforceRunLimits(runSpec, plan)).not.toThrow();
     expect(plan.baselineAnswerGenerations).toBeGreaterThan(0);
     expect(plan.heldOutAnswerGenerations).toBeGreaterThan(0);
-    expect(plan.maximumAnswerGenerations).toBeLessThanOrEqual(620);
-    expect(plan.maximumJudgeCalls).toBeLessThanOrEqual(620);
+    expect(plan.maximumAnswerGenerations).toBeLessThanOrEqual(
+      runSpec.limits.maxAnswerGenerations
+    );
+    expect(plan.maximumJudgeCalls).toBeLessThanOrEqual(
+      runSpec.limits.maxJudgeCalls
+    );
   });
 
   test("keeps the Flex routing fixture narrow and keyless", () => {
