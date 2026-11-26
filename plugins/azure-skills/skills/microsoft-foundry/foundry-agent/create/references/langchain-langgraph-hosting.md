@@ -119,7 +119,7 @@ Use `langchain_azure_ai.tools.AzureAIProjectToolbox` and follow the [LangChain /
 az role assignment list --assignee "<agent-principal-id>" --scope "<project-arm-id>" --role "Foundry User" --include-inherited --output table
 ```
 
-If the role is missing, have an authorized operator grant it to that identity at the project scope:
+If no `Foundry User` assignment is found, check whether another role grants the agent's managed identity model inference access. Only if that access is missing, have an authorized operator grant `Foundry User` at the project scope:
 
 ```bash
 az role assignment create --assignee-object-id "<agent-principal-id>" --assignee-principal-type ServicePrincipal --scope "<project-arm-id>" --role "Foundry User"
