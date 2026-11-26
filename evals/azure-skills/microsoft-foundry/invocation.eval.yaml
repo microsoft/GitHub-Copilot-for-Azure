@@ -580,7 +580,7 @@ stimuli:
       earlyTerminate: &langchainRoutingStop '[{"type":"skill-call","skill":"microsoft-foundry"}]'
       systemPrompt: &langchainRoutingSafety '{"mode":"append","content":"This exercise ends at workflow selection. Do not run setup or deployment commands, access live Azure resources, or modify files."}'
     constraints:
-      max_turns: 3
+      max_turns: 5
     graders:
       - type: skill-invocation
         config:
@@ -597,7 +597,7 @@ stimuli:
       earlyTerminate: *langchainRoutingStop
       systemPrompt: *langchainRoutingSafety
     constraints:
-      max_turns: 3
+      max_turns: 5
     graders:
       - type: skill-invocation
         config:
