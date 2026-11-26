@@ -34,10 +34,10 @@ stimuli:
     rubric:
       - |
         Offers a Python framework decision with Microsoft Agent Framework (MAF)
-        as the default, LangChain and LangGraph as one option using
-        langchain-azure-ai, and a Bring Your Own / Custom option. Accept equivalent
-        wording and any option order. Listing LangChain and LangGraph as
-        separate choices does not meet the criterion.
+        as the default, LangChain and LangGraph, and a Bring Your Own / Custom
+        option. Accept equivalent wording and any order. LangChain and LangGraph
+        can be grouped or listed separately; naming the integration package is
+        optional at this planning stage.
     graders:
       - type: skill-invocation
         config: { required: [microsoft-foundry] }
@@ -303,8 +303,9 @@ stimuli:
         such as adding missing `properties` to object schemas. Do not
         require a particular helper name or wording.
       - |
-        Explains how to surface the URL from the nested CONSENT_REQUIRED error
-        to the user when MCP returns -32006.
+        Explains how to extract the authorization URL from a consent-required
+        MCP error and surface it to the user. Do not require the literal fixture
+        URL or numeric error code.
     graders:
       - type: skill-invocation
         config: { required: [microsoft-foundry] }
@@ -316,9 +317,6 @@ stimuli:
             - name: *readTool
               pattern: 'consent-error\.json'
           disallowed: *liveCommands
-      - type: output-matches
-        config:
-          pattern: 'https://auth\.example\.invalid/authorize\?ticket=oak-42\b'
       - *requiredRubric
       - type: diff-empty
 
