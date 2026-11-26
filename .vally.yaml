@@ -28,7 +28,7 @@ suites:
   langchain-hosting:
     description: "Foundry LangChain hosting evals without live Azure access"
     filter:
-      feature: langchain-hosting-p0
+      scenario: langchain-hosting
 
   foundry-e2e:
     description: "Azure-authenticated Microsoft Foundry E2E evals"

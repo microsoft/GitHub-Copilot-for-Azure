@@ -3,7 +3,7 @@ description: Offline workflow checks for first-class LangChain and LangGraph hos
 
 tags:
   skill: microsoft-foundry
-  feature: langchain-hosting-p0
+  scenario: langchain-hosting
   systemPrompt: >-
     {"mode":"append","content":"This is an offline workflow continuation. Invoke microsoft-foundry and resolve packaged references from the skill directory it returns. The parent dependency and workflow environment checks have already completed successfully. Do not rerun them, run Azure CLI or azd, access the network, or change Azure resources. Use the packaged skill and supplied synthetic inputs. Put any questions in the response instead of pausing for interactive input."}
 

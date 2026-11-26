@@ -576,7 +576,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      feature: langchain-hosting-p0
+      scenario: langchain-hosting
       earlyTerminate: &langchainRoutingStop '[{"type":"skill-call","skill":"microsoft-foundry"}]'
       systemPrompt: &langchainRoutingSafety '{"mode":"append","content":"This exercise ends at workflow selection. Do not run setup or deployment commands, access live Azure resources, or modify files."}'
     constraints:
@@ -593,7 +593,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      feature: langchain-hosting-p0
+      scenario: langchain-hosting
       earlyTerminate: *langchainRoutingStop
       systemPrompt: *langchainRoutingSafety
     constraints:
