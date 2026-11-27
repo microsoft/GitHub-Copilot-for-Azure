@@ -5,7 +5,20 @@
 > in the **azd-deployment** plugin skill if installed.
 
 ## Install
+Prefer the package manager for your platform. See the [official azd installation guide](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd).
+
+- **Windows:** `winget install microsoft.azd`
+- **macOS:** `brew trust azure/azd && brew install --cask azure/azd/azd`
+- **Linux:** Download the signed package for your distro and CPU architecture from [GitHub Releases](https://github.com/Azure/azure-dev/releases). Run the matching command from the download directory, replacing `azd.deb` or `azd.rpm` with the downloaded filename:
+  - Debian/Ubuntu (`.deb`): `sudo apt install ./azd.deb`
+  - Fedora/RHEL (`.rpm`): `sudo dnf install ./azd.rpm` (or `sudo yum install ./azd.rpm` on systems that use Yum)
+  - Some distros use neither package format. Check the distro and its package manager first; if neither applies, consult the official guide rather than running either command.
+
+**Script fallback (Linux/macOS only):** If no supported package-manager option is available, tell the user that the following command downloads and immediately executes a remote script. Run it only after the user explicitly confirms.
+
+```bash
 curl -fsSL https://aka.ms/install-azd.sh | bash
+```
 
 ## Quick Start
 ```bash
