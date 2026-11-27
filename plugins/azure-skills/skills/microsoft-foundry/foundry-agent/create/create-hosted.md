@@ -83,15 +83,15 @@ Then run the bundled verification script before any create/deploy command:
 ./scripts/verify-environment.ps1    # Windows (pwsh)
 ```
 
-Do not continue past Step 1 while any `[ACTION]` from environment verification remains. Never run `az login` or `azd auth login` for the user. Missing authentication is a hard stop before any `azd ai agent init`, `azd provision`, `azd deploy`, or other deploy command.
+Resolve outstanding `[ACTION]` items before running an affected operation. Missing authentication is a hard stop before `azd ai agent init`, `azd provision`, `azd deploy`, or any other operation that requires Azure access. It does not block inspecting or adapting existing code, preparing local configuration, or running checks that do not require Azure access. Do not treat those checks as cloud verification.
 
 Act on the summary prefixes:
 
 - `[OK]` -- nothing to do.
 - `[WARN]` -- non-blocking; continue.
-- `[ACTION]` -- resolve first, then rerun the script. If `az` or `azd` is missing, ask before installing in interactive mode; install directly in non-interactive mode. For how to install `azd`, see <https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/install-azd>. In any mode, never run `az login` or `azd auth login`; stop and ask the user to log in manually. Missing `azure.ai.agents` / `azure.ai.projects` / `azure.ai.evaluations` extensions may be resolved with `azd extension install <name>`. Failed `az` or `azd` auth checks must stop the workflow until the user logs in manually.
+- `[ACTION]` -- resolve the prerequisite for the affected operation, then rerun the script before that operation. If `az` or `azd` is missing, ask before installing in interactive mode; install directly in non-interactive mode. For how to install `azd`, see <https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/install-azd>. Missing `azure.ai.agents` / `azure.ai.projects` / `azure.ai.evaluations` extensions may be resolved with `azd extension install <name>`. Before the first operation that requires authentication, ask the user to log in manually if needed. Never run `az login` or `azd auth login` for the user.
 
-Branch on the agent status reported by `verify-environment`:
+When proceeding with the cloud workflow, branch on the agent status reported by `verify-environment`:
 
 - `not_deployed` -> Step 2.
 - `active` / `deployed` -> for code changes, continue to Step 4b; for deploy-only requests, use [deploy/deploy.md](../deploy/deploy.md); to add a tool, use [toolbox.md](../toolbox/toolbox.md).
@@ -322,7 +322,7 @@ See the canonical env-var registry: [azure-dev/cli/azd/docs/environment-variable
 
 1. **Sample-first** -- select the sample and capture its `manifestUrl` according to the [azd Sample Selection Guidance](#azd-sample-selection-guidance).
 2. **Prefer azd over az** -- fall back to `az` only as a last resort, with explicit consent.
-3. **Don't auto-login** -- `az login` and `azd auth login` are user-owned browser flows; ask the user and stop.
+3. **Don't auto-login** -- `az login` and `azd auth login` are user-owned browser flows; ask the user before the first operation that requires authentication.
 4. **JSON output** -- add `--output json` only to read-only `azd ai agent` commands such as `show`. Do not add it to `azd ai agent invoke`; invoke supports `default` and `raw`, not `json`.
 5. **One file** -- the agent is defined as a service block in `azure.yaml` (`host: azure.ai.agent`). See [azd-ai-cli](../azd-guidance/references/azd-ai-cli.md).
 6. **Reserved env vars** -- `FOUNDRY_*` and `AGENT_*` are platform-injected at runtime; `AI_PROJECT_DEPLOYMENTS`, `AI_PROJECT_RESOURCES`, and `AI_PROJECT_TOOL_CONNECTIONS` are extension-managed transport for Bicep. Never set any of these with `azd env set` -- edit `azure.yaml` and re-run `azd ai agent init`.
@@ -333,7 +333,7 @@ See the canonical env-var registry: [azure-dev/cli/azd/docs/environment-variable
 > - **Project:** if the user named a project or asked to create one, go ahead; otherwise stop and ask before provisioning.
 > - **Toolbox/connection:** create it only when the user asked you to; otherwise leave the configs as placeholders and ask.
 
-Defaults when unspecified: greenfield + Python + `azd ai agent sample list --language python --output json`, choose the samples based on [azd Sample Selection Guidance](#azd-sample-selection-guidance), plus `--no-prompt` on every write. Always set the subscription and location after init as shown in Step 4a. If creating a new project and the user did not provide a project name, auto-generate one using the pattern `ai-project-<random>` (6-8 lowercase alphanumeric characters). Show the generated name to the user but do not block on confirmation. If using an existing project, ensure `azd ai agent init` receives `--project-id`: use the supplied ARM ID, or run the Step 2 resolve script for the supplied Foundry project endpoint and pass the returned `id`. If the user did not ask to create a new project and did not supply an existing one (ARM ID / endpoint), stop and ask which to use before provisioning. If `az` or `azd` is missing, ask before installing in interactive mode; install directly in non-interactive mode. In any mode, never run `az login` or `azd auth login`; stop and ask the user to log in manually before re-running Step 1. If the manifest declares secret parameters, collect them with `ask_user` and set them via `azd env set PARAM_...` before init -- keep `--no-prompt` (do not fall into azd's interactive prompts).
+Defaults when unspecified: greenfield + Python + `azd ai agent sample list --language python --output json`, choose the samples based on [azd Sample Selection Guidance](#azd-sample-selection-guidance), plus `--no-prompt` on every write. Always set the subscription and location after init as shown in Step 4a. If creating a new project and the user did not provide a project name, auto-generate one using the pattern `ai-project-<random>` (6-8 lowercase alphanumeric characters). Show the generated name to the user but do not block on confirmation. If using an existing project, ensure `azd ai agent init` receives `--project-id`: use the supplied ARM ID, or run the Step 2 resolve script for the supplied Foundry project endpoint and pass the returned `id`. If the user did not ask to create a new project and did not supply an existing one (ARM ID / endpoint), stop and ask which to use before provisioning. If `az` or `azd` is missing, ask before installing in interactive mode; install directly in non-interactive mode. Follow the same Step 1 authentication boundary in non-interactive mode. If the manifest declares secret parameters, collect them with `ask_user` and set them via `azd env set PARAM_...` before init -- keep `--no-prompt` (do not fall into azd's interactive prompts).
 
 ## Error Handling
 
