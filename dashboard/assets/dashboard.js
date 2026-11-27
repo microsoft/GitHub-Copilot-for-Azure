@@ -1843,6 +1843,76 @@ function renderIntegrationTokenUsagePanel(section, rows, dateLabel) {
 
 // ── Initialization ──────────────────────────────────────────────────────────
 
+function renderQuotas(output, response) {
+  if (!Array.isArray(response.data)) {
+    throw new Error("Invalid quota response: expected regional data.");
+  }
+
+  const fragment = document.createDocumentFragment();
+  for (const entry of response.data) {
+    if (typeof entry.region !== "string" || !Array.isArray(entry.usages)) {
+      throw new Error("Invalid quota response: expected a region and usage records.");
+    }
+    const region = el("section", "quota-region");
+    region.appendChild(el("h3", "", entry.region));
+
+    if (entry.usages.length === 0) {
+      region.appendChild(el("p", "", "No quota items with positive usage."));
+    }
+    for (const item of entry.usages) {
+      const row = el("div", "quota-item");
+      const name = item.name?.localizedValue || item.name?.value || "Unnamed quota";
+      row.appendChild(el("h4", "", name));
+
+      const usage = item.currentValue;
+      const limit = item.limit;
+      const validUsage = typeof usage === "number" && Number.isFinite(usage) && usage >= 0;
+      const validLimit = typeof limit === "number" && Number.isFinite(limit) && limit > 0;
+      const units = item.unit ? " " + item.unit : "";
+      if (validUsage && validLimit) {
+        const percent = usage / limit * 100;
+        const progress = el("progress", "quota-progress");
+        progress.max = limit;
+        progress.value = Math.min(usage, limit);
+        progress.setAttribute("aria-label", entry.region + ": " + name);
+        progress.setAttribute("aria-valuetext", usage + " of " + limit + units);
+        row.appendChild(progress);
+        row.appendChild(el("p", "", usage + " / " + limit + units +
+          " (" + percent.toFixed(1) + "%)" + (usage > limit ? " — Over limit" : "")));
+      } else {
+        row.appendChild(el("p", "", (validUsage ? usage + units + " used" : "Usage unavailable") +
+          " / " + (typeof limit === "number" && Number.isFinite(limit)
+            ? "Limit: " + limit + units + " (no positive capacity)"
+            : "Limit unavailable")));
+      }
+      region.appendChild(row);
+    }
+    fragment.appendChild(region);
+  }
+  output.replaceChildren(fragment);
+}
+
+async function initQuotaQuery() {
+  const status = document.getElementById("quota-status");
+  const output = document.getElementById("quota-response");
+
+  status.textContent = "";
+  output.hidden = true;
+  output.textContent = "";
+
+  try {
+    const response = await fetch("/api/quotas");
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error("HTTP " + response.status + (typeof data.error === "string" ? ": " + data.error : ""));
+    }
+    renderQuotas(output, data);
+    output.hidden = false;
+  } catch (error) {
+    status.textContent = "Failed to query quotas: " + error.message;
+  }
+}
+
 async function init() {
   try {
     const response = await fetch("/api/static");
@@ -1883,6 +1953,7 @@ async function init() {
 }
 
 document.addEventListener("DOMContentLoaded", async function () {
+  initQuotaQuery();
   // Populate the plugin selector (and cache the plugin-container map) before
   // kicking off the data loads, so their API calls can include the selected
   // plugin's container fallback on the very first page load.
