@@ -46,6 +46,8 @@ A test case (Vally stimulus) defines its Azure fixtures with the following files
 
 The dynamically generated resource context of stimuli fixtures are automatically injected to the first user prompt of the stimuli.
 
+> Note: Name fixture manifests with the `*.manifest.json` suffix so the dashboard collection and upload workflow can track them automatically. Files named `manifest.json` or `azure-manifest.json` do not match this pattern and are not included in the dashboard's manifest inventory. When renaming a manifest, update the stimulus's `azureFixture` path as well.
+
 ### Workflow fixture
 
 A workflow defines its Azure fixtures with the following files:
@@ -276,6 +278,25 @@ Future runs of the provision script will provision the updated version of the fi
 
 - Use the cleanup script with the manifest to delete all resource groups with matching `fixtureId` and values.
 - Remove the workflow and all the fixture manifests that are no longer used.
+
+## Monitoring deployed fixtures
+
+Open the deployed Skill Health Dashboard and select **Fixture** in the navigation bar (`/fixture.html`; see the [dashboard overview](../dashboard/README.md)). The page compares deployed resource groups against the collected manifest inventory.
+
+1. Find the section for your manifest's `id`. Deployed resource groups are grouped by their `ManifestId` tag. Each section shows the number of discovered resource groups and any expected fixtures that are missing.
+2. Review each resource group card:
+   - **Fixture** and **Fixture version** identify the deployed fixture. Compare the version with the current manifest when investigating stale deployments.
+   - **Completed** shows the provisioning completion tag, not ongoing resource health. `False` can indicate provisioning is still running or did not finish.
+   - **Delete after** shows the scheduled cleanup eligibility time in your local time zone. **Do not delete** shows the persistence tag when no `DeleteAfter` tag is present.
+3. Select a card or **View details** to inspect the resource group name, location, subscription ID, resource ID, and all tags. Use these identifiers to investigate the resources in Azure or perform manual cleanup.
+4. Investigate discrepancies:
+   - **Expected fixture missing** means no discovered resource group in that manifest group matches the expected `FixtureId` and manifest version. A non-persistent fixture may legitimately be absent between test runs.
+   - **Not in manifest** means the group's manifest ID is absent from the uploaded inventory. Check for a removed manifest, an incorrect filename, or an inventory that has not yet refreshed before treating the resources as stale.
+   - **No ManifestId** groups resource groups that have a `FixtureId` tag but no `ManifestId` tag.
+
+The page queries Azure Resource Graph when loaded, across the dashboard's configured subscriptions, and excludes resource groups being deleted. Reload the page to refresh it; Resource Graph changes may take time to appear.
+
+The expected manifest inventory is collected by the [fixture manifest collector](../scripts/src/dashboard/fixture-manifest-collect.ts) and uploaded by the [Dashboard Collect workflow](../.github/workflows/dashboard-collect.yml), scheduled daily at 06:00 UTC or runnable manually. New or updated manifests appear after that workflow collects and uploads them. This inventory refresh is separate from the deployed resource query.
 
 ## References
 

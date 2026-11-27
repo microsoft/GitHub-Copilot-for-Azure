@@ -75,3 +75,10 @@ jobs:
             --file dashboard/data/plugin-skills.json \
             --auth-mode login \
             --overwrite
+          az storage blob upload \
+            --account-name "$STORAGE_ACCOUNT" \
+            --container-name "$STORAGE_CONTAINER" \
+            --name "data/fixtureManifests.json" \
+            --file dashboard/data/fixtureManifests.json \
+            --auth-mode login \
+            --overwrite

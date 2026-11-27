@@ -27,6 +27,9 @@ param tokenUsageTableName string
 @description('Name of the Azure Table that stores integration-test per-run tool usage history.')
 param toolUsageTableName string
 
+@description('Comma-separated Azure subscription IDs used for fixture data.')
+param azureSubscriptionIds string
+
 @description('Application Insights connection string for monitoring.')
 param appInsightsConnectionString string
 
@@ -145,6 +148,7 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
         { name: 'STORAGE_ACCOUNT_NAME', value: storageAccountName }
         { name: 'TOKEN_USAGE_TABLE_NAME', value: tokenUsageTableName }
         { name: 'TOOL_USAGE_TABLE_NAME', value: toolUsageTableName }
+        { name: 'AZURE_SUBSCRIPTION_IDS', value: azureSubscriptionIds }
         { name: 'MSBENCH_STORAGE_ACCOUNT', value: msbenchStorageAccountName }
         { name: 'MSBENCH_REPORTS_CONTAINER', value: msbenchReportsContainerName }
         { name: 'MSBENCH_EVAL_TABLE_NAME', value: msbenchEvalTableName }

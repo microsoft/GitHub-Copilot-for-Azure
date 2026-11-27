@@ -1,8 +1,27 @@
 import { describe, expect, it } from "vitest";
 import {
+  validateAzureFixtureTag,
   validateEarlyTerminatePatterns,
   validateRubric,
 } from "../validate-stimulus.js";
+
+describe("validateAzureFixtureTag", () => {
+  it("accepts manifest JSON fixture paths", () => {
+    expect(validateAzureFixtureTag("./fixture/missing-tag/azure.manifest.json")).toBeUndefined();
+  });
+
+  it("rejects fixture paths without the manifest JSON suffix", () => {
+    expect(validateAzureFixtureTag("./fixture/missing-tag/azure.json")).toBe(
+      "tags.azureFixture must match **/*.manifest.json",
+    );
+  });
+
+  it("rejects non-string fixture paths", () => {
+    expect(validateAzureFixtureTag(["./fixture/azure.manifest.json"])).toBe(
+      "tags.azureFixture must match **/*.manifest.json",
+    );
+  });
+});
 
 describe("validateEarlyTerminatePatterns", () => {
   it("accepts JavaScript-compatible regular expressions", () => {
