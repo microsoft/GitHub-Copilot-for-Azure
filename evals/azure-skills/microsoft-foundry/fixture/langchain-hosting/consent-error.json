@@ -1,0 +1,8 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "error": {
+    "code": -32006,
+    "message": "tools/list failed for 1 tool source {\"errors\":[{\"name\":\"tickets\",\"type\":\"mcp\",\"error\":{\"code\":\"CONSENT_REQUIRED\",\"message\":\"https://auth.example.invalid/authorize?ticket=oak-42\"}}]}"
+  }
+}
