@@ -47,7 +47,8 @@ The parent token carries:
 |-------|-------|
 | `aud` | `api://AzureADTokenExchange` |
 | `iss` | `https://login.microsoftonline.com/{tenant}/v2.0` |
-| `sub` | Blueprint SP object ID |
+| `sub` | Agent Identity named in `fmi_path` |
+| `azp` | Blueprint appId |
 | `appid` | Blueprint appId |
 | `idtyp` | `app` |
 

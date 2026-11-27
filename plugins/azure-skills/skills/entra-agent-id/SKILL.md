@@ -214,9 +214,14 @@ For MI+WIF and client-secret setup details, see [references/oauth2-token-flow.md
 
 For .NET services, use **`Microsoft.Identity.Web.AgentIdentities`** — it handles Federated Identity Credential management and the two-step exchange for you. See the package README at `github.com/AzureAD/microsoft-identity-web` under `src/Microsoft.Identity.Web.AgentIdentities/`.
 
-## Granting Permissions (Per Agent Identity)
+## Granting Permissions
 
-Agent Identities support both application permissions (autonomous) and delegated permissions (OBO). Grants are scoped **per Agent Identity**, not to the BlueprintPrincipal.
+Agent Identities support both application permissions (autonomous) and delegated permissions (OBO). Grant permissions in one of two ways:
+
+- **Per Agent Identity** — direct grants apply only to that Agent Identity (examples below).
+- **On the BlueprintPrincipal (shared base set)** — when the resource app is listed in the Blueprint's inheritable permissions, all present and future Agent Identities from that Blueprint receive the grant in their tokens. Inherited permissions are visible only in runtime tokens, not on the Agent Identity in Graph or the portal.
+
+> ⚠️ **Warning:** With the **All allowed** inheritance pattern, any scope or role granted to the BlueprintPrincipal later is automatically inherited by every child Agent Identity. Keep high-privilege permissions out of inheritable resource apps and grant them per Agent Identity. See [Inheritable permissions](https://learn.microsoft.com/entra/agent-id/concept-inheritable-permissions).
 
 ### Application permissions (autonomous)
 
@@ -318,7 +323,7 @@ After admin consent, tokens may not include new claims for 30–120 seconds — 
 8. **Use `fmi_path`** with `client_credentials` — NOT RFC 8693 `urn:ietf:params:oauth:grant-type:token-exchange` (returns `AADSTS82001`).
 9. **Always use `/.default` scope** in both steps of the exchange — individual scopes fail.
 10. **Step 1 targets the Agent Identity's home tenant** in cross-tenant flows.
-11. **Grant permissions per Agent Identity**, not to the BlueprintPrincipal.
+11. **Grant per Agent Identity, or on the BlueprintPrincipal for a shared base set** via inheritable permissions — "All allowed" auto-propagates later BlueprintPrincipal grants to every child.
 12. **Handle permission-propagation delays** — retry 403s with 30–120s backoff after admin consent.
 13. **Keep the Entra SDK for AgentID on localhost** — never expose via LoadBalancer or Ingress.
 
