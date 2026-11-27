@@ -1,0 +1,8 @@
+{
+    "name": "azure-samples/php-appservice-hello",
+    "description": "Minimal PHP app for php-appservice-deploy evals",
+    "type": "project",
+    "require": {
+        "php": ">=8.2"
+    }
+}

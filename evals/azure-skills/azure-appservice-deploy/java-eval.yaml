@@ -1,0 +1,170 @@
+name: azure-appservice-deploy-java-eval
+description: |
+  Spring Boot deployment on a real Azure subscription, Java server routing,
+  and boundaries for other stacks, hosting targets and IaC.
+
+tags:
+  type: integration
+  skill: azure-appservice-deploy
+  requiredSkills: [azure-appservice-deploy, azure-prepare]
+
+defaults:
+  runs: 1
+  timeout: "35m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  - name: "Spring Boot end-to-end deployment"
+    prompt: |
+      I have a Spring Boot sample app in this workspace.
+      Use my current Azure subscription and the eastus2 region.
+      Deploy this Java app to Azure App Service.
+    agent_environment:
+      files:
+        - src: fixture/java-app/pom.xml
+          dest: pom.xml
+        - src: fixture/java-app/src/main/java/com/example/hello/HelloApplication.java
+          dest: src/main/java/com/example/hello/HelloApplication.java
+    tags:
+      type: integration
+      tier: full
+      cost: azure
+      area: e2e-deployment
+      framework: spring-boot
+      systemPrompt: '{"mode":"append","content":"Use a pseudo-random resource group name (suffix with random characters) to avoid collisions with existing resource groups."}'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [azure-appservice-deploy]
+      - type: shell-command-invoked
+        config:
+          required:
+            - command: "\\baz\\s+quota\\s+(list|show)\\b|check-quota\\.(ps1|sh)"
+            - command: "\\baz\\s+quota\\s+usage\\s+(list|show)\\b|check-quota\\.(ps1|sh)"
+            - command: '\baz[ \t]+appservice[ \t]+list-locations\b(?:[^;\r\n&|\\`]|[\\`][^\r\n]|[\\`]\r?\n)*--sku[ \t]+P0v3\b(?:[^;\r\n&|\\`]|[\\`][^\r\n]|[\\`]\r?\n)*--linux-workers-enabled\b'
+            - command: '\baz[ \t]+webapp[ \t]+deploy\b(?:[^;\r\n&|\\`]|[\\`][^\r\n]|[\\`]\r?\n)*--type[ \t]+jar\b|\bazd[ \t]+deploy\b'
+          disallowed:
+            - command: "\\baz\\s+webapp\\s+up(?!date)\\b"
+            - command: "(?i)\\baz\\s+webapp\\s+log\\s+tail\\b|\\bazd\\s+monitor\\b"
+            - command: '(?i)\b(curl|wget|Invoke-WebRequest|Invoke-RestMethod|iwr|irm)(\.exe)?\b[^\r\n;&|]*(azurewebsites\.net|\$\{?(url|endpoint|host_?|hostname|app_?url|site_?url)\b)'
+            - command: '(?i)\b(curl|wget|Invoke-WebRequest|Invoke-RestMethod|iwr|irm)(\.exe)?\b(?![^\r\n;&|]*(--output(?:=|\s)|--output-document(?:=|\s)|\s-o\s|-OutFile\s))[^\r\n;&|]*\$(\{[^}]+\}|[A-Za-z_]\w*)'
+      - type: output-matches
+        config:
+          pattern: "https://[^\\s]+\\.azurewebsites\\.net"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace|crashed"
+
+  - name: "Spring Boot routing"
+    prompt: "Deploy my Spring Boot app to Azure App Service"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      framework: spring-boot
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-appservice-deploy"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [azure-appservice-deploy]
+
+  - name: "Tomcat WAR routing"
+    prompt: "Deploy my Java WAR file to Tomcat on Azure App Service"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      framework: tomcat
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-appservice-deploy"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [azure-appservice-deploy]
+
+  - name: "JBoss EAP routing"
+    prompt: "Deploy my Jakarta EE app to JBoss EAP on Azure App Service"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      framework: jboss-eap
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-appservice-deploy"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [azure-appservice-deploy]
+
+  - name: "Cross-stack App Service routing from java suite"
+    prompt: "Deploy my ASP.NET Core Web API to Azure App Service"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      requiredSkills: [azure-appservice-deploy, azure-prepare]
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-appservice-deploy"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [azure-appservice-deploy]
+
+  - name: "Java Container Apps does not route here"
+    prompt: "Deploy my Spring Boot app to Azure Container Apps"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing-negative
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"skill-call","skill":"azure-app-onboard"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed: [azure-appservice-deploy]
+
+  - name: "Java Azure Functions does not route here"
+    prompt: "Deploy my Java Azure Functions HTTP trigger app"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing-negative
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"skill-call","skill":"azure-app-onboard"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed: [azure-appservice-deploy]
+
+  - name: "Java Terraform uses infrastructure routing"
+    prompt: "Deploy my Spring Boot app to Azure App Service using azd with Terraform infrastructure"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing-negative
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed: [azure-appservice-deploy]
+          required: [azure-prepare]
+
+  - name: "Java Bicep uses infrastructure routing"
+    prompt: "In my existing Spring Boot project, use azd with Bicep to provision the Azure App Service infrastructure and deploy it. I need infrastructure as code too, not just a code-only deployment; do not scaffold or redesign the application."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing-negative
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed: [azure-appservice-deploy]
+          required: [azure-prepare]

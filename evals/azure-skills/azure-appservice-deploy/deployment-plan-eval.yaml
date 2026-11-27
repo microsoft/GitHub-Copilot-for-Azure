@@ -1,0 +1,53 @@
+name: azure-appservice-deploy-plan-eval
+description: Verify stack and deployment path selection without Azure mutations.
+tags:
+  type: integration
+  tier: smoke
+  cost: llm
+  area: deployment-plan
+  skill: azure-appservice-deploy
+  requiredSkills: [azure-appservice-deploy, azure-prepare]
+defaults:
+  runs: 1
+  timeout: "2m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+scoring:
+  threshold: 1
+stimuli:
+  - name: Java CLI deployment uses the built artifact
+    prompt: "Give me the code-only deployment commands for my Spring Boot Maven JAR on Linux Azure App Service. There's no azure.yaml. Plan only: don't run Azure commands, build, or change files."
+    tags: {type: integration, tier: smoke, cost: llm, area: deployment-plan}
+    graders:
+      - type: skill-invocation
+        config:
+          required: [azure-appservice-deploy]
+      - type: output-matches
+        config:
+          pattern: '(?i)--type\s+["'']?jar\b'
+      - type: output-not-matches
+        config:
+          pattern: '(?i)--type\s+["'']?zip\b'
+  - name: Existing azd service publishes .NET locally
+    prompt: "Plan the code-only deployment of my ASP.NET Core app to Linux Azure App Service. My existing azure.yaml has two services: api (host appservice, language dotnet, project src/Web) and worker (host containerapp). Only deploy api; the target exists. Show the commands but do not execute them or change files."
+    tags: {type: integration, tier: smoke, cost: llm, area: deployment-plan}
+    graders:
+      - type: skill-invocation
+        config:
+          required: [azure-appservice-deploy]
+      - type: output-matches
+        config:
+          pattern: '(?i)\bazd\s+deploy\s+["'']?api\b'
+      - type: output-not-matches
+        config:
+          pattern: '(?i)\bazd\s+deploy\s+["'']?worker\b|SCM_DO_BUILD_DURING_DEPLOYMENT\s*=\s*true'
+  - name: Ambiguous App Service projects require target selection
+    prompt: "I have two equally plausible Linux App Service apps, a FastAPI app in backend and a Laravel app in portal. I haven't picked which app to deploy. What do you need from me before deployment? Do not run deployment commands or edit anything."
+    tags: {type: integration, tier: smoke, cost: llm, area: deployment-plan}
+    graders:
+      - type: skill-invocation
+        config:
+          required: [azure-appservice-deploy]
+      - type: output-matches
+        config:
+          pattern: '(?is)(which|choose|select).*(backend|portal)'

@@ -1,0 +1,220 @@
+# Vally eval config for azure-appservice-deploy
+#
+# Coverage:
+# - PHP e2e: full end-to-end deployment against a real Azure subscription.
+#   Seeds a minimal PHP app fixture (index.php + composer.json), lets the
+#   agent run to completion, and uses the `shell-command-invoked` grader to assert the
+#   agent issued a supported deploy command (`az webapp deploy` or
+#   `azd deploy`) and never ran the deprecated `az webapp up`. Cleanup of
+#   leaked resource groups is handled by the scheduled job in
+#   eng/test-subscription-cleanup/.
+# - Routing (Laravel/Symfony/generic PHP): cheap, early-terminated checks
+#   that prompts route to this skill.
+# - Negative routing (Node.js, Container Apps, Terraform/Bicep): cheap,
+#   early-terminated checks that prompts do not route here.
+#
+# Global graders (evaluate#125 workaround): completed and no_runtime_failure
+# are duplicated into every stimulus block below.
+
+name: azure-appservice-deploy-php-eval
+description: |
+  Evaluation suite for the azure-appservice-deploy skill.
+  Covers a full plain-PHP end-to-end deployment plus routing for PHP web
+  frameworks (Laravel, Symfony, generic), and negative routing boundaries
+  (Node.js, Container Apps, Terraform/Bicep).
+
+tags:
+  type: integration
+  skill: azure-appservice-deploy
+  requiredSkills: [azure-appservice-deploy, azure-prepare]
+
+defaults:
+  runs: 3
+  # 35m global timeout accommodates the PHP e2e stimulus, which runs a
+  # real Azure deployment. All other stimuli terminate early.
+  timeout: "35m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ── php-e2e ──
+  # Full end-to-end PHP deployment against a real Azure subscription.
+  # `runs: 1` keeps Azure cost bounded. The `systemPrompt` tag asks for a
+  # pseudo-random resource group so concurrent runs don't collide.
+  - name: "PHP app end-to-end deployment"
+    prompt: |
+      I have a PHP sample app in this workspace.
+      Use my current Azure subscription and the eastus2 region.
+      Deploy this PHP app to Azure App Service.
+    config:
+      runs: 1
+    environment:
+      files:
+        - src: fixture/php-app/index.php
+          dest: index.php
+        - src: fixture/php-app/composer.json
+          dest: composer.json
+    tags:
+      type: integration
+      tier: full
+      cost: azure
+      area: e2e-deployment
+      framework: plain-php
+      systemPrompt: '{"mode":"append","content":"Use a pseudo-random resource group name (suffix with random characters) to avoid collisions with existing resource groups."}'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-appservice-deploy
+      # Agent must EXECUTE a supported deploy command.
+      - type: shell-command-invoked
+        config:
+          required:
+            - command: "\\baz\\s+webapp\\s+deploy\\b|\\bazd\\s+deploy\\b"
+      # Agent must NOT execute the deprecated `az webapp up` (lookahead
+      # avoids matching `az webapp update`).
+      - type: shell-command-invoked
+        config:
+          disallowed:
+            - command: "\\baz\\s+webapp\\s+up(?!date)\\b"
+      # Post-deploy message must surface the app URL.
+      - type: output-matches
+        config:
+          pattern: "azurewebsites\\.net"
+      # Skill rule: do NOT probe the deployed endpoint.
+      - type: shell-command-invoked
+        config:
+          disallowed:
+            - command: "(?i)\\baz\\s+webapp\\s+log\\s+tail\\b|\\bazd\\s+monitor\\b"
+            - command: '(?i)\b(curl|wget|Invoke-WebRequest|Invoke-RestMethod|iwr|irm)(\.exe)?\b[^\r\n;&|]*(azurewebsites\.net|\$\{?(url|endpoint|host_?|hostname|app_?url|site_?url)\b)'
+            - command: '(?i)\b(curl|wget|Invoke-WebRequest|Invoke-RestMethod|iwr|irm)(\.exe)?\b(?![^\r\n;&|]*(--output(?:=|\s)|--output-document(?:=|\s)|\s-o\s|-OutFile\s))[^\r\n;&|]*\$(\{[^}]+\}|[A-Za-z_]\w*)'
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace|crashed"
+
+  # ── laravel-routing ──
+  - name: "Laravel app deployment routing"
+    prompt: "Deploy this Laravel app to Azure App Service"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      framework: laravel
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-appservice-deploy"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-appservice-deploy
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace|crashed"
+
+  # ── symfony-routing ──
+  - name: "Symfony app deployment routing"
+    prompt: "Deploy my Symfony app to Azure App Service"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      framework: symfony
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-appservice-deploy"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-appservice-deploy
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace|crashed"
+
+  # ── generic-php-routing ──
+  - name: "Generic PHP app deployment routing"
+    prompt: "Deploy my PHP web app to Azure App Service"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      framework: generic
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-appservice-deploy"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-appservice-deploy
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace|crashed"
+
+  - name: "Cross-stack App Service routing from php suite"
+    prompt: "Deploy my Express app to Azure App Service"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      requiredSkills: [azure-appservice-deploy, azure-prepare]
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-appservice-deploy"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-appservice-deploy
+
+  # ── negative: PHP on Container Apps must NOT route here ──
+  # Only asserts this skill is NOT invoked; azure-prepare or azure-app-onboard
+  # may legitimately own the prompt.
+  - name: "PHP Container Apps prompt does not trigger PHP skill"
+    prompt: "Deploy my PHP app to Azure Container Apps"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing-negative
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"skill-call","skill":"azure-app-onboard"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-appservice-deploy
+
+  # ── negative: PHP + App Service + Terraform must NOT route here ──
+  - name: "PHP App Service Terraform prompt routes to azure-prepare"
+    prompt: "Deploy my Laravel app to Azure App Service using Terraform"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing-negative
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-appservice-deploy
+          required:
+            - azure-prepare
+
+  # ── negative: PHP + App Service + Bicep must NOT route here ──
+  - name: "PHP App Service Bicep prompt routes to azure-prepare"
+    prompt: "Deploy my Laravel app to Azure App Service using Bicep"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing-negative
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-appservice-deploy
+          required:
+            - azure-prepare

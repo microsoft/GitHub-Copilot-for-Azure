@@ -1,6 +1,6 @@
 # Deploy via `az` CLI
 
-Use this path when there is **no** `azure.yaml` or it doesn't target `appservice`.
+Use this path when there is **no** `azure.yaml`. A different service host is a handoff, not a CLI fallback.
 
 > ⛔ **NEVER USE `az webapp up`** — this command is deprecated. Use the explicit create + deploy commands below.
 
@@ -9,24 +9,29 @@ Use this path when there is **no** `azure.yaml` or it doesn't target `appservice
 - Verify the latest stable Azure CLI is installed ([installation/update guide](https://learn.microsoft.com/cli/azure/install-azure-cli-windows?pivots=winget)).
 - `az login` complete
 - Subscription, resource group, region, and app name decided (see [create-app.md](create-app.md))
-- App Service Plan (Linux, P0v3) and Web App (Python runtime) exist (see [create-app.md](create-app.md))
+- App Service Plan (Linux, P0v3) and Web App (selected runtime) exist (see [create-app.md](create-app.md))
 
 ## 1. Enable server-side build
+
+For source ZIPs only. For Java artifacts, don't enable remote build.
 
 ```bash
 az webapp config appsettings set \
   -n <app> -g <rg> \
-  --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true
+  --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true -o none || exit 1
 ```
 ```powershell
 az webapp config appsettings set `
   -n <app> -g <rg> `
-  --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true
+  --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true -o none
+if ($LASTEXITCODE -ne 0) { throw "Could not enable remote build" }
 ```
 
-This tells Oryx to run `pip install -r requirements.txt` during deploy.
+For Python, this tells Oryx to run `pip install -r requirements.txt`. Other stacks use the build rules and additional settings from their language guide.
 
-## 2. Startup command — skip for Flask/Django, always set for FastAPI
+## 2. Startup command — follow the selected language guide
+
+For non-Python apps, follow the selected language guide instead of the examples below.
 
 Azure App Service (Oryx) auto-detects **Flask** and **Django** — **do not set a startup command** for these. Skip this step entirely.
 
@@ -43,52 +48,28 @@ az webapp config set -n <app> -g <rg> `
 
 (Replace `main:app` if the FastAPI entry point differs — e.g., `app.main:app`.)
 
-For other frameworks (generic WSGI / ASGI / unknown), **skip this step** and emit the manual-startup warning. See [startup-commands.md](startup-commands.md).
+For other Python frameworks (generic WSGI / ASGI / unknown), **skip this step** and emit the manual-startup warning. See [Python startup commands](python/startup-commands.md).
 
 ## 3. Package the code
 
-For Django remote builds, require `STATIC_ROOT` and successful `python manage.py check` and `python manage.py collectstatic --noinput` before packaging.
+Follow the selected guide's preflight and package rules. Java builds a fresh JAR/WAR/EAR instead of creating a ZIP; PHP uses its own [ZIP recipe](php/package.md).
 
 ### Normalize Linux scripts
 
-Before every deployment/redeployment, explicitly select shipped `.sh` files, text executables with a shebang, and referenced startup scripts. Exclude binaries and dependency folders. From the application/service root, replace the example path below with the selected files; skip only if none exist.
-
-This command works in Bash and PowerShell, preserves encoding/permissions, normalizes CRLF/lone CR, then re-reads bytes to verify LF:
-
-```bash
-python -c "import sys; from pathlib import Path
-for name in sys.argv[1:]:
-    p = Path(name)
-    data = p.read_bytes()
-    if b'\0' in data: raise ValueError(p)
-    lf = data.replace(b'\r\n', b'\n').replace(b'\r', b'\n')
-    if lf != data: p.write_bytes(lf)
-    if b'\r' in p.read_bytes(): raise ValueError(p)
-" "./startup.sh"
-```
-
-Immediately check the result **in the same shell call** before packaging:
-
-```bash
-if [ "$?" -ne 0 ]; then exit 1; fi
-```
-
-```powershell
-if (-not $? -or $LASTEXITCODE -ne 0) { throw "LF normalization/validation failed" }
-```
+Follow the shared [LF normalization and validation procedure](normalize-scripts.md) on shipped scripts before packaging.
 
 ### Create a fresh ZIP
 
 Package only after normalization/validation succeeds. Stop on any failure; deployment requires successful packaging, not merely an existing archive.
 
-Zip the project (excluding venv, caches, git, node_modules):
+ZIP the contents of the selected project root, applying the stack's exclusions. The examples below are for Python; exclude local secrets (including nested `.env*` files) and verify the resulting archive before deploying. For Node.js and .NET preserve the workspace or project references required to build.
 
 ```bash
 # bash
 rm -f app.zip || exit 1
 zip -r app.zip . \
   -x ".git/*" -x ".venv/*" -x "venv/*" -x "__pycache__/*" \
-  -x "*.pyc" -x ".env" -x "node_modules/*" -x "app.zip" \
+  -x "*.pyc" -x ".env*" -x "*/.env*" -x "node_modules/*" -x "app.zip" \
   || { rm -f app.zip; exit 1; }
 ```
 
@@ -96,7 +77,7 @@ zip -r app.zip . \
 # PowerShell
 if (Test-Path app.zip) { Remove-Item app.zip -ErrorAction Stop }
 $exclude = @('.git','.venv','venv','__pycache__','node_modules','app.zip')
-$items = Get-ChildItem -Force -ErrorAction Stop | Where-Object { $exclude -notcontains $_.Name }
+$items = Get-ChildItem -Force -ErrorAction Stop | Where-Object { $exclude -notcontains $_.Name -and $_.Name -notlike '.env*' }
 try {
     Compress-Archive -Path $items -DestinationPath app.zip -Force -ErrorAction Stop
 } catch {
@@ -105,9 +86,11 @@ try {
 }
 ```
 
-## 4. Deploy the zip
+For PowerShell projects with nested secrets or required hidden files, stage only allowed files before archiving and verify the resulting entries. Do not upload if excluded files remain or required files are missing.
 
-Proceed only if normalization, validation and ZIP creation all succeeded in this attempt. Never deploy a stale/partial archive or continue after a failed packaging call.
+## 4. Deploy the package
+
+Proceed only if normalization, validation and packaging all succeeded in this attempt. Never deploy a stale/partial archive. For Java, replace `app.zip` with the fresh artifact path and use `--type jar`, `war`, or `ear`.
 
 ```bash
 az webapp deploy \
@@ -115,7 +98,7 @@ az webapp deploy \
   --src-path app.zip \
   --type zip \
   --track-status false \
-  --enriched-errors true
+  --enriched-errors true || exit 1
 ```
 ```powershell
 az webapp deploy `
@@ -124,6 +107,7 @@ az webapp deploy `
   --type zip `
   --track-status false `
   --enriched-errors true
+if ($LASTEXITCODE -ne 0) { throw "Deployment failed" }
 ```
 
 Do not use `--only-show-errors` or suppress enriched diagnostics. Report failures with suggested fixes and the Copilot prompt, not success.
@@ -141,11 +125,13 @@ After `az webapp deploy` returns, the skill is done.
 Resolve the host name without hitting the site:
 
 ```bash
-HOST=$(az webapp show -n <app> -g <rg> --query defaultHostName -o tsv)
+HOST=$(az webapp show -n <app> -g <rg> --query defaultHostName -o tsv) || exit 1
+[ -n "$HOST" ] || exit 1
 echo "https://$HOST"
 ```
 ```powershell
 $host_ = az webapp show -n <app> -g <rg> --query defaultHostName -o tsv
+if ($LASTEXITCODE -ne 0 -or -not $host_) { throw "Could not resolve app hostname" }
 "https://$host_"
 ```
 
@@ -156,6 +142,6 @@ Then print the post-deploy message from [post-deploy-message.md](post-deploy-mes
 | Pitfall | Fix |
 |---------|-----|
 | Deployed code missing dependencies | `SCM_DO_BUILD_DURING_DEPLOYMENT=true` not set — re-run step 1 then redeploy |
-| Container ping timeout on port 8000 | Wrong startup command — see [startup-commands.md](startup-commands.md) |
+| Container ping timeout | Check the selected language's startup command and port binding |
 | Zip too large (>500 MB) | Exclude `.venv`, caches; consider `.deployment` `.gitignore`-style file |
 | `webapp up` examples in older docs | Replace with `az webapp create` + `az webapp deploy` (this file) |
