@@ -35,8 +35,10 @@ This is important because a plugin's name may be different from its directory na
 
 5. Report the matched skills
 
-Report the matched skills and offer instructions to install them. Skills can be installed by installing their plugin. Read the installation instructions matching the agent client to offer the installation instructions.
+Report matched skills and their plugin's manifest name (for example, `azure`, not directory `azure-skills`). Use supplied metadata when available; otherwise verify catalog membership before offering catalog routes. Read only the reference for the user's client. Guidance is not installation approval; obtain approval before installing anything.
 
+- [VS Code](./references/install/vscode.md)
+- [GitHub Copilot app](./references/install/copilot-app.md)
 - [Copilot CLI](./references/install/copilot-cli.md)
 - [Claude Code](./references/install/claude-code.md)
-- [Other](./references/install/other.md)
+- [Other clients (skills only)](./references/install/other.md)

@@ -1,10 +1,12 @@
 # Steps
 
+Obtain user approval before installation; guidance is not authorization.
+
 1. Add `azure-skills` marketplace
 
 Run this slash command in Claude Code
 
-```
+```text
 /plugin marketplace add microsoft/azure-skills
 ```
 
@@ -12,8 +14,8 @@ Run this slash command in Claude Code
 
 Run this slash command in Claude Code
 
-```
-/plugin install {plugin-name}@azure-skills
+```text
+/plugin install <plugin-name>@azure-skills
 ```
 
-> Note: {plugin-name} is the discovered plugin's name, not its directory name.
+> Note: `<plugin-name>` is the discovered plugin's manifest name, not its directory name (`azure`, not `azure-skills`). These are Claude Code interactive slash commands, separate from Copilot client guidance.
