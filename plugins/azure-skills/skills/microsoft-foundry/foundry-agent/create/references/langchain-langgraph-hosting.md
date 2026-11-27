@@ -2,10 +2,13 @@
 
 Use this guidance when creating, migrating, or re-hosting a LangChain or LangGraph agent on Foundry.
 
+**Required before re-hosting:** Read and follow [Host LangGraph applications on Microsoft Foundry](https://raw.githubusercontent.com/Jiahui-Gu/langchain-azure/fba8169abd6185dad3a386681763b605ffb1fb86/libs/azure-ai/docs/hosting/host-langgraph-on-foundry.md) before choosing a hosting path or editing code. If the guide is unavailable, report the blocker.
+
 ## Re-hosting workflow
 
 1. Identify the existing caller contract. If a required operation depends on state from an earlier request, identify who owns that state and how long it must last, including state supplied implicitly by the original runtime. Preserve application behavior, framework, dependencies, model, tools, and credential inputs unless a change is required or requested. Do not add persistence to stateless applications.
-2. Use configuration-only hosting only if the default mapping and chosen graph export preserve the caller contract, including required state. Otherwise, use host server integration for the necessary hosting adaptations.
+2. Use configuration-only hosting only if the default mapping and chosen graph export preserve the caller contract, including required state. Otherwise, follow the guide for the necessary hosting adaptations.
+3. Verify the delivered service definition, startup path, and runtime dependencies. Check required behavior through the delivered entry point, including that later requests can use any state the original workflow requires. Report any blocked checks.
 
 ## Sample Selection
 
