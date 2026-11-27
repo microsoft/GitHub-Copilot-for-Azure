@@ -10,6 +10,8 @@ Official templates for deploying Microsoft Foundry. Each template may be availab
 
 Not all templates exist in both Bicep and Terraform. Some have format-specific variants (e.g., Terraform has `15a`/`15b` for new VNet vs BYO VNet; Bicep has `15a` for evaluation-only).
 
+**Bicep `15a` (private evaluation):** ships guided setup and read-only diagnostic helpers. When 15a is selected, read [template-15a-evaluation.md](template-15a-evaluation.md).
+
 ## How to Use
 
 1. Fetch the **directory listing** from the relevant repo URL above — the folder names are descriptive (e.g., `15-private-network-standard-agent-setup`, `18-managed-virtual-network`)
