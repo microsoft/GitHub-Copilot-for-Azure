@@ -57,7 +57,7 @@ Write-Host ""
 
 Write-Host "--- Recent Deployments (last 3) ---"
 Invoke-CollectionStep "(failed to list deployments)" {
-    az webapp deployment list -n $Name -g $ResourceGroup @subArgs --query "[:3].{id:id, status:status, time:end_time}" -o table
+    az webapp log deployment list -n $Name -g $ResourceGroup @subArgs --query "[:3].{id:id, status:status, time:end_time}" -o table
 }
 Write-Host ""
 
@@ -73,5 +73,8 @@ Invoke-CollectionStep "(failed to list custom domains)" {
 }
 Write-Host ""
 
+if ($collectionFailed) {
+    Write-Host "=== Diagnostics collection incomplete for $Name ==="
+    exit 1
+}
 Write-Host "=== Diagnostics collection complete for $Name ==="
-if ($collectionFailed) { exit 1 }
