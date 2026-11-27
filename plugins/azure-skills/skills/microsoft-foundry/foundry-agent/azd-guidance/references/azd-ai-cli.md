@@ -64,7 +64,7 @@ After `azd ai agent init`, each agent developed through azd is defined as a **se
 
 | Location | What it holds |
 |------|---------------|
-| `azure.yaml services.<name>` (the agent) | `host: azure.ai.agent`, `kind`, `name`, `project`, `language`, `uses`, `protocols`, `environmentVariables`, `codeConfiguration` / `docker` / `image`, `container.resources`, `description`, `agentEndpoint`, `agentCard`, `startupCommand`. |
+| `azure.yaml services.<name>` (the agent) | `host: azure.ai.agent`, `kind`, `name`, `project`, `language`, `uses`, `protocols`, `env`, `codeConfiguration` / `docker` / `image`, `container.resources`, `description`, `agentEndpoint`, `agentCard`, `startupCommand`. |
 | `azure.yaml services.ai-project` | Model `deployments[]` (`host: azure.ai.project`). The agent links to it via `uses: [ai-project]`. |
 | `.azure/<env>/.env` (`azd env set`) | Secrets and `PARAM_<CONN>_<KEY>` credential values referenced from `azure.yaml`. |
 
@@ -72,7 +72,7 @@ After `azd ai agent init`, each agent developed through azd is defined as a **se
 
 `agent.manifest.yaml` (the file passed to `-m`) is the seed format -- it is NOT on disk after init. Init folds its `parameters:` / `resources:` blocks into the `azure.yaml` service block and the azd env.
 
-> **Local vs API field names.** Local `azure.yaml` uses **camelCase** (`codeConfiguration`, `entryPoint`, `dependencyResolution`, `environmentVariables`). The deployed definition returned by `azd ai agent show` / the Foundry `agent_get` API uses **snake_case** (`code_configuration`, `entry_point` as an array, `environment_variables`). Don't mix the two.
+> **Local vs API field names.** Use the `env` map for environment variables in the local `azure.yaml` service. Local code settings include `codeConfiguration`, `entryPoint`, and `dependencyResolution`. The deployed definition returned by `azd ai agent show` / the Foundry `agent_get` API uses `code_configuration`, `entry_point` as an array, and `environment_variables`.
 
 ### Hosted agent service block (code deploy)
 
@@ -106,9 +106,8 @@ services:
       resources:
         cpu: "0.5"
         memory: 1Gi
-    environmentVariables:
-      - name: AZURE_AI_MODEL_DEPLOYMENT_NAME
-        value: ${AZURE_AI_MODEL_DEPLOYMENT_NAME}
+    env:
+      AZURE_AI_MODEL_DEPLOYMENT_NAME: ${AZURE_AI_MODEL_DEPLOYMENT_NAME}
     protocols:
       - protocol: responses
         version: 1.0.0
@@ -116,7 +115,7 @@ services:
 
 - `protocols` -- `responses`, `invocations`, `invocations_ws`, `voice_conversation_engine`, or `activity`. Editing requires `azd deploy`.
 - `container.resources` -- valid tiers: `0.25/0.5Gi`, `1/2Gi`, `2/4Gi`.
-- `environmentVariables` -- `${VAR}` resolves from the active azd env. Not for secrets.
+- `env` -- `${VAR}` resolves from the active azd env. Not for secrets.
 - `codeConfiguration` present -> code deploy (ZIP, Foundry builds).
 - `agentEndpoint` / `agentCard` -- patch in place with `azd ai agent endpoint update` (no new version).
 - `deployments[]` (under the `ai-project` service) -- model deployments provisioned via Bicep. `name` is the literal Azure deployment resource name the agent references through `AZURE_AI_MODEL_DEPLOYMENT_NAME`.
@@ -163,7 +162,7 @@ Resolve the new-versus-existing project choice before init and pass `--project-i
 
 Manage with `azd env get-values`, `azd env set`, `azd env list`, `azd env new`, `azd env select`.
 
-The platform also injects `FOUNDRY_*` and `AGENT_*` into the running container at runtime. **Never** put these in the agent service's `environmentVariables` section.
+The platform also injects `FOUNDRY_*` and `AGENT_*` into the running container at runtime. **Never** put these in the agent service's `env` map.
 
 ## Resolving subscription / location
 
