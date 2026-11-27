@@ -5,21 +5,26 @@ using your documents, and explore connections across your data.
 
 ## Get started
 
-In Copilot CLI, install the plugin:
+Install the plugin using one of the methods below, or via the [Awesome Copilot catalog page](https://awesome-copilot.github.com/plugin/foundry-iq-skills/).
+
+### VS Code
+
+[Install in VS Code](vscode://chat-plugin/install?source=github%2Fawesome-copilot&plugin=foundry-iq-skills)
+
+### GitHub Copilot app
+
+[Install in GitHub Copilot app](ghapp://plugins/install?source=foundry-iq-skills%40awesome-copilot)
+
+### Copilot CLI — terminal
+
+Run in your terminal:
 
 ```text
-/plugin marketplace add microsoft/azure-skills
-/plugin install foundry-iq-skills@azure-skills
+copilot plugin install foundry-iq-skills@awesome-copilot
 ```
 
 Then try: **"Show me what Foundry IQ graph can do."** Copilot runs a preflight
 and guides you through prerequisites, resource selection and approvals.
-
-To update an installed plugin:
-
-```text
-/plugin update foundry-iq-skills@azure-skills
-```
 
 ### Install in Codex
 
