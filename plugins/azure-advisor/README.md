@@ -2,6 +2,28 @@
 
 Use Azure Advisor recommendations to understand optimization opportunities, identify resources affected by service retirements, and generate customer-ready remediation guidance.
 
+## Installation
+
+Install the plugin using one of the methods below, or via the [Awesome Copilot catalog page](https://awesome-copilot.github.com/plugin/azure-advisor/).
+
+### VS Code
+
+[Install in VS Code](vscode://chat-plugin/install?source=github%2Fawesome-copilot&plugin=azure-advisor)
+
+### GitHub Copilot app
+
+[Install in GitHub Copilot app](ghapp://plugins/install?source=azure-advisor%40awesome-copilot)
+
+### Copilot CLI — terminal
+
+Run in your terminal:
+
+```text
+copilot plugin install azure-advisor@awesome-copilot
+```
+
+## Included skills
+
 This plugin includes:
 
 - `azure-advisor` for recommendation discovery, summaries, affected resources, metadata, service retirements, and lifecycle updates.
