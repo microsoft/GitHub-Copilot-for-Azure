@@ -1,6 +1,33 @@
 # Azure
 
-[Microsoft Azure](https://azure.microsoft.com) is Microsoft's cloud computing platform. This plugin connects [GitHub Copilot CLI](https://github.com/github/copilot-cli) or Claude Code to your Azure account, letting you manage resources, deploy applications, and monitor services directly from your development environment.
+[Microsoft Azure](https://azure.microsoft.com) is Microsoft's cloud computing platform. This plugin provides Azure skills and MCP tools for compatible clients, including VS Code, the GitHub Copilot app, [GitHub Copilot CLI](https://github.com/github/copilot-cli), and Claude Code. Available features depend on the client.
+
+## Installation
+
+Review the security warning and Azure setup requirements below before installing.
+The installable plugin name is **`azure`**, not its source directory name `azure-skills`.
+
+Install the plugin using one of the methods below, or via the [Awesome Copilot catalog page](https://awesome-copilot.github.com/plugin/azure/).
+
+### VS Code
+
+[Install in VS Code](vscode://chat-plugin/install?source=github%2Fawesome-copilot&plugin=azure)
+
+### GitHub Copilot app
+
+[Install in GitHub Copilot app](ghapp://plugins/install?source=azure%40awesome-copilot)
+
+### Copilot CLI — terminal
+
+Run in your terminal:
+
+```text
+copilot plugin install azure@awesome-copilot
+```
+
+### Claude Code
+
+Run `/plugin install azure@claude-plugins-official` in Claude Code.
 
 ## Security
 
@@ -59,15 +86,6 @@ When running on Azure resources (VMs, Container Apps, etc.), the server automati
 
 For more authentication options, see the [Azure Identity documentation](https://learn.microsoft.com/azure/developer/azure-mcp-server/).
 
-### 4. Install the Plugins
-```bash
-# Add the repo as a plugin marketplace
-/plugin marketplace add microsoft/azure-skills
-
-# Pull in the Azure plugin
-/plugin install azure@azure-skills
-```
-
 ## Available Tools
 
 The Azure MCP Server provides tools for 40+ Azure services:
@@ -105,7 +123,7 @@ For the complete list of 40+ services, see the [official documentation](https://
 
 ## Example Usage
 
-Ask GitHub Copilot CLI or Claude Code to:
+Ask your compatible client to:
 - "List my Azure storage accounts"
 - "Show me all containers in my Cosmos DB database"
 - "List all secrets in my key vault 'my-vault'"
