@@ -96,7 +96,7 @@ resource appService 'Microsoft.Web/sites@2023-12-01' = {
 - When `deployStrategy` is absent (no native modules), do NOT set `appCommandLine` — let Oryx use its default startup
 - ⛔ **Never prefix startup with `cd /home/site/wwwroot`** — Oryx extracts build output to a temp directory and sets the working directory automatically. Hardcoding `cd /home/site/wwwroot` causes `MODULE_NOT_FOUND` / `Could not import` because the app files aren't there
 
-**Self-review check (L2 Pattern):** If `hasNativeModules == true`, verify Bicep has BOTH `appCommandLine` and `WEBSITES_CONTAINER_START_TIME_LIMIT`. If `prereq-output.json.initCommands[]` has `required: true` entries, verify `appCommandLine` includes them before the app start command. **FLAGGED** if either check fails.
+**Self-review check (L2 Pattern):** If `prepare-plan.json.deployStrategy.codeDeployPattern == "startup-install"`, verify Bicep has BOTH `appCommandLine` and `WEBSITES_CONTAINER_START_TIME_LIMIT`. If `prereq-output.json.initCommands[]` has `required: true` entries, verify `appCommandLine` includes them before the app start command. **FLAGGED** if either check fails.
 
 ## F1/D1 Free Tier — No Managed Identity
 
