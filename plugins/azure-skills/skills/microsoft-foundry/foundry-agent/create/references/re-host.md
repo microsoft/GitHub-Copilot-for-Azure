@@ -13,6 +13,8 @@ Before asking, check the agent source root for `langgraph.json` or a direct `lan
 
 ## Step 2: Initialize and adapt
 
+For existing LangChain or LangGraph applications, follow the [framework hosting reference](langchain-langgraph-hosting.md) and its linked walkthrough before selecting a sample or editing. Samples provide API patterns; the walkthrough owns the framework migration workflow.
+
 For [configuration-only LangChain / LangGraph hosting](langchain-langgraph-hosting.md#zero-code-migration), use the linked recipe. If only local configuration was requested, stop there; defer unresolved project and model choices until deployment. Otherwise, if the azd project is not initialized for this agent, prepare the launcher and run the init command below with the existing source and `--entry-point foundry_host.py`, then merge the service settings before provisioning or deploying.
 
 To scaffold a Foundry agent project with existing agent codes, run:
