@@ -1,0 +1,79 @@
+name: trace-error-blast-radius-eval
+description: "Checks Trace Store error routing and honest impact capability boundaries."
+
+tags:
+  type: integration
+  skill: trace-error-blast-radius
+
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: copilot-sdk-agent-runner
+
+scoring:
+  threshold: 1
+
+stimuli:
+  - name: "Error prevalence"
+    turns:
+      - "How widespread is the payment timeout exception in Azure Monitor Trace Store distributed traces? Measure affected distinct traces and propagation."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      requiredSkills:
+        - trace-error-blast-radius
+      earlyTerminate: '[{"type":"skill-call","skill":"trace-error-blast-radius"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - trace-error-blast-radius
+
+  - name: "Error signature from a seed trace"
+    prompt: "Investigate the error blast radius of exception E in Trace Store trace 00000000000000000000000000000001, across observed root-operation groups in this Azure Monitor Workspace."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills: [trace-error-blast-radius]
+      earlyTerminate: '[{"type":"skill-call","skill":"trace-error-blast-radius"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [trace-error-blast-radius]
+
+  - name: "Missing impact helper is not zero prevalence"
+    prompt: |
+      Offline Azure Monitor Trace Store exercise: a capped example contains
+      signature E on trace b, in a payment span below checkout. No complete
+      selected/affected subset or per-group denominator has been supplied.
+      The exact impact helper required by the delivered workflow is unavailable.
+      Explain which impact/prevalence results cannot be claimed and what
+      signature, example and propagation inspection remains useful.
+      Do not reconstruct the helper from capped exports. No new queries.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: evidence
+      requiredSkills: [trace-error-blast-radius]
+      systemPrompt: '{"mode":"append","content":"Offline behavior exercise. Invoke trace-error-blast-radius and its dependencies/references. Use supplied observations only; do not call MCP or network tools."}'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [trace-error-blast-radius]
+      - type: output-matches
+        config:
+          pattern: "(?i)impact|prevalence"
+      - type: output-matches
+        config:
+          pattern: "(?i)unavailable|missing|cannot|can.t"
+      - type: output-matches
+        config:
+          pattern: "(?i)signature|example|propagation"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)(impact|prevalence)\\s*(is|=|:)\\s*0|no affected traces"

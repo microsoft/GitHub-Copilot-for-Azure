@@ -124,6 +124,21 @@
             "integrationTestSchedule": {
                 "0 12 * * 2-6": "assess-observability-health,connect-observability,troubleshoot-observability,verify-observability-fix"
             }
+        },
+        {
+            "name": "azure-monitor-traces",
+            "dirname": "azure-monitor-traces",
+            "skills": [
+                "trace-investigation-contract",
+                "trace-triage-app",
+                "trace-latency-root-cause",
+                "trace-error-blast-radius",
+                "trace-what-changed",
+                "trace-agent-behavior-regression"
+            ],
+            "integrationTestSchedule": {
+                "0 12 * * 2-6": "trace-investigation-contract,trace-triage-app,trace-latency-root-cause,trace-error-blast-radius,trace-what-changed,trace-agent-behavior-regression"
+            }
         }
     ]
 }

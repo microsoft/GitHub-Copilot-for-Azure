@@ -1,0 +1,80 @@
+name: trace-triage-app-eval
+description: "Checks broad Trace Store symptom routing and bounded ranking."
+
+tags:
+  type: integration
+  skill: trace-triage-app
+
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: copilot-sdk-agent-runner
+
+scoring:
+  threshold: 1
+
+stimuli:
+  - name: "Broad app slowdown"
+    turns:
+      - "My app is slow in Azure Monitor Trace Store. Rank the distributed-trace error and latency candidates over the last six hours before choosing an operation."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      requiredSkills:
+        - trace-triage-app
+      earlyTerminate: '[{"type":"skill-call","skill":"trace-triage-app"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - trace-triage-app
+
+  - name: "App-wide trace errors"
+    prompt: "Triage app-wide errors and delays from Azure Monitor Trace Store distributed traces; I do not have a selected root operation yet."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills: [trace-triage-app]
+      earlyTerminate: '[{"type":"skill-call","skill":"trace-triage-app"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [trace-triage-app]
+
+  - name: "Rank overlapping symptoms without adding them"
+    prompt: |
+      Invoke the trace-triage-app skill with the native skill tool first,
+      then read its workflow for this offline behavior exercise.
+      Offline exercise with complete observed distinct traces from the same
+      bounded window and comparable scope coverage:
+      checkout has 10 error-bearing traces and 20 traces above its supplied SLO;
+      those symptoms overlap. catalog has 15 error-bearing traces.
+      Rank the two scopes using the workflow weights, give scores, and explain
+      why this is not an account-wide impact estimate. No new queries.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: ranking
+      requiredSkills: [trace-triage-app]
+      systemPrompt: '{"mode":"append","content":"Offline behavior exercise. Invoke trace-triage-app and its dependencies/references. Use supplied observations only; do not call MCP or network tools."}'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [trace-triage-app]
+      - type: output-matches
+        config:
+          pattern: "(?i)catalog[^\\n]*45|45[^\\n]*catalog"
+      - type: output-matches
+        config:
+          pattern: "(?i)checkout[^\\n]*40|40[^\\n]*checkout"
+      - type: output-matches
+        config:
+          pattern: "(?i)observed|bounded|not.*account-wide"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)checkout[^\\n]*(score[^\\n]*70|70[^\\n]*score)"

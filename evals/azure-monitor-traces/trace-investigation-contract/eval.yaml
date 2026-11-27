@@ -1,0 +1,77 @@
+name: trace-investigation-contract-eval
+description: "Checks shared Trace Store routing and incomplete-result handling."
+
+tags:
+  type: integration
+  skill: trace-investigation-contract
+
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: copilot-sdk-agent-runner
+
+scoring:
+  threshold: 1
+
+stimuli:
+  - name: "Load trace execution rules"
+    turns:
+      - "Load the shared Azure Monitor Trace Store investigation rules before I query distributed traces."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      requiredSkills:
+        - trace-investigation-contract
+      earlyTerminate: '[{"type":"skill-call","skill":"trace-investigation-contract"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - trace-investigation-contract
+
+  - name: "Prepare an investigation"
+    prompt: "Prepare a distributed-trace investigation using Azure Monitor Trace Store: establish discovery, query/resume, and evidence rules."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills: [trace-investigation-contract]
+      earlyTerminate: '[{"type":"skill-call","skill":"trace-investigation-contract"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [trace-investigation-contract]
+
+  - name: "Running is not complete coverage"
+    prompt: |
+      Offline exercise: a Trace Store query returned status Running, operationId op-1,
+      and two rows. Account discovery has areResultsTruncated=true. A saved-result
+      preview is incomplete, and no analysis or Portal command is exposed.
+      Explain the required continuation and what evidence cannot yet be claimed.
+      Do not query Azure or invent results.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: error-handling
+      requiredSkills: [trace-investigation-contract]
+      systemPrompt: '{"mode":"append","content":"Offline workflow exercise, not routing. Invoke trace-investigation-contract and read its applicable references. Use supplied observations only; do not call MCP or network tools."}'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [trace-investigation-contract]
+      - type: output-matches
+        config:
+          pattern: "(?i)resume[\\s\\S]*op-1|op-1[\\s\\S]*resume"
+      - type: output-matches
+        config:
+          pattern: "(?i)incomplete|partial|truncated"
+      - type: output-matches
+        config:
+          pattern: "(?i)unavailable|not exposed|capability|missing"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)all traces (have been|were) (returned|retrieved)|complete coverage confirmed"

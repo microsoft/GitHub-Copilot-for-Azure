@@ -1,0 +1,75 @@
+name: trace-latency-root-cause-eval
+description: "Checks scoped Trace Store latency routing and leaf interpretation."
+
+tags:
+  type: integration
+  skill: trace-latency-root-cause
+
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: copilot-sdk-agent-runner
+
+scoring:
+  threshold: 1
+
+stimuli:
+  - name: "Scoped checkout latency"
+    turns:
+      - "Why is checkout slow in Azure Monitor Trace Store distributed traces? Compare its baseline, slow band, and outliers and find the leaf bottleneck."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      requiredSkills:
+        - trace-latency-root-cause
+      earlyTerminate: '[{"type":"skill-call","skill":"trace-latency-root-cause"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - trace-latency-root-cause
+
+  - name: "Selected dependency path"
+    prompt: "Explain the payment-to-database dependency path slowdown in Azure Monitor Trace Store distributed traces for the selected checkout operation."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills: [trace-latency-root-cause]
+      earlyTerminate: '[{"type":"skill-call","skill":"trace-latency-root-cause"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [trace-latency-root-cause]
+
+  - name: "Do not mistake leaf elapsed time for CPU"
+    prompt: |
+      Offline exercise: a complete projected slow trace has checkout root r
+      from 0-1000ms; child payment p (parent r) from 100-950ms; child database d
+      (parent p) from 120-900ms. No recorded child of d exists. These are measured
+      intervals, not critical-path analysis. The CPA command is not exposed.
+      Identify the recorded leaf, its duration, and the limits on root-cause claims.
+      Do not query Azure, invent CPU/I/O evidence, or fabricate CPA.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: evidence
+      requiredSkills: [trace-latency-root-cause]
+      systemPrompt: '{"mode":"append","content":"Offline behavior exercise. Invoke trace-latency-root-cause and its dependencies/references. Use supplied observations only; do not call MCP or network tools."}'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [trace-latency-root-cause]
+      - type: output-matches
+        config:
+          pattern: "(?i)database[\\s\\S]*780|780[\\s\\S]*database"
+      - type: output-matches
+        config:
+          pattern: "(?i)unattributed|uninstrumented|not.*(prove|proof)|unknown|unavailable"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)CPU (is confirmed|caused)|confirmed I/O wait|CPA (confirmed|shows)"
