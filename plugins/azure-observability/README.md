@@ -31,17 +31,27 @@ remediation.
 
 ## Get Started: Install or Migrate
 
-In Copilot CLI:
+Install the plugin using one of the methods below, or via the [Awesome Copilot catalog page](https://awesome-copilot.github.com/plugin/azure-observability/).
 
-1. Add the marketplace: `/plugin marketplace add microsoft/azure-skills`
-2. Install this plugin: `/plugin install azure-observability@azure-skills`
-3. Update it later with `/plugin update azure-observability@azure-skills`
+### VS Code
 
-Start a fresh conversation and try a question below. Keep Azure Skills enabled
-for canonical diagnostics/Foundry expertise. Installation grants no telemetry
-access or permission to query Azure.
-Disable or remove older draft copies through supported plugin management
-before enabling `azure-observability`; renamed packages do not update them.
+[Install in VS Code](vscode://chat-plugin/install?source=github%2Fawesome-copilot&plugin=azure-observability)
+
+### GitHub Copilot app
+
+[Install in GitHub Copilot app](ghapp://plugins/install?source=azure-observability%40awesome-copilot)
+
+### Copilot CLI — terminal
+
+Run in your terminal:
+
+```text
+copilot plugin install azure-observability@awesome-copilot
+```
+
+Disable or remove older draft copies through supported plugin management before
+enabling `azure-observability`; renamed packages do not update them.
+Keep Azure Skills enabled for canonical diagnostics/Foundry expertise.
 
 ## Start with your question
 
@@ -169,7 +179,7 @@ Report issues with the host/version, expected behavior and a safe error descript
 
 ## License
 
-This plugin is licensed under the [MIT License](LICENSE).
+This plugin is licensed under the [MIT License](https://github.com/microsoft/azure-skills/blob/main/LICENSE).
 
 ## Telemetry
 
