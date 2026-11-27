@@ -90,6 +90,10 @@ do not maintain a second source manifest or duplicate those scripts.
 
 `skills/` contains the skill files. The `.mcp.json` file contains the MCP server configuration you want to add to the agent. Skills and MCP configuration are the bread and butter added to the agent context to help the agent solve problems. `LICENSE` is the software license for your plugin. `README.md` is user-facing documentation for users of the plugin. Preserve the scaffolded telemetry disclosure when completing the README. Add an `npx` and `.npmrc` security warning only when the plugin's actual MCP configuration invokes `npx`; the shared telemetry hook does not use it. `version.json` sets the base major and minor version numbers so the automated versioning script can generate version numbers for your plugin. See [VERSIONING.md](./VERSIONING.md) to learn how it works.
 
+In the README, separate native VS Code plugin, GitHub Copilot app, terminal Copilot CLI, and interactive marketplace instructions from Claude Code and extension-managed skill copies. Use the installable manifest name, not the source directory: `plugins/azure-skills` publishes as `azure`. Include package-specific prerequisites and host limitations, trust/policy guidance, enable/load checks, and source-specific updates without claiming installation grants Azure access or client feature parity.
+
+Advertise Awesome Copilot routes only after confirming the package is listed. Use its HTTPS catalog page as the fallback for unavailable deep links; keep the direct Microsoft marketplace route. Catalog entries pin published packages and can differ from direct Microsoft versions. Avoid duplicate marketplace/local/extension-managed copies. Keep README links portable when copied to the published repository or catalog; do not depend on unmerged documentation in another branch.
+
 Unless there is an urgent need to extend an existing plugin, new skills should be contributed as new plugins so they can work independently from existing ones.
 
 Run this command at the repository root to scaffold a new plugin, then add your files to it.
@@ -220,10 +224,20 @@ When submitting the PR, prefix the PR title with `feature:` and link the PR to y
 
 ## Releasing
 
-Once a skill is merged, it will be synced to the [azure-skills](https://github.com/microsoft/azure-skills) repo. Users will install the skills by installing the `azure` plugin from the azure-skills repo. For example, in Copilot CLI:
+Once a skill is merged, it will be synced to the [azure-skills](https://github.com/microsoft/azure-skills) repo. Users install its **owning plugin**, using that plugin's manifest `name`; not every skill belongs to `azure`. For example, `plugins/azure-skills` uses `azure`, while `plugins/aks-skills` uses `aks-skills`.
+
+For any published owner, enter these commands inside interactive Copilot CLI, replacing `<plugin-name>` with the manifest name (not a terminal shell command):
+
+```text
+/plugin marketplace add microsoft/azure-skills
+/plugin install <plugin-name>@azure-skills
+/plugin update <plugin-name>@azure-skills
+```
+
+For a confirmed Awesome Copilot listing, users can instead install from its HTTPS catalog page. The base Azure example is [Azure](https://awesome-copilot.github.com/plugin/azure/), with [VS Code](vscode://chat-plugin/install?source=github%2Fawesome-copilot&plugin=azure) and [Copilot app](ghapp://plugins/install?source=azure%40awesome-copilot) quick installs, or this terminal command:
 
 ```bash
-# Copilot CLI
-/plugin marketplace add microsoft/azure-skills
-/plugin install azure@azure-skills
+copilot plugin install azure@awesome-copilot
 ```
+
+Updates in interactive Copilot CLI must retain that source: `/plugin update azure@awesome-copilot`. Do not assume a new plugin is cataloged on release or that its pinned catalog version matches the direct Microsoft marketplace. Keep Claude Code's client-specific marketplace instructions separate.

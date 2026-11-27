@@ -46,6 +46,28 @@ When reporting issues, providing detailed information helps us understand and re
 
 This section covers common issues that users may encounter while using GitHub Copilot for Azure and their recommended resolutions.
 
+### Native Plugin Not Enabled or Loaded
+
+This applies to native VS Code plugins, the GitHub Copilot app, and Copilot CLI, not the Azure extension's skill-copy commands.
+
+1. Confirm your client version supports plugins and organization policy permits the source. For the base Azure plugin, use the [Azure catalog page](https://awesome-copilot.github.com/plugin/azure/) if VS Code or app deep links cannot open. An HTTPS fallback does not bypass policy.
+2. Check the client's plugin/customization listing: the installed plugin should be enabled and loaded, with its skills visible. Review trust prompts and plugin-load errors in the client's logs before starting a fresh conversation.
+3. Check the package name and source. The base plugin is `azure`, although its source directory is `azure-skills`. Avoid overlapping copies from `awesome-copilot`, the direct `azure-skills` marketplace, local builds, or extension-managed global/workspace skills. Keep distinct specialist dependencies required by the package.
+4. Use the original marketplace for updates. In interactive Copilot CLI, use `/plugin update azure@awesome-copilot` or `/plugin update azure@azure-skills`, according to the installed copy. Pinned catalog packages can differ from direct Microsoft versions.
+
+Report the client/version, package name, marketplace, enable/load state, and relevant redacted plugin logs. Reinstalling the VS Code Azure extension is not a native-plugin repair.
+
+### Plugin Loaded but MCP or Azure Access Fails
+
+Visible skills do not establish that MCP servers are connected or Azure access is authorized. Installation does not sign you in or grant permissions.
+
+- Inspect the failing server's connection status and logs in your client (interactive Copilot CLI: `/mcp show <server-name>`).
+- For local `npx` MCP servers, check the required Node.js runtime and executable availability. Remote MCP servers have different connection/authentication requirements; do not assume every plugin needs a local runtime.
+- For authentication or access errors, verify the relevant server's sign-in flow, cloud, tenant/subscription, and required permissions. Follow organization policy and obtain required access rather than bypassing restrictions.
+- Install or authenticate task-specific tools such as `az` or `azd` only when the task requires them. Preserve the extension-specific CLI guidance above when using that extension.
+
+Collect the failing server name, redacted connection/tool errors, and client/version separately from plugin-load errors. See the Foundry authorization issue below for that specific symptom.
+
 ### Corrupted Installation - Missing Files
 
 **Issue**: GitHub Copilot for Azure fails to load or certain features don't work due to missing or corrupted extension files. This may manifest as:
@@ -92,7 +114,7 @@ If the issue persists after following these steps, you may want to inspect the i
 
 ### Skills Not Showing in the VS Code Skill Dropdown
 
-**Issue**: After installing GitHub Copilot for Azure, skills such as `azure-observability` or `azure-postgres` do not appear in the VS Code skill picker (the "Select the skill to open" dropdown). The extension activates lazily—it does not activate until the first request is made—which means skills are not installed until after activation occurs. If you open the skill dropdown before the extension has activated, the skills will not yet be present.
+**Issue (Azure extension-managed skill copies)**: After installing the GitHub Copilot for Azure extension, skills such as `azure-observability` or `azure-postgres` do not appear in the VS Code skill picker (the "Select the skill to open" dropdown). The extension activates lazily—it does not activate until the first request is made—which means skills are not installed until after activation occurs. If you open the skill dropdown before the extension has activated, the skills will not yet be present. For native plugins, use the enable/load checks above instead; these commands copy skills and do not install or enable a native plugin.
 
 **Resolution**: Run one of the following commands in VS Code (<kbd>F1</kbd> or <kbd>Ctrl+Shift+P</kbd> / <kbd>Cmd+Shift+P</kbd>) to install skills:
 
