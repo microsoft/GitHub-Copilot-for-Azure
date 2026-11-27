@@ -1,0 +1,124 @@
+# Manually validate, then (optionally) publish a benchmark release to the MSBench Registry.
+# How to set up and run: pipelines/azurebench/README.md
+trigger: none
+pr: none
+
+parameters:
+  - name: benchmark
+    displayName: Benchmark name in the Registry
+    type: string
+    default: azurebench
+  - name: version
+    displayName: Version to publish (new, never reused)
+    type: string
+    default: 1.0.0
+  - name: metadata
+    displayName: registry.json (path in this repo)
+    type: string
+    default: benchmarks/azurebench/registry.json
+  - name: dataset
+    displayName: Dataset JSONL (path in this repo)
+    type: string
+    default: benchmarks/azurebench/dataset.jsonl
+  - name: private
+    displayName: Only people you grant can read and run it
+    type: boolean
+    default: true
+  - name: backend
+    displayName: MSBench backend
+    type: string
+    default: ces-dev1
+  - name: publish
+    displayName: Publish (unchecked = validate only, nothing is written)
+    type: boolean
+    default: false
+
+variables:
+  - template: /pipelines/templates/variables/image.yml
+  # Registry Editor/Owner identity that validates and publishes.
+  - name: serviceConnection
+    value: azurebench_sc
+
+stages:
+  - stage: Validate
+    jobs:
+      - job: Validate
+        pool:
+          name: $(LINUXPOOL)
+          image: $(LINUXVMIMAGE)
+          os: linux
+        steps:
+          # Full history so release.sh can confirm each task pin is pushed.
+          - checkout: self
+            fetchDepth: 0
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: '3.12'
+          - task: PipAuthenticate@1
+            displayName: Authenticate pip with MicrosoftSweBench feed
+            inputs:
+              artifactFeeds: internal/MicrosoftSweBench
+          - script: python -m pip install --no-input msbench-cli==0.3.70
+            displayName: Install MSBench CLI
+          - task: AzureCLI@2
+            displayName: Check and validate release (writes nothing)
+            env:
+              BENCHMARK: ${{ parameters.benchmark }}
+              VERSION: ${{ parameters.version }}
+              METADATA: ${{ parameters.metadata }}
+              DATASET: ${{ parameters.dataset }}
+              PRIVATE: ${{ parameters.private }}
+              BACKEND: ${{ parameters.backend }}
+              SOURCE_REPOSITORY: $(Build.Repository.Uri)
+              SOURCE_COMMIT: $(Build.SourceVersion)
+            inputs:
+              azureSubscription: ${{ variables.serviceConnection }}
+              scriptType: bash
+              scriptLocation: scriptPath
+              scriptPath: pipelines/azurebench/scripts/release.sh
+              arguments: validate
+
+  - ${{ if eq(parameters.publish, true) }}:
+      - stage: Publish
+        dependsOn: Validate
+        jobs:
+          - deployment: Publish
+            displayName: Publish ${{ parameters.benchmark }}@${{ parameters.version }}
+            # Add an approval check to this environment in Azure DevOps.
+            environment: azurebench-release
+            pool:
+              name: $(LINUXPOOL)
+              image: $(LINUXVMIMAGE)
+              os: linux
+            strategy:
+              runOnce:
+                deploy:
+                  steps:
+                    - checkout: self
+                      fetchDepth: 0
+                    - task: UsePythonVersion@0
+                      inputs:
+                        versionSpec: '3.12'
+                    - task: PipAuthenticate@1
+                      displayName: Authenticate pip with MicrosoftSweBench feed
+                      inputs:
+                        artifactFeeds: internal/MicrosoftSweBench
+                    - script: python -m pip install --no-input msbench-cli==0.3.70
+                      displayName: Install MSBench CLI
+                    - task: AzureCLI@2
+                      displayName: Check and publish release
+                      env:
+                        BENCHMARK: ${{ parameters.benchmark }}
+                        VERSION: ${{ parameters.version }}
+                        METADATA: ${{ parameters.metadata }}
+                        DATASET: ${{ parameters.dataset }}
+                        PRIVATE: ${{ parameters.private }}
+                        BACKEND: ${{ parameters.backend }}
+                        SOURCE_REPOSITORY: $(Build.Repository.Uri)
+                        SOURCE_COMMIT: $(Build.SourceVersion)
+                      inputs:
+                        azureSubscription: ${{ variables.serviceConnection }}
+                        scriptType: bash
+                        scriptLocation: scriptPath
+                        scriptPath: pipelines/azurebench/scripts/release.sh
+                        arguments: publish

@@ -1,0 +1,123 @@
+# Manually run a published MSBench Registry benchmark with the GitHub Copilot CLI agent.
+# How to set up and run: pipelines/azurebench/README.md
+trigger: none
+pr: none
+
+parameters:
+  - name: benchmark
+    displayName: Published benchmark release (<name>@<version>, optionally .<instance_id>)
+    type: string
+    default: azurebench@1.0.0
+  - name: model
+    displayName: MSBench model label
+    type: string
+    default: claude-opus-4.5-autodev-test
+  - name: copilotModel
+    displayName: Copilot CLI model the agent uses (COPILOT_AGENT_MODEL)
+    type: string
+    default: sweagent-capi:claude-opus-5.5
+  - name: backend
+    displayName: MSBench backend
+    type: string
+    default: ces-dev1
+  - name: capi
+    displayName: CAPI credentials (ours = our Key Vault integration, msbench = MSBench autodev-test)
+    type: string
+    default: ours
+    values:
+      - ours
+      - msbench
+  - name: useRunIdentity
+    displayName: Give the run an Azure identity (BYOI)
+    type: boolean
+    default: false
+  - name: authorizeCapi
+    displayName: Allow agent and benchmark code to read the CAPI credentials
+    type: boolean
+    default: false
+  - name: submit
+    displayName: Submit the run and wait for results (unchecked = only build the agent package)
+    type: boolean
+    default: false
+
+variables:
+  - template: /pipelines/templates/variables/image.yml
+  # Submits the run and reads our CAPI secrets from the Key Vault.
+  - name: serviceConnection
+    value: azurebench_sc
+  - name: keyVaultName
+    value: azurebench-kv
+  - name: packageDir
+    value: $(Agent.TempDirectory)/agent-package
+  - name: resultsDir
+    value: $(Agent.TempDirectory)/results
+
+jobs:
+  - job: AzureBenchEval
+    displayName: Run ${{ parameters.benchmark }}
+    timeoutInMinutes: 360
+    pool:
+      name: $(LINUXPOOL)
+      image: $(LINUXVMIMAGE)
+      os: linux
+    steps:
+      - checkout: self
+
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: '3.12'
+
+      - task: PipAuthenticate@1
+        displayName: Authenticate pip with MicrosoftSweBench feed
+        inputs:
+          artifactFeeds: internal/MicrosoftSweBench
+
+      - script: python -m pip install --no-input msbench-cli==0.3.70 msbench-agent-github-copilot-cli==0.0.28
+        displayName: Install MSBench CLI and Copilot CLI agent generator
+
+      - script: bash pipelines/azurebench/scripts/build-agent.sh pipelines/azurebench/agent "${{ parameters.copilotModel }}" "${{ parameters.backend }}" "$(packageDir)"
+        displayName: Build agent package
+
+      - publish: $(packageDir)
+        artifact: agent-package
+        displayName: Publish agent package
+
+      - ${{ if and(eq(parameters.submit, true), eq(parameters.authorizeCapi, false)) }}:
+          - script: |
+              echo "Submitting needs authorizeCapi: agent and benchmark code can read the CAPI credentials." >&2
+              exit 1
+            displayName: Require CAPI credential authorization
+
+      - ${{ if and(eq(parameters.submit, true), eq(parameters.authorizeCapi, true)) }}:
+          - ${{ if eq(parameters.capi, 'ours') }}:
+              - task: AzureKeyVault@2
+                displayName: Load our CAPI credentials
+                inputs:
+                  azureSubscription: ${{ variables.serviceConnection }}
+                  KeyVaultName: $(keyVaultName)
+                  SecretsFilter: azurebench-capi-id,azurebench-capi-hmac
+                  RunAsPreJob: false
+
+          - task: AzureCLI@2
+            displayName: Run benchmark and check results
+            env:
+              BENCHMARK: ${{ parameters.benchmark }}
+              MODEL: ${{ parameters.model }}
+              BACKEND: ${{ parameters.backend }}
+              CAPI: ${{ parameters.capi }}
+              USE_RUN_IDENTITY: ${{ parameters.useRunIdentity }}
+              PACKAGE_DIR: $(packageDir)
+              RESULTS_DIR: $(resultsDir)
+              ${{ if eq(parameters.capi, 'ours') }}:
+                GITHUB_COPILOT_INTEGRATION_ID: $(azurebench-capi-id)
+                CAPI_HMAC_KEY: $(azurebench-capi-hmac)
+            inputs:
+              azureSubscription: ${{ variables.serviceConnection }}
+              scriptType: bash
+              scriptLocation: scriptPath
+              scriptPath: pipelines/azurebench/scripts/run-eval.sh
+
+          - publish: $(resultsDir)
+            artifact: results
+            displayName: Publish results
+            condition: succeededOrFailed()
