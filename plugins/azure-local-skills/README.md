@@ -2,6 +2,27 @@
 
 Azure Local planning, deployment, operations, and workload management skills, covering both standard and rack-scale deployments.
 
+## Installation
+
+Review the security and telemetry disclosures below before installing.
+Install the plugin using one of the methods below, or via the [Awesome Copilot catalog page](https://awesome-copilot.github.com/plugin/azure-local-skills/).
+
+### VS Code
+
+[Install in VS Code](vscode://chat-plugin/install?source=github%2Fawesome-copilot&plugin=azure-local-skills)
+
+### GitHub Copilot app
+
+[Install in GitHub Copilot app](ghapp://plugins/install?source=azure-local-skills%40awesome-copilot)
+
+### Copilot CLI — terminal
+
+Run in your terminal:
+
+```text
+copilot plugin install azure-local-skills@awesome-copilot
+```
+
 ## Security
 
 > [!WARNING]
@@ -25,11 +46,3 @@ the agent.
 Standard Azure Local and multi-rack use separate, non-interchangeable procedures for same-sounding tasks such as creating logical networks, VMs, and network security groups. Both skills establish the deployment scale before recommending procedures and hand off to each other when the scale does not match.
 
 Both skills start read-only and ask for confirmation before updates, deletes, reimages, network or fabric changes, and VM power operations.
-
-## Installation
-
-```bash
-# Copilot CLI
-/plugin marketplace add microsoft/azure-skills
-/plugin install azure-local-skills@azure-skills
-```
