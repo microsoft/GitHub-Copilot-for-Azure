@@ -568,6 +568,40 @@ stimuli:
           required:
             - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
               command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Route an Azure deployment request for a LangChain agent to Foundry"
+    prompt: "Deploy my LangChain agent to Azure"
+    tags:
+      id: langchain-deploy-routing
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      scenario: langchain-hosting
+      earlyTerminate: &langchainRoutingStop '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+      systemPrompt: &langchainRoutingSafety '{"mode":"append","content":"This exercise ends at workflow selection. Do not run setup or deployment commands, access live Azure resources, or modify files."}'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+  - name: "Route a Foundry build request for a LangChain agent to Foundry"
+    prompt: "Build a Foundry agent with LangChain"
+    tags:
+      id: langchain-build-routing
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      scenario: langchain-hosting
+      earlyTerminate: *langchainRoutingStop
+      systemPrompt: *langchainRoutingSafety
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
   - name: "Build and deploy a Foundry agent"
     prompt: "Help me build and deploy a Foundry agent"
     tags:

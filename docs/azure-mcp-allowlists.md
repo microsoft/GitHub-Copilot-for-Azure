@@ -44,9 +44,12 @@ packages, and mismatched portable/legacy MCP configurations fail the refresh
 before target files are written.
 
 The same PR updates existing Azure package arguments in portable `mcp.json`,
-legacy `.mcp.json`, and Gemini configuration. Other servers and plugin manifest
-versions remain unchanged. The generator never adds a server or creates
-per-plugin allowlist copies.
+legacy `.mcp.json`, and Gemini configuration. An existing `@azure/mcp@latest`
+argument is replaced with the exact discovered version. The configuration
+comparison accepts equivalent `${PLUGIN_ROOT}` and `${CLAUDE_PLUGIN_ROOT}`
+paths for their respective clients. Other servers and plugin manifest versions
+remain unchanged. The generator never adds a server or creates per-plugin
+allowlist copies.
 
 ## Manual refresh
 
