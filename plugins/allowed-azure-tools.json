@@ -457,6 +457,17 @@
       "monitor_healthmodels_inspect",
       "monitor_traces_query_analyze-critical-path",
       "monitor_traces_query_analyze-top-attributes"
+    ],
+    "4.0.0-beta.11": [
+      "netappfiles_pool_create",
+      "netappfiles_pool_get",
+      "netappfiles_pool_update",
+      "resiliencyagent_goals_get",
+      "resiliencyagent_goals_manage",
+      "resiliencyagent_servicegroup_get",
+      "resiliencyagent_servicegroup_manage",
+      "resiliencyagent_usageplan_get",
+      "resiliencyagent_usageplan_manage"
     ]
   },
   "areas": {
